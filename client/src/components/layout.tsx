@@ -105,7 +105,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <span className="text-green-400">ي</span>
                 <span className="text-blue-400">ع</span>
               </div>
-              <div className="text-xs font-bold text-blue-400 tracking-wider">eby3</div>
             </div>
             <p className="text-sm leading-relaxed">
               منصتك الأولى للبيع والشراء في العراق.

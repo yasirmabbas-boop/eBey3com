@@ -8,7 +8,6 @@ export function Logo({ className = "" }: { className?: string }) {
         <span className="text-green-600">ي</span>
         <span className="text-blue-600">ع</span>
       </div>
-      <div className="text-sm md:text-lg font-bold text-blue-600 tracking-wider">eby3</div>
     </div>
   );
 }
