@@ -7,33 +7,36 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Tag, ChevronLeft, ChevronRight, Gavel } from "lucide-react";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
+import watch1 from "@assets/3698DC5F-CAF8-4B45-B12D-4E39F72DE2ED_1_105_c_1766063359047.jpeg";
+import watch2 from "@assets/807D2386-8785-46E1-A175-A43EF6F21F9F_1_105_c_1766063377413.jpeg";
+import watch3 from "@assets/74ABB32D-3297-41D7-80A6-3B8F02AF0EF2_1_102_o_1766063386205.jpeg";
 
 const ADS = [
   {
     id: 1,
-    title: "مزاد - ساعة ذهبية فينتاج",
-    description: "ابدأ المزايدة الآن على ساعة نادرة",
-    image: PRODUCTS[0].image,
+    title: "مزاد - ساعة فينتاج كلاسيكية",
+    description: "ساعة نادرة في صندوق أصلي محفوظ",
+    image: watch1,
     badgeText: "مزاد حي",
     buttonText: "خلي سومتك",
     isAuction: true,
   },
   {
     id: 2,
-    title: "مزاد - جاكيت جلد قديم",
-    description: "تنتهي المزايدة خلال 5 ساعات",
-    image: PRODUCTS[1].image,
+    title: "مزاد - أوميغا كونستليشن",
+    description: "ساعة أوميغا أصلية مع حبات ذهبية",
+    image: watch2,
     badgeText: "ينتهي قريباً",
     buttonText: "خلي سومتك",
     isAuction: true,
   },
   {
     id: 3,
-    title: "مزاد - ساعة أوميغا نادرة",
-    description: "المزاد الحصري لأندر الساعات",
-    image: PRODUCTS[2].image,
+    title: "مزاد - أوميغا سيماستر أصلية",
+    description: "ساعة أوميغا أوتوماتيك مع سوار جلد",
+    image: watch3,
     badgeText: "مزاد حي",
-    buttonText: "شاهد المزاد",
+    buttonText: "خلي سومتك",
     isAuction: true,
   },
 ];
