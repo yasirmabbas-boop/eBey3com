@@ -146,17 +146,13 @@ export default function Home() {
             سجل الآن وابدأ المزايدة.
           </p>
           <div className="flex gap-4">
-            <Link href="/register">
-              <Button size="lg" className="bg-accent text-white hover:bg-accent/90 font-bold px-8 h-12 text-lg flex items-center gap-2">
-                <Gavel className="h-5 w-5" />
-                شارك في المزاد
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button size="lg" variant="outline" className="bg-white/10 border-white text-white hover:bg-white/20 h-12 text-lg backdrop-blur-sm">
-                أضف منتجاً للمزاد
-              </Button>
-            </Link>
+            <Button size="lg" className="bg-accent text-white hover:bg-accent/90 font-bold px-8 h-12 text-lg flex items-center gap-2">
+              <Gavel className="h-5 w-5" />
+              شارك في المزاد
+            </Button>
+            <Button size="lg" variant="outline" className="bg-white/10 border-white text-white hover:bg-white/20 h-12 text-lg backdrop-blur-sm">
+              أضف منتجاً للمزاد
+            </Button>
           </div>
         </div>
       </section>

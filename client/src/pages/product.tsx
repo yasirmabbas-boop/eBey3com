@@ -14,11 +14,17 @@ export default function ProductPage() {
   
   const product = PRODUCTS.find(p => p.id === params?.id) || PRODUCTS[0];
 
-  const handleAction = () => {
+  const handleBid = () => {
     toast({
-      title: "يجب تسجيل الدخول",
-      description: "يرجى إنشاء حساب أو تسجيل الدخول للمتابعة.",
-      variant: "destructive",
+      title: "تم إضافة مزايدة!",
+      description: "ستتم معالجة مزايدتك قريباً.",
+    });
+  };
+
+  const handleAddCart = () => {
+    toast({
+      title: "تم الإضافة للسلة",
+      description: "يمكنك الاستمرار في التصفح أو الذهاب للسلة.",
     });
   };
 
@@ -88,15 +94,15 @@ export default function ProductPage() {
 
               <div className="flex flex-col gap-3">
                 {product.currentBid ? (
-                  <Button size="lg" className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold" onClick={handleAction}>
-                    ضع مزايدة ({((product.currentBid || 0) + 5000).toLocaleString()} د.ع)
+                  <Button size="lg" className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold" onClick={handleBid}>
+                    خلي سومتك ({((product.currentBid || 0) + 5000).toLocaleString()} د.ع)
                   </Button>
                 ) : (
-                  <Button size="lg" className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold" onClick={handleAction}>
+                  <Button size="lg" className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold" onClick={handleBid}>
                     شراء الآن
                   </Button>
                 )}
-                <Button variant="outline" size="lg" className="w-full h-12" onClick={handleAction}>
+                <Button variant="outline" size="lg" className="w-full h-12" onClick={handleAddCart}>
                   أضف للسلة
                 </Button>
               </div>

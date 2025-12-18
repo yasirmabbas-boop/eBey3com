@@ -19,9 +19,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <span>دعم العملاء: ٠٧٧٠٠٠٠٠٠٠٠</span>
             <span>بغداد، العراق</span>
           </div>
-          <div className="flex gap-4">
-            <Link href="/register" className="hover:underline">تسجيل الدخول / إنشاء حساب</Link>
-          </div>
         </div>
       </div>
 
@@ -42,7 +39,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Link href="/category/watches" className="text-lg">ساعات</Link>
                 <Link href="/category/clothing" className="text-lg">ملابس</Link>
                 <Link href="/category/vintage" className="text-lg">مقتنيات قديمة</Link>
-                <Link href="/register" className="text-lg text-primary">حسابي</Link>
+                <Link href="/search" className="text-lg">البحث</Link>
               </nav>
             </SheetContent>
           </Sheet>
@@ -66,11 +63,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Actions */}
           <div className="flex items-center gap-2 md:gap-4">
-            <Link href="/register">
-              <Button variant="ghost" size="icon" className="hidden md:flex">
-                <User className="h-5 w-5" />
-              </Button>
-            </Link>
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
               <span className="absolute -top-1 -right-1 h-4 w-4 bg-accent text-accent-foreground text-[10px] rounded-full flex items-center justify-center">0</span>
