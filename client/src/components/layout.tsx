@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Search, ShoppingCart, User, Menu, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import logo from "@assets/generated_images/black_blue_ebay3_logo.png";
+import { Logo } from "@/components/logo";
 import {
   Sheet,
   SheetContent,
@@ -49,7 +49,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Logo */}
           <Link href="/" className="flex-shrink-0">
-            <img src={logo} alt="ebay3" className="h-10 md:h-12 object-contain" />
+            <Logo className="h-16 md:h-20" />
           </Link>
 
           {/* Search Bar */}
@@ -102,7 +102,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <footer className="bg-slate-900 text-slate-300 py-12 mt-20">
         <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <img src={logo} alt="ebay3" className="h-12 mb-4 brightness-0 invert opacity-80" />
+            <div className="mb-4">
+              <div className="text-xl font-bold text-gray-300 leading-tight">اي بيع</div>
+              <div className="text-xs font-bold text-blue-400 tracking-wider">ebay3</div>
+            </div>
             <p className="text-sm leading-relaxed">
               منصتك الأولى للبيع والشراء في العراق.
               ساعات، ملابس، وكل ما هو مميز.
