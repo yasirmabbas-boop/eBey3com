@@ -101,6 +101,20 @@ export default function ProductPage() {
               </div>
             )}
 
+            {/* Buy Now Option - Optional for Sellers */}
+            <div className="bg-green-50 border-2 border-green-200 p-6 rounded-xl mb-6">
+              <div className="flex items-end gap-2 mb-2">
+                <span className="text-sm text-green-700 font-semibold mb-1">🛒 شراء فوري (اختياري):</span>
+                <span className="text-3xl font-bold text-green-600">
+                  450,000 <span className="text-lg">د.ع</span>
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 mb-3">شراء مباشر بدون انتظار نتيجة المزاد</p>
+              <Button size="lg" className="w-full text-lg h-12 bg-green-600 hover:bg-green-700 text-white font-bold">
+                🛒 اشتر الآن مباشرة
+              </Button>
+            </div>
+
             <Button variant="outline" size="lg" className="w-full h-12 mb-6" onClick={handleAddCart}>
               أضف للسلة
             </Button>
