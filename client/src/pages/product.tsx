@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Clock, ShieldCheck, Heart, Share2, AlertCircle } from "lucide-react";
+import { Clock, ShieldCheck, Heart, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AIAssistant } from "@/components/ai-assistant";
+import { BiddingWindow } from "@/components/bidding-window";
 
 export default function ProductPage() {
   const [match, params] = useRoute("/product/:id");
@@ -77,36 +79,31 @@ export default function ProductPage() {
 
             <Separator className="my-6" />
 
-            <div className="bg-muted/30 p-6 rounded-xl border mb-6">
-              <div className="flex items-end gap-2 mb-2">
-                <span className="text-sm text-muted-foreground mb-1">السعر الحالي:</span>
-                <span className="text-4xl font-bold text-primary">
-                  {(product.currentBid || product.price).toLocaleString()} <span className="text-lg">د.ع</span>
-                </span>
-              </div>
-              
-              {product.timeLeft && (
-                <div className="flex items-center gap-2 text-red-600 font-medium mb-6">
-                  <Clock className="h-5 w-5" />
-                  <span>ينتهي المزاد خلال: {product.timeLeft}</span>
+            {product.currentBid ? (
+              <BiddingWindow
+                currentBid={product.currentBid}
+                totalBids={product.totalBids || 0}
+                minimumBid={(product.currentBid || 0) + 5000}
+                timeLeft={product.timeLeft}
+                onBidSubmit={handleBid}
+              />
+            ) : (
+              <div className="bg-muted/30 p-6 rounded-xl border mb-6">
+                <div className="flex items-end gap-2 mb-2">
+                  <span className="text-sm text-muted-foreground mb-1">السعر:</span>
+                  <span className="text-4xl font-bold text-primary">
+                    {(product.currentBid || product.price).toLocaleString()} <span className="text-lg">د.ع</span>
+                  </span>
                 </div>
-              )}
-
-              <div className="flex flex-col gap-3">
-                {product.currentBid ? (
-                  <Button size="lg" className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold" onClick={handleBid}>
-                    خلي سومتك ({((product.currentBid || 0) + 5000).toLocaleString()} د.ع)
-                  </Button>
-                ) : (
-                  <Button size="lg" className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold" onClick={handleBid}>
-                    شراء الآن
-                  </Button>
-                )}
-                <Button variant="outline" size="lg" className="w-full h-12" onClick={handleAddCart}>
-                  أضف للسلة
+                <Button size="lg" className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold mt-4" onClick={handleBid}>
+                  شراء الآن
                 </Button>
               </div>
-            </div>
+            )}
+
+            <Button variant="outline" size="lg" className="w-full h-12 mb-6" onClick={handleAddCart}>
+              أضف للسلة
+            </Button>
 
             <div className="space-y-4">
               <div className="flex items-start gap-3 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm">
@@ -119,7 +116,7 @@ export default function ProductPage() {
               <div className="space-y-2">
                 <h3 className="font-bold text-lg">الوصف</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  هذا النص هو مثال لنص يمكن أن يستبدل في نفس المساحة، لقد تم توليد هذا النص من مولد النص العربى، حيث يمكنك أن تولد مثل هذا النص أو العديد من النصوص الأخرى إضافة إلى زيادة عدد الحروف التى يولدها التطبيق.
+                  {product.description || "هذا النص هو مثال لنص يمكن أن يستبدل في نفس المساحة، لقد تم توليد هذا النص من مولد النص العربى، حيث يمكنك أن تولد مثل هذا النص أو العديد من النصوص الأخرى إضافة إلى زيادة عدد الحروف التى يولدها التطبيق."}
                 </p>
               </div>
 
@@ -145,6 +142,12 @@ export default function ProductPage() {
           </div>
         </div>
       </div>
+
+      {/* AI Assistant */}
+      <AIAssistant 
+        productTitle={product.title} 
+        productDescription={product.description || "منتج مميز"} 
+      />
     </Layout>
   );
 }
