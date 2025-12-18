@@ -106,7 +106,7 @@ export default function Register() {
                     <div className="flex items-start gap-3 mt-4">
                       <Checkbox id="terms" checked={form.watch("agreeTerms")} onCheckedChange={(c) => form.setValue("agreeTerms", c as boolean)} />
                       <Label htmlFor="terms" className="text-xs leading-tight text-muted-foreground">
-                        أوافق على الشروط والأحكام وسياسة الخصوصية، وأسمح بمشاركة معلوماتي الأساسية مع البائع عند إتمام الشراء.
+                        أوافق على <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-semibold">الشروط والأحكام</a> و<a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-semibold">سياسة الخصوصية</a>، وأسمح بمشاركة معلوماتي الأساسية مع البائع عند إتمام الشراء.
                       </Label>
                     </div>
                     {form.formState.errors.agreeTerms && <p className="text-red-500 text-xs">{form.formState.errors.agreeTerms.message}</p>}
@@ -149,7 +149,7 @@ export default function Register() {
                     <div className="flex items-start gap-3 mt-4">
                       <Checkbox id="s-terms" checked={form.watch("agreeTerms")} onCheckedChange={(c) => form.setValue("agreeTerms", c as boolean)} />
                       <Label htmlFor="s-terms" className="text-xs leading-tight text-muted-foreground">
-                        أوافق على الشروط والأحكام. رقم هاتفي سيبقى سرياً ولن يظهر للمشترين إلا بموافقتي أو عند الضرورة القصوى.
+                        أوافق على <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-semibold">الشروط والأحكام</a> و<a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-semibold">سياسة الخصوصية</a>. رقم هاتفي سيبقى سرياً ولن يظهر للمشترين إلا بموافقتي أو عند الضرورة القصوى.
                       </Label>
                     </div>
 

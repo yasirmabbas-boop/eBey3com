@@ -153,11 +153,13 @@ export default function SignIn() {
                       {isLoading ? <Loader2 className="animate-spin" /> : "دخول"}
                     </Button>
 
-                    <div className="text-center text-sm text-muted-foreground">
-                      ليس لديك حساب؟{" "}
-                      <a href="/register" className="text-primary hover:underline font-semibold">
-                        إنشاء حساب
-                      </a>
+                    <div className="text-xs text-muted-foreground text-center mt-6 pt-6 border-t space-y-2">
+                      <p>بالدخول، أنت توافق على <a href="/terms" className="text-primary hover:underline font-semibold">الشروط والأحكام</a> و<a href="/privacy" className="text-primary hover:underline font-semibold">سياسة الخصوصية</a></p>
+                      <p>ليس لديك حساب؟{" "}
+                        <a href="/register" className="text-primary hover:underline font-semibold">
+                          إنشاء حساب
+                        </a>
+                      </p>
                     </div>
                   </form>
                 </div>
@@ -254,11 +256,13 @@ export default function SignIn() {
                       {isLoading ? <Loader2 className="animate-spin" /> : "دخول"}
                     </Button>
 
-                    <div className="text-center text-sm text-muted-foreground">
-                      ليس لديك حساب؟{" "}
-                      <a href="/register" className="text-accent hover:underline font-semibold">
-                        اطلب حساب بائع
-                      </a>
+                    <div className="text-xs text-muted-foreground text-center mt-6 pt-6 border-t space-y-2">
+                      <p>بالدخول، أنت توافق على <a href="/terms" className="text-accent hover:underline font-semibold">الشروط والأحكام</a> و<a href="/privacy" className="text-accent hover:underline font-semibold">سياسة الخصوصية</a></p>
+                      <p>ليس لديك حساب؟{" "}
+                        <a href="/register" className="text-accent hover:underline font-semibold">
+                          اطلب حساب بائع
+                        </a>
+                      </p>
                     </div>
                   </form>
                 </div>
