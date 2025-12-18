@@ -56,10 +56,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="hidden md:flex flex-1 max-w-2xl relative">
             <Input 
               type="search" 
-              placeholder="ابحث عن ساعات، ملابس، مقتنيات..." 
-              className="w-full pl-10 pr-4 bg-muted/30 border-primary/20 focus-visible:ring-primary"
+              placeholder="البحث..." 
+              className="w-full pl-10 pr-4 bg-blue-50 border-blue-300 focus-visible:ring-blue-500 focus-visible:border-blue-500"
             />
-            <Button size="icon" className="absolute left-1 top-1 bottom-1 h-auto w-10 bg-primary text-white hover:bg-primary/90 rounded-sm">
+            <Button size="icon" className="absolute left-1 top-1 bottom-1 h-auto w-10 bg-blue-600 text-white hover:bg-blue-700 rounded-sm">
               <Search className="h-4 w-4" />
             </Button>
           </div>

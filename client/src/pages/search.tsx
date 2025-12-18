@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { PRODUCTS } from "@/lib/mock-data";
@@ -9,11 +10,25 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Link } from "wouter";
-import { Clock } from "lucide-react";
+import { Clock, Camera, X } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SearchPage() {
   const [location] = useLocation();
   const query = new URLSearchParams(window.location.search).get("c");
+  const [searchImage, setSearchImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setSearchImage(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
     <Layout>
@@ -27,6 +42,47 @@ export default function SearchPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Filters Sidebar */}
           <div className="space-y-6">
+            {/* Image Search */}
+            <div className="bg-white p-4 rounded-lg border shadow-sm">
+              <h3 className="font-bold mb-4 flex items-center gap-2">
+                <Camera className="h-5 w-5 text-blue-600" />
+                البحث بالصورة
+              </h3>
+              
+              {searchImage ? (
+                <div className="space-y-3">
+                  <img src={searchImage} alt="Search" className="w-full h-32 object-cover rounded-lg" />
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSearchImage(null)}
+                    className="w-full"
+                  >
+                    <X className="h-4 w-4 ml-1" />
+                    حذف الصورة
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full border-2 border-dashed border-blue-300 rounded-lg p-6 text-center hover:bg-blue-50 transition-colors cursor-pointer"
+                  >
+                    <Camera className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                    <p className="text-sm font-medium text-gray-700">اضغط لرفع صورة</p>
+                    <p className="text-xs text-muted-foreground">أو ابحث عن منتجات مشابهة</p>
+                  </button>
+                </>
+              )}
+            </div>
+
             <div className="bg-white p-4 rounded-lg border shadow-sm">
               <h3 className="font-bold mb-4">السعر</h3>
               <Slider defaultValue={[50]} max={100} step={1} className="mb-2" />
