@@ -5,33 +5,36 @@ import { PRODUCTS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Tag, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, Tag, ChevronLeft, ChevronRight, Gavel } from "lucide-react";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 
 const ADS = [
   {
     id: 1,
-    title: "خصم 30% على الساعات",
-    description: "استمتع بأفضل العروض على المقتنيات النادرة",
-    bgGradient: "from-blue-500 to-blue-700",
-    badgeText: "عرض خاص",
-    buttonText: "تصفح الآن",
+    title: "مزاد - ساعة ذهبية فينتاج",
+    description: "ابدأ المزايدة الآن على ساعة نادرة",
+    image: PRODUCTS[0].image,
+    badgeText: "مزاد حي",
+    buttonText: "ضع مزايدة",
+    isAuction: true,
   },
   {
     id: 2,
-    title: "ابدأ البيع مجاناً",
-    description: "لا توجد رسوم على أول 10 منتجات",
-    bgGradient: "from-amber-400 to-amber-600",
-    badgeText: "بدون عمولة",
-    buttonText: "اعرض سلعتك",
+    title: "مزاد - جاكيت جلد قديم",
+    description: "تنتهي المزايدة خلال 5 ساعات",
+    image: PRODUCTS[1].image,
+    badgeText: "ينتهي قريباً",
+    buttonText: "ضع مزايدة",
+    isAuction: true,
   },
   {
     id: 3,
-    title: "توصيل سريع وآمن",
-    description: "شحن مضمون إلى جميع أنحاء العراق",
-    bgGradient: "from-emerald-500 to-emerald-700",
-    badgeText: "الشحن السريع",
-    buttonText: "اطلب الآن",
+    title: "مزاد - ساعة أوميغا نادرة",
+    description: "المزاد الحصري لأندر الساعات",
+    image: PRODUCTS[2].image,
+    badgeText: "مزاد حي",
+    buttonText: "شاهد المزاد",
+    isAuction: true,
   },
 ];
 
@@ -60,22 +63,39 @@ export default function Home() {
               <ChevronRight className="h-5 w-5 text-primary" />
             </button>
 
-            <div className="w-full max-w-2xl">
-              <div
-                className={`bg-gradient-to-br ${currentAd.bgGradient} rounded-xl p-8 text-white shadow-lg animate-in fade-in duration-500`}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-2xl font-bold mb-2">{currentAd.title}</h3>
-                    <p className="opacity-90 text-lg">{currentAd.description}</p>
+            <div className="w-full max-w-3xl">
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden animate-in fade-in duration-500">
+                <div className="grid grid-cols-1 md:grid-cols-2">
+                  {/* Image */}
+                  <div className="relative h-64 md:h-80 overflow-hidden bg-gray-200">
+                    <img 
+                      src={currentAd.image} 
+                      alt={currentAd.title}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-4 right-4">
+                      <Badge className="bg-red-600 text-white border-0 flex items-center gap-1">
+                        <Gavel className="h-3 w-3" />
+                        {currentAd.badgeText}
+                      </Badge>
+                    </div>
                   </div>
-                  <Badge className="bg-white/30 text-white border-0 text-sm">
-                    {currentAd.badgeText}
-                  </Badge>
+                  
+                  {/* Content */}
+                  <div className="p-6 md:p-8 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">{currentAd.title}</h3>
+                      <p className="text-gray-600 text-lg mb-6">{currentAd.description}</p>
+                      <div className="text-sm text-gray-500 mb-4">
+                        💰 السعر الحالي: <span className="font-bold text-primary">85,000 د.ع</span>
+                      </div>
+                    </div>
+                    <Button className="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 flex items-center gap-2 justify-center">
+                      <Gavel className="h-5 w-5" />
+                      {currentAd.buttonText}
+                    </Button>
+                  </div>
                 </div>
-                <Button className="mt-6 bg-white text-gray-900 hover:bg-gray-100 font-bold px-8">
-                  {currentAd.buttonText}
-                </Button>
               </div>
             </div>
 
@@ -115,22 +135,23 @@ export default function Home() {
             سوق العراق الأول
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 max-w-2xl leading-tight">
-            بيع وشراء <br/>
+            مزادات <br/>
             <span className="text-accent">النوادر والمميز</span>
           </h1>
           <p className="text-lg md:text-xl opacity-90 mb-8 max-w-xl">
-            اكتشف ساعات نادرة، ملابس فينتاج، ومقتنيات فريدة. 
-            سجل الآن وابدأ البيع والشراء بأمان.
+            ابحث عن ساعات نادرة، ملابس فينتاج، ومقتنيات فريدة عبر مزادات حية آمنة. 
+            سجل الآن وابدأ المزايدة.
           </p>
           <div className="flex gap-4">
             <Link href="/register">
-              <Button size="lg" className="bg-accent text-white hover:bg-accent/90 font-bold px-8 h-12 text-lg">
-                ابدأ التصفح
+              <Button size="lg" className="bg-accent text-white hover:bg-accent/90 font-bold px-8 h-12 text-lg flex items-center gap-2">
+                <Gavel className="h-5 w-5" />
+                شارك في المزاد
               </Button>
             </Link>
             <Link href="/register">
               <Button size="lg" variant="outline" className="bg-white/10 border-white text-white hover:bg-white/20 h-12 text-lg backdrop-blur-sm">
-                اعرض سلعتك
+                أضف منتجاً للمزاد
               </Button>
             </Link>
           </div>
@@ -208,7 +229,7 @@ export default function Home() {
       {/* Trust Banner */}
       <section className="py-12 bg-primary text-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-8">لماذا تختار اي بيع؟</h2>
+          <h2 className="text-2xl font-bold mb-8">لماذا تختار E-بيع؟</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="p-4">
               <h3 className="text-xl font-bold mb-2">موثوق وآمن</h3>

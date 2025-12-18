@@ -75,11 +75,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <ShoppingCart className="h-5 w-5" />
               <span className="absolute -top-1 -right-1 h-4 w-4 bg-accent text-accent-foreground text-[10px] rounded-full flex items-center justify-center">0</span>
             </Button>
-            <Link href="/register">
-              <Button className="hidden md:flex bg-accent hover:bg-accent/90 text-white font-bold px-6">
-                بيع الآن
-              </Button>
-            </Link>
           </div>
         </div>
         
@@ -103,8 +98,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="mb-4">
-              <div className="text-xl font-bold text-gray-300 leading-tight">اي بيع</div>
-              <div className="text-xs font-bold text-blue-400 tracking-wider">ebay3</div>
+              <div className="text-xl font-bold leading-tight tracking-wider">
+                <span className="text-blue-400">E</span>
+                <span className="text-yellow-400">-</span>
+                <span className="text-red-400">ب</span>
+                <span className="text-green-400">ي</span>
+                <span className="text-blue-400">ع</span>
+              </div>
+              <div className="text-xs font-bold text-blue-400 tracking-wider">eby3</div>
             </div>
             <p className="text-sm leading-relaxed">
               منصتك الأولى للبيع والشراء في العراق.
