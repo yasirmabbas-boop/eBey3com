@@ -14,6 +14,7 @@ import watch3 from "@assets/74ABB32D-3297-41D7-80A6-3B8F02AF0EF2_1_102_o_1766063
 const ADS = [
   {
     id: 1,
+    productId: "1",
     title: "مزاد - ساعة فينتاج كلاسيكية",
     description: "ساعة نادرة في صندوق أصلي محفوظ",
     image: watch1,
@@ -23,6 +24,7 @@ const ADS = [
   },
   {
     id: 2,
+    productId: "3",
     title: "مزاد - أوميغا كونستليشن",
     description: "ساعة أوميغا أصلية مع حبات ذهبية",
     image: watch2,
@@ -32,6 +34,7 @@ const ADS = [
   },
   {
     id: 3,
+    productId: "3",
     title: "مزاد - أوميغا سيماستر أصلية",
     description: "ساعة أوميغا أوتوماتيك مع سوار جلد",
     image: watch3,
@@ -66,8 +69,8 @@ export default function Home() {
               <ChevronRight className="h-5 w-5 text-primary" />
             </button>
 
-            <div className="w-full max-w-3xl">
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden animate-in fade-in duration-500">
+            <Link href={`/product/${currentAd.productId}`} className="w-full max-w-3xl">
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden animate-in fade-in duration-500 hover:shadow-xl transition-shadow cursor-pointer h-full">
                 <div className="grid grid-cols-1 md:grid-cols-2">
                   {/* Image */}
                   <div className="relative h-64 md:h-80 overflow-hidden bg-gray-200">
@@ -100,7 +103,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
 
             <button
               onClick={nextAd}
