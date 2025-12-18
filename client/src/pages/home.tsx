@@ -15,7 +15,7 @@ const ADS = [
     description: "ابدأ المزايدة الآن على ساعة نادرة",
     image: PRODUCTS[0].image,
     badgeText: "مزاد حي",
-    buttonText: "ضع مزايدة",
+    buttonText: "خلي سومتك",
     isAuction: true,
   },
   {
@@ -24,7 +24,7 @@ const ADS = [
     description: "تنتهي المزايدة خلال 5 ساعات",
     image: PRODUCTS[1].image,
     badgeText: "ينتهي قريباً",
-    buttonText: "ضع مزايدة",
+    buttonText: "خلي سومتك",
     isAuction: true,
   },
   {
