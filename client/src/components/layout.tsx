@@ -3,6 +3,7 @@ import { Search, ShoppingCart, User, Menu, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
+import { AccountDropdown } from "@/components/account-dropdown";
 import {
   Sheet,
   SheetContent,
@@ -22,9 +23,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/" className="hover:text-primary font-semibold transition-colors">
               🎁 العروض اليومية
             </Link>
-            <Link href="/signin" className="hover:text-primary font-semibold transition-colors">
-              حسابي
-            </Link>
+            <AccountDropdown />
           </div>
         </div>
       </div>
