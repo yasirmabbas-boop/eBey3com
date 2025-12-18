@@ -23,7 +23,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               🎁 العروض اليومية
             </Link>
             <Link href="/signin" className="hover:text-primary font-semibold transition-colors">
-              دخول
+              حسابي
             </Link>
           </div>
         </div>
