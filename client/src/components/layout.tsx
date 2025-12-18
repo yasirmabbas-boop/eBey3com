@@ -16,7 +16,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="bg-primary text-primary-foreground py-1 text-xs px-4">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex gap-4">
-            <span>دعم العملاء: ٠٧٧٠٠٠٠٠٠٠٠</span>
+            <Link href="/signin" className="hover:underline font-semibold">دخول</Link>
+          </div>
+          <div>
             <span>بغداد، العراق</span>
           </div>
         </div>

@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import ProductPage from "@/pages/product";
 import Register from "@/pages/register";
+import SignIn from "@/pages/signin";
 import SearchPage from "@/pages/search";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/product/:id" component={ProductPage} />
       <Route path="/register" component={Register} />
+      <Route path="/signin" component={SignIn} />
       <Route path="/search" component={SearchPage} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
