@@ -5,58 +5,102 @@ import { PRODUCTS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Tag, X } from "lucide-react";
+import { Clock, Tag, ChevronLeft, ChevronRight } from "lucide-react";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 
+const ADS = [
+  {
+    id: 1,
+    title: "خصم 30% على الساعات",
+    description: "استمتع بأفضل العروض على المقتنيات النادرة",
+    bgGradient: "from-blue-500 to-blue-700",
+    badgeText: "عرض خاص",
+    buttonText: "تصفح الآن",
+  },
+  {
+    id: 2,
+    title: "ابدأ البيع مجاناً",
+    description: "لا توجد رسوم على أول 10 منتجات",
+    bgGradient: "from-amber-400 to-amber-600",
+    badgeText: "بدون عمولة",
+    buttonText: "اعرض سلعتك",
+  },
+  {
+    id: 3,
+    title: "توصيل سريع وآمن",
+    description: "شحن مضمون إلى جميع أنحاء العراق",
+    bgGradient: "from-emerald-500 to-emerald-700",
+    badgeText: "الشحن السريع",
+    buttonText: "اطلب الآن",
+  },
+];
+
 export default function Home() {
-  const [showAd1, setShowAd1] = useState(true);
-  const [showAd2, setShowAd2] = useState(true);
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const currentAd = ADS[currentAdIndex];
+
+  const nextAd = () => {
+    setCurrentAdIndex((prev) => (prev + 1) % ADS.length);
+  };
+
+  const prevAd = () => {
+    setCurrentAdIndex((prev) => (prev - 1 + ADS.length) % ADS.length);
+  };
 
   return (
     <Layout>
-      {/* Floating Ad 1 - Top Right */}
-      {showAd1 && (
-        <div className="fixed top-24 left-4 z-40 animate-in fade-in slide-in-from-top-4 duration-500">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 w-64 relative">
+      {/* Sliding Ads Section */}
+      <section className="py-8 bg-gray-50 border-b">
+        <div className="container mx-auto px-4">
+          <div className="relative flex items-center justify-center gap-4">
             <button
-              onClick={() => setShowAd1(false)}
-              className="absolute -top-2 -left-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+              onClick={prevAd}
+              className="absolute right-0 z-10 p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow hover:bg-gray-100"
             >
-              <X className="h-4 w-4" />
+              <ChevronRight className="h-5 w-5 text-primary" />
             </button>
-            <div className="bg-gradient-to-br from-blue-500 to-blue-700 h-32 rounded-lg mb-3 flex items-center justify-center text-white font-bold text-xl">
-              عرض خاص
-            </div>
-            <h3 className="font-bold text-lg mb-2">خصم 30% على الساعات</h3>
-            <p className="text-sm text-muted-foreground mb-3">استمتع بأفضل العروض على المقتنيات النادرة</p>
-            <Button className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-sm">
-              تصفح الآن
-            </Button>
-          </div>
-        </div>
-      )}
 
-      {/* Floating Ad 2 - Bottom Left */}
-      {showAd2 && (
-        <div className="fixed bottom-24 right-4 z-40 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 w-64 relative">
-            <button
-              onClick={() => setShowAd2(false)}
-              className="absolute -top-2 -left-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <div className="bg-gradient-to-br from-amber-400 to-amber-600 h-32 rounded-lg mb-3 flex items-center justify-center text-white font-bold text-xl">
-              بدون عمولة
+            <div className="w-full max-w-2xl">
+              <div
+                className={`bg-gradient-to-br ${currentAd.bgGradient} rounded-xl p-8 text-white shadow-lg animate-in fade-in duration-500`}
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2">{currentAd.title}</h3>
+                    <p className="opacity-90 text-lg">{currentAd.description}</p>
+                  </div>
+                  <Badge className="bg-white/30 text-white border-0 text-sm">
+                    {currentAd.badgeText}
+                  </Badge>
+                </div>
+                <Button className="mt-6 bg-white text-gray-900 hover:bg-gray-100 font-bold px-8">
+                  {currentAd.buttonText}
+                </Button>
+              </div>
             </div>
-            <h3 className="font-bold text-lg mb-2">ابدأ البيع مجاناً</h3>
-            <p className="text-sm text-muted-foreground mb-3">لا توجد رسوم على أول 10 منتجات</p>
-            <Button className="w-full bg-accent hover:bg-accent/90 text-white font-bold text-sm">
-              اعرض سلعتك
-            </Button>
+
+            <button
+              onClick={nextAd}
+              className="absolute left-0 z-10 p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow hover:bg-gray-100"
+            >
+              <ChevronLeft className="h-5 w-5 text-primary" />
+            </button>
+          </div>
+
+          {/* Indicator Dots */}
+          <div className="flex justify-center gap-2 mt-6">
+            {ADS.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentAdIndex(index)}
+                className={`h-2 rounded-full transition-all ${
+                  index === currentAdIndex ? "bg-primary w-8" : "bg-gray-300 w-2"
+                }`}
+              />
+            ))}
           </div>
         </div>
-      )}
+      </section>
 
       {/* Hero Section */}
       <section className="relative h-[400px] md:h-[500px] w-full overflow-hidden">
