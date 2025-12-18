@@ -14,12 +14,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background flex flex-col font-sans" dir="rtl">
       {/* Top Bar */}
       <div className="bg-white text-gray-700 py-2 text-xs px-4 border-b border-gray-200">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex gap-4">
-            <Link href="/signin" className="hover:text-primary font-semibold transition-colors">دخول</Link>
-          </div>
-          <div>
-            <span>بغداد، العراق</span>
+        <div className="container mx-auto flex justify-between items-center gap-8">
+          <div className="flex gap-6">
+            <a href="tel:+9647700000000" className="hover:text-primary font-semibold transition-colors flex items-center gap-1">
+              📞 المساعدة والاتصال
+            </a>
+            <Link href="/" className="hover:text-primary font-semibold transition-colors">
+              🎁 العروض اليومية
+            </Link>
+            <Link href="/signin" className="hover:text-primary font-semibold transition-colors">
+              دخول
+            </Link>
           </div>
         </div>
       </div>
