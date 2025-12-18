@@ -5,12 +5,59 @@ import { PRODUCTS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Tag } from "lucide-react";
+import { Clock, Tag, X } from "lucide-react";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 
 export default function Home() {
+  const [showAd1, setShowAd1] = useState(true);
+  const [showAd2, setShowAd2] = useState(true);
+
   return (
     <Layout>
+      {/* Floating Ad 1 - Top Right */}
+      {showAd1 && (
+        <div className="fixed top-24 left-4 z-40 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 w-64 relative">
+            <button
+              onClick={() => setShowAd1(false)}
+              className="absolute -top-2 -left-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="bg-gradient-to-br from-blue-500 to-blue-700 h-32 rounded-lg mb-3 flex items-center justify-center text-white font-bold text-xl">
+              عرض خاص
+            </div>
+            <h3 className="font-bold text-lg mb-2">خصم 30% على الساعات</h3>
+            <p className="text-sm text-muted-foreground mb-3">استمتع بأفضل العروض على المقتنيات النادرة</p>
+            <Button className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-sm">
+              تصفح الآن
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Ad 2 - Bottom Left */}
+      {showAd2 && (
+        <div className="fixed bottom-24 right-4 z-40 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 w-64 relative">
+            <button
+              onClick={() => setShowAd2(false)}
+              className="absolute -top-2 -left-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="bg-gradient-to-br from-amber-400 to-amber-600 h-32 rounded-lg mb-3 flex items-center justify-center text-white font-bold text-xl">
+              بدون عمولة
+            </div>
+            <h3 className="font-bold text-lg mb-2">ابدأ البيع مجاناً</h3>
+            <p className="text-sm text-muted-foreground mb-3">لا توجد رسوم على أول 10 منتجات</p>
+            <Button className="w-full bg-accent hover:bg-accent/90 text-white font-bold text-sm">
+              اعرض سلعتك
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="relative h-[400px] md:h-[500px] w-full overflow-hidden">
         <div 
