@@ -11,6 +11,7 @@ import SignIn from "@/pages/signin";
 import SearchPage from "@/pages/search";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
+import LiveAuction from "@/pages/live-auction";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/search" component={SearchPage} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/live-auction" component={LiveAuction} />
       <Route component={NotFound} />
     </Switch>
   );

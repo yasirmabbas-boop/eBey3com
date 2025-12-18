@@ -42,6 +42,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <SheetContent side="right">
               <nav className="flex flex-col gap-4 mt-8">
                 <Link href="/" className="text-lg font-semibold">الرئيسية</Link>
+                <Link href="/live-auction" className="text-lg text-red-600 font-bold">🔴 مزاد حي</Link>
                 <Link href="/category/watches" className="text-lg">ساعات</Link>
                 <Link href="/category/clothing" className="text-lg">ملابس</Link>
                 <Link href="/category/vintage" className="text-lg">مقتنيات قديمة</Link>
@@ -79,6 +80,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Desktop Nav */}
         <nav className="hidden md:flex container mx-auto px-4 py-2 gap-8 text-sm font-medium text-muted-foreground border-t">
           <Link href="/" className="hover:text-primary transition-colors">الرئيسية</Link>
+          <Link href="/live-auction" className="hover:text-primary transition-colors text-red-600 font-bold flex items-center gap-1">
+            🔴 مزاد حي
+          </Link>
           <Link href="/search?c=watches" className="hover:text-primary transition-colors">ساعات</Link>
           <Link href="/search?c=clothing" className="hover:text-primary transition-colors">ملابس</Link>
           <Link href="/search?c=antiques" className="hover:text-primary transition-colors">تحف وانتيكات</Link>
