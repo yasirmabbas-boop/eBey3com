@@ -116,16 +116,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <h3 className="font-bold text-white mb-4">روابط سريعة</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href="/">الرئيسية</Link></li>
-              <li><Link href="/about">من نحن</Link></li>
               <li><Link href="/terms">الشروط والأحكام</Link></li>
+              <li><Link href="/privacy">سياسة الخصوصية</Link></li>
             </ul>
           </div>
           <div>
             <h3 className="font-bold text-white mb-4">المساعدة</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/support">مركز المساعدة</Link></li>
-              <li><Link href="/register">البيع على اي بيع</Link></li>
-              <li><Link href="/safety">السلامة والخصوصية</Link></li>
+              <li><Link href="/register">ابدأ كبائع</Link></li>
+              <li><Link href="/register">ابدأ كمشتري</Link></li>
+              <li>
+                <a href="tel:+9647700000000" className="hover:text-blue-300">
+                  اتصل بنا
+                </a>
+              </li>
             </ul>
           </div>
           <div>

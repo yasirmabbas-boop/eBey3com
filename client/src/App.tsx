@@ -8,6 +8,8 @@ import Home from "@/pages/home";
 import ProductPage from "@/pages/product";
 import Register from "@/pages/register";
 import SearchPage from "@/pages/search";
+import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
 
 function Router() {
   return (
@@ -16,6 +18,8 @@ function Router() {
       <Route path="/product/:id" component={ProductPage} />
       <Route path="/register" component={Register} />
       <Route path="/search" component={SearchPage} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
       <Route component={NotFound} />
     </Switch>
   );
