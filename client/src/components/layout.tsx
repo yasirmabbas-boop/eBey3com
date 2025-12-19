@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Search, ShoppingCart, User, Menu, Phone, Camera } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, Phone, Camera, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
@@ -22,6 +22,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="bg-white text-gray-700 py-2 text-xs px-4 border-b border-gray-200">
         <div className="container mx-auto flex justify-between items-center gap-8">
           <div className="flex gap-6 w-full justify-start items-center">
+            <Link href="/sell" className="hover:text-green-600 font-semibold transition-colors flex items-center gap-1 text-green-700 bg-green-50 px-3 py-1 rounded-full">
+              <PlusCircle className="h-4 w-4" />
+              بيع منتج
+            </Link>
+            <div className="h-4 w-px bg-gray-300 mx-2"></div>
             <Link href="/signin" className="hover:text-primary font-semibold transition-colors flex items-center gap-1">
               <User className="h-4 w-4" />
               تسجيل الدخول / إنشاء حساب

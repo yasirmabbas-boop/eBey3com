@@ -16,6 +16,7 @@ import SecurityGuide from "@/pages/security-guide";
 import Settings from "@/pages/settings";
 import LiveAuction from "@/pages/live-auction";
 import MyPurchases from "@/pages/my-purchases";
+import SellPage from "@/pages/sell";
 
 function Router() {
   return (
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/contact" component={ContactUs} />
       <Route path="/security-guide" component={SecurityGuide} />
       <Route path="/settings" component={Settings} />
+      <Route path="/sell" component={SellPage} />
       <Route component={NotFound} />
     </Switch>
   );
