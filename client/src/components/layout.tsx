@@ -39,6 +39,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/search?category=تحف وأثاث" className="hover:text-blue-200 transition-colors">تحف وأثاث</Link>
             <Link href="/search?category=سيارات" className="hover:text-blue-200 transition-colors">سيارات</Link>
             <Link href="/search" className="hover:text-blue-200 transition-colors font-medium">عرض الكل</Link>
+            <Link href="/seller-dashboard" className="hover:text-blue-200 transition-colors font-medium">لوحة البائع</Link>
+            <Link href="/sell" className="hover:text-blue-200 transition-colors font-medium bg-yellow-500 text-black px-2 py-0.5 rounded">+ بيع منتج</Link>
           </div>
           
           {/* User Actions */}

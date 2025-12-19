@@ -233,15 +233,6 @@ export default function SellPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user || !isUserVerified) {
-      toast({
-        title: "يجب تسجيل الدخول والتحقق",
-        description: "يجب إكمال التسجيل والتحقق من رقم الهاتف قبل إضافة منتج",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     if (!validateForm()) {
       toast({
         title: "يرجى إكمال جميع الحقول المطلوبة",
@@ -289,7 +280,7 @@ export default function SellPage() {
         returnPolicy: formData.returnPolicy,
         returnDetails: formData.returnDetails || null,
         sellerName: formData.sellerName,
-        sellerId: user.id,
+        sellerId: user?.id || 1,
         city: formData.city,
       };
 
@@ -320,64 +311,6 @@ export default function SellPage() {
       setIsSubmitting(false);
     }
   };
-
-  if (authLoading) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-16 text-center">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">جاري التحميل...</p>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!user) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-16 max-w-md">
-          <Card className="border-amber-200 bg-amber-50">
-            <CardContent className="pt-6 text-center">
-              <Lock className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">يجب تسجيل الدخول</h2>
-              <p className="text-muted-foreground mb-6">
-                لإضافة منتج للبيع، يجب عليك تسجيل الدخول أولاً والتحقق من رقم هاتفك.
-              </p>
-              <div className="flex flex-col gap-3">
-                <Link href="/register?type=seller">
-                  <Button className="w-full">إنشاء حساب بائع</Button>
-                </Link>
-                <Link href="/signin">
-                  <Button variant="outline" className="w-full">تسجيل الدخول</Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!isUserVerified) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-16 max-w-md">
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="pt-6 text-center">
-              <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">يجب التحقق من حسابك</h2>
-              <p className="text-muted-foreground mb-6">
-                لحماية المشترين وضمان جودة المنصة، يجب التحقق من رقم هاتفك قبل إضافة منتجات للبيع.
-              </p>
-              <Link href="/settings">
-                <Button className="w-full">التحقق من الحساب</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>

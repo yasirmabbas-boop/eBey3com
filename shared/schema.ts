@@ -211,4 +211,4 @@ export const insertListingSchema = createInsertSchema(listings).omit({
 export type InsertListing = z.infer<typeof insertListingSchema>;
 export type Listing = typeof listings.$inferSelect;
 
-export { sessions } from "./models/auth";
+export * from "./models/auth";
