@@ -6,10 +6,8 @@ export function Logo({ className = "" }: { className?: string }) {
           <span className="text-yellow-500">-</span>
           <span className="text-blue-600 inline-block transform -scale-x-100 relative top-[2px]">E</span>
         </div>
-        <div className="flex">
-          <span className="text-red-600">ب</span>
-          <span className="text-green-600">ي</span>
-          <span className="text-blue-600">ع</span>
+        <div className="flex" dir="rtl">
+          <span className="bg-gradient-to-l from-blue-600 via-green-600 to-red-600 bg-clip-text text-transparent">بيع</span>
         </div>
       </div>
     </div>
