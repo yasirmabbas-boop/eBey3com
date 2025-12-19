@@ -135,16 +135,39 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex container mx-auto px-4 py-2 gap-8 text-sm font-medium text-muted-foreground border-t">
-          <Link href="/" className="hover:text-primary transition-colors">الرئيسية</Link>
-          <Link href="/live-auction" className="hover:text-primary transition-colors text-red-600 font-bold flex items-center gap-1">
-            🔴 مزاد حي
-          </Link>
-          <Link href="/search?c=watches" className="hover:text-primary transition-colors">ساعات</Link>
-          <Link href="/search?c=clothing" className="hover:text-primary transition-colors">ملابس</Link>
-          <Link href="/search?c=antiques" className="hover:text-primary transition-colors">تحف وانتيكات</Link>
-          <Link href="/search?c=electronics" className="hover:text-primary transition-colors">إلكترونيات</Link>
+        {/* Category Navigation Bar */}
+        <nav className="hidden md:block bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-center gap-1 py-2">
+              <Link href="/" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
+                الرئيسية
+              </Link>
+              <Link href="/live-auction" className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors font-bold text-sm flex items-center gap-1">
+                🔴 مزاد حي
+              </Link>
+              <Link href="/search?category=ساعات" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
+                ⌚ ساعات
+              </Link>
+              <Link href="/search?category=إلكترونيات" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
+                📱 إلكترونيات
+              </Link>
+              <Link href="/search?category=ملابس" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
+                👔 ملابس
+              </Link>
+              <Link href="/search?category=تحف وأثاث" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
+                🏺 تحف وأثاث
+              </Link>
+              <Link href="/search?category=سيارات" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
+                🚗 سيارات
+              </Link>
+              <Link href="/search?category=عقارات" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
+                🏠 عقارات
+              </Link>
+              <Link href="/search" className="px-4 py-2 bg-yellow-500 text-black hover:bg-yellow-400 rounded-lg transition-colors font-bold text-sm">
+                عرض الكل
+              </Link>
+            </div>
+          </div>
         </nav>
       </header>
 
