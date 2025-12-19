@@ -21,15 +21,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
               📞 المساعدة والاتصال
             </a>
             <div className="h-4 w-px bg-gray-300 mx-2"></div>
-            <Link href="/register?tab=seller" className="hover:text-primary font-semibold transition-colors">
-              تسجيل بائع
-            </Link>
-            <Link href="/register?tab=buyer" className="hover:text-primary font-semibold transition-colors">
-              تسجيل مشتري
-            </Link>
-            <div className="h-4 w-px bg-gray-300 mx-2"></div>
             <Link href="/" className="hover:text-primary font-semibold transition-colors">
               🎁 العروض اليومية
+            </Link>
+            <div className="h-4 w-px bg-gray-300 mx-2"></div>
+            <Link href="/signin" className="hover:text-primary font-semibold transition-colors">
+              تسجيل الدخول / إنشاء حساب
             </Link>
             <AccountDropdown />
           </div>
