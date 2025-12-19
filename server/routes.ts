@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema } from "@shared/schema";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 
 const updateListingSchema = insertListingSchema.extend({
   auctionEndTime: z.union([z.string(), z.date(), z.null()]).optional(),
@@ -357,6 +358,124 @@ export async function registerRoutes(
       console.error("Error creating category:", error);
       res.status(400).json({ error: "Failed to create category", details: String(error) });
     }
+  });
+
+  // Custom username/password authentication routes
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { username, password, displayName, accountType } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "اسم المستخدم وكلمة المرور مطلوبان" });
+      }
+
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ error: "اسم المستخدم مستخدم بالفعل" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create user
+      const user = await storage.createUser({
+        username,
+        password: hashedPassword,
+        displayName: displayName || username,
+        accountType: accountType || "seller",
+        authProvider: "local",
+      });
+
+      // Set session
+      (req.session as any).userId = user.id;
+
+      res.status(201).json({ 
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        accountType: user.accountType,
+        accountCode: user.accountCode,
+      });
+    } catch (error) {
+      console.error("Error registering user:", error);
+      res.status(500).json({ error: "فشل في إنشاء الحساب" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({ error: "اسم المستخدم وكلمة المرور مطلوبان" });
+      }
+
+      // Find user by username
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+      }
+
+      // Check password
+      if (!user.password) {
+        return res.status(401).json({ error: "هذا الحساب يستخدم طريقة تسجيل دخول مختلفة" });
+      }
+
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+      }
+
+      // Update last login
+      await storage.updateUser(user.id, { lastLoginAt: new Date() } as any);
+
+      // Set session
+      (req.session as any).userId = user.id;
+
+      res.json({ 
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        accountType: user.accountType,
+        accountCode: user.accountCode,
+        avatar: user.avatar,
+      });
+    } catch (error) {
+      console.error("Error logging in:", error);
+      res.status(500).json({ error: "فشل في تسجيل الدخول" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ error: "فشل في تسجيل الخروج" });
+      }
+      res.json({ success: true });
+    });
+  });
+
+  app.get("/api/auth/me", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(401).json({ error: "المستخدم غير موجود" });
+    }
+
+    res.json({
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      accountType: user.accountType,
+      accountCode: user.accountCode,
+      avatar: user.avatar,
+      isVerified: user.isVerified,
+    });
   });
 
   return httpServer;
