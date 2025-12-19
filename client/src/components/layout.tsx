@@ -110,37 +110,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </SheetContent>
           </Sheet>
 
-          {/* Search Bar - First (Right side in RTL) */}
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl relative gap-2 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <Input 
-                type="search" 
-                placeholder="ابحث عن ساعات، هواتف، سيارات، تحف..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pr-10 pl-12 h-11 bg-blue-50 border-blue-300 focus-visible:ring-blue-500 focus-visible:border-blue-500 text-base"
-                data-testid="input-header-search"
-              />
-              <Button 
-                type="button"
-                size="icon" 
-                variant="ghost" 
-                className="absolute left-1 top-1 bottom-1 h-auto w-10 text-gray-500 hover:text-primary hover:bg-transparent"
-                onClick={() => setImageSearchOpen(true)}
-                data-testid="button-image-search"
-              >
-                <Camera className="h-5 w-5" />
-              </Button>
-            </div>
-            <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 px-6 h-11 rounded-md font-bold">
-              <Search className="h-4 w-4 ml-2" />
-              بحث
-            </Button>
-          </form>
-
-          {/* Logo and Registration - Left side in RTL */}
-          <div className="flex items-center gap-4 mr-auto">
+          {/* Logo and Registration - Right side in RTL (appears first) */}
+          <div className="flex items-center gap-4">
             {/* Logo */}
             <Link href="/" className="flex-shrink-0 flex items-center">
               <Logo className="h-12 md:h-14" />
@@ -176,6 +147,35 @@ export function Layout({ children }: { children: React.ReactNode }) {
               )}
             </div>
           </div>
+
+          {/* Search Bar - Left side in RTL */}
+          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl relative gap-2 items-center ml-auto">
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Input 
+                type="search" 
+                placeholder="ابحث عن ساعات، هواتف، سيارات، تحف..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pr-10 pl-12 h-11 bg-blue-50 border-blue-300 focus-visible:ring-blue-500 focus-visible:border-blue-500 text-base"
+                data-testid="input-header-search"
+              />
+              <Button 
+                type="button"
+                size="icon" 
+                variant="ghost" 
+                className="absolute left-1 top-1 bottom-1 h-auto w-10 text-gray-500 hover:text-primary hover:bg-transparent"
+                onClick={() => setImageSearchOpen(true)}
+                data-testid="button-image-search"
+              >
+                <Camera className="h-5 w-5" />
+              </Button>
+            </div>
+            <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 px-6 h-11 rounded-md font-bold">
+              <Search className="h-4 w-4 ml-2" />
+              بحث
+            </Button>
+          </form>
         </div>
       </header>
 
