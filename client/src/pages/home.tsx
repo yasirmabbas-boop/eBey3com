@@ -33,33 +33,43 @@ const CATEGORIES = [
 const ADS = [
   {
     id: 1,
-    title: "اكتشف كنوز الزمن",
-    description: "رحلة ممتعة في عالم الساعات الكلاسيكية - قطع نادرة تحكي قصص الأناقة",
-    image: "https://images.unsplash.com/photo-1587836374828-4dbafa94cf0e?w=1200&h=300&fit=crop",
-    badgeText: "مغامرة جديدة",
-    buttonText: "ابدأ الاستكشاف",
-    link: "/search?category=ساعات",
+    title: "أول مزاد إلكتروني في العراق",
+    description: "بيع واشتري بأمان - اكتشف صفقات مميزة وكنوز نادرة من خلال مزاداتنا",
+    image: "https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?w=1200&h=300&fit=crop",
+    badgeText: "E-بيع",
+    buttonText: "ابدأ الآن",
+    link: "/search",
     color: "bg-blue-900"
   },
   {
     id: 2,
-    title: "كنوز من الماضي",
-    description: "سجاد عريق وتحف نادرة تنتظر من يقدّرها - كل قطعة لها حكاية",
-    image: "https://images.unsplash.com/photo-1555529733-0e670560f7e1?w=1200&h=300&fit=crop",
-    badgeText: "اكتشف التراث",
-    buttonText: "شاهد المجموعة",
-    link: "/search?category=تحف وأثاث",
-    color: "bg-amber-800"
+    title: "عروض رأس السنة 🎉",
+    description: "خصومات حصرية وصفقات لا تُفوّت - احتفل معنا بأفضل الأسعار",
+    image: "https://images.unsplash.com/photo-1467810563316-b5476525c0f9?w=1200&h=300&fit=crop",
+    badgeText: "عروض محدودة",
+    buttonText: "تسوق الآن",
+    link: "/search",
+    color: "bg-red-800"
   },
   {
     id: 3,
-    title: "صفقات مميزة بانتظارك",
-    description: "نصائح ذهبية للفوز بأفضل العروض - دليلك للتسوق الذكي والممتع",
-    image: "https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?w=1200&h=300&fit=crop",
-    badgeText: "نصائح مفيدة",
-    buttonText: "اقرأ الدليل",
-    link: "/deals-guide",
-    color: "bg-green-800"
+    title: "وصل حديثاً ✨",
+    description: "تصفح أحدث المنتجات المضافة - ساعات، إلكترونيات، تحف والمزيد",
+    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=300&fit=crop",
+    badgeText: "جديد",
+    buttonText: "اكتشف الجديد",
+    link: "/search",
+    color: "bg-purple-800"
+  },
+  {
+    id: 4,
+    title: "مزادات حية 🔴",
+    description: "قريباً - شارك في مزادات مباشرة وتنافس للفوز بأفضل الصفقات",
+    image: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=1200&h=300&fit=crop",
+    badgeText: "قريباً",
+    buttonText: "سجّل للإشعار",
+    link: "/live-auction",
+    color: "bg-amber-800"
   },
 ];
 
@@ -68,6 +78,13 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const currentAd = ADS[currentAdIndex];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentAdIndex((prev) => (prev + 1) % ADS.length);
+    }, 7000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
