@@ -19,6 +19,7 @@ import Settings from "@/pages/settings";
 import LiveAuction from "@/pages/live-auction";
 import MyPurchases from "@/pages/my-purchases";
 import SellPage from "@/pages/sell";
+import DealsGuide from "@/pages/deals-guide";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/security-guide" component={SecurityGuide} />
       <Route path="/settings" component={Settings} />
       <Route path="/sell" component={SellPage} />
+      <Route path="/deals-guide" component={DealsGuide} />
       <Route component={NotFound} />
     </Switch>
   );

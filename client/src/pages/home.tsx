@@ -19,45 +19,55 @@ const RECENT_SEARCHES = [
   { term: "ماك بوك", count: 1 },
 ];
 
+const CATEGORIES = [
+  { id: "ساعات", name: "ساعات", nameEn: "watches" },
+  { id: "إلكترونيات", name: "إلكترونيات", nameEn: "electronics" },
+  { id: "ملابس", name: "ملابس", nameEn: "clothing" },
+  { id: "تحف وأثاث", name: "تحف وأثاث", nameEn: "antiques" },
+  { id: "سيارات", name: "سيارات", nameEn: "cars" },
+  { id: "عقارات", name: "عقارات", nameEn: "realestate" },
+  { id: "أخرى", name: "أخرى", nameEn: "other" },
+];
+
 const ADS = [
   {
     id: 1,
     title: "استكشف عالم الساعات",
-    description: "مجموعة نادرة من الساعات الفاخرة والكلاسيكية بانتظارك",
+    description: "مجموعة نادرة من الساعات الفاخرة والكلاسيكية بانتظارك - رولكس، أوميغا، كارتييه وأكثر",
     image: "https://images.unsplash.com/photo-1587836374828-4dbafa94cf0e?w=800&h=400&fit=crop",
     badgeText: "قسم مميز",
     buttonText: "تصفح الساعات",
-    link: "/search?c=watches",
+    link: "/search?category=ساعات",
     color: "bg-blue-900"
   },
   {
     id: 2,
     title: "عالم الإلكترونيات",
-    description: "أحدث الأجهزة وأفضل العروض التقنية في مكان واحد",
+    description: "آيفون، سامسونج، بلايستيشن، لابتوبات وجميع الأجهزة الإلكترونية بأسعار تنافسية",
     image: "https://images.unsplash.com/photo-1498049860654-af1a5c5668ba?w=800&h=400&fit=crop",
     badgeText: "تكنولوجيا",
     buttonText: "تصفح الإلكترونيات",
-    link: "/search?c=electronics",
+    link: "/search?category=إلكترونيات",
     color: "bg-purple-900"
   },
   {
     id: 3,
-    title: "اكتشف المزيد",
-    description: "تحف، مقتنيات، ملابس، وكل ما هو فريد ومميز",
+    title: "تحف ومقتنيات نادرة",
+    description: "سجاد إيراني أصلي، تحف عثمانية، مقتنيات تراثية عراقية وقطع فنية نادرة",
     image: "https://images.unsplash.com/photo-1555529733-0e670560f7e1?w=800&h=400&fit=crop",
-    badgeText: "منوعات",
-    buttonText: "تصفح الكل",
-    link: "/search",
+    badgeText: "تراث وفن",
+    buttonText: "تصفح التحف",
+    link: "/search?category=تحف وأثاث",
     color: "bg-amber-800"
   },
   {
     id: 4,
     title: "كيف تجد أفضل الصفقات؟",
-    description: "نصائح وإرشادات للحصول على أفضل الأسعار في المزادات",
+    description: "٧ نصائح ذهبية للفوز بالمزادات والحصول على أفضل الأسعار - دليل المشتري الذكي",
     image: "https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?w=800&h=400&fit=crop",
     badgeText: "دليل المشتري",
-    buttonText: "تعلم المزيد",
-    link: "/help",
+    buttonText: "اقرأ الدليل",
+    link: "/deals-guide",
     color: "bg-green-800"
   },
 ];
@@ -93,6 +103,13 @@ export default function Home() {
   })) : PRODUCTS;
 
   const recommendedProducts = displayProducts.slice(0, 6);
+  
+  const productsByCategory = CATEGORIES.reduce((acc, cat) => {
+    acc[cat.id] = displayProducts.filter(p => p.category === cat.id).slice(0, 4);
+    return acc;
+  }, {} as Record<string, typeof displayProducts>);
+
+  const categoriesWithProducts = CATEGORIES.filter(cat => productsByCategory[cat.id].length > 0);
 
   const nextAd = () => {
     setCurrentAdIndex((prev) => (prev + 1) % ADS.length);
@@ -240,21 +257,26 @@ export default function Home() {
             <LayoutGrid className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-bold text-primary">تصفح الأقسام</h2>
           </div>
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-            {[
-              { name: "ساعات", icon: Clock, color: "text-blue-600", bg: "bg-blue-50" },
-              { name: "ملابس", icon: Tag, color: "text-purple-600", bg: "bg-purple-50" },
-              { name: "إلكترونيات", icon: Zap, color: "text-amber-600", bg: "bg-amber-50" },
-              { name: "تحف", icon: Search, color: "text-rose-600", bg: "bg-rose-50" },
-              { name: "ساعات", icon: Clock, color: "text-green-600", bg: "bg-green-50" },
-              { name: "أثاث", icon: LayoutGrid, color: "text-indigo-600", bg: "bg-indigo-50" },
-              { name: "سيارات", icon: Zap, color: "text-red-600", bg: "bg-red-50" },
-              { name: "أخرى", icon: Tag, color: "text-gray-600", bg: "bg-gray-50" },
-            ].map((cat, i) => (
-              <Link key={i} href={`/search?c=${cat.name}`}>
-                <div className="group cursor-pointer bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-primary text-center" data-testid={`category-${i}`}>
-                  <div className={`h-10 w-10 ${cat.bg} rounded-full mx-auto mb-2 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                    <cat.icon className={`h-5 w-5 ${cat.color}`} />
+          <div className="grid grid-cols-4 md:grid-cols-7 gap-3">
+            {CATEGORIES.map((cat, i) => (
+              <Link key={i} href={`/search?category=${encodeURIComponent(cat.id)}`}>
+                <div className="group cursor-pointer bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-primary text-center" data-testid={`category-${cat.id}`}>
+                  <div className={`h-10 w-10 ${
+                    cat.nameEn === "watches" ? "bg-blue-50" :
+                    cat.nameEn === "electronics" ? "bg-amber-50" :
+                    cat.nameEn === "clothing" ? "bg-purple-50" :
+                    cat.nameEn === "antiques" ? "bg-rose-50" :
+                    cat.nameEn === "cars" ? "bg-red-50" :
+                    cat.nameEn === "realestate" ? "bg-green-50" :
+                    "bg-gray-50"
+                  } rounded-full mx-auto mb-2 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    {cat.nameEn === "watches" ? <Clock className="h-5 w-5 text-blue-600" /> :
+                     cat.nameEn === "electronics" ? <Zap className="h-5 w-5 text-amber-600" /> :
+                     cat.nameEn === "clothing" ? <Tag className="h-5 w-5 text-purple-600" /> :
+                     cat.nameEn === "antiques" ? <Search className="h-5 w-5 text-rose-600" /> :
+                     cat.nameEn === "cars" ? <Zap className="h-5 w-5 text-red-600" /> :
+                     cat.nameEn === "realestate" ? <LayoutGrid className="h-5 w-5 text-green-600" /> :
+                     <Tag className="h-5 w-5 text-gray-600" />}
                   </div>
                   <h3 className="font-medium text-sm text-gray-800">{cat.name}</h3>
                 </div>
@@ -319,6 +341,75 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* Category-Based Recommendations */}
+      {categoriesWithProducts.length > 0 && (
+        <section className="py-12 bg-white border-t">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center gap-2 mb-8">
+              <LayoutGrid className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-bold text-primary">تصفح حسب القسم</h2>
+            </div>
+            
+            <div className="space-y-12">
+              {categoriesWithProducts.slice(0, 3).map((cat) => (
+                <div key={cat.id} className="bg-gray-50 rounded-2xl p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                        cat.nameEn === "watches" ? "bg-blue-100" :
+                        cat.nameEn === "electronics" ? "bg-amber-100" :
+                        cat.nameEn === "antiques" ? "bg-rose-100" :
+                        "bg-gray-100"
+                      }`}>
+                        {cat.nameEn === "watches" ? <Clock className="h-5 w-5 text-blue-600" /> :
+                         cat.nameEn === "electronics" ? <Zap className="h-5 w-5 text-amber-600" /> :
+                         cat.nameEn === "antiques" ? <Search className="h-5 w-5 text-rose-600" /> :
+                         <Tag className="h-5 w-5 text-gray-600" />}
+                      </div>
+                      <h3 className="text-xl font-bold text-primary">{cat.name}</h3>
+                    </div>
+                    <Link href={`/search?category=${encodeURIComponent(cat.id)}`}>
+                      <Button variant="outline" size="sm">
+                        عرض الكل
+                      </Button>
+                    </Link>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {productsByCategory[cat.id].map((product) => (
+                      <Link key={product.id} href={`/product/${product.id}`}>
+                        <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200" data-testid={`card-category-${cat.id}-${product.id}`}>
+                          <div className="relative aspect-square overflow-hidden bg-gray-100">
+                            <img 
+                              src={product.image} 
+                              alt={product.title} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                            {product.currentBid && (
+                              <Badge className="absolute top-2 right-2 bg-primary text-white text-xs">
+                                مزاد
+                              </Badge>
+                            )}
+                          </div>
+                          <CardContent className="p-3">
+                            <h3 className="font-bold text-sm mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                              {product.title}
+                            </h3>
+                            <p className="font-bold text-primary text-sm">
+                              {(product.currentBid || product.price).toLocaleString()} د.ع
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Join Auction CTA */}
       <section className="relative py-16 w-full overflow-hidden bg-primary">
