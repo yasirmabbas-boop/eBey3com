@@ -25,8 +25,9 @@ const CATEGORIES = [
   { id: "إلكترونيات", name: "إلكترونيات", nameEn: "electronics" },
   { id: "ملابس", name: "ملابس", nameEn: "clothing" },
   { id: "تحف وأثاث", name: "تحف وأثاث", nameEn: "antiques" },
-  { id: "سيارات", name: "سيارات", nameEn: "cars" },
-  { id: "عقارات", name: "عقارات", nameEn: "realestate" },
+  { id: "مجوهرات", name: "مجوهرات", nameEn: "jewelry" },
+  { id: "آلات موسيقية", name: "آلات موسيقية", nameEn: "music" },
+  { id: "مقتنيات", name: "مقتنيات", nameEn: "collectibles" },
   { id: "أخرى", name: "أخرى", nameEn: "other" },
 ];
 
