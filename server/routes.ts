@@ -84,7 +84,7 @@ export async function registerRoutes(
         }
       }
       
-      const validatedData = updateListingSchema.parse(req.body);
+      const validatedData = updateListingSchema.parse(req.body) as Parameters<typeof storage.updateListing>[1];
       
       const listing = await storage.updateListing(req.params.id, validatedData);
       if (!listing) {

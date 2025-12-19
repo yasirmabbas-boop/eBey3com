@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Search, ShoppingCart, User, Menu, Phone, Camera, PlusCircle } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, Phone, Camera, PlusCircle, LogOut, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
@@ -9,10 +9,13 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useAuth } from "@/hooks/use-auth";
 
 import { GlobalAIAssistant } from "@/components/global-ai-assistant";
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
+
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans" dir="rtl">
       {/* Global AI Assistant */}
@@ -27,10 +30,36 @@ export function Layout({ children }: { children: React.ReactNode }) {
               بيع منتج
             </Link>
             <div className="h-4 w-px bg-gray-300 mx-2"></div>
-            <Link href="/signin" className="hover:text-primary font-semibold transition-colors flex items-center gap-1">
-              <User className="h-4 w-4" />
-              تسجيل الدخول / إنشاء حساب
-            </Link>
+            
+            {isLoading ? (
+              <div className="flex items-center gap-1">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>جاري التحميل...</span>
+              </div>
+            ) : isAuthenticated && user ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  {user.avatar && (
+                    <img src={user.avatar} alt={user.displayName} className="h-6 w-6 rounded-full" />
+                  )}
+                  <span className="font-semibold text-primary">{user.displayName}</span>
+                </div>
+                <button 
+                  onClick={() => logout()}
+                  className="hover:text-red-600 font-semibold transition-colors flex items-center gap-1"
+                  data-testid="button-logout"
+                >
+                  <LogOut className="h-4 w-4" />
+                  تسجيل الخروج
+                </button>
+              </div>
+            ) : (
+              <a href="/api/login" className="hover:text-primary font-semibold transition-colors flex items-center gap-1" data-testid="button-login">
+                <User className="h-4 w-4" />
+                تسجيل الدخول / إنشاء حساب
+              </a>
+            )}
+            
             <div className="h-4 w-px bg-gray-300 mx-2"></div>
             <div className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
               <ShoppingCart className="h-4 w-4" />
