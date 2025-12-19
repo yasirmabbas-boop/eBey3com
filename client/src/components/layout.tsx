@@ -24,33 +24,58 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 
-      {/* Seller Account Ribbon */}
-      <div className="bg-gradient-to-l from-amber-500 via-yellow-500 to-amber-500 text-black py-1.5 text-xs px-4">
-        <div className="container mx-auto flex justify-between items-center">
-          {/* Seller Info */}
-          <div className="flex items-center gap-3">
-            <Store className="h-4 w-4" />
-            <span className="font-bold">حساب البائع</span>
-            <span className="hidden sm:inline">|</span>
-            <Link href="/seller-dashboard" className="hidden sm:inline hover:underline font-medium">
-              لوحة التحكم
-            </Link>
-            <Link href="/my-sales" className="hidden sm:inline hover:underline font-medium">
-              مبيعاتي
+      {/* Seller Account Ribbon - Only show for sellers or when not logged in */}
+      {(!isAuthenticated || (user as any)?.accountType === "seller") && (
+        <div className="bg-gradient-to-l from-amber-500 via-yellow-500 to-amber-500 text-black py-1.5 text-xs px-4">
+          <div className="container mx-auto flex justify-between items-center">
+            {/* Seller Info */}
+            <div className="flex items-center gap-3">
+              <Store className="h-4 w-4" />
+              <span className="font-bold">حساب البائع</span>
+              {isAuthenticated && (user as any)?.accountType === "seller" && (
+                <>
+                  <span className="hidden sm:inline">|</span>
+                  <Link href="/seller-dashboard" className="hidden sm:inline hover:underline font-medium">
+                    لوحة التحكم
+                  </Link>
+                  <Link href="/my-sales" className="hidden sm:inline hover:underline font-medium">
+                    مبيعاتي
+                  </Link>
+                </>
+              )}
+            </div>
+            
+            {/* List Item Button - Top Right */}
+            <Link 
+              href="/sell" 
+              className="bg-black text-yellow-400 hover:bg-gray-900 px-4 py-1 rounded-full font-bold flex items-center gap-1.5 transition-colors shadow-md"
+              data-testid="button-sell-item"
+            >
+              <Plus className="h-4 w-4" />
+              أضف منتج للبيع
             </Link>
           </div>
-          
-          {/* List Item Button - Top Right */}
-          <Link 
-            href="/sell" 
-            className="bg-black text-yellow-400 hover:bg-gray-900 px-4 py-1 rounded-full font-bold flex items-center gap-1.5 transition-colors shadow-md"
-            data-testid="button-sell-item"
-          >
-            <Plus className="h-4 w-4" />
-            أضف منتج للبيع
-          </Link>
         </div>
-      </div>
+      )}
+
+      {/* Buyer Ribbon - Only show for buyers */}
+      {isAuthenticated && (user as any)?.accountType === "buyer" && (
+        <div className="bg-gradient-to-l from-blue-500 via-blue-600 to-blue-500 text-white py-1.5 text-xs px-4">
+          <div className="container mx-auto flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <User className="h-4 w-4" />
+              <span className="font-bold">حساب المشتري</span>
+              <span className="hidden sm:inline">|</span>
+              <Link href="/my-purchases" className="hidden sm:inline hover:underline font-medium">
+                مشترياتي
+              </Link>
+              <Link href="/buyer-dashboard" className="hidden sm:inline hover:underline font-medium">
+                لوحة التحكم
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top Navigation Bar */}
       <div className="bg-blue-600 text-white py-1 text-xs px-4">
@@ -90,13 +115,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
             ) : (
-              <a href="/api/login" className="hover:text-blue-200 transition-colors flex items-center gap-1" data-testid="button-login">
+              <Link href="/signin" className="hover:text-blue-200 transition-colors flex items-center gap-1" data-testid="button-login">
                 <User className="h-3 w-3" />
                 تسجيل الدخول
-              </a>
+              </Link>
             )}
             <NotificationsButton />
-            <Link href="/cart" className="flex items-center gap-1 cursor-pointer hover:text-blue-200 transition-colors">
+            <Link href="/my-purchases" className="flex items-center gap-1 cursor-pointer hover:text-blue-200 transition-colors">
               <ShoppingCart className="h-3 w-3" />
               <span className="bg-red-500 text-white text-[9px] rounded-full px-1 h-3 flex items-center justify-center font-bold">0</span>
             </Link>
@@ -119,10 +144,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <nav className="flex flex-col gap-4 mt-8">
                 <Link href="/" className="text-lg font-semibold">الرئيسية</Link>
                 <Link href="/live-auction" className="text-lg text-red-600 font-bold">🔴 مزاد حي</Link>
-                <Link href="/category/watches" className="text-lg">ساعات</Link>
-                <Link href="/category/clothing" className="text-lg">ملابس</Link>
-                <Link href="/category/vintage" className="text-lg">مقتنيات قديمة</Link>
                 <Link href="/search" className="text-lg">البحث</Link>
+                {isAuthenticated && user?.accountType === "seller" && (
+                  <>
+                    <Link href="/seller-dashboard" className="text-lg text-primary font-semibold">لوحة التحكم</Link>
+                    <Link href="/sell" className="text-lg">إضافة منتج</Link>
+                  </>
+                )}
+                {isAuthenticated && user?.accountType === "buyer" && (
+                  <>
+                    <Link href="/buyer-dashboard" className="text-lg text-primary font-semibold">لوحة التحكم</Link>
+                    <Link href="/my-purchases" className="text-lg">مشترياتي</Link>
+                  </>
+                )}
+                {!isAuthenticated && (
+                  <Link href="/signin" className="text-lg text-primary font-semibold">تسجيل الدخول</Link>
+                )}
               </nav>
             </SheetContent>
           </Sheet>
@@ -146,14 +183,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
             ) : (
-              <a 
-                href="/api/login" 
+              <Link 
+                href="/signin" 
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
                 data-testid="button-login-header"
               >
                 <User className="h-4 w-4" />
                 تسجيل الدخول
-              </a>
+              </Link>
             )}
           </div>
 

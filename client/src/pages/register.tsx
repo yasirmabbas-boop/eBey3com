@@ -1,19 +1,16 @@
 import { useState, useMemo } from "react";
-import { useRoute } from "wouter";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, MapPin, Check, X, Eye, EyeOff } from "lucide-react";
-import { MapPicker } from "@/components/map-picker";
+import { Loader2, Check, X, Eye, EyeOff, User, Lock, UserPlus } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const passwordRequirements = [
   { id: "length", label: "٨ أحرف على الأقل", test: (p: string) => p.length >= 8 },
@@ -25,8 +22,7 @@ const passwordRequirements = [
 
 function PasswordStrengthIndicator({ password }: { password: string }) {
   const strength = useMemo(() => {
-    const passed = passwordRequirements.filter(r => r.test(password)).length;
-    return passed;
+    return passwordRequirements.filter(r => r.test(password)).length;
   }, [password]);
 
   const getStrengthLabel = () => {
@@ -45,9 +41,7 @@ function PasswordStrengthIndicator({ password }: { password: string }) {
         {[1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
-            className={`h-1.5 flex-1 rounded-full transition-colors ${
-              i <= strength ? color : "bg-gray-200"
-            }`}
+            className={`h-1.5 flex-1 rounded-full transition-colors ${i <= strength ? color : "bg-gray-200"}`}
           />
         ))}
       </div>
@@ -77,150 +71,126 @@ function PasswordStrengthIndicator({ password }: { password: string }) {
   );
 }
 
-const phoneRegex = /^(\+964|0)?7[0-9]{9}$/;
-
 const IRAQI_DISTRICTS = [
-  "بغداد - الكرخ",
-  "بغداد - الرصافة",
-  "البصرة",
-  "نينوى",
-  "أربيل",
-  "النجف",
-  "كربلاء",
-  "الأنبار",
-  "ديالى",
-  "كركوك",
-  "صلاح الدين",
-  "السليمانية",
-  "دهوك",
-  "واسط",
-  "ميسان",
-  "ذي قار",
-  "المثنى",
-  "القادسية",
-  "بابل",
+  "بغداد - الكرخ", "بغداد - الرصافة", "البصرة", "نينوى", "أربيل",
+  "النجف", "كربلاء", "الأنبار", "ديالى", "كركوك",
+  "صلاح الدين", "السليمانية", "دهوك", "واسط", "ميسان",
+  "ذي قار", "المثنى", "القادسية", "بابل",
 ];
-
-const baseSchema = z.object({
-  name: z.string().min(3, "الاسم يجب أن يكون 3 أحرف على الأقل"),
-  phone: z.string().regex(phoneRegex, "رقم الهاتف يجب أن يكون رقم عراقي صحيح (07...)"),
-  password: z.string()
-    .min(8, "كلمة المرور يجب أن تكون ٨ أحرف على الأقل")
-    .regex(/[A-Z]/, "يجب أن تحتوي على حرف كبير واحد على الأقل")
-    .regex(/[a-z]/, "يجب أن تحتوي على حرف صغير واحد على الأقل")
-    .regex(/[0-9]/, "يجب أن تحتوي على رقم واحد على الأقل")
-    .regex(/[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/`~]/, "يجب أن تحتوي على رمز خاص واحد على الأقل"),
-  agreeTerms: z.boolean().refine(val => val === true, "يجب الموافقة على الشروط والأحكام"),
-});
-
-const buyerSchema = baseSchema.extend({
-  addressLine1: z.string().min(5, "العنوان الرئيسي مطلوب"),
-  addressLine2: z.string().optional(),
-  district: z.string().min(1, "المحافظة مطلوبة"),
-  locationLat: z.number().optional(),
-  locationLng: z.number().optional(),
-});
-
-const sellerSchema = baseSchema.extend({
-  idNumber: z.string().optional(),
-});
 
 export default function Register() {
   const { toast } = useToast();
-  const [params] = useRoute("/register");
+  const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
-  const initialTab = urlParams.get("tab") as "buyer" | "seller" | null;
+  const initialTab = urlParams.get("type") === "seller" ? "seller" : (urlParams.get("tab") as "buyer" | "seller" | null);
   const redirectUrl = urlParams.get("redirect");
-  const action = urlParams.get("action");
   
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<"form" | "verify">("form");
   const [activeTab, setActiveTab] = useState<"buyer" | "seller">(initialTab || "buyer");
-  const [showBuyerPassword, setShowBuyerPassword] = useState(false);
-  const [showSellerPassword, setShowSellerPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
-  const getActionMessage = () => {
-    switch (action) {
-      case "bid":
-        return "يجب عليك تسجيل الدخول للمشاركة في المزايدة";
-      case "buy":
-        return "يجب عليك تسجيل الدخول لشراء المنتج";
-      case "cart":
-        return "يجب عليك تسجيل الدخول لإضافة المنتجات للسلة";
-      case "wishlist":
-        return "يجب عليك تسجيل الدخول لإضافة المنتجات للمفضلة";
-      default:
-        return null;
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+    displayName: "",
+    district: "",
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.username.trim()) {
+      newErrors.username = "اسم المستخدم مطلوب";
+    } else if (formData.username.length < 3) {
+      newErrors.username = "اسم المستخدم يجب أن يكون 3 أحرف على الأقل";
     }
+    
+    if (!formData.displayName.trim()) {
+      newErrors.displayName = "الاسم الكامل مطلوب";
+    }
+    
+    if (!formData.password) {
+      newErrors.password = "كلمة المرور مطلوبة";
+    } else {
+      const passedReqs = passwordRequirements.filter(r => r.test(formData.password)).length;
+      if (passedReqs < 5) {
+        newErrors.password = "كلمة المرور لا تستوفي جميع المتطلبات";
+      }
+    }
+    
+    if (!agreeTerms) {
+      newErrors.terms = "يجب الموافقة على الشروط والأحكام";
+    }
+
+    if (activeTab === "buyer" && !formData.district) {
+      newErrors.district = "المحافظة مطلوبة";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-
-  const buyerForm = useForm<z.infer<typeof buyerSchema>>({
-    resolver: zodResolver(buyerSchema),
-    defaultValues: {
-      name: "",
-      phone: "",
-      password: "",
-      addressLine1: "",
-      addressLine2: "",
-      district: "",
-      locationLat: undefined,
-      locationLng: undefined,
-      agreeTerms: false,
-    },
-  });
-
-  const sellerForm = useForm<z.infer<typeof sellerSchema>>({
-    resolver: zodResolver(sellerSchema),
-    defaultValues: {
-      name: "",
-      phone: "",
-      password: "",
-      idNumber: "",
-      agreeTerms: false,
-    },
-  });
-
-  const handleLocationChange = (coords: { lat: number; lng: number }) => {
-    setLocation(coords);
-    buyerForm.setValue("locationLat", coords.lat);
-    buyerForm.setValue("locationLng", coords.lng);
-  };
-
-  const onBuyerSubmit = async (data: z.infer<typeof buyerSchema>) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep("verify");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
       toast({
-        title: "تم إرسال رمز التحقق",
-        description: `تم إرسال رمز إلى ${data.phone}`,
+        title: "خطأ في البيانات",
+        description: "يرجى تصحيح الأخطاء المشار إليها",
+        variant: "destructive",
       });
-    }, 1500);
-  };
+      return;
+    }
 
-  const onSellerSubmit = async (data: z.infer<typeof sellerSchema>) => {
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep("verify");
-      toast({
-        title: "تم إرسال رمز التحقق",
-        description: `تم إرسال رمز إلى ${data.phone}`,
-      });
-    }, 1500);
-  };
 
-  const onVerify = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "تم التسجيل بنجاح",
-        description: "أهلاً بك في اي بيع!",
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+          displayName: formData.displayName,
+          accountType: activeTab,
+        }),
       });
-    }, 1500);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "فشل في إنشاء الحساب");
+      }
+
+      toast({
+        title: "تم إنشاء الحساب بنجاح!",
+        description: `مرحباً ${data.displayName}، يمكنك الآن استخدام المنصة`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+
+      if (redirectUrl) {
+        navigate(redirectUrl);
+      } else if (activeTab === "seller") {
+        navigate("/seller-dashboard");
+      } else {
+        navigate("/");
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ في التسجيل",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -228,238 +198,154 @@ export default function Register() {
       <div className="container mx-auto px-4 py-12 flex justify-center items-center min-h-[60vh]">
         <Card className="w-full max-w-md shadow-lg border-muted">
           <CardHeader className="text-center space-y-2">
+            <div className="mx-auto mb-2 h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+              <UserPlus className="h-7 w-7 text-primary" />
+            </div>
             <CardTitle className="text-2xl font-bold text-primary">إنشاء حساب جديد</CardTitle>
             <CardDescription>
               انضم إلى مجتمع اي بيع للبيع والشراء الآمن
             </CardDescription>
           </CardHeader>
-          {getActionMessage() && (
-            <div className="mx-6 mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-center">
-              <p className="text-sm font-semibold text-amber-800">{getActionMessage()}</p>
-              <p className="text-xs text-amber-600 mt-1">سجّل الآن للمتابعة</p>
-            </div>
-          )}
           <CardContent>
-            {step === "form" ? (
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "buyer" | "seller")} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="buyer">مشتري</TabsTrigger>
-                  <TabsTrigger value="seller">بائع</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="buyer">
-                  <form onSubmit={buyerForm.handleSubmit(onBuyerSubmit)} className="space-y-4">
-                    {/* Social Registration */}
-                    <div className="space-y-2 mb-6">
-                      <p className="text-sm font-semibold text-gray-700 text-center mb-3">التسجيل السريع</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        <Button type="button" variant="outline" className="border-2 hover:bg-gray-50">
-                           Google
-                        </Button>
-                        <Button type="button" variant="outline" className="border-2 hover:bg-gray-50">
-                           Facebook
-                        </Button>
-                        <Button type="button" variant="outline" className="border-2 hover:bg-gray-50">
-                           Apple
-                        </Button>
-                      </div>
-                      <div className="relative py-2">
-                        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300"></div></div>
-                        <div className="relative flex justify-center text-sm"><span className="px-2 bg-white text-gray-500">أو</span></div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="name">الاسم الكامل</Label>
-                      <Input id="name" {...buyerForm.register("name")} placeholder="مثال: علي محمد" className="text-right" />
-                      {buyerForm.formState.errors.name && <p className="text-red-500 text-xs">{buyerForm.formState.errors.name.message}</p>}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">رقم الهاتف أو البريد الإلكتروني</Label>
-                      <Input id="phone" {...buyerForm.register("phone")} placeholder="07xxxxxxxxx أو example@email.com" className="text-right" dir="ltr" />
-                      {buyerForm.formState.errors.phone && <p className="text-red-500 text-xs">{buyerForm.formState.errors.phone.message}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="password">كلمة المرور</Label>
-                      <div className="relative">
-                        <Input 
-                          id="password" 
-                          type={showBuyerPassword ? "text" : "password"} 
-                          {...buyerForm.register("password")} 
-                          className="text-right pl-10" 
-                          data-testid="input-buyer-password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowBuyerPassword(!showBuyerPassword)}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                          data-testid="toggle-buyer-password"
-                        >
-                          {showBuyerPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                      <PasswordStrengthIndicator password={buyerForm.watch("password") || ""} />
-                      {buyerForm.formState.errors.password && <p className="text-red-500 text-xs mt-2">{buyerForm.formState.errors.password.message}</p>}
-                    </div>
-
-                    <div className="border-t pt-4 mt-4">
-                      <div className="flex items-center gap-2 mb-4">
-                        <MapPin className="h-5 w-5 text-primary" />
-                        <h3 className="font-bold text-primary">عنوان التوصيل</h3>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="district">المحافظة</Label>
-                          <Select onValueChange={(v) => buyerForm.setValue("district", v)} value={buyerForm.watch("district")}>
-                            <SelectTrigger data-testid="select-district">
-                              <SelectValue placeholder="اختر المحافظة" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {IRAQI_DISTRICTS.map((district) => (
-                                <SelectItem key={district} value={district}>
-                                  {district}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {buyerForm.formState.errors.district && <p className="text-red-500 text-xs">{buyerForm.formState.errors.district.message}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="addressLine1">العنوان الرئيسي</Label>
-                          <Input 
-                            id="addressLine1" 
-                            {...buyerForm.register("addressLine1")} 
-                            placeholder="مثال: حي المنصور، شارع 14 رمضان، قرب مجمع الحارثية" 
-                            className="text-right" 
-                            data-testid="input-address-line1"
-                          />
-                          {buyerForm.formState.errors.addressLine1 && <p className="text-red-500 text-xs">{buyerForm.formState.errors.addressLine1.message}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="addressLine2">تفاصيل إضافية (اختياري)</Label>
-                          <Input 
-                            id="addressLine2" 
-                            {...buyerForm.register("addressLine2")} 
-                            placeholder="مثال: بناية رقم 25، الطابق الثالث، شقة 8" 
-                            className="text-right" 
-                            data-testid="input-address-line2"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>موقعك على الخريطة</Label>
-                          <MapPicker 
-                            value={location} 
-                            onChange={handleLocationChange}
-                            className="mt-2"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 mt-4">
-                      <Checkbox id="terms" checked={buyerForm.watch("agreeTerms")} onCheckedChange={(c) => buyerForm.setValue("agreeTerms", c as boolean)} />
-                      <Label htmlFor="terms" className="text-xs leading-tight text-muted-foreground">
-                        أوافق على <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-semibold">الشروط والأحكام</a> و<a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-semibold">سياسة الخصوصية</a>، وأسمح بمشاركة معلوماتي الأساسية مع البائع عند إتمام الشراء.
-                      </Label>
-                    </div>
-                    {buyerForm.formState.errors.agreeTerms && <p className="text-red-500 text-xs">{buyerForm.formState.errors.agreeTerms.message}</p>}
-
-                    <Button type="submit" className="w-full bg-primary hover:bg-primary/90 mt-4" disabled={isLoading}>
-                      {isLoading ? <Loader2 className="animate-spin" /> : "إنشاء حساب مشتري"}
-                    </Button>
-                  </form>
-                </TabsContent>
-
-                <TabsContent value="seller">
-                  <form onSubmit={sellerForm.handleSubmit(onSellerSubmit)} className="space-y-4">
-                    <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-md text-xs mb-4">
-                      ملاحظة: حسابات البائعين تتطلب موافقة الإدارة وتوثيق الهوية.
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="s-name">الاسم الكامل</Label>
-                      <Input id="s-name" {...sellerForm.register("name")} placeholder="مثال: علي محمد" className="text-right" />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="s-phone">رقم الهاتف (عراقي فقط)</Label>
-                      <Input id="s-phone" {...sellerForm.register("phone")} placeholder="07xxxxxxxxx" className="text-right" dir="ltr" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>صورة الهوية / البطاقة الموحدة</Label>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                        <Upload className="h-8 w-8 mb-2" />
-                        <span className="text-xs">اضغط لرفع صورة الهوية</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="s-password">كلمة المرور</Label>
-                      <div className="relative">
-                        <Input 
-                          id="s-password" 
-                          type={showSellerPassword ? "text" : "password"} 
-                          {...sellerForm.register("password")} 
-                          className="text-right pl-10" 
-                          data-testid="input-seller-password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowSellerPassword(!showSellerPassword)}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                          data-testid="toggle-seller-password"
-                        >
-                          {showSellerPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                      <PasswordStrengthIndicator password={sellerForm.watch("password") || ""} />
-                      {sellerForm.formState.errors.password && <p className="text-red-500 text-xs mt-2">{sellerForm.formState.errors.password.message}</p>}
-                    </div>
-
-                    <div className="flex items-start gap-3 mt-4">
-                      <Checkbox id="s-terms" checked={sellerForm.watch("agreeTerms")} onCheckedChange={(c) => sellerForm.setValue("agreeTerms", c as boolean)} />
-                      <Label htmlFor="s-terms" className="text-xs leading-tight text-muted-foreground">
-                        أوافق على <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-semibold">الشروط والأحكام</a> و<a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-semibold">سياسة الخصوصية</a>. رقم هاتفي سيبقى سرياً ولن يظهر للمشترين إلا بموافقتي أو عند الضرورة القصوى.
-                      </Label>
-                    </div>
-
-                    <Button type="submit" className="w-full bg-accent hover:bg-accent/90 mt-4 text-white" disabled={isLoading}>
-                      {isLoading ? <Loader2 className="animate-spin" /> : "طلب حساب بائع"}
-                    </Button>
-                  </form>
-                </TabsContent>
-              </Tabs>
-            ) : (
-              <div className="space-y-6 py-4">
-                <div className="text-center">
-                  <h3 className="font-bold text-lg mb-2">أدخل رمز التحقق</h3>
-                  <p className="text-sm text-muted-foreground">
-                    تم إرسال رمز مكون من 4 أرقام إلى هاتفك
-                  </p>
-                </div>
-                
-                <div className="flex justify-center gap-2" dir="ltr">
-                  {[1, 2, 3, 4].map((i) => (
-                    <Input key={i} className="w-12 h-12 text-center text-xl font-bold" maxLength={1} />
-                  ))}
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "buyer" | "seller")} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="buyer" data-testid="tab-buyer">مشتري</TabsTrigger>
+                <TabsTrigger value="seller" data-testid="tab-seller">بائع</TabsTrigger>
+              </TabsList>
+              
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">اسم المستخدم</Label>
+                  <div className="relative">
+                    <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="أدخل اسم المستخدم"
+                      value={formData.username}
+                      onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                      className="pr-10"
+                      data-testid="input-username"
+                    />
+                  </div>
+                  {errors.username && <p className="text-red-500 text-xs">{errors.username}</p>}
                 </div>
 
-                <Button onClick={onVerify} className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="animate-spin" /> : "تحقق"}
+                <div className="space-y-2">
+                  <Label htmlFor="displayName">الاسم الكامل</Label>
+                  <Input
+                    id="displayName"
+                    type="text"
+                    placeholder="مثال: علي محمد"
+                    value={formData.displayName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
+                    data-testid="input-displayName"
+                  />
+                  {errors.displayName && <p className="text-red-500 text-xs">{errors.displayName}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">كلمة المرور</Label>
+                  <div className="relative">
+                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="أدخل كلمة مرور قوية"
+                      value={formData.password}
+                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                      className="pr-10 pl-10"
+                      data-testid="input-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
+                  <PasswordStrengthIndicator password={formData.password} />
+                </div>
+
+                {activeTab === "buyer" && (
+                  <div className="space-y-2">
+                    <Label>المحافظة</Label>
+                    <Select
+                      value={formData.district}
+                      onValueChange={(v) => setFormData(prev => ({ ...prev, district: v }))}
+                    >
+                      <SelectTrigger data-testid="select-district">
+                        <SelectValue placeholder="اختر المحافظة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {IRAQI_DISTRICTS.map((d) => (
+                          <SelectItem key={d} value={d}>{d}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.district && <p className="text-red-500 text-xs">{errors.district}</p>}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="terms"
+                    checked={agreeTerms}
+                    onCheckedChange={(checked) => setAgreeTerms(checked === true)}
+                    data-testid="checkbox-terms"
+                  />
+                  <label htmlFor="terms" className="text-sm text-muted-foreground">
+                    أوافق على{" "}
+                    <Link href="/terms" className="text-primary hover:underline">الشروط والأحكام</Link>
+                    {" "}و{" "}
+                    <Link href="/privacy" className="text-primary hover:underline">سياسة الخصوصية</Link>
+                  </label>
+                </div>
+                {errors.terms && <p className="text-red-500 text-xs">{errors.terms}</p>}
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLoading}
+                  data-testid="button-register"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                      جاري إنشاء الحساب...
+                    </>
+                  ) : (
+                    `إنشاء حساب ${activeTab === "buyer" ? "مشتري" : "بائع"}`
+                  )}
                 </Button>
-                
-                <Button variant="ghost" onClick={() => setStep("form")} className="w-full text-xs text-muted-foreground">
-                  تغيير رقم الهاتف
-                </Button>
+              </form>
+            </Tabs>
+
+            <div className="mt-6 text-center text-sm">
+              <span className="text-muted-foreground">لديك حساب بالفعل؟ </span>
+              <Link href="/signin" className="text-primary hover:underline font-medium">
+                تسجيل الدخول
+              </Link>
+            </div>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
               </div>
-            )}
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">أو</span>
+              </div>
+            </div>
+
+            <a
+              href="/api/login"
+              className="flex items-center justify-center gap-2 w-full border rounded-lg py-2.5 hover:bg-gray-50 transition-colors"
+            >
+              <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4" />
+              <span className="text-sm font-medium">التسجيل عبر Google / Apple</span>
+            </a>
           </CardContent>
         </Card>
       </div>

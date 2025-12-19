@@ -21,6 +21,7 @@ import LiveAuction from "@/pages/live-auction";
 import MyPurchases from "@/pages/my-purchases";
 import MySales from "@/pages/my-sales";
 import SellerDashboard from "@/pages/seller-dashboard";
+import BuyerDashboard from "@/pages/buyer-dashboard";
 import SellPage from "@/pages/sell";
 import DealsGuide from "@/pages/deals-guide";
 
@@ -48,6 +49,7 @@ function Router() {
       <Route path="/my-purchases" component={MyPurchases} />
       <Route path="/my-sales" component={MySales} />
       <Route path="/seller-dashboard" component={SellerDashboard} />
+      <Route path="/buyer-dashboard" component={BuyerDashboard} />
       <Route path="/contact" component={ContactUs} />
       <Route path="/security-guide" component={SecurityGuide} />
       <Route path="/security" component={Security} />

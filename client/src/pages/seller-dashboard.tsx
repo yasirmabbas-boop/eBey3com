@@ -1,7 +1,10 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,7 +50,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
 
 const SELLER_STATS = {
   totalProducts: 12,
@@ -186,12 +188,32 @@ const getTypeBadge = (type: string) => {
 };
 
 export default function SellerDashboard() {
+  const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showShippingLabel, setShowShippingLabel] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<typeof SELLER_PRODUCTS[0] | null>(null);
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "يجب تسجيل الدخول",
+        description: "يرجى تسجيل الدخول للوصول إلى لوحة تحكم البائع",
+        variant: "destructive",
+      });
+      navigate("/signin?redirect=/seller-dashboard");
+    } else if (!isLoading && isAuthenticated && user?.accountType !== "seller") {
+      toast({
+        title: "غير مصرح",
+        description: "هذه الصفحة مخصصة للبائعين فقط",
+        variant: "destructive",
+      });
+      navigate("/buyer-dashboard");
+    }
+  }, [isLoading, isAuthenticated, user, navigate, toast]);
 
   const filteredProducts = SELLER_PRODUCTS.filter(product => {
     const matchesSearch = product.title.includes(searchQuery) || 
@@ -215,6 +237,36 @@ export default function SellerDashboard() {
   const activeProducts = SELLER_PRODUCTS.filter(p => p.status === "active");
   const soldProducts = SELLER_PRODUCTS.filter(p => ["sold", "pending_shipment", "shipped"].includes(p.status));
   const pendingShipments = SELLER_PRODUCTS.filter(p => p.status === "pending_shipment" || p.status === "sold");
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">جاري التحميل...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!isAuthenticated || user?.accountType !== "seller") {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 max-w-md text-center">
+          <Card className="border-amber-200 bg-amber-50">
+            <CardContent className="pt-6">
+              <Lock className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold mb-2">للبائعين فقط</h2>
+              <p className="text-muted-foreground mb-6">هذه الصفحة مخصصة للبائعين المسجلين فقط</p>
+              <Link href="/signin">
+                <Button className="w-full">تسجيل الدخول كبائع</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
