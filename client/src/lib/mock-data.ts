@@ -17,12 +17,18 @@ export interface Product {
   image: string;
   category: string;
   timeLeft?: string;
+  auctionEndTime?: string | Date | null;
+  saleType?: "auction" | "fixed";
   condition: "New" | "Used - Like New" | "Used - Good" | "Vintage";
   description?: string;
   seller: Seller;
+  sellerName?: string;
+  sellerTotalSales?: number;
+  sellerRating?: number;
   deliveryWindow: string;
   returnPolicy: string;
   returnDetails?: string;
+  city?: string;
 }
 
 export const PRODUCTS: Product[] = [
@@ -35,6 +41,8 @@ export const PRODUCTS: Product[] = [
     image: "https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=400&h=400&fit=crop",
     category: "إلكترونيات",
     timeLeft: "4 ساعات",
+    saleType: "auction",
+    auctionEndTime: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
     condition: "Used - Like New",
     description: "آيفون 14 برو ماكس بحالة ممتازة جداً. البطارية 96%. الشاشة والكاميرا بدون أي خدوش. يأتي مع الشاحن الأصلي والعلبة. تم شراؤه من أمريكا. مفتوح لجميع الشبكات.",
     seller: { name: "علي التقني", salesCount: 890, rating: 97 },
@@ -51,6 +59,8 @@ export const PRODUCTS: Product[] = [
     image: "https://images.unsplash.com/photo-1600166898405-da9535204843?w=400&h=400&fit=crop",
     category: "تحف وأثاث",
     timeLeft: "2 يوم",
+    saleType: "auction",
+    auctionEndTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
     condition: "Vintage",
     description: "سجادة إيرانية أصلية من الحرير الطبيعي 100%. عمرها أكثر من 80 سنة. مقاس 3x4 متر. ألوان طبيعية ثابتة. قطعة فنية نادرة جداً من أصفهان. شهادة أصالة متوفرة.",
     seller: { name: "حاج كريم الأنتيك", salesCount: 2400, rating: 99 },

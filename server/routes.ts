@@ -4,7 +4,9 @@ import { storage } from "./storage";
 import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema } from "@shared/schema";
 import { z } from "zod";
 
-const updateListingSchema = insertListingSchema.partial().refine(
+const updateListingSchema = insertListingSchema.extend({
+  auctionEndTime: z.union([z.string(), z.date(), z.null()]).optional(),
+}).partial().refine(
   (data) => Object.keys(data).length > 0,
   { message: "At least one field must be provided for update" }
 );
@@ -129,6 +131,13 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Listing not found" });
       }
       
+      if (listing.saleType === "auction" && listing.auctionEndTime) {
+        const now = new Date();
+        if (now > listing.auctionEndTime) {
+          return res.status(400).json({ error: "المزاد انتهى" });
+        }
+      }
+      
       const highestBid = await storage.getHighestBid(validatedData.listingId);
       const minBid = highestBid ? highestBid.amount + 1000 : listing.price;
       
@@ -140,6 +149,15 @@ export async function registerRoutes(
       }
       
       const bid = await storage.createBid(validatedData);
+      
+      if (listing.saleType === "auction") {
+        const currentEndTime = listing.auctionEndTime ? new Date(listing.auctionEndTime) : new Date();
+        const extendedEndTime = new Date(currentEndTime.getTime() + 55 * 1000);
+        await storage.updateListing(validatedData.listingId, { 
+          auctionEndTime: extendedEndTime 
+        });
+      }
+      
       res.status(201).json(bid);
     } catch (error) {
       console.error("Error creating bid:", error);

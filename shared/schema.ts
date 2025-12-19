@@ -182,6 +182,7 @@ export const listings = pgTable("listings", {
   currentBid: integer("current_bid"),
   totalBids: integer("total_bids").default(0),
   timeLeft: text("time_left"),
+  auctionEndTime: timestamp("auction_end_time"),
   deliveryWindow: text("delivery_window").notNull(),
   returnPolicy: text("return_policy").notNull(),
   returnDetails: text("return_details"),

@@ -81,6 +81,20 @@ export default function SellPage() {
     setIsSubmitting(true);
     
     try {
+      let auctionEndTime = null;
+      if (saleType === "auction" && formData.auctionDuration) {
+        const durationMap: Record<string, number> = {
+          "1_day": 24 * 60 * 60 * 1000,
+          "3_days": 3 * 24 * 60 * 60 * 1000,
+          "5_days": 5 * 24 * 60 * 60 * 1000,
+          "7_days": 7 * 24 * 60 * 60 * 1000,
+          "10_days": 10 * 24 * 60 * 60 * 1000,
+          "14_days": 14 * 24 * 60 * 60 * 1000,
+        };
+        const durationMs = durationMap[formData.auctionDuration] || 7 * 24 * 60 * 60 * 1000;
+        auctionEndTime = new Date(Date.now() + durationMs).toISOString();
+      }
+      
       const listingData = {
         title: formData.title,
         description: formData.description,
@@ -90,6 +104,7 @@ export default function SellPage() {
         images: images,
         saleType: saleType,
         timeLeft: saleType === "auction" ? formData.auctionDuration : null,
+        auctionEndTime: auctionEndTime,
         deliveryWindow: formData.deliveryWindow,
         returnPolicy: formData.returnPolicy,
         returnDetails: formData.returnDetails || null,

@@ -6,7 +6,8 @@ import { PRODUCTS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, History, Sparkles, Loader2 } from "lucide-react";
+import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, History, Sparkles, Loader2, Clock } from "lucide-react";
+import { AuctionCountdown } from "@/components/auction-countdown";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 import type { Listing } from "@shared/schema";
 
@@ -82,6 +83,7 @@ export default function Home() {
     image: l.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
     saleType: l.saleType,
     timeLeft: l.timeLeft,
+    auctionEndTime: l.auctionEndTime,
     sellerName: l.sellerName,
     sellerTotalSales: 0,
     sellerRating: 5,
@@ -305,10 +307,9 @@ export default function Home() {
                         </div>
                       </div>
                     </CardContent>
-                    {product.timeLeft && (
-                      <CardFooter className="px-4 py-2 bg-red-50 text-red-600 text-xs font-medium flex items-center gap-2">
-                        <Clock className="h-3 w-3" />
-                        ينتهي خلال {product.timeLeft}
+                    {product.saleType === "auction" && product.auctionEndTime && (
+                      <CardFooter className="px-4 py-2 bg-orange-50">
+                        <AuctionCountdown endTime={product.auctionEndTime} />
                       </CardFooter>
                     )}
                   </Card>
