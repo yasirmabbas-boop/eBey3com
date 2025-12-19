@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useRoute } from "wouter";
 import { Layout } from "@/components/layout";
 import { PRODUCTS } from "@/lib/mock-data";
@@ -5,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag } from "lucide-react";
+import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AIAssistant } from "@/components/ai-assistant";
 import { BiddingWindow } from "@/components/bidding-window";
 import { SellerTrustBadge } from "@/components/seller-trust-badge";
 import { ContactSeller } from "@/components/contact-seller";
+import { ShippingLabel } from "@/components/shipping-label";
 
 import {
   Carousel,
@@ -33,8 +35,24 @@ const SIMILAR_PRODUCTS = Array.from({ length: 20 }).map((_, i) => ({
 export default function ProductPage() {
   const [match, params] = useRoute("/product/:id");
   const { toast } = useToast();
+  const [showShippingLabel, setShowShippingLabel] = useState(false);
   
   const product = PRODUCTS.find(p => p.id === params?.id) || PRODUCTS[0];
+  
+  const sampleOrderDetails = {
+    orderId: `ORD-${Date.now().toString(36).toUpperCase()}`,
+    productCode: product.productCode,
+    productTitle: product.title,
+    buyerName: "أحمد محمد العلي",
+    deliveryAddress: "شارع فلسطين، بناية رقم 45، الطابق الثالث",
+    city: "بغداد",
+    district: "الكرادة",
+    sellerName: product.seller.name,
+    sellerCity: "بغداد",
+    saleDate: new Date(),
+    price: product.currentBid || product.price,
+    paymentMethod: "cash",
+  };
 
   const handleBid = () => {
     toast({
@@ -225,6 +243,24 @@ export default function ProductPage() {
               />
             </div>
 
+            {/* Seller Tools - Print Shipping Label */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 p-4 rounded-xl mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-blue-800 mb-1">أدوات البائع</h3>
+                  <p className="text-sm text-blue-600">طباعة بطاقة الشحن بعد إتمام البيع</p>
+                </div>
+                <Button 
+                  onClick={() => setShowShippingLabel(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                  data-testid="button-print-shipping-label"
+                >
+                  <Printer className="h-4 w-4" />
+                  طباعة بطاقة الشحن
+                </Button>
+              </div>
+            </div>
+
             <div className="space-y-4">
               {/* Delivery & Return Policy */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -342,6 +378,13 @@ export default function ProductPage() {
       <AIAssistant 
         productTitle={product.title} 
         productDescription={product.description || "منتج مميز"} 
+      />
+
+      {/* Shipping Label Modal */}
+      <ShippingLabel
+        open={showShippingLabel}
+        onOpenChange={setShowShippingLabel}
+        orderDetails={sampleOrderDetails}
       />
     </Layout>
   );
