@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { Search, ShoppingCart, User, Menu, Phone, Camera, PlusCircle, LogOut, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,16 +11,21 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
-
 import { GlobalAIAssistant } from "@/components/global-ai-assistant";
+import { ImageSearchModal } from "@/components/image-search-modal";
+import { NotificationsButton } from "@/components/notifications";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const [imageSearchOpen, setImageSearchOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans" dir="rtl">
       {/* Global AI Assistant */}
       <GlobalAIAssistant />
+      
+      {/* Image Search Modal */}
+      <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 
       {/* Top Bar */}
       <div className="bg-white text-gray-700 py-2 text-xs px-4 border-b border-gray-200">
@@ -60,6 +66,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </a>
             )}
             
+            <div className="h-4 w-px bg-gray-300 mx-2"></div>
+            <NotificationsButton />
             <div className="h-4 w-px bg-gray-300 mx-2"></div>
             <div className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
               <ShoppingCart className="h-4 w-4" />
@@ -106,7 +114,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 placeholder="البحث..." 
                 className="w-full pl-10 pr-4 bg-blue-50 border-blue-300 focus-visible:ring-blue-500 focus-visible:border-blue-500"
               />
-              <Button size="icon" variant="ghost" className="absolute left-1 top-1 bottom-1 h-auto w-10 text-gray-500 hover:text-primary hover:bg-transparent">
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="absolute left-1 top-1 bottom-1 h-auto w-10 text-gray-500 hover:text-primary hover:bg-transparent"
+                onClick={() => setImageSearchOpen(true)}
+                data-testid="button-image-search"
+              >
                 <Camera className="h-5 w-5" />
               </Button>
             </div>

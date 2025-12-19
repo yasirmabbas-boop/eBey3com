@@ -13,9 +13,17 @@ import {
   CheckCircle,
   AlertTriangle,
   Lightbulb,
-  ArrowLeft
+  ArrowLeft,
+  Ban,
+  DollarSign,
+  BarChart3,
+  Brain,
+  Heart,
+  Zap,
+  AlertOctagon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 const tips = [
   {
@@ -69,6 +77,44 @@ const warnings = [
   "تحقق دائماً من هوية البائع وتقييماته"
 ];
 
+const overpayingSignals = [
+  {
+    icon: Heart,
+    title: "التعلق العاطفي",
+    description: "عندما تشعر أنك \"يجب\" أن تفوز بالمزاد مهما كان السعر",
+    danger: 90,
+    solution: "خذ استراحة ٥ دقائق قبل أي مزايدة تتجاوز ميزانيتك"
+  },
+  {
+    icon: Zap,
+    title: "حمى المزايدة",
+    description: "الاستمرار في المزايدة لمجرد أن شخصاً آخر زايد ضدك",
+    danger: 85,
+    solution: "حدد سعرك الأقصى مسبقاً ولا تتجاوزه أبداً"
+  },
+  {
+    icon: Clock,
+    title: "ضغط الوقت",
+    description: "اتخاذ قرارات متسرعة في الثواني الأخيرة من المزاد",
+    danger: 75,
+    solution: "زايد مبكراً بسعرك الأقصى واترك النظام يعمل تلقائياً"
+  },
+  {
+    icon: Brain,
+    title: "تجاهل البحث",
+    description: "عدم مقارنة الأسعار قبل المزايدة",
+    danger: 70,
+    solution: "ابحث عن سعر المنتج في ٣ مصادر على الأقل"
+  }
+];
+
+const priceComparison = [
+  { label: "سعر السوق العادي", value: 1000000, color: "bg-green-500" },
+  { label: "سعر مقبول في مزاد", value: 850000, color: "bg-blue-500" },
+  { label: "صفقة ممتازة", value: 650000, color: "bg-emerald-500" },
+  { label: "دفع زائد!", value: 1200000, color: "bg-red-500" }
+];
+
 const quickLinks = [
   { title: "تصفح الساعات", link: "/search?category=ساعات", category: "ساعات فاخرة" },
   { title: "تصفح الإلكترونيات", link: "/search?category=إلكترونيات", category: "أجهزة وتقنية" },
@@ -117,6 +163,100 @@ export default function DealsGuide() {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* Overpaying Prevention Section */}
+        <div className="mb-12">
+          <div className="text-center mb-8">
+            <Badge className="mb-4 bg-red-600 text-white">
+              <AlertOctagon className="h-3 w-3 ml-1" />
+              تحذير مهم
+            </Badge>
+            <h2 className="text-3xl font-bold text-red-700 mb-3">
+              علامات تدل على أنك تدفع أكثر مما يجب
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              تعرف على هذه العلامات التحذيرية لتجنب الدفع الزائد في المزادات
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {overpayingSignals.map((signal, index) => (
+              <Card key={index} className="overflow-hidden border-l-4 border-l-red-500" data-testid={`overpaying-signal-${index}`}>
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-red-100 p-3 rounded-xl">
+                      <signal.icon className="h-6 w-6 text-red-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg mb-2">{signal.title}</h3>
+                      <p className="text-gray-600 text-sm mb-3">{signal.description}</p>
+                      <div className="mb-3">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-gray-500">مستوى الخطورة</span>
+                          <span className="text-red-600 font-bold">{signal.danger}%</span>
+                        </div>
+                        <Progress value={signal.danger} className="h-2 bg-gray-200" />
+                      </div>
+                      <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                        <p className="text-sm text-green-800 flex items-start gap-2">
+                          <CheckCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                          <span><strong>الحل:</strong> {signal.solution}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Price Comparison Infographic */}
+          <Card className="overflow-hidden bg-gradient-to-bl from-blue-50 to-white border-blue-200">
+            <CardHeader className="border-b bg-blue-600 text-white">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                مقارنة الأسعار: متى تعرف أنك تدفع زيادة؟
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <p className="text-gray-600 mb-6 text-center">
+                مثال: ساعة بسعر سوقي <strong className="text-blue-600">1,000,000 د.ع</strong>
+              </p>
+              <div className="space-y-4">
+                {priceComparison.map((item, index) => (
+                  <div key={index} className="flex items-center gap-4">
+                    <div className="w-32 text-sm font-medium text-left">{item.label}</div>
+                    <div className="flex-1 h-10 bg-gray-100 rounded-full overflow-hidden relative">
+                      <div 
+                        className={`h-full ${item.color} rounded-full flex items-center justify-end px-4 transition-all duration-500`}
+                        style={{ width: `${(item.value / 1200000) * 100}%` }}
+                      >
+                        <span className="text-white text-sm font-bold whitespace-nowrap">
+                          {new Intl.NumberFormat("ar-IQ").format(item.value)} د.ع
+                        </span>
+                      </div>
+                    </div>
+                    {item.value > 1000000 && (
+                      <Ban className="h-5 w-5 text-red-500" />
+                    )}
+                    {item.value <= 700000 && (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                <p className="text-amber-800 text-sm flex items-start gap-2">
+                  <DollarSign className="h-5 w-5 flex-shrink-0" />
+                  <span>
+                    <strong>القاعدة الذهبية:</strong> لا تدفع أكثر من ٨٥٪ من سعر السوق في المزادات. 
+                    إذا وصل السعر لأكثر من ذلك، ابحث عن منتج آخر أو اشترِ من متجر عادي.
+                  </span>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card className="mb-12 border-red-200 bg-red-50">
