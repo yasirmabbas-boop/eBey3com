@@ -16,8 +16,8 @@ import { eq, desc, and, sql } from "drizzle-orm";
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  getUserByPhone(phone: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getUserByAccountCode(accountCode: string): Promise<User | undefined>;
+  createUser(user: InsertUser & { accountType?: string }): Promise<User>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   
   getListings(): Promise<Listing[]>;
@@ -69,13 +69,27 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByPhone(phone: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.phone, phone));
+  async getUserByAccountCode(accountCode: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.accountCode, accountCode));
     return user;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+  private generateAccountCode(type: string): string {
+    const prefix = type === 'seller' ? 'S' : 'B';
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `${prefix}-${timestamp}${random}`;
+  }
+
+  async createUser(insertUser: InsertUser & { accountType?: string }): Promise<User> {
+    const accountType = insertUser.accountType || 'buyer';
+    const accountCode = this.generateAccountCode(accountType);
+    const userWithCode = {
+      ...insertUser,
+      accountCode,
+      accountType,
+    };
+    const [user] = await db.insert(users).values(userWithCode).returning();
     return user;
   }
 
@@ -105,8 +119,17 @@ export class DatabaseStorage implements IStorage {
     return listing;
   }
 
+  private generateProductCode(): string {
+    const sequence = Date.now().toString().slice(-6);
+    const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+    return `P-${sequence}${random}`;
+  }
+
   async createListing(insertListing: InsertListing & { auctionEndTime?: string | Date | null }): Promise<Listing> {
-    const dbValues: Record<string, unknown> = { ...insertListing };
+    const dbValues: Record<string, unknown> = { 
+      ...insertListing,
+      productCode: this.generateProductCode(),
+    };
     if (insertListing.auctionEndTime !== undefined) {
       dbValues.auctionEndTime = insertListing.auctionEndTime instanceof Date 
         ? insertListing.auctionEndTime 
