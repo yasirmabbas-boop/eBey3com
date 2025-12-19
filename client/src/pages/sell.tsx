@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { 
   Camera, 
   Upload, 
@@ -26,12 +27,20 @@ import {
   Calendar,
   Plus,
   X,
-  CheckCircle2
+  CheckCircle2,
+  AlertTriangle,
+  Lock
 } from "lucide-react";
+
+const HOURS = Array.from({ length: 24 }, (_, i) => {
+  const hour = i.toString().padStart(2, '0');
+  return { value: hour, label: `${hour}:00` };
+});
 
 export default function SellPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { user, isLoading: authLoading } = useAuth();
   
   const [saleType, setSaleType] = useState<"auction" | "fixed">("auction");
   const [hasBuyNow, setHasBuyNow] = useState(false);
@@ -39,6 +48,8 @@ export default function SellPage() {
   const [allowOffers, setAllowOffers] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [startTimeOption, setStartTimeOption] = useState("now");
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -50,10 +61,13 @@ export default function SellPage() {
     returnPolicy: "",
     returnDetails: "",
     sellerName: "",
-    sellerPhone: "",
     city: "",
     auctionDuration: "",
+    startDate: "",
+    startHour: "",
   });
+
+  const isUserVerified = user?.isVerified === true;
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -76,23 +90,75 @@ export default function SellPage() {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.title.trim()) errors.title = "عنوان المنتج مطلوب";
+    if (!formData.description.trim()) errors.description = "وصف المنتج مطلوب";
+    if (!formData.price || parseInt(formData.price) <= 0) errors.price = "السعر مطلوب";
+    if (!formData.category) errors.category = "الفئة مطلوبة";
+    if (!formData.condition) errors.condition = "الحالة مطلوبة";
+    if (!formData.city) errors.city = "المدينة مطلوبة";
+    if (!formData.sellerName.trim()) errors.sellerName = "اسم البائع مطلوب";
+    if (!formData.deliveryWindow) errors.deliveryWindow = "مدة التوصيل مطلوبة";
+    if (!formData.returnPolicy) errors.returnPolicy = "سياسة الإرجاع مطلوبة";
+    if (images.length === 0) errors.images = "يجب إضافة صورة واحدة على الأقل";
+    
+    if (saleType === "auction") {
+      if (!formData.auctionDuration) errors.auctionDuration = "مدة المزاد مطلوبة";
+      if (startTimeOption === "schedule") {
+        if (!formData.startDate) errors.startDate = "تاريخ البدء مطلوب";
+        if (!formData.startHour) errors.startHour = "وقت البدء مطلوب";
+      }
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user || !isUserVerified) {
+      toast({
+        title: "يجب تسجيل الدخول والتحقق",
+        description: "يجب إكمال التسجيل والتحقق من رقم الهاتف قبل إضافة منتج",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!validateForm()) {
+      toast({
+        title: "يرجى إكمال جميع الحقول المطلوبة",
+        description: "تحقق من الحقول المميزة بالأحمر",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
       let auctionEndTime = null;
       if (saleType === "auction" && formData.auctionDuration) {
         const durationMap: Record<string, number> = {
-          "1_day": 24 * 60 * 60 * 1000,
-          "3_days": 3 * 24 * 60 * 60 * 1000,
-          "5_days": 5 * 24 * 60 * 60 * 1000,
-          "7_days": 7 * 24 * 60 * 60 * 1000,
-          "10_days": 10 * 24 * 60 * 60 * 1000,
-          "14_days": 14 * 24 * 60 * 60 * 1000,
+          "يوم واحد": 24 * 60 * 60 * 1000,
+          "3 أيام": 3 * 24 * 60 * 60 * 1000,
+          "5 أيام": 5 * 24 * 60 * 60 * 1000,
+          "أسبوع": 7 * 24 * 60 * 60 * 1000,
+          "10 أيام": 10 * 24 * 60 * 60 * 1000,
+          "أسبوعين": 14 * 24 * 60 * 60 * 1000,
+          "شهر": 30 * 24 * 60 * 60 * 1000,
         };
         const durationMs = durationMap[formData.auctionDuration] || 7 * 24 * 60 * 60 * 1000;
-        auctionEndTime = new Date(Date.now() + durationMs).toISOString();
+        
+        if (startTimeOption === "schedule" && formData.startDate && formData.startHour) {
+          const startDateTime = new Date(`${formData.startDate}T${formData.startHour}:00`);
+          auctionEndTime = new Date(startDateTime.getTime() + durationMs).toISOString();
+        } else {
+          auctionEndTime = new Date(Date.now() + durationMs).toISOString();
+        }
       }
       
       const listingData = {
@@ -109,7 +175,7 @@ export default function SellPage() {
         returnPolicy: formData.returnPolicy,
         returnDetails: formData.returnDetails || null,
         sellerName: formData.sellerName,
-        sellerPhone: formData.sellerPhone || null,
+        sellerId: user.id,
         city: formData.city,
       };
 
@@ -140,6 +206,64 @@ export default function SellPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">جاري التحميل...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 max-w-md">
+          <Card className="border-amber-200 bg-amber-50">
+            <CardContent className="pt-6 text-center">
+              <Lock className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold mb-2">يجب تسجيل الدخول</h2>
+              <p className="text-muted-foreground mb-6">
+                لإضافة منتج للبيع، يجب عليك تسجيل الدخول أولاً والتحقق من رقم هاتفك.
+              </p>
+              <div className="flex flex-col gap-3">
+                <Link href="/register?type=seller">
+                  <Button className="w-full">إنشاء حساب بائع</Button>
+                </Link>
+                <Link href="/signin">
+                  <Button variant="outline" className="w-full">تسجيل الدخول</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!isUserVerified) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 max-w-md">
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6 text-center">
+              <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold mb-2">يجب التحقق من حسابك</h2>
+              <p className="text-muted-foreground mb-6">
+                لحماية المشترين وضمان جودة المنصة، يجب التحقق من رقم هاتفك قبل إضافة منتجات للبيع.
+              </p>
+              <Link href="/settings">
+                <Button className="w-full">التحقق من الحساب</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -195,6 +319,9 @@ export default function SellPage() {
               <p className="text-xs text-muted-foreground mt-3">
                 يمكنك إضافة حتى 8 صور. الصورة الأولى ستكون الصورة الرئيسية.
               </p>
+              {validationErrors.images && (
+                <p className="text-xs text-red-500 mt-2">{validationErrors.images}</p>
+              )}
             </CardContent>
           </Card>
 
@@ -510,7 +637,7 @@ export default function SellPage() {
                   <div className="space-y-2">
                     <Label htmlFor="duration">مدة المزاد *</Label>
                     <Select value={formData.auctionDuration} onValueChange={(v) => handleInputChange("auctionDuration", v)}>
-                      <SelectTrigger data-testid="select-duration">
+                      <SelectTrigger data-testid="select-duration" className={validationErrors.auctionDuration ? "border-red-500" : ""}>
                         <SelectValue placeholder="اختر المدة" />
                       </SelectTrigger>
                       <SelectContent>
@@ -523,11 +650,14 @@ export default function SellPage() {
                         <SelectItem value="شهر">شهر</SelectItem>
                       </SelectContent>
                     </Select>
+                    {validationErrors.auctionDuration && (
+                      <p className="text-xs text-red-500">{validationErrors.auctionDuration}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="startTime">موعد بدء المزاد</Label>
-                    <Select>
+                    <Label htmlFor="startTime">موعد بدء المزاد *</Label>
+                    <Select value={startTimeOption} onValueChange={setStartTimeOption}>
                       <SelectTrigger data-testid="select-start-time">
                         <SelectValue placeholder="ابدأ فوراً" />
                       </SelectTrigger>
@@ -539,25 +669,42 @@ export default function SellPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate">تاريخ البدء</Label>
-                    <Input 
-                      id="startDate" 
-                      type="date"
-                      data-testid="input-start-date"
-                    />
-                  </div>
+                {startTimeOption === "schedule" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="startDate">تاريخ البدء *</Label>
+                      <Input 
+                        id="startDate" 
+                        type="date"
+                        value={formData.startDate}
+                        onChange={(e) => handleInputChange("startDate", e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        className={validationErrors.startDate ? "border-red-500" : ""}
+                        data-testid="input-start-date"
+                      />
+                      {validationErrors.startDate && (
+                        <p className="text-xs text-red-500">{validationErrors.startDate}</p>
+                      )}
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="startHour">وقت البدء</Label>
-                    <Input 
-                      id="startHour" 
-                      type="time"
-                      data-testid="input-start-hour"
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="startHour">وقت البدء *</Label>
+                      <Select value={formData.startHour} onValueChange={(v) => handleInputChange("startHour", v)}>
+                        <SelectTrigger data-testid="select-start-hour" className={validationErrors.startHour ? "border-red-500" : ""}>
+                          <SelectValue placeholder="اختر الساعة" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {HOURS.map(({ value, label }) => (
+                            <SelectItem key={value} value={value}>{label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {validationErrors.startHour && (
+                        <p className="text-xs text-red-500">{validationErrors.startHour}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -618,27 +765,18 @@ export default function SellPage() {
                     required
                     value={formData.sellerName}
                     onChange={(e) => handleInputChange("sellerName", e.target.value)}
+                    className={validationErrors.sellerName ? "border-red-500" : ""}
                     data-testid="input-seller-name"
                   />
+                  {validationErrors.sellerName && (
+                    <p className="text-xs text-red-500">{validationErrors.sellerName}</p>
+                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="sellerPhone">رقم الهاتف</Label>
-                  <Input 
-                    id="sellerPhone" 
-                    placeholder="07xxxxxxxxx"
-                    value={formData.sellerPhone}
-                    onChange={(e) => handleInputChange("sellerPhone", e.target.value)}
-                    data-testid="input-seller-phone"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="city">المدينة *</Label>
                   <Select value={formData.city} onValueChange={(v) => handleInputChange("city", v)}>
-                    <SelectTrigger data-testid="select-city">
+                    <SelectTrigger data-testid="select-city" className={validationErrors.city ? "border-red-500" : ""}>
                       <SelectValue placeholder="اختر المدينة" />
                     </SelectTrigger>
                     <SelectContent>
@@ -654,8 +792,13 @@ export default function SellPage() {
                       <SelectItem value="مدينة أخرى">مدينة أخرى</SelectItem>
                     </SelectContent>
                   </Select>
+                  {validationErrors.city && (
+                    <p className="text-xs text-red-500">{validationErrors.city}</p>
+                  )}
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="area">المنطقة / الحي</Label>
                   <Input 
@@ -699,7 +842,7 @@ export default function SellPage() {
               <div className="space-y-2">
                 <Label htmlFor="deliveryWindow">مدة التوصيل المتوقعة *</Label>
                 <Select value={formData.deliveryWindow} onValueChange={(v) => handleInputChange("deliveryWindow", v)}>
-                  <SelectTrigger data-testid="select-delivery-window">
+                  <SelectTrigger data-testid="select-delivery-window" className={validationErrors.deliveryWindow ? "border-red-500" : ""}>
                     <SelectValue placeholder="اختر المدة" />
                   </SelectTrigger>
                   <SelectContent>
@@ -710,13 +853,16 @@ export default function SellPage() {
                     <SelectItem value="2-3 أسابيع">2-3 أسابيع</SelectItem>
                   </SelectContent>
                 </Select>
+                {validationErrors.deliveryWindow && (
+                  <p className="text-xs text-red-500">{validationErrors.deliveryWindow}</p>
+                )}
               </div>
 
               {/* Return Policy */}
               <div className="space-y-2">
                 <Label htmlFor="returnPolicy">سياسة الإرجاع *</Label>
                 <Select value={formData.returnPolicy} onValueChange={(v) => handleInputChange("returnPolicy", v)}>
-                  <SelectTrigger data-testid="select-return-policy">
+                  <SelectTrigger data-testid="select-return-policy" className={validationErrors.returnPolicy ? "border-red-500" : ""}>
                     <SelectValue placeholder="اختر السياسة" />
                   </SelectTrigger>
                   <SelectContent>
@@ -727,6 +873,9 @@ export default function SellPage() {
                     <SelectItem value="30 يوم">30 يوم</SelectItem>
                   </SelectContent>
                 </Select>
+                {validationErrors.returnPolicy && (
+                  <p className="text-xs text-red-500">{validationErrors.returnPolicy}</p>
+                )}
               </div>
 
               <div className="space-y-2">

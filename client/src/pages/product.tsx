@@ -119,7 +119,7 @@ export default function ProductPage() {
                       ))}
                     </div>
                     <span className="text-sm text-gray-600 font-bold">({(product.seller.rating / 20).toFixed(1)})</span>
-                    <span className="text-xs text-gray-500">- {product.seller.salesCount} مبيعة</span>
+                    <span className="text-xs text-gray-500">- {product.seller.salesCount} عميل</span>
                   </div>
                 </div>
                 <div className="flex gap-2">
