@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Clock, ShieldCheck, Heart, Share2, Star, Banknote } from "lucide-react";
+import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AIAssistant } from "@/components/ai-assistant";
 import { BiddingWindow } from "@/components/bidding-window";
+import { SellerTrustBadge } from "@/components/seller-trust-badge";
 
 import {
   Carousel,
@@ -96,13 +97,22 @@ export default function ProductPage() {
                 <div>
                   <Badge variant="outline" className="mb-2">{product.condition}</Badge>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
-                  <p className="text-muted-foreground">البائع: <span className="text-primary font-medium">أحمد العراقي</span> (موثوق)</p>
-                  <div className="flex items-center gap-1 mt-1">
+                  <div className="mt-2">
+                    <span className="text-muted-foreground">البائع: </span>
+                    <SellerTrustBadge 
+                      salesCount={product.seller.salesCount}
+                      rating={product.seller.rating}
+                      sellerName={product.seller.name}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1 mt-2">
                     <div className="flex text-yellow-400">
-                      {[1, 2, 3, 4, 5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
+                      {[1, 2, 3, 4, 5].map(i => (
+                        <Star key={i} className={`h-4 w-4 ${i <= Math.round(product.seller.rating / 20) ? 'fill-current' : 'text-gray-300'}`} />
+                      ))}
                     </div>
-                    <span className="text-sm text-gray-600 font-bold">(5.0)</span>
-                    <span className="text-xs text-gray-500">- 124 تقييم</span>
+                    <span className="text-sm text-gray-600 font-bold">({(product.seller.rating / 20).toFixed(1)})</span>
+                    <span className="text-xs text-gray-500">- {product.seller.salesCount} مبيعة</span>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -202,6 +212,27 @@ export default function ProductPage() {
             </Button>
 
             <div className="space-y-4">
+              {/* Delivery & Return Policy */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex items-start gap-3 p-4 bg-purple-50 text-purple-800 rounded-lg text-sm" data-testid="delivery-info">
+                  <Truck className="h-5 w-5 mt-0.5 shrink-0 text-purple-600" />
+                  <div>
+                    <strong>موعد التوصيل:</strong>
+                    <p className="mt-1">{product.deliveryWindow}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-4 bg-orange-50 text-orange-800 rounded-lg text-sm" data-testid="return-info">
+                  <RotateCcw className="h-5 w-5 mt-0.5 shrink-0 text-orange-600" />
+                  <div>
+                    <strong>سياسة الإرجاع:</strong>
+                    <p className="mt-1">{product.returnPolicy}</p>
+                    {product.returnDetails && (
+                      <p className="text-xs mt-1 text-orange-600">{product.returnDetails}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-start gap-3 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm">
                 <ShieldCheck className="h-5 w-5 mt-0.5 shrink-0" />
                 <p>

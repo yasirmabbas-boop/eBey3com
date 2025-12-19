@@ -587,6 +587,52 @@ export default function SellPage() {
                   </div>
                 </div>
               </div>
+
+              <Separator className="my-4" />
+
+              {/* Delivery Time */}
+              <div className="space-y-2">
+                <Label htmlFor="deliveryWindow">مدة التوصيل المتوقعة *</Label>
+                <Select required>
+                  <SelectTrigger data-testid="select-delivery-window">
+                    <SelectValue placeholder="اختر المدة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1-2">1-2 أيام</SelectItem>
+                    <SelectItem value="3-5">3-5 أيام</SelectItem>
+                    <SelectItem value="5-7">5-7 أيام</SelectItem>
+                    <SelectItem value="1-2weeks">1-2 أسبوع</SelectItem>
+                    <SelectItem value="2-3weeks">2-3 أسابيع</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Return Policy */}
+              <div className="space-y-2">
+                <Label htmlFor="returnPolicy">سياسة الإرجاع *</Label>
+                <Select required>
+                  <SelectTrigger data-testid="select-return-policy">
+                    <SelectValue placeholder="اختر السياسة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">لا يوجد إرجاع</SelectItem>
+                    <SelectItem value="3days">3 أيام</SelectItem>
+                    <SelectItem value="7days">7 أيام</SelectItem>
+                    <SelectItem value="14days">14 يوم</SelectItem>
+                    <SelectItem value="30days">30 يوم</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="returnDetails">تفاصيل الإرجاع (اختياري)</Label>
+                <Textarea 
+                  id="returnDetails" 
+                  placeholder="مثال: يقبل الإرجاع إذا كان المنتج بحالته الأصلية..."
+                  rows={2}
+                  data-testid="input-return-details"
+                />
+              </div>
             </CardContent>
           </Card>
 
