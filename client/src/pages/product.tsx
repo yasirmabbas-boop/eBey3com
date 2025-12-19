@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { PRODUCTS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { BiddingWindow } from "@/components/bidding-window";
 import { SellerTrustBadge } from "@/components/seller-trust-badge";
 import { ContactSeller } from "@/components/contact-seller";
@@ -33,7 +34,9 @@ const SIMILAR_PRODUCTS = Array.from({ length: 20 }).map((_, i) => ({
 
 export default function ProductPage() {
   const [match, params] = useRoute("/product/:id");
+  const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
   const [showShippingLabel, setShowShippingLabel] = useState(false);
   
   const product = PRODUCTS.find(p => p.id === params?.id) || PRODUCTS[0];
@@ -53,7 +56,21 @@ export default function ProductPage() {
     paymentMethod: "cash",
   };
 
+  const requireAuth = (action: string) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "يرجى تسجيل الدخول",
+        description: "يجب عليك تسجيل الدخول للمتابعة",
+        variant: "destructive",
+      });
+      navigate(`/register?redirect=${encodeURIComponent(`/product/${params?.id}`)}&action=${action}`);
+      return false;
+    }
+    return true;
+  };
+
   const handleBid = () => {
+    if (!requireAuth("bid")) return;
     toast({
       title: "تم إضافة مزايدة!",
       description: "ستتم معالجة سومتك قريباً.",
@@ -61,6 +78,7 @@ export default function ProductPage() {
   };
 
   const handleAddCart = () => {
+    if (!requireAuth("cart")) return;
     toast({
       title: "تم الإضافة للسلة",
       description: "يمكنك الاستمرار في التصفح أو الذهاب للسلة.",
@@ -68,6 +86,7 @@ export default function ProductPage() {
   };
 
   const handleAddWishlist = () => {
+    if (!requireAuth("wishlist")) return;
     toast({
       title: "تم الإضافة للقائمة المفضلة",
       description: "يمكنك عرض المفضلة من إعداداتك.",
@@ -75,6 +94,7 @@ export default function ProductPage() {
   };
 
   const handleBuyNowDirect = () => {
+    if (!requireAuth("buy")) return;
     toast({
       title: "تم إضافة الطلب!",
       description: "ستنتقل إلى صفحة الدفع قريباً.",
@@ -163,13 +183,6 @@ export default function ProductPage() {
 
             <Separator className="my-6" />
 
-            {/* Registration Warning - Simulated Logic */}
-            {product.currentBid && (
-               <div className="mb-4 text-center">
-                  <p className="text-xs text-red-500 mb-2 font-semibold">يجب عليك تسجيل الدخول للمزايدة أو الشراء</p>
-               </div>
-            )}
-
             {product.currentBid ? (
               <BiddingWindow
                 currentBid={product.currentBid}
@@ -177,6 +190,7 @@ export default function ProductPage() {
                 minimumBid={(product.currentBid || 0) + 5000}
                 timeLeft={product.timeLeft}
                 onBidSubmit={handleBid}
+                onRequireAuth={() => requireAuth("bid")}
               />
             ) : (
               <div className="bg-muted/30 p-6 rounded-xl border mb-6">

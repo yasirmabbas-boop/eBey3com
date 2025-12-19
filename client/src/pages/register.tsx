@@ -63,10 +63,27 @@ export default function Register() {
   const [params] = useRoute("/register");
   const urlParams = new URLSearchParams(window.location.search);
   const initialTab = urlParams.get("tab") as "buyer" | "seller" | null;
+  const redirectUrl = urlParams.get("redirect");
+  const action = urlParams.get("action");
   
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"form" | "verify">("form");
   const [activeTab, setActiveTab] = useState<"buyer" | "seller">(initialTab || "buyer");
+
+  const getActionMessage = () => {
+    switch (action) {
+      case "bid":
+        return "يجب عليك تسجيل الدخول للمشاركة في المزايدة";
+      case "buy":
+        return "يجب عليك تسجيل الدخول لشراء المنتج";
+      case "cart":
+        return "يجب عليك تسجيل الدخول لإضافة المنتجات للسلة";
+      case "wishlist":
+        return "يجب عليك تسجيل الدخول لإضافة المنتجات للمفضلة";
+      default:
+        return null;
+    }
+  };
 
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -147,6 +164,12 @@ export default function Register() {
               انضم إلى مجتمع اي بيع للبيع والشراء الآمن
             </CardDescription>
           </CardHeader>
+          {getActionMessage() && (
+            <div className="mx-6 mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-center">
+              <p className="text-sm font-semibold text-amber-800">{getActionMessage()}</p>
+              <p className="text-xs text-amber-600 mt-1">سجّل الآن للمتابعة</p>
+            </div>
+          )}
           <CardContent>
             {step === "form" ? (
               <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "buyer" | "seller")} className="w-full">

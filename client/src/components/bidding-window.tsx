@@ -11,6 +11,7 @@ interface BiddingWindowProps {
   minimumBid: number;
   timeLeft?: string;
   onBidSubmit?: (bidAmount: number) => void;
+  onRequireAuth?: () => boolean;
 }
 
 export function BiddingWindow({
@@ -19,6 +20,7 @@ export function BiddingWindow({
   minimumBid,
   timeLeft,
   onBidSubmit,
+  onRequireAuth,
 }: BiddingWindowProps) {
   const [bidAmount, setBidAmount] = useState(minimumBid.toString());
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,6 +29,10 @@ export function BiddingWindow({
   const suggestedBid = currentBid + 5000;
 
   const handleSubmitBid = () => {
+    if (onRequireAuth && !onRequireAuth()) {
+      return;
+    }
+
     const bid = parseInt(bidAmount);
 
     if (isNaN(bid) || bid < minimumBid) {
