@@ -11,6 +11,9 @@ import SignIn from "@/pages/signin";
 import SearchPage from "@/pages/search";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
+import ContactUs from "@/pages/contact";
+import SecurityGuide from "@/pages/security-guide";
+import Settings from "@/pages/settings";
 import LiveAuction from "@/pages/live-auction";
 import MyPurchases from "@/pages/my-purchases";
 
@@ -26,6 +29,9 @@ function Router() {
       <Route path="/terms" component={Terms} />
       <Route path="/live-auction" component={LiveAuction} />
       <Route path="/my-purchases" component={MyPurchases} />
+      <Route path="/contact" component={ContactUs} />
+      <Route path="/security-guide" component={SecurityGuide} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );

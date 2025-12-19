@@ -53,7 +53,7 @@
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
-  --font-sans: 'Cairo', sans-serif;
+  --font-sans: 'Almarai', sans-serif;
   
   --radius: 0.5rem;
 }
@@ -69,13 +69,13 @@
   --popover: 0 0% 100%;
   --popover-foreground: 200 50% 10%;
   
-  /* Primary: Deep Teal */
-  --primary: 180 70% 30%;        /* #178282 */
+  /* Primary: Royal Blue */
+  --primary: 221 83% 53%;        /* #2563EB */
   --primary-foreground: 0 0% 100%;
   
-  /* Secondary: Soft Gray-Blue */
-  --secondary: 200 20% 96%;
-  --secondary-foreground: 180 70% 30%;
+  /* Secondary: Soft Blue-Gray */
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
   
   /* Muted */
   --muted: 200 10% 94%;

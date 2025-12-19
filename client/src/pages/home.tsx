@@ -69,7 +69,7 @@ export default function Home() {
               <ChevronRight className="h-5 w-5 text-primary" />
             </button>
 
-            <Link href={`/product/${currentAd.productId}`} className="w-full max-w-3xl">
+            <Link href={`/product/${currentAd.productId}`} className="w-full">
               <div className="bg-white rounded-xl shadow-lg overflow-hidden animate-in fade-in duration-500 hover:shadow-xl transition-shadow cursor-pointer h-full">
                 <div className="grid grid-cols-1 md:grid-cols-2">
                   {/* Image */}

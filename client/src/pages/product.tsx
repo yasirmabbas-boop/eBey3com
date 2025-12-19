@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Clock, ShieldCheck, Heart, Share2 } from "lucide-react";
+import { Clock, ShieldCheck, Heart, Share2, Star, Banknote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AIAssistant } from "@/components/ai-assistant";
 import { BiddingWindow } from "@/components/bidding-window";
@@ -65,6 +65,13 @@ export default function ProductPage() {
                   <Badge variant="outline" className="mb-2">{product.condition}</Badge>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
                   <p className="text-muted-foreground">البائع: <span className="text-primary font-medium">أحمد العراقي</span> (موثوق)</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className="flex text-yellow-400">
+                      {[1, 2, 3, 4, 5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
+                    </div>
+                    <span className="text-sm text-gray-600 font-bold">(5.0)</span>
+                    <span className="text-xs text-gray-500">- 124 تقييم</span>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500">
@@ -100,6 +107,15 @@ export default function ProductPage() {
                 </Button>
               </div>
             )}
+
+            {/* Cash Payment Note */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 flex items-start gap-2 text-sm text-yellow-800">
+              <Banknote className="h-5 w-5 shrink-0" />
+              <p>
+                <strong>ملاحظة:</strong> الدفع حالياً نقداً عند الاستلام فقط (Cash on Delivery).
+                خدمة الدفع بالبطاقات ستتوفر قريباً.
+              </p>
+            </div>
 
             {/* Buy Now Option - Optional for Sellers */}
             <div className="bg-green-50 border-2 border-green-200 p-6 rounded-xl mb-6">

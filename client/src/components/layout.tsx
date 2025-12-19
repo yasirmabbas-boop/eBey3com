@@ -126,10 +126,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <ul className="space-y-2 text-sm">
               <li><Link href="/register">ابدأ كبائع</Link></li>
               <li><Link href="/register">ابدأ كمشتري</Link></li>
+              <li><Link href="/security-guide">دليل الأمان</Link></li>
               <li>
-                <a href="tel:+9647700000000" className="hover:text-blue-300">
+                <Link href="/contact" className="hover:text-blue-300">
                   اتصل بنا
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

@@ -85,6 +85,26 @@ export default function Register() {
                 
                 <TabsContent value="buyer">
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    {/* Social Registration */}
+                    <div className="space-y-2 mb-6">
+                      <p className="text-sm font-semibold text-gray-700 text-center mb-3">التسجيل السريع</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Button type="button" variant="outline" className="border-2 hover:bg-gray-50">
+                           Google
+                        </Button>
+                        <Button type="button" variant="outline" className="border-2 hover:bg-gray-50">
+                           Facebook
+                        </Button>
+                        <Button type="button" variant="outline" className="border-2 hover:bg-gray-50">
+                           Apple
+                        </Button>
+                      </div>
+                      <div className="relative py-2">
+                        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300"></div></div>
+                        <div className="relative flex justify-center text-sm"><span className="px-2 bg-white text-gray-500">أو</span></div>
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="name">الاسم الكامل</Label>
                       <Input id="name" {...form.register("name")} placeholder="مثال: علي محمد" className="text-right" />
@@ -92,8 +112,8 @@ export default function Register() {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="phone">رقم الهاتف (عراقي فقط)</Label>
-                      <Input id="phone" {...form.register("phone")} placeholder="07xxxxxxxxx" className="text-right" dir="ltr" />
+                      <Label htmlFor="phone">رقم الهاتف أو البريد الإلكتروني</Label>
+                      <Input id="phone" {...form.register("phone")} placeholder="07xxxxxxxxx أو example@email.com" className="text-right" dir="ltr" />
                       {form.formState.errors.phone && <p className="text-red-500 text-xs">{form.formState.errors.phone.message}</p>}
                     </div>
 
