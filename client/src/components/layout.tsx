@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Search, ShoppingCart, User, Menu, Phone, Camera, PlusCircle, LogOut, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,17 @@ import { NotificationsButton } from "@/components/notifications";
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [, navigate] = useLocation();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate("/search");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans" dir="rtl">
@@ -107,14 +118,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           {/* Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-2xl relative gap-2 items-center">
+          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl relative gap-2 items-center">
             <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input 
                 type="search" 
-                placeholder="البحث..." 
-                className="w-full pl-10 pr-4 bg-blue-50 border-blue-300 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                placeholder="ابحث عن ساعات، هواتف، سيارات، تحف..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pr-10 pl-12 h-11 bg-blue-50 border-blue-300 focus-visible:ring-blue-500 focus-visible:border-blue-500 text-base"
+                data-testid="input-header-search"
               />
               <Button 
+                type="button"
                 size="icon" 
                 variant="ghost" 
                 className="absolute left-1 top-1 bottom-1 h-auto w-10 text-gray-500 hover:text-primary hover:bg-transparent"
@@ -124,10 +140,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Camera className="h-5 w-5" />
               </Button>
             </div>
-            <Button className="bg-blue-600 text-white hover:bg-blue-700 px-6 rounded-md font-bold">
+            <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 px-6 h-11 rounded-md font-bold">
+              <Search className="h-4 w-4 ml-2" />
               بحث
             </Button>
-          </div>
+          </form>
 
           {/* Actions */}
           <div className="flex items-center gap-2 md:gap-4">
