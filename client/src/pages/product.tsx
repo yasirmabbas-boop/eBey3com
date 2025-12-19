@@ -104,6 +104,13 @@ export default function ProductPage() {
 
             <Separator className="my-6" />
 
+            {/* Registration Warning - Simulated Logic */}
+            {!product.currentBid && (
+               <div className="mb-4 text-center">
+                  <p className="text-xs text-red-500 mb-2 font-semibold">يجب عليك تسجيل الدخول للمزايدة أو الشراء</p>
+               </div>
+            )}
+
             {product.currentBid ? (
               <BiddingWindow
                 currentBid={product.currentBid}
@@ -127,8 +134,8 @@ export default function ProductPage() {
             )}
 
             {/* Cash Payment Note */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 flex items-start gap-2 text-sm text-yellow-800">
-              <Banknote className="h-5 w-5 shrink-0" />
+            <div className="bg-green-100 border border-green-300 rounded-lg p-3 mb-4 flex items-start gap-2 text-sm text-green-900">
+              <Banknote className="h-5 w-5 shrink-0 text-green-700" />
               <p>
                 <strong>ملاحظة:</strong> الدفع حالياً نقداً عند الاستلام فقط (Cash on Delivery).
                 خدمة الدفع بالبطاقات ستتوفر قريباً.
