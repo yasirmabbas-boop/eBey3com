@@ -10,6 +10,24 @@ import { useToast } from "@/hooks/use-toast";
 import { AIAssistant } from "@/components/ai-assistant";
 import { BiddingWindow } from "@/components/bidding-window";
 
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+
+const SIMILAR_PRODUCTS = Array.from({ length: 20 }).map((_, i) => ({
+  id: `sim-${i}`,
+  title: `منتج مشابه مميز ${i + 1}`,
+  price: 50000 + (i * 25000),
+  rating: (3 + Math.random() * 2).toFixed(1),
+  bids: Math.floor(Math.random() * 50) + 5,
+  timeLeft: `${Math.floor(Math.random() * 24) + 1} ساعة`,
+  image: `https://images.unsplash.com/photo-${1500000000000 + (i * 1000)}?w=400&h=400&fit=crop`
+}));
+
 export default function ProductPage() {
   const [match, params] = useRoute("/product/:id");
   const { toast } = useToast();
@@ -172,6 +190,60 @@ export default function ProductPage() {
           </div>
         </div>
       </div>
+
+      {/* Similar Suggestions Slider */}
+      <section className="bg-gray-50 py-12 border-t">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl font-bold text-primary mb-8 text-center">قد يعجبك أيضاً</h2>
+          <Carousel 
+            opts={{
+              align: "start",
+              direction: "rtl",
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-4">
+              {SIMILAR_PRODUCTS.map((item) => (
+                <CarouselItem key={item.id} className="pl-4 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
+                  <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border aspect-square flex flex-col">
+                    <div className="relative h-2/3 bg-gray-200">
+                      <img 
+                        src={item.image} 
+                        alt={item.title} 
+                        className="w-full h-full object-cover"
+                      />
+                      <Badge className="absolute top-2 right-2 bg-black/50 hover:bg-black/60 border-0 backdrop-blur-sm">
+                        ينتهي: {item.timeLeft}
+                      </Badge>
+                    </div>
+                    <div className="p-3 flex flex-col justify-between flex-1">
+                      <div>
+                        <h3 className="font-bold text-sm line-clamp-1 mb-1">{item.title}</h3>
+                        <div className="flex items-center gap-1 text-xs text-yellow-500 mb-2">
+                          <Star className="h-3 w-3 fill-current" />
+                          <span className="font-medium text-gray-700">{item.rating}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <p className="text-xs text-gray-500">السعر الحالي</p>
+                          <p className="font-bold text-primary">{item.price.toLocaleString()} د.ع</p>
+                        </div>
+                        <div className="text-xs text-gray-500 flex items-center gap-1">
+                          <span className="font-bold text-gray-900">{item.bids}</span>
+                          مزايدة
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden md:flex left-0" />
+            <CarouselNext className="hidden md:flex right-0" />
+          </Carousel>
+        </div>
+      </section>
 
       {/* AI Assistant */}
       <AIAssistant 
