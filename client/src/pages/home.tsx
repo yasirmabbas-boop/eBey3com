@@ -5,8 +5,16 @@ import { PRODUCTS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid } from "lucide-react";
+import { Clock, Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, History, Sparkles } from "lucide-react";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
+
+const RECENT_SEARCHES = [
+  { term: "ساعات رولكس", count: 3 },
+  { term: "ساعات أوميغا", count: 2 },
+  { term: "جاكيت جلد", count: 1 },
+];
+
+const RECOMMENDED_PRODUCTS = PRODUCTS.slice(0, 6);
 
 const ADS = [
   {
@@ -128,60 +136,104 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Hero Section */}
-      <section className="relative h-[300px] w-full overflow-hidden bg-primary">
-        <div 
-          className="absolute inset-0 bg-cover bg-center opacity-20"
-          style={{ backgroundImage: `url(${heroBg})` }}
-        />
-        
-        <div className="container mx-auto px-4 relative h-full flex flex-col justify-center items-center text-center text-white">
-          <Badge className="mb-4 bg-accent text-white hover:bg-accent/90 border-none px-4 py-1 text-md">
-            سوق العراق الأول
-          </Badge>
-          <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
-             مزادات <span className="text-accent">النوادر والمميز</span>
-          </h1>
-          <p className="text-lg opacity-90 mb-6 max-w-xl">
-            سجل الآن وابدأ المزايدة على آلاف المنتجات المميزة
-          </p>
-          <div className="flex gap-4">
-            <Link href="/live-auction">
-              <Button size="lg" className="bg-accent text-white hover:bg-accent/90 font-bold px-8 h-12 text-lg flex items-center gap-2">
-                <Gavel className="h-5 w-5" />
-                شارك في المزاد
-              </Button>
-            </Link>
+      {/* Personalized Section - Based on History & Searches */}
+      <section className="py-8 bg-white border-b">
+        <div className="container mx-auto px-4">
+          {/* Recent Searches */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <History className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-bold text-primary">عمليات البحث الأخيرة</h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {RECENT_SEARCHES.map((search, i) => (
+                <Link key={i} href={`/search?q=${encodeURIComponent(search.term)}`}>
+                  <Badge 
+                    variant="outline" 
+                    className="px-4 py-2 text-sm cursor-pointer hover:bg-primary hover:text-white transition-colors"
+                    data-testid={`badge-recent-search-${i}`}
+                  >
+                    {search.term}
+                    <span className="mr-2 text-xs text-muted-foreground">({search.count})</span>
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Recommended Items Based on History */}
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-500" />
+                <h2 className="text-xl font-bold text-primary">مقترحة لك بناءً على اهتماماتك</h2>
+              </div>
+              <Link href="/search" className="text-accent hover:underline font-medium text-sm">عرض المزيد</Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {RECOMMENDED_PRODUCTS.map((product) => (
+                <Link key={product.id} href={`/product/${product.id}`}>
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200" data-testid={`card-recommended-${product.id}`}>
+                    <div className="relative aspect-square overflow-hidden bg-gray-100">
+                      <img 
+                        src={product.image} 
+                        alt={product.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {product.currentBid && (
+                        <Badge className="absolute top-2 right-2 bg-primary text-white text-xs">
+                          مزاد
+                        </Badge>
+                      )}
+                    </div>
+                    <CardContent className="p-3">
+                      <h3 className="font-bold text-sm mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                        {product.title}
+                      </h3>
+                      <p className="font-bold text-primary text-sm">
+                        {(product.currentBid || product.price).toLocaleString()} د.ع
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="py-12 bg-white">
+      {/* Categories - Quick Access */}
+      <section className="py-6 bg-gray-100">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-8 text-center text-primary flex items-center justify-center gap-2">
-            <LayoutGrid className="h-6 w-6" />
-            تصفح الأقسام
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="flex items-center gap-2 mb-4">
+            <LayoutGrid className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-bold text-primary">تصفح الأقسام</h2>
+          </div>
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
             {[
-              { name: "ساعات فاخرة", icon: Clock, color: "text-blue-600", bg: "bg-blue-50" },
-              { name: "ملابس كلاسيكية", icon: Tag, color: "text-purple-600", bg: "bg-purple-50" },
+              { name: "ساعات", icon: Clock, color: "text-blue-600", bg: "bg-blue-50" },
+              { name: "ملابس", icon: Tag, color: "text-purple-600", bg: "bg-purple-50" },
               { name: "إلكترونيات", icon: Zap, color: "text-amber-600", bg: "bg-amber-50" },
-              { name: "تحف وفنون", icon: Search, color: "text-rose-600", bg: "bg-rose-50" }
+              { name: "تحف", icon: Search, color: "text-rose-600", bg: "bg-rose-50" },
+              { name: "ساعات", icon: Clock, color: "text-green-600", bg: "bg-green-50" },
+              { name: "أثاث", icon: LayoutGrid, color: "text-indigo-600", bg: "bg-indigo-50" },
+              { name: "سيارات", icon: Zap, color: "text-red-600", bg: "bg-red-50" },
+              { name: "أخرى", icon: Tag, color: "text-gray-600", bg: "bg-gray-50" },
             ].map((cat, i) => (
-              <div key={i} className="group cursor-pointer bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-primary text-center">
-                <div className={`h-16 w-16 ${cat.bg} rounded-full mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                  <cat.icon className={`h-8 w-8 ${cat.color}`} />
+              <Link key={i} href={`/search?c=${cat.name}`}>
+                <div className="group cursor-pointer bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-primary text-center" data-testid={`category-${i}`}>
+                  <div className={`h-10 w-10 ${cat.bg} rounded-full mx-auto mb-2 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    <cat.icon className={`h-5 w-5 ${cat.color}`} />
+                  </div>
+                  <h3 className="font-medium text-sm text-gray-800">{cat.name}</h3>
                 </div>
-                <h3 className="font-bold text-lg text-gray-800">{cat.name}</h3>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Featured Items */}
+      {/* Featured Items - New Arrivals */}
       <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-end mb-8">
@@ -229,6 +281,31 @@ export default function Home() {
               </Link>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Join Auction CTA */}
+      <section className="relative py-16 w-full overflow-hidden bg-primary">
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-20"
+          style={{ backgroundImage: `url(${heroBg})` }}
+        />
+        <div className="container mx-auto px-4 relative text-center text-white">
+          <Badge className="mb-4 bg-accent text-white hover:bg-accent/90 border-none px-4 py-1 text-md">
+            سوق العراق الأول
+          </Badge>
+          <h2 className="text-2xl md:text-4xl font-bold mb-4 leading-tight">
+            مزادات <span className="text-accent">النوادر والمميز</span>
+          </h2>
+          <p className="text-lg opacity-90 mb-6 max-w-xl mx-auto">
+            سجل الآن وابدأ المزايدة على آلاف المنتجات المميزة
+          </p>
+          <Link href="/live-auction">
+            <Button size="lg" className="bg-accent text-white hover:bg-accent/90 font-bold px-8 h-12 text-lg flex items-center gap-2 mx-auto">
+              <Gavel className="h-5 w-5" />
+              شارك في المزاد
+            </Button>
+          </Link>
         </div>
       </section>
 
