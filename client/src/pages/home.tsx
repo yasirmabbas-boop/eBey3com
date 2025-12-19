@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { PRODUCTS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, History, Sparkles, Loader2, Clock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, History, Sparkles, Loader2, Clock, Camera } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 import type { Listing } from "@shared/schema";
@@ -64,7 +65,18 @@ const ADS = [
 
 export default function Home() {
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [, navigate] = useLocation();
   const currentAd = ADS[currentAdIndex];
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate("/search");
+    }
+  };
 
   const { data: listings = [], isLoading } = useQuery<Listing[]>({
     queryKey: ["/api/listings"],
@@ -172,6 +184,55 @@ export default function Home() {
                     index === currentAdIndex ? "bg-white w-8" : "bg-white/40 w-2 hover:bg-white/60"
                   }`}
                 />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Search Section */}
+      <section className="bg-gradient-to-b from-blue-600 to-blue-700 py-8">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+              ابحث عن ما تريد
+            </h2>
+            <p className="text-blue-100 mb-6">
+              اكتشف آلاف المنتجات من الساعات والإلكترونيات والتحف والمزيد
+            </p>
+            <form onSubmit={handleSearch} className="flex gap-2 bg-white p-2 rounded-xl shadow-xl">
+              <div className="relative flex-1">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input 
+                  type="search"
+                  placeholder="ابحث عن ساعات، هواتف، سيارات..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pr-10 pl-4 h-12 text-lg border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  data-testid="input-home-search"
+                />
+              </div>
+              <Button 
+                type="submit"
+                size="lg"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 h-12"
+                data-testid="button-home-search"
+              >
+                <Search className="h-5 w-5 ml-2" />
+                بحث
+              </Button>
+            </form>
+            <div className="flex flex-wrap justify-center gap-2 mt-4">
+              <span className="text-blue-200 text-sm">بحث سريع:</span>
+              {["ساعات رولكس", "آيفون", "سجاد فارسي", "سيارات", "ذهب"].map((term) => (
+                <Link key={term} href={`/search?q=${encodeURIComponent(term)}`}>
+                  <Badge 
+                    variant="secondary" 
+                    className="bg-white/20 hover:bg-white/30 text-white border-0 cursor-pointer"
+                  >
+                    {term}
+                  </Badge>
+                </Link>
               ))}
             </div>
           </div>
