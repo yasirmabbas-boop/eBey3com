@@ -10,25 +10,25 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
+import { GlobalAIAssistant } from "@/components/global-ai-assistant";
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans" dir="rtl">
+      {/* Global AI Assistant */}
+      <GlobalAIAssistant />
+
       {/* Top Bar */}
       <div className="bg-white text-gray-700 py-2 text-xs px-4 border-b border-gray-200">
         <div className="container mx-auto flex justify-between items-center gap-8">
-          <div className="flex gap-6">
-            <a href="tel:+9647700000000" className="hover:text-primary font-semibold transition-colors flex items-center gap-1">
-              📞 المساعدة والاتصال
-            </a>
-            <div className="h-4 w-px bg-gray-300 mx-2"></div>
-            <Link href="/" className="hover:text-primary font-semibold transition-colors">
-              🎁 العروض اليومية
-            </Link>
-            <div className="h-4 w-px bg-gray-300 mx-2"></div>
+          <div className="flex gap-6 w-full justify-end">
             <Link href="/signin" className="hover:text-primary font-semibold transition-colors">
               تسجيل الدخول / إنشاء حساب
             </Link>
-            <AccountDropdown />
+            <div className="h-4 w-px bg-gray-300 mx-2"></div>
+            <Link href="/contact" className="hover:text-primary font-semibold transition-colors flex items-center gap-1">
+              📞 المساعدة والاتصال
+            </Link>
           </div>
         </div>
       </div>
@@ -57,12 +57,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Sheet>
 
           {/* Logo */}
-          <Link href="/" className="flex-shrink-0">
+          <Link href="/" className="flex-shrink-0 flex items-center">
             <Logo className="h-16 md:h-20" />
           </Link>
 
           {/* Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-2xl relative gap-2">
+          <div className="hidden md:flex flex-1 max-w-2xl relative gap-2 items-center">
             <div className="relative flex-1">
               <Input 
                 type="search" 
