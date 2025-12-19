@@ -9,9 +9,11 @@ import { Clock, Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, 
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 
 const RECENT_SEARCHES = [
+  { term: "آيفون 14", count: 5 },
   { term: "ساعات رولكس", count: 3 },
-  { term: "ساعات أوميغا", count: 2 },
-  { term: "جاكيت جلد", count: 1 },
+  { term: "بلايستيشن 5", count: 2 },
+  { term: "ذهب عراقي", count: 2 },
+  { term: "ماك بوك", count: 1 },
 ];
 
 const RECOMMENDED_PRODUCTS = PRODUCTS.slice(0, 6);
