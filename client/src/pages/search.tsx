@@ -45,10 +45,10 @@ const CATEGORIES = [
 
 const CONDITIONS = [
   { id: "New", label: "جديد", aliases: ["New", "جديد"] },
-  { id: "Used - Like New", label: "شبه جديد", aliases: ["Used - Like New", "شبه جديد"] },
-  { id: "Used - Good", label: "جيد", aliases: ["Used - Good", "جيد"] },
-  { id: "Used - Fair", label: "مقبول", aliases: ["Used - Fair", "مقبول"] },
   { id: "Vintage", label: "فينتاج / أنتيك", aliases: ["Vintage", "فينتاج", "أنتيك"] },
+  { id: "Used - Like New", label: "شبه جديد", aliases: ["Used - Like New", "شبه جديد"] },
+  { id: "Used - Good", label: "مستعمل - جيد", aliases: ["Used - Good", "جيد", "مستعمل"] },
+  { id: "Used - Fair", label: "مستعمل - مقبول", aliases: ["Used - Fair", "مقبول"] },
 ];
 
 const CITIES = [
