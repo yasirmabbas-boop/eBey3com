@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRoute } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,8 +29,13 @@ const sellerSchema = registerSchema.extend({
 
 export default function Register() {
   const { toast } = useToast();
+  const [params] = useRoute("/register");
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialTab = urlParams.get("tab") as "buyer" | "seller" | null;
+  
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"form" | "verify">("form");
+  const [activeTab, setActiveTab] = useState<"buyer" | "seller">(initialTab || "buyer");
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -77,7 +83,7 @@ export default function Register() {
           </CardHeader>
           <CardContent>
             {step === "form" ? (
-              <Tabs defaultValue="buyer" className="w-full">
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "buyer" | "seller")} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-6">
                   <TabsTrigger value="buyer">مشتري</TabsTrigger>
                   <TabsTrigger value="seller">بائع</TabsTrigger>

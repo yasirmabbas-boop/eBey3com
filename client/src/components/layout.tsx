@@ -20,6 +20,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <a href="tel:+9647700000000" className="hover:text-primary font-semibold transition-colors flex items-center gap-1">
               📞 المساعدة والاتصال
             </a>
+            <div className="h-4 w-px bg-gray-300 mx-2"></div>
+            <Link href="/register?tab=seller" className="hover:text-primary font-semibold transition-colors">
+              تسجيل بائع
+            </Link>
+            <Link href="/register?tab=buyer" className="hover:text-primary font-semibold transition-colors">
+              تسجيل مشتري
+            </Link>
+            <div className="h-4 w-px bg-gray-300 mx-2"></div>
             <Link href="/" className="hover:text-primary font-semibold transition-colors">
               🎁 العروض اليومية
             </Link>
