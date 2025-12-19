@@ -5,33 +5,70 @@ import { Card } from "@/components/ui/card";
 import { Gavel, TrendingUp, Wifi, WifiOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useBidWebSocket } from "@/hooks/use-bid-websocket";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface BiddingWindowProps {
   listingId: string;
+  userId?: string;
   currentBid: number;
   totalBids: number;
   minimumBid: number;
   timeLeft?: string;
-  onBidSubmit?: (bidAmount: number) => void;
+  onBidSuccess?: (bidAmount: number) => void;
   onRequireAuth?: () => boolean;
 }
 
 export function BiddingWindow({
   listingId,
+  userId,
   currentBid: initialCurrentBid,
   totalBids: initialTotalBids,
   minimumBid: initialMinimumBid,
   timeLeft,
-  onBidSubmit,
+  onBidSuccess,
   onRequireAuth,
 }: BiddingWindowProps) {
   const [currentBid, setCurrentBid] = useState(initialCurrentBid);
   const [totalBids, setTotalBids] = useState(initialTotalBids);
   const [minimumBid, setMinimumBid] = useState(initialMinimumBid);
   const [bidAmount, setBidAmount] = useState(initialMinimumBid.toString());
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastBidder, setLastBidder] = useState<string | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const bidMutation = useMutation({
+    mutationFn: async (amount: number) => {
+      const res = await fetch("/api/bids", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingId,
+          userId: userId || "guest",
+          amount,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to submit bid");
+      }
+      return res.json();
+    },
+    onSuccess: (_, amount) => {
+      toast({
+        title: "تم تقديم سومتك بنجاح! ✅",
+        description: `سومتك: ${amount.toLocaleString()} د.ع`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/listings", listingId] });
+      onBidSuccess?.(amount);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "فشل في تقديم المزايدة",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const { isConnected } = useBidWebSocket({
     listingId,
@@ -73,15 +110,7 @@ export function BiddingWindow({
       return;
     }
 
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast({
-        title: "تم تقديم سومتك بنجاح! ✅",
-        description: `سومتك: ${bid.toLocaleString()} د.ع`,
-      });
-      onBidSubmit?.(bid);
-    }, 500);
+    bidMutation.mutate(bid);
   };
 
   const handleQuickBid = (amount: number) => {
@@ -185,11 +214,11 @@ export function BiddingWindow({
       {/* Submit Button */}
       <Button
         onClick={handleSubmitBid}
-        disabled={isSubmitting}
+        disabled={bidMutation.isPending}
         className="w-full bg-accent hover:bg-accent/90 text-white font-bold py-3 text-lg"
         data-testid="button-submit-bid"
       >
-        {isSubmitting ? "جاري المعالجة..." : "خلي سومتك"}
+        {bidMutation.isPending ? "جاري المعالجة..." : "خلي سومتك"}
       </Button>
 
       <p className="text-center text-xs text-muted-foreground mt-4">

@@ -51,14 +51,6 @@ export default function ProductPage() {
     return true;
   };
 
-  const handleBid = () => {
-    if (!requireAuth("bid")) return;
-    toast({
-      title: "تم إضافة مزايدة!",
-      description: "ستتم معالجة سومتك قريباً.",
-    });
-  };
-
   const handleAddCart = () => {
     if (!requireAuth("cart")) return;
     toast({
@@ -172,7 +164,6 @@ export default function ProductPage() {
                 totalBids={product.totalBids || 0}
                 minimumBid={(product.currentBid || 0) + 5000}
                 timeLeft={product.timeLeft}
-                onBidSubmit={handleBid}
                 onRequireAuth={() => requireAuth("bid")}
               />
             ) : (

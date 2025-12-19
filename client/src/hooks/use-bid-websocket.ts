@@ -74,8 +74,11 @@ export function useBidWebSocket({ listingId, onBidUpdate }: UseBidWebSocketOptio
         clearTimeout(reconnectTimeoutRef.current);
       }
       if (wsRef.current) {
-        wsRef.current.send(JSON.stringify({ type: "unsubscribe", listingId }));
+        if (wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: "unsubscribe", listingId }));
+        }
         wsRef.current.close();
+        wsRef.current = null;
       }
     };
   }, [connect, listingId]);
