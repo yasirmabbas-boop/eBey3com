@@ -15,6 +15,7 @@ import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import ContactUs from "@/pages/contact";
 import SecurityGuide from "@/pages/security-guide";
+import Security from "@/pages/security";
 import Settings from "@/pages/settings";
 import LiveAuction from "@/pages/live-auction";
 import MyPurchases from "@/pages/my-purchases";
@@ -45,6 +46,7 @@ function Router() {
       <Route path="/my-purchases" component={MyPurchases} />
       <Route path="/contact" component={ContactUs} />
       <Route path="/security-guide" component={SecurityGuide} />
+      <Route path="/security" component={Security} />
       <Route path="/settings" component={Settings} />
       <Route path="/sell" component={SellPage} />
       <Route path="/deals-guide" component={DealsGuide} />

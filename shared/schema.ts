@@ -5,12 +5,13 @@ import { z } from "zod";
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  accountCode: text("account_code").unique(),
   email: text("email").unique(),
-  phone: text("phone").unique(),
   password: text("password"),
   displayName: text("display_name").notNull(),
   avatar: text("avatar"),
   role: text("role").notNull().default("user"),
+  accountType: text("account_type").notNull().default("buyer"),
   isVerified: boolean("is_verified").notNull().default(false),
   idDocumentUrl: text("id_document_url"),
   verificationStatus: text("verification_status").default("pending"),
@@ -177,6 +178,7 @@ export type Category = typeof categories.$inferSelect;
 
 export const listings = pgTable("listings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productCode: text("product_code").unique(),
   title: text("title").notNull(),
   description: text("description").notNull(),
   price: integer("price").notNull(),
@@ -192,7 +194,7 @@ export const listings = pgTable("listings", {
   returnPolicy: text("return_policy").notNull(),
   returnDetails: text("return_details"),
   sellerName: text("seller_name").notNull(),
-  sellerPhone: text("seller_phone"),
+  sellerId: varchar("seller_id"),
   city: text("city").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),

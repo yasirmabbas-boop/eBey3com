@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw } from "lucide-react";
+import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AIAssistant } from "@/components/ai-assistant";
 import { BiddingWindow } from "@/components/bidding-window";
 import { SellerTrustBadge } from "@/components/seller-trust-badge";
+import { ContactSeller } from "@/components/contact-seller";
 
 import {
   Carousel,
@@ -95,7 +96,13 @@ export default function ProductPage() {
             <div className="mb-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <Badge variant="outline" className="mb-2">{product.condition}</Badge>
+                  <div className="flex gap-2 mb-2">
+                    <Badge variant="outline">{product.condition}</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      <Tag className="h-3 w-3 ml-1" />
+                      {product.productCode}
+                    </Badge>
+                  </div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
                   <div className="mt-2">
                     <span className="text-muted-foreground">البائع: </span>
@@ -201,15 +208,22 @@ export default function ProductPage() {
               </Button>
             </div>
 
-            <Button 
-              variant="outline" 
-              size="lg" 
-              className="w-full h-12 mb-6" 
-              onClick={handleAddCart}
-              data-testid="button-add-cart"
-            >
-              أضف للسلة
-            </Button>
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="h-12" 
+                onClick={handleAddCart}
+                data-testid="button-add-cart"
+              >
+                أضف للسلة
+              </Button>
+              <ContactSeller 
+                sellerName={product.seller.name}
+                productTitle={product.title}
+                productCode={product.productCode}
+              />
+            </div>
 
             <div className="space-y-4">
               {/* Delivery & Return Policy */}

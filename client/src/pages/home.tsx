@@ -32,40 +32,30 @@ const CATEGORIES = [
 const ADS = [
   {
     id: 1,
-    title: "استكشف عالم الساعات",
-    description: "مجموعة نادرة من الساعات الفاخرة والكلاسيكية بانتظارك - رولكس، أوميغا، كارتييه وأكثر",
-    image: "https://images.unsplash.com/photo-1587836374828-4dbafa94cf0e?w=800&h=400&fit=crop",
-    badgeText: "قسم مميز",
-    buttonText: "تصفح الساعات",
+    title: "اكتشف كنوز الزمن",
+    description: "رحلة ممتعة في عالم الساعات الكلاسيكية - قطع نادرة تحكي قصص الأناقة",
+    image: "https://images.unsplash.com/photo-1587836374828-4dbafa94cf0e?w=1200&h=300&fit=crop",
+    badgeText: "مغامرة جديدة",
+    buttonText: "ابدأ الاستكشاف",
     link: "/search?category=ساعات",
     color: "bg-blue-900"
   },
   {
     id: 2,
-    title: "عالم الإلكترونيات",
-    description: "آيفون، سامسونج، بلايستيشن، لابتوبات وجميع الأجهزة الإلكترونية بأسعار تنافسية",
-    image: "https://images.unsplash.com/photo-1498049860654-af1a5c5668ba?w=800&h=400&fit=crop",
-    badgeText: "تكنولوجيا",
-    buttonText: "تصفح الإلكترونيات",
-    link: "/search?category=إلكترونيات",
-    color: "bg-purple-900"
-  },
-  {
-    id: 3,
-    title: "تحف ومقتنيات نادرة",
-    description: "سجاد إيراني أصلي، تحف عثمانية، مقتنيات تراثية عراقية وقطع فنية نادرة",
-    image: "https://images.unsplash.com/photo-1555529733-0e670560f7e1?w=800&h=400&fit=crop",
-    badgeText: "تراث وفن",
-    buttonText: "تصفح التحف",
+    title: "كنوز من الماضي",
+    description: "سجاد عريق وتحف نادرة تنتظر من يقدّرها - كل قطعة لها حكاية",
+    image: "https://images.unsplash.com/photo-1555529733-0e670560f7e1?w=1200&h=300&fit=crop",
+    badgeText: "اكتشف التراث",
+    buttonText: "شاهد المجموعة",
     link: "/search?category=تحف وأثاث",
     color: "bg-amber-800"
   },
   {
-    id: 4,
-    title: "كيف تجد أفضل الصفقات؟",
-    description: "٧ نصائح ذهبية للفوز بالمزادات والحصول على أفضل الأسعار - دليل المشتري الذكي",
-    image: "https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?w=800&h=400&fit=crop",
-    badgeText: "دليل المشتري",
+    id: 3,
+    title: "صفقات مميزة بانتظارك",
+    description: "نصائح ذهبية للفوز بأفضل العروض - دليلك للتسوق الذكي والممتع",
+    image: "https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?w=1200&h=300&fit=crop",
+    badgeText: "نصائح مفيدة",
     buttonText: "اقرأ الدليل",
     link: "/deals-guide",
     color: "bg-green-800"
@@ -87,18 +77,22 @@ export default function Home() {
 
   const displayProducts = listings.length > 0 ? listings.map(l => ({
     id: l.id,
+    productCode: (l as any).productCode || `P-${l.id.slice(0, 6)}`,
     title: l.title,
     price: l.price,
-    currentBid: l.currentBid,
+    currentBid: l.currentBid || undefined,
     image: l.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
-    saleType: l.saleType,
-    timeLeft: l.timeLeft,
+    saleType: l.saleType as "auction" | "fixed",
+    timeLeft: l.timeLeft || undefined,
     auctionEndTime: l.auctionEndTime,
+    seller: { name: l.sellerName, salesCount: 0, rating: 95 },
     sellerName: l.sellerName,
     sellerTotalSales: 0,
     sellerRating: 5,
     category: l.category,
-    condition: l.condition,
+    condition: l.condition as "New" | "Used - Like New" | "Used - Good" | "Vintage",
+    deliveryWindow: l.deliveryWindow,
+    returnPolicy: l.returnPolicy,
     city: l.city,
   })) : PRODUCTS;
 
@@ -123,8 +117,8 @@ export default function Home() {
     <Layout>
       {/* Sliding Ads Section */}
       <section className="bg-gray-50 border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="relative overflow-hidden rounded-2xl shadow-xl h-[400px]">
+        <div className="w-full px-2 sm:px-4 py-4">
+          <div className="relative overflow-hidden rounded-xl shadow-xl h-[200px] sm:h-[240px]">
             {/* Background Image with Overlay */}
             <div className="absolute inset-0">
               <img 
@@ -137,18 +131,18 @@ export default function Home() {
             </div>
 
             {/* Content */}
-            <div className="absolute inset-0 flex flex-col justify-center items-start px-8 md:px-16 text-white max-w-3xl">
-              <Badge className="mb-4 bg-white/20 hover:bg-white/30 text-white border-none px-4 py-1 text-sm backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+            <div className="absolute inset-0 flex flex-col justify-center items-start px-6 md:px-12 text-white max-w-2xl">
+              <Badge className="mb-2 bg-white/20 hover:bg-white/30 text-white border-none px-3 py-0.5 text-xs backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
                 {currentAd.badgeText}
               </Badge>
-              <h2 className="text-4xl md:text-6xl font-bold mb-4 leading-tight animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 leading-tight animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
                 {currentAd.title}
               </h2>
-              <p className="text-lg md:text-xl opacity-90 mb-8 max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+              <p className="text-sm sm:text-base opacity-90 mb-4 max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
                 {currentAd.description}
               </p>
               <Link href={currentAd.link}>
-                <Button size="lg" className="bg-white text-gray-900 hover:bg-gray-100 font-bold px-8 h-12 text-lg animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400">
+                <Button size="sm" className="bg-white text-gray-900 hover:bg-gray-100 font-bold px-6 h-9 text-sm animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400">
                   {currentAd.buttonText}
                 </Button>
               </Link>
@@ -157,19 +151,19 @@ export default function Home() {
             {/* Navigation Buttons */}
             <button
               onClick={prevAd}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/20 text-white hover:bg-black/40 transition-colors backdrop-blur-sm border border-white/10"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full bg-black/20 text-white hover:bg-black/40 transition-colors backdrop-blur-sm border border-white/10"
             >
-              <ChevronRight className="h-8 w-8" />
+              <ChevronRight className="h-5 w-5" />
             </button>
             <button
               onClick={nextAd}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/20 text-white hover:bg-black/40 transition-colors backdrop-blur-sm border border-white/10"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-full bg-black/20 text-white hover:bg-black/40 transition-colors backdrop-blur-sm border border-white/10"
             >
-              <ChevronLeft className="h-8 w-8" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
 
             {/* Indicators */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
               {ADS.map((_, index) => (
                 <button
                   key={index}
