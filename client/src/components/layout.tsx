@@ -21,7 +21,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Top Bar */}
       <div className="bg-white text-gray-700 py-2 text-xs px-4 border-b border-gray-200">
         <div className="container mx-auto flex justify-between items-center gap-8">
-          <div className="flex gap-6 w-full justify-end items-center">
+          <div className="flex gap-6 w-full justify-start items-center">
             <Link href="/signin" className="hover:text-primary font-semibold transition-colors flex items-center gap-1">
               <User className="h-4 w-4" />
               تسجيل الدخول / إنشاء حساب
