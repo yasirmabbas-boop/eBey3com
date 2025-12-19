@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Search, ShoppingCart, User, Menu, Phone } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, Phone, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
@@ -57,14 +57,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Link>
 
           {/* Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-2xl relative">
-            <Input 
-              type="search" 
-              placeholder="البحث..." 
-              className="w-full pl-10 pr-4 bg-blue-50 border-blue-300 focus-visible:ring-blue-500 focus-visible:border-blue-500"
-            />
-            <Button size="icon" className="absolute left-1 top-1 bottom-1 h-auto w-10 bg-blue-600 text-white hover:bg-blue-700 rounded-sm">
-              <Search className="h-4 w-4" />
+          <div className="hidden md:flex flex-1 max-w-2xl relative gap-2">
+            <div className="relative flex-1">
+              <Input 
+                type="search" 
+                placeholder="البحث..." 
+                className="w-full pl-10 pr-4 bg-blue-50 border-blue-300 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+              />
+              <Button size="icon" variant="ghost" className="absolute left-1 top-1 bottom-1 h-auto w-10 text-gray-500 hover:text-primary hover:bg-transparent">
+                <Camera className="h-5 w-5" />
+              </Button>
+            </div>
+            <Button className="bg-blue-600 text-white hover:bg-blue-700 px-6 rounded-md font-bold">
+              بحث
             </Button>
           </div>
 
@@ -72,7 +77,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2 md:gap-4">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-4 w-4 bg-accent text-accent-foreground text-[10px] rounded-full flex items-center justify-center">0</span>
+              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-600 text-white text-[10px] rounded-full flex items-center justify-center font-bold">0</span>
             </Button>
           </div>
         </div>
