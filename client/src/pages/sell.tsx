@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ import {
 
 export default function SellPage() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   const [saleType, setSaleType] = useState<"auction" | "fixed">("auction");
   const [hasBuyNow, setHasBuyNow] = useState(false);
@@ -37,6 +39,25 @@ export default function SellPage() {
   const [allowOffers, setAllowOffers] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    price: "",
+    category: "",
+    condition: "",
+    deliveryWindow: "",
+    returnPolicy: "",
+    returnDetails: "",
+    sellerName: "",
+    sellerPhone: "",
+    city: "",
+    auctionDuration: "",
+  });
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -55,17 +76,54 @@ export default function SellPage() {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const listingData = {
+        title: formData.title,
+        description: formData.description,
+        price: parseInt(formData.price) || 0,
+        category: formData.category,
+        condition: formData.condition,
+        images: images,
+        saleType: saleType,
+        timeLeft: saleType === "auction" ? formData.auctionDuration : null,
+        deliveryWindow: formData.deliveryWindow,
+        returnPolicy: formData.returnPolicy,
+        returnDetails: formData.returnDetails || null,
+        sellerName: formData.sellerName,
+        sellerPhone: formData.sellerPhone || null,
+        city: formData.city,
+      };
+
+      const response = await fetch("/api/listings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(listingData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create listing");
+      }
+
       toast({
         title: "تم نشر المنتج بنجاح!",
-        description: "سيتم مراجعة منتجك وعرضه خلال 24 ساعة.",
+        description: "يمكنك رؤية منتجك في الصفحة الرئيسية.",
       });
-    }, 1500);
+      
+      setLocation("/");
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "حدث خطأ",
+        description: "تعذر نشر المنتج. حاول مرة أخرى.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -140,6 +198,8 @@ export default function SellPage() {
                   id="title" 
                   placeholder="مثال: ساعة رولكس سابماريينر فينتاج 1970" 
                   required
+                  value={formData.title}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
                   data-testid="input-title"
                 />
               </div>
@@ -151,6 +211,8 @@ export default function SellPage() {
                   placeholder="اكتب وصفاً تفصيلياً للمنتج، الحالة، التاريخ، أي عيوب..."
                   rows={5}
                   required
+                  value={formData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
                   data-testid="input-description"
                 />
               </div>
@@ -158,36 +220,35 @@ export default function SellPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="category">الفئة *</Label>
-                  <Select required>
+                  <Select value={formData.category} onValueChange={(v) => handleInputChange("category", v)}>
                     <SelectTrigger data-testid="select-category">
                       <SelectValue placeholder="اختر الفئة" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="watches">ساعات</SelectItem>
-                      <SelectItem value="clothing">ملابس</SelectItem>
-                      <SelectItem value="antiques">تحف وانتيكات</SelectItem>
-                      <SelectItem value="electronics">إلكترونيات</SelectItem>
-                      <SelectItem value="jewelry">مجوهرات</SelectItem>
-                      <SelectItem value="art">لوحات فنية</SelectItem>
-                      <SelectItem value="collectibles">مقتنيات</SelectItem>
-                      <SelectItem value="other">أخرى</SelectItem>
+                      <SelectItem value="ساعات">ساعات</SelectItem>
+                      <SelectItem value="ملابس">ملابس</SelectItem>
+                      <SelectItem value="تحف وأثاث">تحف وأثاث</SelectItem>
+                      <SelectItem value="إلكترونيات">إلكترونيات</SelectItem>
+                      <SelectItem value="مجوهرات">مجوهرات</SelectItem>
+                      <SelectItem value="آلات موسيقية">آلات موسيقية</SelectItem>
+                      <SelectItem value="مقتنيات">مقتنيات</SelectItem>
+                      <SelectItem value="أخرى">أخرى</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="condition">الحالة *</Label>
-                  <Select required>
+                  <Select value={formData.condition} onValueChange={(v) => handleInputChange("condition", v)}>
                     <SelectTrigger data-testid="select-condition">
                       <SelectValue placeholder="اختر الحالة" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="new">جديد (لم يُستخدم)</SelectItem>
-                      <SelectItem value="like-new">شبه جديد</SelectItem>
-                      <SelectItem value="good">جيد</SelectItem>
-                      <SelectItem value="fair">مقبول</SelectItem>
-                      <SelectItem value="vintage">فينتاج / انتيك</SelectItem>
-                      <SelectItem value="parts">للقطع أو الإصلاح</SelectItem>
+                      <SelectItem value="New">جديد (لم يُستخدم)</SelectItem>
+                      <SelectItem value="Used - Like New">شبه جديد</SelectItem>
+                      <SelectItem value="Used - Good">جيد</SelectItem>
+                      <SelectItem value="Used - Fair">مقبول</SelectItem>
+                      <SelectItem value="Vintage">فينتاج / انتيك</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -283,6 +344,8 @@ export default function SellPage() {
                           placeholder="0"
                           className="pl-16"
                           required
+                          value={formData.price}
+                          onChange={(e) => handleInputChange("price", e.target.value)}
                           data-testid="input-start-price"
                         />
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">د.ع</span>
@@ -390,6 +453,8 @@ export default function SellPage() {
                         placeholder="0"
                         className="pl-16"
                         required
+                        value={formData.price}
+                        onChange={(e) => handleInputChange("price", e.target.value)}
                         data-testid="input-fixed-price"
                       />
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">د.ع</span>
@@ -429,18 +494,18 @@ export default function SellPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="duration">مدة المزاد *</Label>
-                    <Select required>
+                    <Select value={formData.auctionDuration} onValueChange={(v) => handleInputChange("auctionDuration", v)}>
                       <SelectTrigger data-testid="select-duration">
                         <SelectValue placeholder="اختر المدة" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">يوم واحد</SelectItem>
-                        <SelectItem value="3">3 أيام</SelectItem>
-                        <SelectItem value="5">5 أيام</SelectItem>
-                        <SelectItem value="7">أسبوع</SelectItem>
-                        <SelectItem value="10">10 أيام</SelectItem>
-                        <SelectItem value="14">أسبوعين</SelectItem>
-                        <SelectItem value="30">شهر</SelectItem>
+                        <SelectItem value="يوم واحد">يوم واحد</SelectItem>
+                        <SelectItem value="3 أيام">3 أيام</SelectItem>
+                        <SelectItem value="5 أيام">5 أيام</SelectItem>
+                        <SelectItem value="أسبوع">أسبوع</SelectItem>
+                        <SelectItem value="10 أيام">10 أيام</SelectItem>
+                        <SelectItem value="أسبوعين">أسبوعين</SelectItem>
+                        <SelectItem value="شهر">شهر</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -531,22 +596,47 @@ export default function SellPage() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
+                  <Label htmlFor="sellerName">اسم البائع *</Label>
+                  <Input 
+                    id="sellerName" 
+                    placeholder="مثال: أحمد العراقي"
+                    required
+                    value={formData.sellerName}
+                    onChange={(e) => handleInputChange("sellerName", e.target.value)}
+                    data-testid="input-seller-name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sellerPhone">رقم الهاتف</Label>
+                  <Input 
+                    id="sellerPhone" 
+                    placeholder="07xxxxxxxxx"
+                    value={formData.sellerPhone}
+                    onChange={(e) => handleInputChange("sellerPhone", e.target.value)}
+                    data-testid="input-seller-phone"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
                   <Label htmlFor="city">المدينة *</Label>
-                  <Select required>
+                  <Select value={formData.city} onValueChange={(v) => handleInputChange("city", v)}>
                     <SelectTrigger data-testid="select-city">
                       <SelectValue placeholder="اختر المدينة" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="baghdad">بغداد</SelectItem>
-                      <SelectItem value="basra">البصرة</SelectItem>
-                      <SelectItem value="erbil">أربيل</SelectItem>
-                      <SelectItem value="sulaymaniyah">السليمانية</SelectItem>
-                      <SelectItem value="mosul">الموصل</SelectItem>
-                      <SelectItem value="najaf">النجف</SelectItem>
-                      <SelectItem value="karbala">كربلاء</SelectItem>
-                      <SelectItem value="kirkuk">كركوك</SelectItem>
-                      <SelectItem value="duhok">دهوك</SelectItem>
-                      <SelectItem value="other">مدينة أخرى</SelectItem>
+                      <SelectItem value="بغداد">بغداد</SelectItem>
+                      <SelectItem value="البصرة">البصرة</SelectItem>
+                      <SelectItem value="أربيل">أربيل</SelectItem>
+                      <SelectItem value="السليمانية">السليمانية</SelectItem>
+                      <SelectItem value="الموصل">الموصل</SelectItem>
+                      <SelectItem value="النجف">النجف</SelectItem>
+                      <SelectItem value="كربلاء">كربلاء</SelectItem>
+                      <SelectItem value="كركوك">كركوك</SelectItem>
+                      <SelectItem value="دهوك">دهوك</SelectItem>
+                      <SelectItem value="مدينة أخرى">مدينة أخرى</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -593,16 +683,16 @@ export default function SellPage() {
               {/* Delivery Time */}
               <div className="space-y-2">
                 <Label htmlFor="deliveryWindow">مدة التوصيل المتوقعة *</Label>
-                <Select required>
+                <Select value={formData.deliveryWindow} onValueChange={(v) => handleInputChange("deliveryWindow", v)}>
                   <SelectTrigger data-testid="select-delivery-window">
                     <SelectValue placeholder="اختر المدة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1-2">1-2 أيام</SelectItem>
-                    <SelectItem value="3-5">3-5 أيام</SelectItem>
-                    <SelectItem value="5-7">5-7 أيام</SelectItem>
-                    <SelectItem value="1-2weeks">1-2 أسبوع</SelectItem>
-                    <SelectItem value="2-3weeks">2-3 أسابيع</SelectItem>
+                    <SelectItem value="1-2 أيام">1-2 أيام</SelectItem>
+                    <SelectItem value="3-5 أيام">3-5 أيام</SelectItem>
+                    <SelectItem value="5-7 أيام">5-7 أيام</SelectItem>
+                    <SelectItem value="1-2 أسبوع">1-2 أسبوع</SelectItem>
+                    <SelectItem value="2-3 أسابيع">2-3 أسابيع</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -610,16 +700,16 @@ export default function SellPage() {
               {/* Return Policy */}
               <div className="space-y-2">
                 <Label htmlFor="returnPolicy">سياسة الإرجاع *</Label>
-                <Select required>
+                <Select value={formData.returnPolicy} onValueChange={(v) => handleInputChange("returnPolicy", v)}>
                   <SelectTrigger data-testid="select-return-policy">
                     <SelectValue placeholder="اختر السياسة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">لا يوجد إرجاع</SelectItem>
-                    <SelectItem value="3days">3 أيام</SelectItem>
-                    <SelectItem value="7days">7 أيام</SelectItem>
-                    <SelectItem value="14days">14 يوم</SelectItem>
-                    <SelectItem value="30days">30 يوم</SelectItem>
+                    <SelectItem value="لا يوجد إرجاع">لا يوجد إرجاع</SelectItem>
+                    <SelectItem value="3 أيام">3 أيام</SelectItem>
+                    <SelectItem value="7 أيام">7 أيام</SelectItem>
+                    <SelectItem value="14 يوم">14 يوم</SelectItem>
+                    <SelectItem value="30 يوم">30 يوم</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -630,6 +720,8 @@ export default function SellPage() {
                   id="returnDetails" 
                   placeholder="مثال: يقبل الإرجاع إذا كان المنتج بحالته الأصلية..."
                   rows={2}
+                  value={formData.returnDetails}
+                  onChange={(e) => handleInputChange("returnDetails", e.target.value)}
                   data-testid="input-return-details"
                 />
               </div>
