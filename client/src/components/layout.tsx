@@ -38,52 +38,53 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 
-      {/* Top Bar */}
-      <div className="bg-white text-gray-700 py-2 text-xs px-4 border-b border-gray-200">
-        <div className="container mx-auto flex justify-between items-center gap-8">
-          <div className="flex gap-6 w-full justify-start items-center">
-            <Link href="/sell" className="hover:text-green-600 font-semibold transition-colors flex items-center gap-1 text-green-700 bg-green-50 px-3 py-1 rounded-full">
-              <PlusCircle className="h-4 w-4" />
-              بيع منتج
+      {/* Top Navigation Bar */}
+      <div className="bg-blue-600 text-white py-1 text-xs px-4">
+        <div className="container mx-auto flex justify-between items-center">
+          {/* Navigation Links */}
+          <div className="hidden md:flex items-center gap-4">
+            <Link href="/" className="hover:text-blue-200 transition-colors font-medium">الرئيسية</Link>
+            <Link href="/live-auction" className="hover:text-blue-200 transition-colors font-medium flex items-center gap-1">
+              🔴 مزاد حي
             </Link>
-            <div className="h-4 w-px bg-gray-300 mx-2"></div>
-            
+            <Link href="/search?category=ساعات" className="hover:text-blue-200 transition-colors">ساعات</Link>
+            <Link href="/search?category=إلكترونيات" className="hover:text-blue-200 transition-colors">إلكترونيات</Link>
+            <Link href="/search?category=ملابس" className="hover:text-blue-200 transition-colors">ملابس</Link>
+            <Link href="/search?category=تحف وأثاث" className="hover:text-blue-200 transition-colors">تحف وأثاث</Link>
+            <Link href="/search?category=سيارات" className="hover:text-blue-200 transition-colors">سيارات</Link>
+            <Link href="/search" className="hover:text-blue-200 transition-colors font-medium">عرض الكل</Link>
+          </div>
+          
+          {/* User Actions */}
+          <div className="flex items-center gap-3 mr-auto">
             {isLoading ? (
               <div className="flex items-center gap-1">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>جاري التحميل...</span>
+                <Loader2 className="h-3 w-3 animate-spin" />
               </div>
             ) : isAuthenticated && user ? (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  {user.avatar && (
-                    <img src={user.avatar} alt={user.displayName} className="h-6 w-6 rounded-full" />
-                  )}
-                  <span className="font-semibold text-primary">{user.displayName}</span>
-                </div>
+              <div className="flex items-center gap-2">
+                {user.avatar && (
+                  <img src={user.avatar} alt={user.displayName} className="h-5 w-5 rounded-full" />
+                )}
+                <span className="font-medium">{user.displayName}</span>
                 <button 
                   onClick={() => logout()}
-                  className="hover:text-red-600 font-semibold transition-colors flex items-center gap-1"
+                  className="hover:text-blue-200 transition-colors flex items-center gap-1"
                   data-testid="button-logout"
                 >
-                  <LogOut className="h-4 w-4" />
-                  تسجيل الخروج
+                  <LogOut className="h-3 w-3" />
                 </button>
               </div>
             ) : (
-              <a href="/api/login" className="hover:text-primary font-semibold transition-colors flex items-center gap-1" data-testid="button-login">
-                <User className="h-4 w-4" />
-                تسجيل الدخول / إنشاء حساب
+              <a href="/api/login" className="hover:text-blue-200 transition-colors flex items-center gap-1" data-testid="button-login">
+                <User className="h-3 w-3" />
+                تسجيل الدخول
               </a>
             )}
-            
-            <div className="h-4 w-px bg-gray-300 mx-2"></div>
             <NotificationsButton />
-            <div className="h-4 w-px bg-gray-300 mx-2"></div>
-            <div className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
-              <ShoppingCart className="h-4 w-4" />
-              <span className="font-semibold">السلة</span>
-              <span className="bg-red-600 text-white text-[10px] rounded-full px-1.5 h-4 flex items-center justify-center font-bold">0</span>
+            <div className="flex items-center gap-1 cursor-pointer hover:text-blue-200 transition-colors">
+              <ShoppingCart className="h-3 w-3" />
+              <span className="bg-red-500 text-white text-[9px] rounded-full px-1 h-3 flex items-center justify-center font-bold">0</span>
             </div>
           </div>
         </div>
@@ -145,47 +146,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               بحث
             </Button>
           </form>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 md:gap-4">
-             {/* Basket moved to top bar */}
-          </div>
         </div>
-        
-        {/* Category Navigation Bar */}
-        <nav className="hidden md:block bg-gradient-to-r from-blue-600 to-blue-700 border-t border-blue-500">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-center gap-1 py-2">
-              <Link href="/" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
-                الرئيسية
-              </Link>
-              <Link href="/live-auction" className="px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors font-bold text-sm flex items-center gap-1">
-                🔴 مزاد حي
-              </Link>
-              <Link href="/search?category=ساعات" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
-                ⌚ ساعات
-              </Link>
-              <Link href="/search?category=إلكترونيات" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
-                📱 إلكترونيات
-              </Link>
-              <Link href="/search?category=ملابس" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
-                👔 ملابس
-              </Link>
-              <Link href="/search?category=تحف وأثاث" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
-                🏺 تحف وأثاث
-              </Link>
-              <Link href="/search?category=سيارات" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
-                🚗 سيارات
-              </Link>
-              <Link href="/search?category=عقارات" className="px-4 py-2 text-white hover:bg-white/20 rounded-lg transition-colors font-semibold text-sm">
-                🏠 عقارات
-              </Link>
-              <Link href="/search" className="px-4 py-2 bg-yellow-500 text-black hover:bg-yellow-400 rounded-lg transition-colors font-bold text-sm">
-                عرض الكل
-              </Link>
-            </div>
-          </div>
-        </nav>
       </header>
 
       {/* Main Content */}
