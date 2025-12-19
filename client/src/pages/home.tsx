@@ -239,6 +239,45 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Main Categories Section */}
+      <section className="py-8 bg-gray-50 border-b">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <LayoutGrid className="h-6 w-6 text-blue-600" />
+              <h2 className="text-2xl font-bold text-gray-800">تصفح حسب الفئة</h2>
+            </div>
+            <Link href="/search" className="text-blue-600 hover:underline font-semibold">
+              عرض الكل ←
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            {[
+              { id: "ساعات", name: "ساعات", icon: "⌚", color: "bg-blue-100 hover:bg-blue-200 border-blue-300" },
+              { id: "إلكترونيات", name: "إلكترونيات", icon: "📱", color: "bg-purple-100 hover:bg-purple-200 border-purple-300" },
+              { id: "ملابس", name: "ملابس", icon: "👔", color: "bg-pink-100 hover:bg-pink-200 border-pink-300" },
+              { id: "تحف وأثاث", name: "تحف وأثاث", icon: "🏺", color: "bg-amber-100 hover:bg-amber-200 border-amber-300" },
+              { id: "سيارات", name: "سيارات", icon: "🚗", color: "bg-green-100 hover:bg-green-200 border-green-300" },
+              { id: "عقارات", name: "عقارات", icon: "🏠", color: "bg-teal-100 hover:bg-teal-200 border-teal-300" },
+              { id: "أخرى", name: "أخرى", icon: "📦", color: "bg-gray-100 hover:bg-gray-200 border-gray-300" },
+            ].map((cat) => (
+              <Link key={cat.id} href={`/search?category=${encodeURIComponent(cat.id)}`}>
+                <div 
+                  className={`${cat.color} border-2 rounded-xl p-4 text-center cursor-pointer transition-all hover:shadow-lg hover:scale-105`}
+                  data-testid={`category-card-${cat.id}`}
+                >
+                  <div className="text-4xl mb-2">{cat.icon}</div>
+                  <h3 className="font-bold text-gray-800">{cat.name}</h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {productsByCategory[cat.id]?.length || 0} منتج
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Personalized Section - Based on History & Searches */}
       <section className="py-8 bg-white border-b">
         <div className="container mx-auto px-4">
