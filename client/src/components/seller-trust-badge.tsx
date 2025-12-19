@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 interface SellerTrustBadgeProps {
   salesCount: number;
   rating: number;
+  ratingCount?: number;
   sellerName: string;
   showName?: boolean;
 }
@@ -47,11 +48,11 @@ export function getSellerTier(salesCount: number): {
 export function SellerTrustBadge({ 
   salesCount, 
   rating, 
+  ratingCount = 0,
   sellerName, 
   showName = true 
 }: SellerTrustBadgeProps) {
   const tierInfo = getSellerTier(salesCount);
-  const hasGoldenStar = rating >= 95;
 
   return (
     <div className="flex items-center gap-2 flex-wrap" data-testid="seller-trust-badge">
@@ -69,20 +70,13 @@ export function SellerTrustBadge({
         {tierInfo.label}
       </Badge>
 
-      {hasGoldenStar && (
-        <Badge 
-          className="bg-yellow-500 text-white border-0 flex items-center gap-1"
-          data-testid="badge-golden-star"
-          title="تقييم ممتاز - 95%+"
-        >
-          <Star className="h-3 w-3 fill-current" />
-          تقييم ممتاز
-        </Badge>
-      )}
-
-      <span className="text-xs text-gray-500" data-testid="seller-sales-count">
-        ({salesCount} مبيعة)
-      </span>
+      <div className="flex items-center gap-1 text-sm" data-testid="seller-rating">
+        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+        <span className="font-medium">{rating}%</span>
+        {ratingCount > 0 && (
+          <span className="text-xs text-gray-500">({ratingCount} تقييم)</span>
+        )}
+      </div>
     </div>
   );
 }
