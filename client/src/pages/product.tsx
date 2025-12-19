@@ -48,6 +48,20 @@ export default function ProductPage() {
     });
   };
 
+  const handleAddWishlist = () => {
+    toast({
+      title: "تم الإضافة للقائمة المفضلة",
+      description: "يمكنك عرض المفضلة من إعداداتك.",
+    });
+  };
+
+  const handleBuyNowDirect = () => {
+    toast({
+      title: "تم إضافة الطلب!",
+      description: "ستنتقل إلى صفحة الدفع قريباً.",
+    });
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
@@ -92,10 +106,21 @@ export default function ProductPage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-muted-foreground hover:text-red-500"
+                    onClick={handleAddWishlist}
+                    data-testid="button-add-wishlist"
+                  >
                     <Heart className="h-6 w-6" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-muted-foreground"
+                    data-testid="button-share"
+                  >
                     <Share2 className="h-6 w-6" />
                   </Button>
                 </div>
@@ -105,7 +130,7 @@ export default function ProductPage() {
             <Separator className="my-6" />
 
             {/* Registration Warning - Simulated Logic */}
-            {!product.currentBid && (
+            {product.currentBid && (
                <div className="mb-4 text-center">
                   <p className="text-xs text-red-500 mb-2 font-semibold">يجب عليك تسجيل الدخول للمزايدة أو الشراء</p>
                </div>
@@ -127,7 +152,12 @@ export default function ProductPage() {
                     {(product.currentBid || product.price).toLocaleString()} <span className="text-lg">د.ع</span>
                   </span>
                 </div>
-                <Button size="lg" className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold mt-4" onClick={handleBid}>
+                <Button 
+                  size="lg" 
+                  className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold mt-4"
+                  onClick={handleBuyNowDirect}
+                  data-testid="button-buy-now-fixed"
+                >
                   شراء الآن
                 </Button>
               </div>
@@ -151,12 +181,23 @@ export default function ProductPage() {
                 </span>
               </div>
               <p className="text-xs text-gray-600 mb-3">شراء مباشر بدون انتظار نتيجة المزاد</p>
-              <Button size="lg" className="w-full text-lg h-12 bg-green-600 hover:bg-green-700 text-white font-bold">
+              <Button 
+                size="lg" 
+                className="w-full text-lg h-12 bg-green-600 hover:bg-green-700 text-white font-bold"
+                onClick={handleBuyNowDirect}
+                data-testid="button-buy-now-direct"
+              >
                 🛒 اشتر الآن مباشرة
               </Button>
             </div>
 
-            <Button variant="outline" size="lg" className="w-full h-12 mb-6" onClick={handleAddCart}>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="w-full h-12 mb-6" 
+              onClick={handleAddCart}
+              data-testid="button-add-cart"
+            >
               أضف للسلة
             </Button>
 
