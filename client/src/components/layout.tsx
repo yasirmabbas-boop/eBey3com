@@ -89,7 +89,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main Header */}
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4 md:gap-8 justify-between">
+        <div className="container mx-auto px-4 py-3 flex items-center gap-4 md:gap-6">
           
           {/* Mobile Menu */}
           <Sheet>
@@ -110,12 +110,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </SheetContent>
           </Sheet>
 
-          {/* Logo */}
-          <Link href="/" className="flex-shrink-0 flex items-center">
-            <Logo className="h-16 md:h-20" />
-          </Link>
-
-          {/* Search Bar */}
+          {/* Search Bar - First (Right side in RTL) */}
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl relative gap-2 items-center">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -143,6 +138,44 @@ export function Layout({ children }: { children: React.ReactNode }) {
               بحث
             </Button>
           </form>
+
+          {/* Logo and Registration - Left side in RTL */}
+          <div className="flex items-center gap-4 mr-auto">
+            {/* Logo */}
+            <Link href="/" className="flex-shrink-0 flex items-center">
+              <Logo className="h-12 md:h-14" />
+            </Link>
+            
+            {/* Registration/Login Button */}
+            <div className="hidden md:flex items-center gap-2">
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+              ) : isAuthenticated && user ? (
+                <div className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg">
+                  {user.avatar && (
+                    <img src={user.avatar} alt={user.displayName} className="h-6 w-6 rounded-full" />
+                  )}
+                  <span className="font-medium text-sm">{user.displayName}</span>
+                  <button 
+                    onClick={() => logout()}
+                    className="text-gray-500 hover:text-red-500 transition-colors"
+                    data-testid="button-logout-header"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <a 
+                  href="/api/login" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                  data-testid="button-login-header"
+                >
+                  <User className="h-4 w-4" />
+                  تسجيل الدخول
+                </a>
+              )}
+            </div>
+          </div>
         </div>
       </header>
 
