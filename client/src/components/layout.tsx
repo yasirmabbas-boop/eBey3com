@@ -110,43 +110,40 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </SheetContent>
           </Sheet>
 
-          {/* Logo and Registration - Right side in RTL (appears first) */}
-          <div className="flex items-center gap-4">
-            {/* Logo */}
-            <Link href="/" className="flex-shrink-0 flex items-center">
-              <Logo className="h-12 md:h-14" />
-            </Link>
-            
-            {/* Registration/Login Button */}
-            <div className="hidden md:flex items-center gap-2">
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-              ) : isAuthenticated && user ? (
-                <div className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg">
-                  {user.avatar && (
-                    <img src={user.avatar} alt={user.displayName} className="h-6 w-6 rounded-full" />
-                  )}
-                  <span className="font-medium text-sm">{user.displayName}</span>
-                  <button 
-                    onClick={() => logout()}
-                    className="text-gray-500 hover:text-red-500 transition-colors"
-                    data-testid="button-logout-header"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <a 
-                  href="/api/login" 
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
-                  data-testid="button-login-header"
+          {/* Registration/Login Button - Far Right in RTL */}
+          <div className="hidden md:flex items-center gap-2">
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+            ) : isAuthenticated && user ? (
+              <div className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg">
+                {user.avatar && (
+                  <img src={user.avatar} alt={user.displayName} className="h-6 w-6 rounded-full" />
+                )}
+                <span className="font-medium text-sm">{user.displayName}</span>
+                <button 
+                  onClick={() => logout()}
+                  className="text-gray-500 hover:text-red-500 transition-colors"
+                  data-testid="button-logout-header"
                 >
-                  <User className="h-4 w-4" />
-                  تسجيل الدخول
-                </a>
-              )}
-            </div>
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <a 
+                href="/api/login" 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
+                data-testid="button-login-header"
+              >
+                <User className="h-4 w-4" />
+                تسجيل الدخول
+              </a>
+            )}
           </div>
+
+          {/* Logo - Center area */}
+          <Link href="/" className="flex-shrink-0 flex items-center">
+            <Logo className="h-12 md:h-14" />
+          </Link>
 
           {/* Search Bar - Left side in RTL */}
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl relative gap-2 items-center ml-auto">
