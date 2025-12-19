@@ -6,10 +6,30 @@ import { PRODUCTS } from "@/lib/mock-data";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Clock, Loader2, Search, Watch, Smartphone, Shirt, Armchair, Car, Home, Package } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Clock, 
+  Loader2, 
+  Search, 
+  Watch, 
+  Smartphone, 
+  Shirt, 
+  Armchair, 
+  Car, 
+  Home, 
+  Package,
+  Filter,
+  SlidersHorizontal,
+  Gavel,
+  ShoppingBag,
+  MapPin,
+  X,
+  ArrowUpDown
+} from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import type { Listing } from "@shared/schema";
 
@@ -23,6 +43,44 @@ const CATEGORIES = [
   { id: "أخرى", name: "أخرى", icon: Package },
 ];
 
+const CONDITIONS = [
+  { id: "New", label: "جديد", aliases: ["New", "جديد"] },
+  { id: "Used - Like New", label: "شبه جديد", aliases: ["Used - Like New", "شبه جديد"] },
+  { id: "Used - Good", label: "جيد", aliases: ["Used - Good", "جيد"] },
+  { id: "Used - Fair", label: "مقبول", aliases: ["Used - Fair", "مقبول"] },
+  { id: "Vintage", label: "فينتاج / أنتيك", aliases: ["Vintage", "فينتاج", "أنتيك"] },
+];
+
+const CITIES = [
+  "بغداد",
+  "البصرة", 
+  "أربيل", 
+  "السليمانية", 
+  "الموصل",
+  "النجف", 
+  "كربلاء", 
+  "كركوك", 
+  "دهوك",
+  "الأنبار",
+  "بابل",
+  "ديالى",
+  "ذي قار",
+  "القادسية",
+  "المثنى",
+  "ميسان",
+  "صلاح الدين",
+  "واسط",
+  "نينوى",
+];
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "الأحدث" },
+  { value: "price_low", label: "السعر: من الأقل للأعلى" },
+  { value: "price_high", label: "السعر: من الأعلى للأقل" },
+  { value: "ending_soon", label: "ينتهي قريباً" },
+  { value: "most_bids", label: "الأكثر مزايدة" },
+];
+
 export default function SearchPage() {
   const [location] = useLocation();
   const params = new URLSearchParams(window.location.search);
@@ -31,6 +89,12 @@ export default function SearchPage() {
   
   const [selectedCategory, setSelectedCategory] = useState<string | null>(categoryParam);
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
+  const [selectedSaleTypes, setSelectedSaleTypes] = useState<string[]>([]);
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const { data: listings = [], isLoading } = useQuery<Listing[]>({
     queryKey: ["/api/listings"],
@@ -46,13 +110,14 @@ export default function SearchPage() {
       ...p,
       images: [p.image],
       saleType: p.currentBid ? "auction" : "fixed",
-      auctionEndTime: null,
-      sellerPhone: null,
-      deliveryWindow: "",
-      returnPolicy: "",
-      returnDetails: null,
+      auctionEndTime: p.auctionEndTime || null,
+      deliveryWindow: p.deliveryWindow || "",
+      returnPolicy: p.returnPolicy || "",
+      returnDetails: p.returnDetails || null,
       isActive: true,
       createdAt: new Date(),
+      city: p.city || "بغداد",
+      totalBids: p.totalBids || 0,
     } as unknown as Listing));
 
     if (selectedCategory) {
@@ -69,11 +134,60 @@ export default function SearchPage() {
     }
 
     if (selectedConditions.length > 0) {
-      products = products.filter(p => selectedConditions.includes(p.condition || ""));
+      const selectedAliases = selectedConditions.flatMap(condId => {
+        const cond = CONDITIONS.find(c => c.id === condId);
+        return cond ? cond.aliases : [condId];
+      });
+      products = products.filter(p => selectedAliases.includes(p.condition || ""));
     }
 
-    return products;
-  }, [listings, selectedCategory, searchQuery, selectedConditions]);
+    if (selectedSaleTypes.length > 0) {
+      products = products.filter(p => selectedSaleTypes.includes(p.saleType || ""));
+    }
+
+    if (selectedCities.length > 0) {
+      products = products.filter(p => selectedCities.includes(p.city || ""));
+    }
+
+    const minPrice = priceMin ? parseInt(priceMin) : 0;
+    const maxPrice = priceMax ? parseInt(priceMax) : Infinity;
+    if (priceMin || priceMax) {
+      products = products.filter(p => {
+        const price = p.currentBid || p.price;
+        return price >= minPrice && price <= maxPrice;
+      });
+    }
+
+    const sortedProducts = [...products];
+    switch (sortBy) {
+      case "price_low":
+        sortedProducts.sort((a, b) => (a.currentBid || a.price) - (b.currentBid || b.price));
+        break;
+      case "price_high":
+        sortedProducts.sort((a, b) => (b.currentBid || b.price) - (a.currentBid || a.price));
+        break;
+      case "ending_soon":
+        sortedProducts.sort((a, b) => {
+          if (!a.auctionEndTime) return 1;
+          if (!b.auctionEndTime) return -1;
+          return new Date(a.auctionEndTime).getTime() - new Date(b.auctionEndTime).getTime();
+        });
+        break;
+      case "most_bids":
+        sortedProducts.sort((a, b) => (b.totalBids || 0) - (a.totalBids || 0));
+        break;
+      case "newest":
+      default:
+        sortedProducts.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        });
+        break;
+    }
+
+    return sortedProducts;
+  }, [listings, selectedCategory, searchQuery, selectedConditions, selectedSaleTypes, selectedCities, priceMin, priceMax, sortBy]);
 
   const toggleCondition = (condition: string) => {
     setSelectedConditions(prev => 
@@ -83,84 +197,260 @@ export default function SearchPage() {
     );
   };
 
+  const toggleSaleType = (saleType: string) => {
+    setSelectedSaleTypes(prev => 
+      prev.includes(saleType) 
+        ? prev.filter(t => t !== saleType)
+        : [...prev, saleType]
+    );
+  };
+
+  const toggleCity = (city: string) => {
+    setSelectedCities(prev => 
+      prev.includes(city) 
+        ? prev.filter(c => c !== city)
+        : [...prev, city]
+    );
+  };
+
+  const clearAllFilters = () => {
+    setSelectedCategory(null);
+    setSelectedConditions([]);
+    setSelectedSaleTypes([]);
+    setSelectedCities([]);
+    setPriceMin("");
+    setPriceMax("");
+    setSortBy("newest");
+  };
+
+  const activeFiltersCount = [
+    selectedCategory ? 1 : 0,
+    selectedConditions.length,
+    selectedSaleTypes.length,
+    selectedCities.length,
+    priceMin || priceMax ? 1 : 0,
+  ].reduce((a, b) => a + b, 0);
+
   const getPageTitle = () => {
     if (searchQuery) return `نتائج البحث: "${searchQuery}"`;
     if (selectedCategory) return selectedCategory;
     return "جميع المنتجات";
   };
 
+  const FiltersContent = () => (
+    <div className="space-y-6">
+      {activeFiltersCount > 0 && (
+        <Button 
+          variant="outline" 
+          className="w-full text-red-600 border-red-200 hover:bg-red-50"
+          onClick={clearAllFilters}
+          data-testid="clear-all-filters"
+        >
+          <X className="h-4 w-4 ml-2" />
+          مسح جميع الفلاتر ({activeFiltersCount})
+        </Button>
+      )}
+
+      <div className="bg-white p-4 rounded-lg border shadow-sm">
+        <h3 className="font-bold mb-4 flex items-center gap-2">
+          <Search className="h-4 w-4" />
+          الفئات
+        </h3>
+        <div className="space-y-2">
+          <Button
+            variant={selectedCategory === null ? "default" : "ghost"}
+            className="w-full justify-start"
+            onClick={() => setSelectedCategory(null)}
+            data-testid="filter-category-all"
+          >
+            جميع الفئات
+          </Button>
+          {CATEGORIES.map((cat) => (
+            <Button
+              key={cat.id}
+              variant={selectedCategory === cat.id ? "default" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => setSelectedCategory(cat.id)}
+              data-testid={`filter-category-${cat.id}`}
+            >
+              <cat.icon className="h-4 w-4 ml-2" />
+              {cat.name}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-lg border shadow-sm">
+        <h3 className="font-bold mb-4 flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4" />
+          نطاق السعر
+        </h3>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">من</Label>
+              <Input
+                type="number"
+                placeholder="0"
+                value={priceMin}
+                onChange={(e) => setPriceMin(e.target.value)}
+                className="mt-1"
+                data-testid="filter-price-min"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">إلى</Label>
+              <Input
+                type="number"
+                placeholder="∞"
+                value={priceMax}
+                onChange={(e) => setPriceMax(e.target.value)}
+                className="mt-1"
+                data-testid="filter-price-max"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground text-center">بالدينار العراقي</p>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-lg border shadow-sm">
+        <h3 className="font-bold mb-4 flex items-center gap-2">
+          <Gavel className="h-4 w-4" />
+          نوع البيع
+        </h3>
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2 space-x-reverse">
+            <Checkbox 
+              id="auction" 
+              checked={selectedSaleTypes.includes("auction")}
+              onCheckedChange={() => toggleSaleType("auction")}
+              data-testid="filter-sale-auction"
+            />
+            <Label htmlFor="auction" className="flex items-center gap-2 cursor-pointer">
+              <Gavel className="h-4 w-4 text-primary" />
+              مزاد
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2 space-x-reverse">
+            <Checkbox 
+              id="fixed" 
+              checked={selectedSaleTypes.includes("fixed")}
+              onCheckedChange={() => toggleSaleType("fixed")}
+              data-testid="filter-sale-fixed"
+            />
+            <Label htmlFor="fixed" className="flex items-center gap-2 cursor-pointer">
+              <ShoppingBag className="h-4 w-4 text-green-600" />
+              سعر ثابت
+            </Label>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-lg border shadow-sm">
+        <h3 className="font-bold mb-4 flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          الحالة
+        </h3>
+        <div className="space-y-3">
+          {CONDITIONS.map((condition) => (
+            <div key={condition.id} className="flex items-center space-x-2 space-x-reverse">
+              <Checkbox 
+                id={condition.id}
+                checked={selectedConditions.includes(condition.id)}
+                onCheckedChange={() => toggleCondition(condition.id)}
+                data-testid={`filter-condition-${condition.id}`}
+              />
+              <Label htmlFor={condition.id} className="cursor-pointer">{condition.label}</Label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-lg border shadow-sm">
+        <h3 className="font-bold mb-4 flex items-center gap-2">
+          <MapPin className="h-4 w-4" />
+          المدينة
+        </h3>
+        <div className="space-y-3 max-h-48 overflow-y-auto">
+          {CITIES.map((city) => (
+            <div key={city} className="flex items-center space-x-2 space-x-reverse">
+              <Checkbox 
+                id={`city-${city}`}
+                checked={selectedCities.includes(city)}
+                onCheckedChange={() => toggleCity(city)}
+                data-testid={`filter-city-${city}`}
+              />
+              <Label htmlFor={`city-${city}`} className="cursor-pointer">{city}</Label>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-4 text-primary" data-testid="search-title">
-          {getPageTitle()}
-        </h1>
-        <p className="text-muted-foreground mb-8">
-          {filteredProducts.length} منتج
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Filters Sidebar */}
-          <div className="space-y-6">
-            <div className="bg-white p-4 rounded-lg border shadow-sm">
-              <h3 className="font-bold mb-4">الفئات</h3>
-              <div className="space-y-2">
-                <Button
-                  variant={selectedCategory === null ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => setSelectedCategory(null)}
-                  data-testid="filter-category-all"
-                >
-                  <Search className="h-4 w-4 ml-2" />
-                  جميع الفئات
-                </Button>
-                {CATEGORIES.map((cat) => (
-                  <Button
-                    key={cat.id}
-                    variant={selectedCategory === cat.id ? "default" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => setSelectedCategory(cat.id)}
-                    data-testid={`filter-category-${cat.id}`}
-                  >
-                    <cat.icon className="h-4 w-4 ml-2" />
-                    {cat.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white p-4 rounded-lg border shadow-sm">
-              <h3 className="font-bold mb-4">الحالة</h3>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Checkbox 
-                    id="new" 
-                    checked={selectedConditions.includes("جديد")}
-                    onCheckedChange={() => toggleCondition("جديد")}
-                  />
-                  <Label htmlFor="new">جديد</Label>
-                </div>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Checkbox 
-                    id="used" 
-                    checked={selectedConditions.includes("مستعمل")}
-                    onCheckedChange={() => toggleCondition("مستعمل")}
-                  />
-                  <Label htmlFor="used">مستعمل</Label>
-                </div>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Checkbox 
-                    id="vintage" 
-                    checked={selectedConditions.includes("فينتاج")}
-                    onCheckedChange={() => toggleCondition("فينتاج")}
-                  />
-                  <Label htmlFor="vintage">فينتاج / أنتيك</Label>
-                </div>
-              </div>
-            </div>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-primary" data-testid="search-title">
+              {getPageTitle()}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {filteredProducts.length} منتج
+            </p>
           </div>
 
-          {/* Results Grid */}
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              className="md:hidden"
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              data-testid="toggle-mobile-filters"
+            >
+              <Filter className="h-4 w-4 ml-2" />
+              الفلاتر
+              {activeFiltersCount > 0 && (
+                <Badge className="mr-2 bg-primary">{activeFiltersCount}</Badge>
+              )}
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-48" data-testid="select-sort">
+                  <SelectValue placeholder="ترتيب حسب" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {showMobileFilters && (
+          <div className="md:hidden mb-6 p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold">الفلاتر</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowMobileFilters(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <FiltersContent />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="hidden md:block">
+            <FiltersContent />
+          </div>
+
           <div className="md:col-span-3">
             {isLoading ? (
               <div className="flex justify-center py-12">
@@ -170,7 +460,12 @@ export default function SearchPage() {
               <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-xl font-bold mb-2">لا توجد نتائج</h3>
-                <p className="text-muted-foreground">جرب تغيير الفلاتر أو البحث بكلمات أخرى</p>
+                <p className="text-muted-foreground mb-4">جرب تغيير الفلاتر أو البحث بكلمات أخرى</p>
+                {activeFiltersCount > 0 && (
+                  <Button variant="outline" onClick={clearAllFilters}>
+                    مسح الفلاتر
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -183,9 +478,23 @@ export default function SearchPage() {
                           alt={product.title} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        {product.saleType === "auction" && (
-                          <Badge className="absolute top-2 right-2 bg-primary text-white">
-                            مزاد
+                        <div className="absolute top-2 right-2 flex flex-col gap-1">
+                          {product.saleType === "auction" ? (
+                            <Badge className="bg-primary text-white">
+                              <Gavel className="h-3 w-3 ml-1" />
+                              مزاد
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-green-600 text-white">
+                              <ShoppingBag className="h-3 w-3 ml-1" />
+                              سعر ثابت
+                            </Badge>
+                          )}
+                        </div>
+                        {product.city && (
+                          <Badge variant="secondary" className="absolute bottom-2 right-2 text-xs">
+                            <MapPin className="h-3 w-3 ml-1" />
+                            {product.city}
                           </Badge>
                         )}
                       </div>
@@ -196,11 +505,19 @@ export default function SearchPage() {
                         </h3>
                         <div className="flex justify-between items-center mt-4">
                           <div>
-                            <p className="text-xs text-muted-foreground">السعر الحالي</p>
+                            <p className="text-xs text-muted-foreground">
+                              {product.saleType === "auction" ? "السعر الحالي" : "السعر"}
+                            </p>
                             <p className="font-bold text-xl text-primary">
                               {(product.currentBid || product.price).toLocaleString()} د.ع
                             </p>
                           </div>
+                          {product.saleType === "auction" && product.totalBids && (
+                            <div className="text-left">
+                              <p className="text-xs text-muted-foreground">المزايدات</p>
+                              <p className="font-bold text-primary">{product.totalBids}</p>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                       {product.saleType === "auction" && product.auctionEndTime && (
