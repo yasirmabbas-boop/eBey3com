@@ -12,7 +12,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { BiddingWindow } from "@/components/bidding-window";
 import { SellerTrustBadge } from "@/components/seller-trust-badge";
 import { ContactSeller } from "@/components/contact-seller";
-import { ShippingLabel } from "@/components/shipping-label";
 
 import {
   Carousel,
@@ -37,24 +36,7 @@ export default function ProductPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
-  const [showShippingLabel, setShowShippingLabel] = useState(false);
-  
   const product = PRODUCTS.find(p => p.id === params?.id) || PRODUCTS[0];
-  
-  const sampleOrderDetails = {
-    orderId: `ORD-${Date.now().toString(36).toUpperCase()}`,
-    productCode: product.productCode,
-    productTitle: product.title,
-    buyerName: "أحمد محمد العلي",
-    deliveryAddress: "شارع فلسطين، بناية رقم 45، الطابق الثالث",
-    city: "بغداد",
-    district: "الكرادة",
-    sellerName: product.seller.name,
-    sellerCity: "بغداد",
-    saleDate: new Date(),
-    price: product.currentBid || product.price,
-    paymentMethod: "cash",
-  };
 
   const requireAuth = (action: string) => {
     if (!isAuthenticated) {
@@ -256,23 +238,9 @@ export default function ProductPage() {
               />
             </div>
 
-            {/* Seller Tools - Print Shipping Label */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 p-4 rounded-xl mb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-blue-800 mb-1">أدوات البائع</h3>
-                  <p className="text-sm text-blue-600">طباعة بطاقة الشحن بعد إتمام البيع</p>
-                </div>
-                <Button 
-                  onClick={() => setShowShippingLabel(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-                  data-testid="button-print-shipping-label"
-                >
-                  <Printer className="h-4 w-4" />
-                  طباعة بطاقة الشحن
-                </Button>
-              </div>
-            </div>
+            {/* Seller Tools - Print Shipping Label - Only visible after purchase completion */}
+            {/* This section is hidden on product pages - it will appear in the seller's 
+                order management page after a buyer completes a purchase */}
 
             <div className="space-y-4">
               {/* Delivery & Return Policy */}
@@ -387,12 +355,6 @@ export default function ProductPage() {
         </div>
       </section>
 
-      {/* Shipping Label Modal */}
-      <ShippingLabel
-        open={showShippingLabel}
-        onOpenChange={setShowShippingLabel}
-        orderDetails={sampleOrderDetails}
-      />
-    </Layout>
+      </Layout>
   );
 }

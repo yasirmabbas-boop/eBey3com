@@ -19,6 +19,7 @@ import Security from "@/pages/security";
 import Settings from "@/pages/settings";
 import LiveAuction from "@/pages/live-auction";
 import MyPurchases from "@/pages/my-purchases";
+import MySales from "@/pages/my-sales";
 import SellPage from "@/pages/sell";
 import DealsGuide from "@/pages/deals-guide";
 
@@ -44,6 +45,7 @@ function Router() {
       <Route path="/terms" component={Terms} />
       <Route path="/live-auction" component={LiveAuction} />
       <Route path="/my-purchases" component={MyPurchases} />
+      <Route path="/my-sales" component={MySales} />
       <Route path="/contact" component={ContactUs} />
       <Route path="/security-guide" component={SecurityGuide} />
       <Route path="/security" component={Security} />
