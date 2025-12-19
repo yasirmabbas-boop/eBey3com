@@ -63,25 +63,10 @@ export function AuctionCountdown({ endTime, onExpired }: AuctionCountdownProps) 
       data-testid="auction-countdown"
     >
       <Clock className={`h-4 w-4 ${isUrgent ? "animate-pulse" : ""}`} />
-      <div className="flex items-center gap-1 font-mono">
-        {timeLeft.days > 0 && (
-          <>
-            <span className="bg-gray-100 px-1.5 py-0.5 rounded">{timeLeft.days}</span>
-            <span className="text-xs">يوم</span>
-          </>
-        )}
-        <span className="bg-gray-100 px-1.5 py-0.5 rounded">
-          {String(timeLeft.hours).padStart(2, "0")}
-        </span>
-        <span>:</span>
-        <span className="bg-gray-100 px-1.5 py-0.5 rounded">
-          {String(timeLeft.minutes).padStart(2, "0")}
-        </span>
-        <span>:</span>
-        <span className={`px-1.5 py-0.5 rounded ${isUrgent ? "bg-red-100" : "bg-gray-100"}`}>
-          {String(timeLeft.seconds).padStart(2, "0")}
-        </span>
-      </div>
+      <span>
+        {timeLeft.days > 0 && <>{timeLeft.days} يوم و </>}
+        {timeLeft.hours} ساعة
+      </span>
     </div>
   );
 }
