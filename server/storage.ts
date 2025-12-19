@@ -1,17 +1,61 @@
-import { type User, type InsertUser, type Listing, type InsertListing, users, listings } from "@shared/schema";
+import { 
+  type User, type InsertUser, 
+  type Listing, type InsertListing, 
+  type Bid, type InsertBid,
+  type Watchlist, type InsertWatchlist,
+  type Analytics, type InsertAnalytics,
+  type Message, type InsertMessage,
+  type Review, type InsertReview,
+  type Transaction, type InsertTransaction,
+  type Category, type InsertCategory,
+  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories 
+} from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByPhone(phone: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   
   getListings(): Promise<Listing[]>;
+  getListingsByCategory(category: string): Promise<Listing[]>;
+  getListingsBySeller(sellerId: string): Promise<Listing[]>;
   getListing(id: string): Promise<Listing | undefined>;
   createListing(listing: InsertListing): Promise<Listing>;
   updateListing(id: string, listing: Partial<InsertListing>): Promise<Listing | undefined>;
   deleteListing(id: string): Promise<boolean>;
+  
+  getBidsForListing(listingId: string): Promise<Bid[]>;
+  createBid(bid: InsertBid): Promise<Bid>;
+  getHighestBid(listingId: string): Promise<Bid | undefined>;
+  getUserBids(userId: string): Promise<Bid[]>;
+  
+  getWatchlist(userId: string): Promise<Watchlist[]>;
+  addToWatchlist(item: InsertWatchlist): Promise<Watchlist>;
+  removeFromWatchlist(userId: string, listingId: string): Promise<boolean>;
+  isInWatchlist(userId: string, listingId: string): Promise<boolean>;
+  
+  trackAnalytics(event: InsertAnalytics): Promise<Analytics>;
+  getAnalyticsByUser(userId: string): Promise<Analytics[]>;
+  getAnalyticsByListing(listingId: string): Promise<Analytics[]>;
+  
+  getMessages(userId: string): Promise<Message[]>;
+  getConversation(userId1: string, userId2: string): Promise<Message[]>;
+  sendMessage(message: InsertMessage): Promise<Message>;
+  markMessageAsRead(id: string): Promise<boolean>;
+  
+  getReviewsForSeller(sellerId: string): Promise<Review[]>;
+  createReview(review: InsertReview): Promise<Review>;
+  
+  getTransactionsForUser(userId: string): Promise<Transaction[]>;
+  createTransaction(transaction: InsertTransaction): Promise<Transaction>;
+  updateTransactionStatus(id: string, status: string): Promise<Transaction | undefined>;
+  
+  getCategories(): Promise<Category[]>;
+  createCategory(category: InsertCategory): Promise<Category>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -20,8 +64,13 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.phone, phone));
     return user;
   }
 
@@ -30,8 +79,25 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined> {
+    const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+    return user;
+  }
+
   async getListings(): Promise<Listing[]> {
     return db.select().from(listings).where(eq(listings.isActive, true)).orderBy(desc(listings.createdAt));
+  }
+
+  async getListingsByCategory(category: string): Promise<Listing[]> {
+    return db.select().from(listings)
+      .where(and(eq(listings.isActive, true), eq(listings.category, category)))
+      .orderBy(desc(listings.createdAt));
+  }
+
+  async getListingsBySeller(sellerName: string): Promise<Listing[]> {
+    return db.select().from(listings)
+      .where(and(eq(listings.isActive, true), eq(listings.sellerName, sellerName)))
+      .orderBy(desc(listings.createdAt));
   }
 
   async getListing(id: string): Promise<Listing | undefined> {
@@ -52,6 +118,137 @@ export class DatabaseStorage implements IStorage {
   async deleteListing(id: string): Promise<boolean> {
     const [listing] = await db.update(listings).set({ isActive: false }).where(eq(listings.id, id)).returning();
     return !!listing;
+  }
+
+  async getBidsForListing(listingId: string): Promise<Bid[]> {
+    return db.select().from(bids).where(eq(bids.listingId, listingId)).orderBy(desc(bids.amount));
+  }
+
+  async createBid(insertBid: InsertBid): Promise<Bid> {
+    const [bid] = await db.insert(bids).values(insertBid).returning();
+    await db.update(bids).set({ isWinning: false }).where(eq(bids.listingId, insertBid.listingId));
+    await db.update(bids).set({ isWinning: true }).where(eq(bids.id, bid.id));
+    await db.update(listings).set({ 
+      currentBid: insertBid.amount,
+      totalBids: sql`${listings.totalBids} + 1`
+    }).where(eq(listings.id, insertBid.listingId));
+    return bid;
+  }
+
+  async getHighestBid(listingId: string): Promise<Bid | undefined> {
+    const [bid] = await db.select().from(bids)
+      .where(eq(bids.listingId, listingId))
+      .orderBy(desc(bids.amount))
+      .limit(1);
+    return bid;
+  }
+
+  async getUserBids(userId: string): Promise<Bid[]> {
+    return db.select().from(bids).where(eq(bids.userId, userId)).orderBy(desc(bids.createdAt));
+  }
+
+  async getWatchlist(userId: string): Promise<Watchlist[]> {
+    return db.select().from(watchlist).where(eq(watchlist.userId, userId)).orderBy(desc(watchlist.createdAt));
+  }
+
+  async addToWatchlist(item: InsertWatchlist): Promise<Watchlist> {
+    const [watchlistItem] = await db.insert(watchlist).values(item).returning();
+    return watchlistItem;
+  }
+
+  async removeFromWatchlist(userId: string, listingId: string): Promise<boolean> {
+    const result = await db.delete(watchlist)
+      .where(and(eq(watchlist.userId, userId), eq(watchlist.listingId, listingId)));
+    return true;
+  }
+
+  async isInWatchlist(userId: string, listingId: string): Promise<boolean> {
+    const [item] = await db.select().from(watchlist)
+      .where(and(eq(watchlist.userId, userId), eq(watchlist.listingId, listingId)));
+    return !!item;
+  }
+
+  async trackAnalytics(event: InsertAnalytics): Promise<Analytics> {
+    const [analyticsEvent] = await db.insert(analytics).values(event).returning();
+    return analyticsEvent;
+  }
+
+  async getAnalyticsByUser(userId: string): Promise<Analytics[]> {
+    return db.select().from(analytics).where(eq(analytics.userId, userId)).orderBy(desc(analytics.createdAt));
+  }
+
+  async getAnalyticsByListing(listingId: string): Promise<Analytics[]> {
+    return db.select().from(analytics).where(eq(analytics.listingId, listingId)).orderBy(desc(analytics.createdAt));
+  }
+
+  async getMessages(userId: string): Promise<Message[]> {
+    return db.select().from(messages)
+      .where(sql`${messages.senderId} = ${userId} OR ${messages.receiverId} = ${userId}`)
+      .orderBy(desc(messages.createdAt));
+  }
+
+  async getConversation(userId1: string, userId2: string): Promise<Message[]> {
+    return db.select().from(messages)
+      .where(sql`(${messages.senderId} = ${userId1} AND ${messages.receiverId} = ${userId2}) OR (${messages.senderId} = ${userId2} AND ${messages.receiverId} = ${userId1})`)
+      .orderBy(messages.createdAt);
+  }
+
+  async sendMessage(message: InsertMessage): Promise<Message> {
+    const [msg] = await db.insert(messages).values(message).returning();
+    return msg;
+  }
+
+  async markMessageAsRead(id: string): Promise<boolean> {
+    const [msg] = await db.update(messages).set({ isRead: true }).where(eq(messages.id, id)).returning();
+    return !!msg;
+  }
+
+  async getReviewsForSeller(sellerId: string): Promise<Review[]> {
+    return db.select().from(reviews).where(eq(reviews.sellerId, sellerId)).orderBy(desc(reviews.createdAt));
+  }
+
+  async createReview(review: InsertReview): Promise<Review> {
+    const [newReview] = await db.insert(reviews).values(review).returning();
+    const sellerReviews = await this.getReviewsForSeller(review.sellerId);
+    const avgRating = sellerReviews.reduce((sum, r) => sum + r.rating, 0) / sellerReviews.length;
+    await db.update(users).set({ 
+      rating: avgRating,
+      ratingCount: sellerReviews.length
+    }).where(eq(users.id, review.sellerId));
+    return newReview;
+  }
+
+  async getTransactionsForUser(userId: string): Promise<Transaction[]> {
+    return db.select().from(transactions)
+      .where(sql`${transactions.sellerId} = ${userId} OR ${transactions.buyerId} = ${userId}`)
+      .orderBy(desc(transactions.createdAt));
+  }
+
+  async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
+    const [txn] = await db.insert(transactions).values(transaction).returning();
+    return txn;
+  }
+
+  async updateTransactionStatus(id: string, status: string): Promise<Transaction | undefined> {
+    const [txn] = await db.update(transactions).set({ status }).where(eq(transactions.id, id)).returning();
+    if (status === "completed") {
+      await db.update(transactions).set({ completedAt: new Date() }).where(eq(transactions.id, id));
+      if (txn) {
+        await db.update(users).set({ 
+          totalSales: sql`${users.totalSales} + 1`
+        }).where(eq(users.id, txn.sellerId));
+      }
+    }
+    return txn;
+  }
+
+  async getCategories(): Promise<Category[]> {
+    return db.select().from(categories).orderBy(categories.order);
+  }
+
+  async createCategory(category: InsertCategory): Promise<Category> {
+    const [cat] = await db.insert(categories).values(category).returning();
+    return cat;
   }
 }
 
