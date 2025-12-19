@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, LogOut, Loader2, Phone } from "lucide-react";
+import { ShoppingCart, User, Menu, LogOut, Loader2, Phone, Plus, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { AccountDropdown } from "@/components/account-dropdown";
@@ -24,6 +24,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 
+      {/* Seller Account Ribbon */}
+      <div className="bg-gradient-to-l from-amber-500 via-yellow-500 to-amber-500 text-black py-1.5 text-xs px-4">
+        <div className="container mx-auto flex justify-between items-center">
+          {/* Seller Info */}
+          <div className="flex items-center gap-3">
+            <Store className="h-4 w-4" />
+            <span className="font-bold">حساب البائع</span>
+            <span className="hidden sm:inline">|</span>
+            <Link href="/seller-dashboard" className="hidden sm:inline hover:underline font-medium">
+              لوحة التحكم
+            </Link>
+            <Link href="/my-sales" className="hidden sm:inline hover:underline font-medium">
+              مبيعاتي
+            </Link>
+          </div>
+          
+          {/* List Item Button - Top Right */}
+          <Link 
+            href="/sell" 
+            className="bg-black text-yellow-400 hover:bg-gray-900 px-4 py-1 rounded-full font-bold flex items-center gap-1.5 transition-colors shadow-md"
+            data-testid="button-sell-item"
+          >
+            <Plus className="h-4 w-4" />
+            أضف منتج للبيع
+          </Link>
+        </div>
+      </div>
+
       {/* Top Navigation Bar */}
       <div className="bg-blue-600 text-white py-1 text-xs px-4">
         <div className="container mx-auto flex justify-between items-center">
@@ -39,8 +67,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/search?category=تحف وأثاث" className="hover:text-blue-200 transition-colors">تحف وأثاث</Link>
             <Link href="/search?category=سيارات" className="hover:text-blue-200 transition-colors">سيارات</Link>
             <Link href="/search" className="hover:text-blue-200 transition-colors font-medium">عرض الكل</Link>
-            <Link href="/seller-dashboard" className="hover:text-blue-200 transition-colors font-medium">لوحة البائع</Link>
-            <Link href="/sell" className="hover:text-blue-200 transition-colors font-medium bg-yellow-500 text-black px-2 py-0.5 rounded">+ بيع منتج</Link>
           </div>
           
           {/* User Actions */}
@@ -70,10 +96,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </a>
             )}
             <NotificationsButton />
-            <div className="flex items-center gap-1 cursor-pointer hover:text-blue-200 transition-colors">
+            <Link href="/cart" className="flex items-center gap-1 cursor-pointer hover:text-blue-200 transition-colors">
               <ShoppingCart className="h-3 w-3" />
               <span className="bg-red-500 text-white text-[9px] rounded-full px-1 h-3 flex items-center justify-center font-bold">0</span>
-            </div>
+            </Link>
           </div>
         </div>
       </div>
