@@ -22,6 +22,11 @@ export const users = pgTable("users", {
   twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
   twoFactorSecret: text("two_factor_secret"),
   city: text("city"),
+  addressLine1: text("address_line_1"),
+  addressLine2: text("address_line_2"),
+  district: text("district"),
+  locationLat: real("location_lat"),
+  locationLng: real("location_lng"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   lastLoginAt: timestamp("last_login_at"),
 });
