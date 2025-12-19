@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRoute } from "wouter";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -12,8 +12,70 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, MapPin } from "lucide-react";
+import { Loader2, Upload, MapPin, Check, X, Eye, EyeOff } from "lucide-react";
 import { MapPicker } from "@/components/map-picker";
+
+const passwordRequirements = [
+  { id: "length", label: "٨ أحرف على الأقل", test: (p: string) => p.length >= 8 },
+  { id: "uppercase", label: "حرف كبير واحد على الأقل (A-Z)", test: (p: string) => /[A-Z]/.test(p) },
+  { id: "lowercase", label: "حرف صغير واحد على الأقل (a-z)", test: (p: string) => /[a-z]/.test(p) },
+  { id: "number", label: "رقم واحد على الأقل (0-9)", test: (p: string) => /[0-9]/.test(p) },
+  { id: "special", label: "رمز خاص واحد على الأقل (!@#$%^&*)", test: (p: string) => /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/`~]/.test(p) },
+];
+
+function PasswordStrengthIndicator({ password }: { password: string }) {
+  const strength = useMemo(() => {
+    const passed = passwordRequirements.filter(r => r.test(password)).length;
+    return passed;
+  }, [password]);
+
+  const getStrengthLabel = () => {
+    if (strength === 0) return { text: "", color: "bg-gray-200" };
+    if (strength <= 2) return { text: "ضعيفة", color: "bg-red-500" };
+    if (strength <= 3) return { text: "متوسطة", color: "bg-yellow-500" };
+    if (strength <= 4) return { text: "جيدة", color: "bg-blue-500" };
+    return { text: "قوية", color: "bg-green-500" };
+  };
+
+  const { text, color } = getStrengthLabel();
+
+  return (
+    <div className="space-y-2 mt-2">
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div
+            key={i}
+            className={`h-1.5 flex-1 rounded-full transition-colors ${
+              i <= strength ? color : "bg-gray-200"
+            }`}
+          />
+        ))}
+      </div>
+      {password && (
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-muted-foreground">قوة كلمة المرور:</span>
+          <span className={`text-xs font-medium ${
+            strength <= 2 ? "text-red-600" : strength <= 3 ? "text-yellow-600" : strength <= 4 ? "text-blue-600" : "text-green-600"
+          }`}>{text}</span>
+        </div>
+      )}
+      <div className="space-y-1 mt-2">
+        {passwordRequirements.map((req) => (
+          <div key={req.id} className="flex items-center gap-2 text-xs">
+            {req.test(password) ? (
+              <Check className="h-3.5 w-3.5 text-green-600" />
+            ) : (
+              <X className="h-3.5 w-3.5 text-gray-400" />
+            )}
+            <span className={req.test(password) ? "text-green-700" : "text-gray-500"}>
+              {req.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const phoneRegex = /^(\+964|0)?7[0-9]{9}$/;
 
@@ -42,7 +104,12 @@ const IRAQI_DISTRICTS = [
 const baseSchema = z.object({
   name: z.string().min(3, "الاسم يجب أن يكون 3 أحرف على الأقل"),
   phone: z.string().regex(phoneRegex, "رقم الهاتف يجب أن يكون رقم عراقي صحيح (07...)"),
-  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+  password: z.string()
+    .min(8, "كلمة المرور يجب أن تكون ٨ أحرف على الأقل")
+    .regex(/[A-Z]/, "يجب أن تحتوي على حرف كبير واحد على الأقل")
+    .regex(/[a-z]/, "يجب أن تحتوي على حرف صغير واحد على الأقل")
+    .regex(/[0-9]/, "يجب أن تحتوي على رقم واحد على الأقل")
+    .regex(/[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/`~]/, "يجب أن تحتوي على رمز خاص واحد على الأقل"),
   agreeTerms: z.boolean().refine(val => val === true, "يجب الموافقة على الشروط والأحكام"),
 });
 
@@ -69,6 +136,8 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"form" | "verify">("form");
   const [activeTab, setActiveTab] = useState<"buyer" | "seller">(initialTab || "buyer");
+  const [showBuyerPassword, setShowBuyerPassword] = useState(false);
+  const [showSellerPassword, setShowSellerPassword] = useState(false);
 
   const getActionMessage = () => {
     switch (action) {
@@ -214,8 +283,25 @@ export default function Register() {
 
                     <div className="space-y-2">
                       <Label htmlFor="password">كلمة المرور</Label>
-                      <Input id="password" type="password" {...buyerForm.register("password")} className="text-right" />
-                      {buyerForm.formState.errors.password && <p className="text-red-500 text-xs">{buyerForm.formState.errors.password.message}</p>}
+                      <div className="relative">
+                        <Input 
+                          id="password" 
+                          type={showBuyerPassword ? "text" : "password"} 
+                          {...buyerForm.register("password")} 
+                          className="text-right pl-10" 
+                          data-testid="input-buyer-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowBuyerPassword(!showBuyerPassword)}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          data-testid="toggle-buyer-password"
+                        >
+                          {showBuyerPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      <PasswordStrengthIndicator password={buyerForm.watch("password") || ""} />
+                      {buyerForm.formState.errors.password && <p className="text-red-500 text-xs mt-2">{buyerForm.formState.errors.password.message}</p>}
                     </div>
 
                     <div className="border-t pt-4 mt-4">
@@ -316,7 +402,25 @@ export default function Register() {
 
                     <div className="space-y-2">
                       <Label htmlFor="s-password">كلمة المرور</Label>
-                      <Input id="s-password" type="password" {...sellerForm.register("password")} className="text-right" />
+                      <div className="relative">
+                        <Input 
+                          id="s-password" 
+                          type={showSellerPassword ? "text" : "password"} 
+                          {...sellerForm.register("password")} 
+                          className="text-right pl-10" 
+                          data-testid="input-seller-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSellerPassword(!showSellerPassword)}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          data-testid="toggle-seller-password"
+                        >
+                          {showSellerPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      <PasswordStrengthIndicator password={sellerForm.watch("password") || ""} />
+                      {sellerForm.formState.errors.password && <p className="text-red-500 text-xs mt-2">{sellerForm.formState.errors.password.message}</p>}
                     </div>
 
                     <div className="flex items-start gap-3 mt-4">
