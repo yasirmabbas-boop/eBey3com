@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { PRODUCTS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, History, Sparkles } from "lucide-react";
+import { Clock, Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, History, Sparkles, Loader2 } from "lucide-react";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
+import type { Listing } from "@shared/schema";
 
 const RECENT_SEARCHES = [
   { term: "آيفون 14", count: 5 },
@@ -15,8 +17,6 @@ const RECENT_SEARCHES = [
   { term: "ذهب عراقي", count: 2 },
   { term: "ماك بوك", count: 1 },
 ];
-
-const RECOMMENDED_PRODUCTS = PRODUCTS.slice(0, 6);
 
 const ADS = [
   {
@@ -64,6 +64,33 @@ const ADS = [
 export default function Home() {
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const currentAd = ADS[currentAdIndex];
+
+  const { data: listings = [], isLoading } = useQuery<Listing[]>({
+    queryKey: ["/api/listings"],
+    queryFn: async () => {
+      const res = await fetch("/api/listings");
+      if (!res.ok) throw new Error("Failed to fetch listings");
+      return res.json();
+    },
+  });
+
+  const displayProducts = listings.length > 0 ? listings.map(l => ({
+    id: l.id,
+    title: l.title,
+    price: l.price,
+    currentBid: l.currentBid,
+    image: l.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
+    saleType: l.saleType,
+    timeLeft: l.timeLeft,
+    sellerName: l.sellerName,
+    sellerTotalSales: 0,
+    sellerRating: 5,
+    category: l.category,
+    condition: l.condition,
+    city: l.city,
+  })) : PRODUCTS;
+
+  const recommendedProducts = displayProducts.slice(0, 6);
 
   const nextAd = () => {
     setCurrentAdIndex((prev) => (prev + 1) % ADS.length);
@@ -173,7 +200,7 @@ export default function Home() {
               <Link href="/search" className="text-accent hover:underline font-medium text-sm">عرض المزيد</Link>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {RECOMMENDED_PRODUCTS.map((product) => (
+              {recommendedProducts.map((product) => (
                 <Link key={product.id} href={`/product/${product.id}`}>
                   <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200" data-testid={`card-recommended-${product.id}`}>
                     <div className="relative aspect-square overflow-hidden bg-gray-100">
@@ -243,46 +270,52 @@ export default function Home() {
             <Link href="/search" className="text-accent hover:underline font-medium">عرض الكل</Link>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {PRODUCTS.map((product) => (
-              <Link key={product.id} href={`/product/${product.id}`}>
-                <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200">
-                  <div className="relative aspect-square overflow-hidden bg-gray-100">
-                    <img 
-                      src={product.image} 
-                      alt={product.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    {product.currentBid && (
-                      <Badge className="absolute top-2 right-2 bg-primary text-white">
-                        مزاد
-                      </Badge>
-                    )}
-                  </div>
-                  <CardContent className="p-4">
-                    <div className="text-xs text-muted-foreground mb-1">{product.category}</div>
-                    <h3 className="font-bold text-lg mb-2 line-clamp-1 group-hover:text-primary transition-colors">
-                      {product.title}
-                    </h3>
-                    <div className="flex justify-between items-center mt-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground">السعر الحالي</p>
-                        <p className="font-bold text-xl text-primary">
-                          {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} د.ع
-                        </p>
-                      </div>
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {displayProducts.map((product) => (
+                <Link key={product.id} href={`/product/${product.id}`}>
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200" data-testid={`card-product-${product.id}`}>
+                    <div className="relative aspect-square overflow-hidden bg-gray-100">
+                      <img 
+                        src={product.image} 
+                        alt={product.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {product.currentBid && (
+                        <Badge className="absolute top-2 right-2 bg-primary text-white">
+                          مزاد
+                        </Badge>
+                      )}
                     </div>
-                  </CardContent>
-                  {product.timeLeft && (
-                    <CardFooter className="px-4 py-2 bg-red-50 text-red-600 text-xs font-medium flex items-center gap-2">
-                      <Clock className="h-3 w-3" />
-                      ينتهي خلال {product.timeLeft}
-                    </CardFooter>
-                  )}
-                </Card>
-              </Link>
-            ))}
-          </div>
+                    <CardContent className="p-4">
+                      <div className="text-xs text-muted-foreground mb-1">{product.category}</div>
+                      <h3 className="font-bold text-lg mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+                        {product.title}
+                      </h3>
+                      <div className="flex justify-between items-center mt-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">السعر الحالي</p>
+                          <p className="font-bold text-xl text-primary">
+                            {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} د.ع
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                    {product.timeLeft && (
+                      <CardFooter className="px-4 py-2 bg-red-50 text-red-600 text-xs font-medium flex items-center gap-2">
+                        <Clock className="h-3 w-3" />
+                        ينتهي خلال {product.timeLeft}
+                      </CardFooter>
+                    )}
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

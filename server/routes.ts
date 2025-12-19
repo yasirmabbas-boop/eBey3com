@@ -2,6 +2,12 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema } from "@shared/schema";
+import { z } from "zod";
+
+const updateListingSchema = insertListingSchema.partial().refine(
+  (data) => Object.keys(data).length > 0,
+  { message: "At least one field must be provided for update" }
+);
 
 export async function registerRoutes(
   httpServer: Server,
@@ -67,13 +73,27 @@ export async function registerRoutes(
 
   app.patch("/api/listings/:id", async (req, res) => {
     try {
-      const listing = await storage.updateListing(req.params.id, req.body);
+      if (req.body.price !== undefined) {
+        req.body.price = typeof req.body.price === "number" 
+          ? req.body.price 
+          : parseInt(req.body.price, 10);
+        if (isNaN(req.body.price)) {
+          return res.status(400).json({ error: "Invalid price value" });
+        }
+      }
+      
+      const validatedData = updateListingSchema.parse(req.body);
+      
+      const listing = await storage.updateListing(req.params.id, validatedData);
       if (!listing) {
         return res.status(404).json({ error: "Listing not found" });
       }
       res.json(listing);
     } catch (error) {
       console.error("Error updating listing:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid update data", details: error.errors });
+      }
       res.status(500).json({ error: "Failed to update listing" });
     }
   });
