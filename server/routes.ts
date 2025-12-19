@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertListingSchema } from "@shared/schema";
+import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -10,7 +10,13 @@ export async function registerRoutes(
 
   app.get("/api/listings", async (req, res) => {
     try {
-      const listings = await storage.getListings();
+      const { category } = req.query;
+      let listings;
+      if (category && typeof category === "string") {
+        listings = await storage.getListingsByCategory(category);
+      } else {
+        listings = await storage.getListings();
+      }
       res.json(listings);
     } catch (error) {
       console.error("Error fetching listings:", error);
@@ -36,7 +42,7 @@ export async function registerRoutes(
       const listingData = {
         title: req.body.title,
         description: req.body.description,
-        price: parseInt(req.body.price, 10),
+        price: typeof req.body.price === "number" ? req.body.price : parseInt(req.body.price, 10),
         category: req.body.category,
         condition: req.body.condition,
         images: req.body.images || [],
@@ -59,6 +65,19 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/listings/:id", async (req, res) => {
+    try {
+      const listing = await storage.updateListing(req.params.id, req.body);
+      if (!listing) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+      res.json(listing);
+    } catch (error) {
+      console.error("Error updating listing:", error);
+      res.status(500).json({ error: "Failed to update listing" });
+    }
+  });
+
   app.delete("/api/listings/:id", async (req, res) => {
     try {
       const success = await storage.deleteListing(req.params.id);
@@ -69,6 +88,236 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error deleting listing:", error);
       res.status(500).json({ error: "Failed to delete listing" });
+    }
+  });
+
+  app.get("/api/listings/:id/bids", async (req, res) => {
+    try {
+      const bids = await storage.getBidsForListing(req.params.id);
+      res.json(bids);
+    } catch (error) {
+      console.error("Error fetching bids:", error);
+      res.status(500).json({ error: "Failed to fetch bids" });
+    }
+  });
+
+  app.post("/api/bids", async (req, res) => {
+    try {
+      const validatedData = insertBidSchema.parse(req.body);
+      const listing = await storage.getListing(validatedData.listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+      
+      const highestBid = await storage.getHighestBid(validatedData.listingId);
+      const minBid = highestBid ? highestBid.amount + 1000 : listing.price;
+      
+      if (validatedData.amount < minBid) {
+        return res.status(400).json({ 
+          error: "المزايدة يجب أن تكون أعلى من المزايدة الحالية",
+          minBid 
+        });
+      }
+      
+      const bid = await storage.createBid(validatedData);
+      res.status(201).json(bid);
+    } catch (error) {
+      console.error("Error creating bid:", error);
+      res.status(400).json({ error: "Failed to create bid", details: String(error) });
+    }
+  });
+
+  app.get("/api/users/:userId/bids", async (req, res) => {
+    try {
+      const bids = await storage.getUserBids(req.params.userId);
+      res.json(bids);
+    } catch (error) {
+      console.error("Error fetching user bids:", error);
+      res.status(500).json({ error: "Failed to fetch user bids" });
+    }
+  });
+
+  app.get("/api/users/:userId/watchlist", async (req, res) => {
+    try {
+      const items = await storage.getWatchlist(req.params.userId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching watchlist:", error);
+      res.status(500).json({ error: "Failed to fetch watchlist" });
+    }
+  });
+
+  app.post("/api/watchlist", async (req, res) => {
+    try {
+      const validatedData = insertWatchlistSchema.parse(req.body);
+      const isAlreadyInWatchlist = await storage.isInWatchlist(validatedData.userId, validatedData.listingId);
+      if (isAlreadyInWatchlist) {
+        return res.status(400).json({ error: "Already in watchlist" });
+      }
+      const item = await storage.addToWatchlist(validatedData);
+      res.status(201).json(item);
+    } catch (error) {
+      console.error("Error adding to watchlist:", error);
+      res.status(400).json({ error: "Failed to add to watchlist", details: String(error) });
+    }
+  });
+
+  app.delete("/api/watchlist/:userId/:listingId", async (req, res) => {
+    try {
+      await storage.removeFromWatchlist(req.params.userId, req.params.listingId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing from watchlist:", error);
+      res.status(500).json({ error: "Failed to remove from watchlist" });
+    }
+  });
+
+  app.post("/api/analytics", async (req, res) => {
+    try {
+      const validatedData = insertAnalyticsSchema.parse(req.body);
+      const event = await storage.trackAnalytics(validatedData);
+      res.status(201).json(event);
+    } catch (error) {
+      console.error("Error tracking analytics:", error);
+      res.status(400).json({ error: "Failed to track analytics" });
+    }
+  });
+
+  app.get("/api/analytics/user/:userId", async (req, res) => {
+    try {
+      const analytics = await storage.getAnalyticsByUser(req.params.userId);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching user analytics:", error);
+      res.status(500).json({ error: "Failed to fetch user analytics" });
+    }
+  });
+
+  app.get("/api/analytics/listing/:listingId", async (req, res) => {
+    try {
+      const analytics = await storage.getAnalyticsByListing(req.params.listingId);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching listing analytics:", error);
+      res.status(500).json({ error: "Failed to fetch listing analytics" });
+    }
+  });
+
+  app.get("/api/messages/:userId", async (req, res) => {
+    try {
+      const messages = await storage.getMessages(req.params.userId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.get("/api/messages/:userId1/:userId2", async (req, res) => {
+    try {
+      const messages = await storage.getConversation(req.params.userId1, req.params.userId2);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching conversation:", error);
+      res.status(500).json({ error: "Failed to fetch conversation" });
+    }
+  });
+
+  app.post("/api/messages", async (req, res) => {
+    try {
+      const validatedData = insertMessageSchema.parse(req.body);
+      const message = await storage.sendMessage(validatedData);
+      res.status(201).json(message);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(400).json({ error: "Failed to send message", details: String(error) });
+    }
+  });
+
+  app.patch("/api/messages/:id/read", async (req, res) => {
+    try {
+      const success = await storage.markMessageAsRead(req.params.id);
+      res.json({ success });
+    } catch (error) {
+      console.error("Error marking message as read:", error);
+      res.status(500).json({ error: "Failed to mark message as read" });
+    }
+  });
+
+  app.get("/api/reviews/seller/:sellerId", async (req, res) => {
+    try {
+      const reviews = await storage.getReviewsForSeller(req.params.sellerId);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      res.status(500).json({ error: "Failed to fetch reviews" });
+    }
+  });
+
+  app.post("/api/reviews", async (req, res) => {
+    try {
+      const validatedData = insertReviewSchema.parse(req.body);
+      const review = await storage.createReview(validatedData);
+      res.status(201).json(review);
+    } catch (error) {
+      console.error("Error creating review:", error);
+      res.status(400).json({ error: "Failed to create review", details: String(error) });
+    }
+  });
+
+  app.get("/api/transactions/:userId", async (req, res) => {
+    try {
+      const transactions = await storage.getTransactionsForUser(req.params.userId);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ error: "Failed to fetch transactions" });
+    }
+  });
+
+  app.post("/api/transactions", async (req, res) => {
+    try {
+      const validatedData = insertTransactionSchema.parse(req.body);
+      const transaction = await storage.createTransaction(validatedData);
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error("Error creating transaction:", error);
+      res.status(400).json({ error: "Failed to create transaction", details: String(error) });
+    }
+  });
+
+  app.patch("/api/transactions/:id/status", async (req, res) => {
+    try {
+      const { status } = req.body;
+      const transaction = await storage.updateTransactionStatus(req.params.id, status);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+      res.json(transaction);
+    } catch (error) {
+      console.error("Error updating transaction:", error);
+      res.status(500).json({ error: "Failed to update transaction" });
+    }
+  });
+
+  app.get("/api/categories", async (req, res) => {
+    try {
+      const categories = await storage.getCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      res.status(500).json({ error: "Failed to fetch categories" });
+    }
+  });
+
+  app.post("/api/categories", async (req, res) => {
+    try {
+      const validatedData = insertCategorySchema.parse(req.body);
+      const category = await storage.createCategory(validatedData);
+      res.status(201).json(category);
+    } catch (error) {
+      console.error("Error creating category:", error);
+      res.status(400).json({ error: "Failed to create category", details: String(error) });
     }
   });
 
