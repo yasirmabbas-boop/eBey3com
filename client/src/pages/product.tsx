@@ -37,7 +37,7 @@ export default function ProductPage() {
   const handleBid = () => {
     toast({
       title: "تم إضافة مزايدة!",
-      description: "ستتم معالجة مزايدتك قريباً.",
+      description: "ستتم معالجة سومتك قريباً.",
     });
   };
 

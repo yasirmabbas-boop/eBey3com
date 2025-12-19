@@ -61,8 +61,8 @@ export default function LiveAuction() {
       return;
     }
     toast({
-      title: "تم تقديم مزايدتك! ✅",
-      description: `مزايدتك: ${bid.toLocaleString()} د.ع`,
+      title: "تم تقديم سومتك! ✅",
+      description: `سومتك: ${bid.toLocaleString()} د.ع`,
     });
     setBidAmount("");
   };
@@ -142,7 +142,7 @@ export default function LiveAuction() {
 
                 {/* Bidding Section */}
                 <div className="bg-gray-50 p-6 rounded-lg mb-6">
-                  <h3 className="font-bold text-lg mb-4">ضع مزايدتك الآن</h3>
+                  <h3 className="font-bold text-lg mb-4">ضع سومتك الآن</h3>
                   <div className="flex gap-2 mb-4">
                     <Input
                       type="number"

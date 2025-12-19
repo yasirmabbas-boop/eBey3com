@@ -42,8 +42,8 @@ export function BiddingWindow({
     setTimeout(() => {
       setIsSubmitting(false);
       toast({
-        title: "تم تقديم مزايدتك بنجاح! ✅",
-        description: `مزايدتك: ${bid.toLocaleString()} د.ع`,
+        title: "تم تقديم سومتك بنجاح! ✅",
+        description: `سومتك: ${bid.toLocaleString()} د.ع`,
       });
       onBidSubmit?.(bid);
     }, 500);
@@ -88,7 +88,7 @@ export function BiddingWindow({
       <div className="space-y-4 mb-6">
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            أدخل مزايدتك:
+            أدخل سومتك:
           </label>
           <div className="flex gap-2">
             <Input
