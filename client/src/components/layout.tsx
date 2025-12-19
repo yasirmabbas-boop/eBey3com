@@ -21,14 +21,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Top Bar */}
       <div className="bg-white text-gray-700 py-2 text-xs px-4 border-b border-gray-200">
         <div className="container mx-auto flex justify-between items-center gap-8">
-          <div className="flex gap-6 w-full justify-end">
-            <Link href="/signin" className="hover:text-primary font-semibold transition-colors">
+          <div className="flex gap-6 w-full justify-end items-center">
+            <Link href="/signin" className="hover:text-primary font-semibold transition-colors flex items-center gap-1">
+              <User className="h-4 w-4" />
               تسجيل الدخول / إنشاء حساب
             </Link>
             <div className="h-4 w-px bg-gray-300 mx-2"></div>
-            <Link href="/contact" className="hover:text-primary font-semibold transition-colors flex items-center gap-1">
-              📞 المساعدة والاتصال
-            </Link>
+            <div className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
+              <ShoppingCart className="h-4 w-4" />
+              <span className="font-semibold">السلة</span>
+              <span className="bg-red-600 text-white text-[10px] rounded-full px-1.5 h-4 flex items-center justify-center font-bold">0</span>
+            </div>
           </div>
         </div>
       </div>
@@ -80,10 +83,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Actions */}
           <div className="flex items-center gap-2 md:gap-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-600 text-white text-[10px] rounded-full flex items-center justify-center font-bold">0</span>
-            </Button>
+             {/* Basket moved to top bar */}
           </div>
         </div>
         
