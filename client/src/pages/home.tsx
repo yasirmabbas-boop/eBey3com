@@ -189,7 +189,7 @@ export default function Home() {
             <Link href="/search" className="text-accent hover:underline font-medium">عرض الكل</Link>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {PRODUCTS.map((product) => (
               <Link key={product.id} href={`/product/${product.id}`}>
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200">
