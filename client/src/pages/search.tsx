@@ -136,9 +136,12 @@ export default function SearchPage() {
     if (selectedConditions.length > 0) {
       const selectedAliases = selectedConditions.flatMap(condId => {
         const cond = CONDITIONS.find(c => c.id === condId);
-        return cond ? cond.aliases : [condId];
+        return cond ? cond.aliases.map(a => a.toLowerCase().trim()) : [condId.toLowerCase().trim()];
       });
-      products = products.filter(p => selectedAliases.includes(p.condition || ""));
+      products = products.filter(p => {
+        const productCondition = (p.condition || "").toLowerCase().trim();
+        return selectedAliases.some(alias => productCondition.includes(alias) || alias.includes(productCondition));
+      });
     }
 
     if (selectedSaleTypes.length > 0) {
@@ -146,7 +149,14 @@ export default function SearchPage() {
     }
 
     if (selectedCities.length > 0) {
-      products = products.filter(p => selectedCities.includes(p.city || ""));
+      products = products.filter(p => {
+        const productCity = (p.city || "").trim();
+        return selectedCities.some(city => 
+          productCity === city || 
+          productCity.includes(city) || 
+          city.includes(productCity)
+        );
+      });
     }
 
     const minPrice = priceMin ? parseInt(priceMin) : 0;
