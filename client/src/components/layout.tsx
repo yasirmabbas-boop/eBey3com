@@ -11,7 +11,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
-import { GlobalAIAssistant } from "@/components/global-ai-assistant";
 import { ImageSearchModal } from "@/components/image-search-modal";
 import { NotificationsButton } from "@/components/notifications";
 
@@ -32,9 +31,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans" dir="rtl">
-      {/* Global AI Assistant */}
-      <GlobalAIAssistant />
-      
+            
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 

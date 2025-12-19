@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { AIAssistant } from "@/components/ai-assistant";
 import { BiddingWindow } from "@/components/bidding-window";
 import { SellerTrustBadge } from "@/components/seller-trust-badge";
 import { ContactSeller } from "@/components/contact-seller";
@@ -373,12 +372,6 @@ export default function ProductPage() {
           </Carousel>
         </div>
       </section>
-
-      {/* AI Assistant */}
-      <AIAssistant 
-        productTitle={product.title} 
-        productDescription={product.description || "منتج مميز"} 
-      />
 
       {/* Shipping Label Modal */}
       <ShippingLabel
