@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { broadcastBidUpdate } from "./websocket";
 
 const updateListingSchema = insertListingSchema.extend({
   auctionEndTime: z.union([z.string(), z.date(), z.null()]).optional(),
@@ -158,6 +159,22 @@ export async function registerRoutes(
           auctionEndTime: extendedEndTime 
         });
       }
+      
+      const allBids = await storage.getBidsForListing(validatedData.listingId);
+      const totalBids = allBids.length;
+      const currentBid = validatedData.amount;
+      
+      const bidder = await storage.getUser(validatedData.userId);
+      
+      broadcastBidUpdate({
+        type: "bid_update",
+        listingId: validatedData.listingId,
+        currentBid,
+        totalBids,
+        bidderName: bidder?.displayName || bidder?.username || "مستخدم مجهول",
+        bidderId: validatedData.userId,
+        timestamp: new Date().toISOString(),
+      });
       
       res.status(201).json(bid);
     } catch (error) {

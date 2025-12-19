@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Gavel, TrendingUp } from "lucide-react";
+import { Gavel, TrendingUp, Wifi, WifiOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useBidWebSocket } from "@/hooks/use-bid-websocket";
 
 interface BiddingWindowProps {
+  listingId: string;
   currentBid: number;
   totalBids: number;
   minimumBid: number;
@@ -15,16 +17,43 @@ interface BiddingWindowProps {
 }
 
 export function BiddingWindow({
-  currentBid,
-  totalBids,
-  minimumBid,
+  listingId,
+  currentBid: initialCurrentBid,
+  totalBids: initialTotalBids,
+  minimumBid: initialMinimumBid,
   timeLeft,
   onBidSubmit,
   onRequireAuth,
 }: BiddingWindowProps) {
-  const [bidAmount, setBidAmount] = useState(minimumBid.toString());
+  const [currentBid, setCurrentBid] = useState(initialCurrentBid);
+  const [totalBids, setTotalBids] = useState(initialTotalBids);
+  const [minimumBid, setMinimumBid] = useState(initialMinimumBid);
+  const [bidAmount, setBidAmount] = useState(initialMinimumBid.toString());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastBidder, setLastBidder] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const { isConnected } = useBidWebSocket({
+    listingId,
+    onBidUpdate: (update) => {
+      setCurrentBid(update.currentBid);
+      setTotalBids(update.totalBids);
+      setMinimumBid(update.currentBid + 1000);
+      setLastBidder(update.bidderName);
+      setBidAmount((update.currentBid + 5000).toString());
+      
+      toast({
+        title: "مزايدة جديدة! 🔔",
+        description: `${update.bidderName} زاد السعر إلى ${update.currentBid.toLocaleString()} د.ع`,
+      });
+    },
+  });
+
+  useEffect(() => {
+    setCurrentBid(initialCurrentBid);
+    setTotalBids(initialTotalBids);
+    setMinimumBid(initialMinimumBid);
+  }, [initialCurrentBid, initialTotalBids, initialMinimumBid]);
 
   const suggestedBid = currentBid + 5000;
 
@@ -61,19 +90,39 @@ export function BiddingWindow({
 
   return (
     <Card className="p-6 bg-gradient-to-br from-blue-50 to-white border-blue-200">
-      <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-        <Gavel className="h-6 w-6 text-primary" />
-        نافذة المزاد
-      </h3>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <Gavel className="h-6 w-6 text-primary" />
+          نافذة المزاد
+        </h3>
+        <div className="flex items-center gap-1 text-xs">
+          {isConnected ? (
+            <>
+              <Wifi className="h-4 w-4 text-green-500" />
+              <span className="text-green-600">مباشر</span>
+            </>
+          ) : (
+            <>
+              <WifiOff className="h-4 w-4 text-gray-400" />
+              <span className="text-gray-400">غير متصل</span>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Current Bid Info */}
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg border border-blue-100">
+        <div className="bg-white p-4 rounded-lg border border-blue-100 relative overflow-hidden">
           <p className="text-sm text-muted-foreground mb-1">السعر الحالي</p>
-          <p className="text-2xl font-bold text-primary">
+          <p className="text-2xl font-bold text-primary animate-pulse">
             {currentBid.toLocaleString()}
             <span className="text-xs ml-1">د.ع</span>
           </p>
+          {lastBidder && (
+            <p className="text-xs text-muted-foreground mt-1">
+              آخر مزايد: {lastBidder}
+            </p>
+          )}
         </div>
         <div className="bg-white p-4 rounded-lg border border-blue-100">
           <p className="text-sm text-muted-foreground mb-1">عدد المزايدات</p>
@@ -104,6 +153,7 @@ export function BiddingWindow({
               placeholder="0"
               className="text-lg font-bold"
               dir="ltr"
+              data-testid="input-bid-amount"
             />
             <span className="flex items-center text-muted-foreground font-semibold">د.ع</span>
           </div>
@@ -123,6 +173,7 @@ export function BiddingWindow({
                 size="sm"
                 onClick={() => handleQuickBid(amount)}
                 className="text-xs border-blue-200 hover:bg-blue-50"
+                data-testid={`button-quick-bid-${amount}`}
               >
                 {amount.toLocaleString()}
               </Button>
@@ -136,6 +187,7 @@ export function BiddingWindow({
         onClick={handleSubmitBid}
         disabled={isSubmitting}
         className="w-full bg-accent hover:bg-accent/90 text-white font-bold py-3 text-lg"
+        data-testid="button-submit-bid"
       >
         {isSubmitting ? "جاري المعالجة..." : "خلي سومتك"}
       </Button>

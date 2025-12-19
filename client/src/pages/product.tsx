@@ -167,6 +167,7 @@ export default function ProductPage() {
 
             {product.currentBid ? (
               <BiddingWindow
+                listingId={params?.id || ""}
                 currentBid={product.currentBid}
                 totalBids={product.totalBids || 0}
                 minimumBid={(product.currentBid || 0) + 5000}
