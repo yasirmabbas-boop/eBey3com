@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Search, Camera, Clock, TrendingUp } from "lucide-react";
+import { Search, Camera, Clock, TrendingUp, Watch, Tag, Layers } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { searchSuggestions, SEARCH_SUGGESTIONS } from "@/lib/search-data";
+import { enhancedSearch, SearchResult } from "@/lib/search-data";
 
 interface SmartSearchProps {
   onImageSearchClick?: () => void;
@@ -19,7 +19,7 @@ const TRENDING_SEARCHES = [
 
 export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps) {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<typeof SEARCH_SUGGESTIONS>([]);
+  const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [, navigate] = useLocation();
@@ -27,8 +27,8 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (query.length >= 2) {
-      const results = searchSuggestions(query);
+    if (query.length >= 1) {
+      const results = enhancedSearch(query);
       setSuggestions(results);
       setShowDropdown(true);
       setSelectedIndex(-1);
@@ -39,6 +39,24 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
       }
     }
   }, [query]);
+
+  const getTypeIcon = (type: SearchResult["type"]) => {
+    switch (type) {
+      case "category": return <Layers className="h-4 w-4 text-blue-500" />;
+      case "brand": return <Tag className="h-4 w-4 text-green-500" />;
+      case "model": return <Watch className="h-4 w-4 text-purple-500" />;
+      default: return <Search className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
+  const getTypeLabel = (type: SearchResult["type"]) => {
+    switch (type) {
+      case "category": return "فئة";
+      case "brand": return "علامة تجارية";
+      case "model": return "موديل";
+      default: return "";
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -147,13 +165,20 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
                   data-testid={`suggestion-${index}`}
                 >
                   <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4 text-gray-400" />
+                    {getTypeIcon(item.type)}
                     <span className="font-medium">{item.ar}</span>
                     <span className="text-gray-400 text-sm">({item.en})</span>
                   </div>
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-                    {item.category}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {item.type !== "product" && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                        {getTypeLabel(item.type)}
+                      </span>
+                    )}
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                      {item.category}
+                    </span>
+                  </div>
                 </button>
               ))}
             </div>
@@ -183,9 +208,9 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
                 </button>
               ))}
             </div>
-          ) : query.length < 2 ? (
+          ) : query.length < 1 ? (
             <div className="p-4 text-center text-gray-500 text-sm">
-              اكتب حرفين على الأقل للبحث...
+              اكتب للبحث...
             </div>
           ) : (
             <div className="p-4 text-center text-gray-500 text-sm">

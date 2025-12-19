@@ -178,13 +178,245 @@ export const CATEGORY_SPECIFICATIONS: Record<string, { fields: string[] }> = {
   }
 };
 
+export const BRAND_SYNONYMS: Record<string, string[]> = {
+  "omega": ["أوميغا", "اوميغا", "اوميجا", "أوميجا", "اومیغا", "اومیجا"],
+  "rolex": ["رولكس", "رولکس", "روليكس", "رولیکس"],
+  "seiko": ["سيكو", "سایکو", "سیکو", "سيکو"],
+  "casio": ["كاسيو", "کاسیو", "كازيو", "كاسیو"],
+  "tag heuer": ["تاغ هوير", "تاج هوير", "تاغ هيور", "تاج هيور", "تاغهوير"],
+  "patek philippe": ["باتيك فيليب", "باتک فیلیپ", "باتيك فيلب", "باتیک فیلیپ"],
+  "audemars piguet": ["أوديمار بيغيه", "اوديمار بيغيه", "اودیمار پیگه", "أوديمار بيجيه"],
+  "cartier": ["كارتييه", "کارتیه", "كارتير", "کارتیر"],
+  "breitling": ["بريتلينغ", "بریتلینگ", "بريتلنج", "برایتلینگ"],
+  "tissot": ["تيسو", "تیسو", "تيسوت", "تیسوت"],
+  "citizen": ["سيتيزن", "سیتیزن", "ستيزن", "ستیزن"],
+  "hamilton": ["هاميلتون", "هامیلتون", "هاملتون", "هاملتن"],
+  "longines": ["لونجين", "لونجینز", "لونجينز", "لونگینز"],
+};
+
+export const MODEL_SYNONYMS: Record<string, { brand: string; aliases: string[] }> = {
+  "seamaster": { brand: "omega", aliases: ["سيماستر", "سیماستر", "سيمستر", "سی ماستر", "sea master"] },
+  "speedmaster": { brand: "omega", aliases: ["سبيدماستر", "سبید ماستر", "سبيد ماستر", "speed master"] },
+  "constellation": { brand: "omega", aliases: ["كونستيليشن", "کونستلیشن", "كونستلاشن"] },
+  "submariner": { brand: "rolex", aliases: ["سابمارينر", "سابمارینر", "صب مارينر", "sub mariner"] },
+  "datejust": { brand: "rolex", aliases: ["ديتجست", "دیتجست", "ديت جست", "date just"] },
+  "daytona": { brand: "rolex", aliases: ["دايتونا", "دایتونا", "ديتونا"] },
+  "presage": { brand: "seiko", aliases: ["بريساج", "پریساژ", "بريساچ"] },
+  "prospex": { brand: "seiko", aliases: ["بروسبكس", "پروسپکس", "بروسبيكس"] },
+  "royal oak": { brand: "audemars piguet", aliases: ["رويال اوك", "رویال اوک", "رويل أوك"] },
+  "nautilus": { brand: "patek philippe", aliases: ["ناوتيلس", "ناوتیلس", "نوتيلوس"] },
+  "carrera": { brand: "tag heuer", aliases: ["كاريرا", "کاریرا", "كريرا"] },
+  "monaco": { brand: "tag heuer", aliases: ["موناكو", "موناکو", "مونكو"] },
+  "tank": { brand: "cartier", aliases: ["تانك", "تانک", "طانك"] },
+  "santos": { brand: "cartier", aliases: ["سانتوس", "سانتوز", "سانتس"] },
+};
+
+export const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  "ساعات": ["watch", "watches", "ساعة", "ساعات", "وقت", "timepiece", "wristwatch", "horology"],
+  "إلكترونيات": ["electronics", "الكترونيات", "جهاز", "أجهزة", "phone", "laptop", "computer", "هاتف", "لابتوب", "كمبيوتر"],
+  "ملابس": ["clothing", "clothes", "ملابس", "لبس", "fashion", "أزياء", "dress", "فستان"],
+  "تحف وأثاث": ["antiques", "furniture", "تحف", "أثاث", "انتيك", "vintage", "فينتاج"],
+  "سيارات": ["car", "cars", "سيارة", "سيارات", "vehicle", "مركبة", "auto"],
+  "مجوهرات": ["jewelry", "jewellery", "مجوهرات", "ذهب", "gold", "diamond", "ألماس"],
+};
+
+function normalizeArabic(text: string): string {
+  return text
+    .replace(/[أإآا]/g, "ا")
+    .replace(/[ىي]/g, "ی")
+    .replace(/[ة]/g, "ه")
+    .replace(/[ؤ]/g, "و")
+    .replace(/[ئ]/g, "ی")
+    .replace(/[\u064B-\u065F]/g, "")
+    .trim();
+}
+
+function levenshteinDistance(a: string, b: string): number {
+  const matrix: number[][] = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+function fuzzyMatch(query: string, target: string, threshold: number = 0.7): boolean {
+  const normalizedQuery = normalizeArabic(query.toLowerCase());
+  const normalizedTarget = normalizeArabic(target.toLowerCase());
+  
+  if (normalizedTarget.includes(normalizedQuery) || normalizedQuery.includes(normalizedTarget)) {
+    return true;
+  }
+  
+  const distance = levenshteinDistance(normalizedQuery, normalizedTarget);
+  const maxLength = Math.max(normalizedQuery.length, normalizedTarget.length);
+  const similarity = 1 - distance / maxLength;
+  
+  return similarity >= threshold;
+}
+
+function matchesBrandOrModel(query: string): { brand?: string; model?: string; category?: string } | null {
+  const normalizedQuery = normalizeArabic(query.toLowerCase());
+  
+  for (const [brand, synonyms] of Object.entries(BRAND_SYNONYMS)) {
+    if (fuzzyMatch(query, brand) || synonyms.some(s => fuzzyMatch(query, s))) {
+      return { brand, category: "ساعات" };
+    }
+  }
+  
+  for (const [model, data] of Object.entries(MODEL_SYNONYMS)) {
+    if (fuzzyMatch(query, model) || data.aliases.some(a => fuzzyMatch(query, a))) {
+      return { model, brand: data.brand, category: "ساعات" };
+    }
+  }
+  
+  return null;
+}
+
+function matchesCategory(query: string): string | null {
+  const normalizedQuery = normalizeArabic(query.toLowerCase());
+  
+  for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (keywords.some(k => fuzzyMatch(query, k, 0.6))) {
+      return category;
+    }
+  }
+  
+  return null;
+}
+
+export interface SearchResult {
+  ar: string;
+  en: string;
+  category: string;
+  type: "category" | "brand" | "model" | "product";
+  brand?: string;
+  model?: string;
+  score: number;
+}
+
+export function enhancedSearch(query: string): SearchResult[] {
+  if (!query || query.length < 1) return [];
+  
+  const results: SearchResult[] = [];
+  const normalizedQuery = normalizeArabic(query.toLowerCase().trim());
+  const queryTokens = normalizedQuery.split(/\s+/).filter(t => t.length > 0);
+  
+  const categoryMatch = matchesCategory(query);
+  if (categoryMatch) {
+    const catSuggestion = SEARCH_SUGGESTIONS.find(s => s.category === categoryMatch && s.ar === categoryMatch);
+    if (catSuggestion) {
+      results.push({
+        ...catSuggestion,
+        type: "category",
+        score: 100
+      });
+    }
+  }
+  
+  const brandModelMatch = matchesBrandOrModel(query);
+  if (brandModelMatch) {
+    if (brandModelMatch.model && brandModelMatch.brand) {
+      const brandData = WATCH_BRANDS.find(b => b.en.toLowerCase() === brandModelMatch.brand);
+      if (brandData) {
+        results.push({
+          ar: `${brandData.ar} ${brandModelMatch.model}`,
+          en: `${brandData.en} ${brandModelMatch.model}`,
+          category: "ساعات",
+          type: "model",
+          brand: brandModelMatch.brand,
+          model: brandModelMatch.model,
+          score: 95
+        });
+      }
+    } else if (brandModelMatch.brand) {
+      const brandData = WATCH_BRANDS.find(b => b.en.toLowerCase() === brandModelMatch.brand);
+      if (brandData) {
+        results.push({
+          ar: `ساعة ${brandData.ar}`,
+          en: `${brandData.en} watch`,
+          category: "ساعات",
+          type: "brand",
+          brand: brandModelMatch.brand,
+          score: 90
+        });
+      }
+    }
+  }
+  
+  if (queryTokens.length >= 2) {
+    let detectedBrand: string | null = null;
+    let detectedModel: string | null = null;
+    
+    for (const token of queryTokens) {
+      const brandMatch = matchesBrandOrModel(token);
+      if (brandMatch?.brand && !brandMatch.model) {
+        detectedBrand = brandMatch.brand;
+      }
+      if (brandMatch?.model) {
+        detectedModel = brandMatch.model;
+        if (brandMatch.brand) detectedBrand = brandMatch.brand;
+      }
+    }
+    
+    if (detectedBrand && detectedModel) {
+      const brandData = WATCH_BRANDS.find(b => b.en.toLowerCase() === detectedBrand);
+      if (brandData) {
+        const existingResult = results.find(r => r.brand === detectedBrand && r.model === detectedModel);
+        if (!existingResult) {
+          results.push({
+            ar: `${brandData.ar} ${detectedModel}`,
+            en: `${brandData.en} ${detectedModel.charAt(0).toUpperCase() + detectedModel.slice(1)}`,
+            category: "ساعات",
+            type: "model",
+            brand: detectedBrand,
+            model: detectedModel,
+            score: 98
+          });
+        }
+      }
+    }
+  }
+  
+  const directMatches = SEARCH_SUGGESTIONS.filter(item => {
+    const arMatch = fuzzyMatch(query, item.ar, 0.5);
+    const enMatch = fuzzyMatch(query, item.en, 0.5);
+    return arMatch || enMatch;
+  });
+  
+  directMatches.forEach(item => {
+    if (!results.find(r => r.ar === item.ar && r.en === item.en)) {
+      results.push({
+        ...item,
+        type: "product",
+        score: 70
+      });
+    }
+  });
+  
+  return results
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10);
+}
+
 export function searchSuggestions(query: string): typeof SEARCH_SUGGESTIONS {
   if (!query || query.length < 2) return [];
   
-  const normalizedQuery = query.toLowerCase().trim();
-  
-  return SEARCH_SUGGESTIONS.filter(item => 
-    item.ar.includes(normalizedQuery) || 
-    item.en.toLowerCase().includes(normalizedQuery)
-  ).slice(0, 8);
+  const enhancedResults = enhancedSearch(query);
+  return enhancedResults.map(r => ({
+    ar: r.ar,
+    en: r.en,
+    category: r.category
+  }));
 }
