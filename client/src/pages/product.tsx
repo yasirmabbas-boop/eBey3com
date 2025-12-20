@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
-import { PRODUCTS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer } from "lucide-react";
+import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { BiddingWindow } from "@/components/bidding-window";
 import { SellerTrustBadge } from "@/components/seller-trust-badge";
 import { ContactSeller } from "@/components/contact-seller";
+import type { Listing } from "@shared/schema";
 
 import {
   Carousel,
@@ -35,8 +36,41 @@ export default function ProductPage() {
   const [match, params] = useRoute("/product/:id");
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
-  const product = PRODUCTS.find(p => p.id === params?.id) || PRODUCTS[0];
+  const { isAuthenticated, user } = useAuth();
+
+  const { data: listing, isLoading, error } = useQuery<Listing>({
+    queryKey: ["/api/listings", params?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/listings/${params?.id}`);
+      if (!res.ok) throw new Error("Listing not found");
+      return res.json();
+    },
+    enabled: !!params?.id,
+  });
+
+  const product = listing ? {
+    id: listing.id,
+    productCode: (listing as any).productCode || `P-${listing.id.slice(0, 6)}`,
+    title: listing.title,
+    price: listing.price,
+    currentBid: listing.currentBid || undefined,
+    totalBids: (listing as any).totalBids || 0,
+    image: listing.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
+    images: listing.images || [],
+    saleType: listing.saleType as "auction" | "fixed",
+    timeLeft: listing.timeLeft || undefined,
+    auctionEndTime: listing.auctionEndTime,
+    seller: { name: listing.sellerName, salesCount: 0, rating: 95 },
+    sellerName: listing.sellerName,
+    sellerTotalSales: 0,
+    sellerRating: 5,
+    category: listing.category,
+    condition: listing.condition as "New" | "Used - Like New" | "Used - Good" | "Vintage",
+    deliveryWindow: listing.deliveryWindow,
+    returnPolicy: listing.returnPolicy,
+    city: listing.city,
+    description: listing.description,
+  } : null;
 
   const requireAuth = (action: string) => {
     if (!isAuthenticated) {
@@ -74,6 +108,29 @@ export default function ProductPage() {
       description: "ستنتقل إلى صفحة الدفع قريباً.",
     });
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="mr-2 text-lg">جاري التحميل...</span>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">المنتج غير موجود</h2>
+          <p className="text-gray-600 mb-4">عذراً، لم نتمكن من العثور على هذا المنتج.</p>
+          <Button onClick={() => navigate("/")}>العودة للرئيسية</Button>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -249,9 +306,6 @@ export default function ProductPage() {
                   <div>
                     <strong>سياسة الإرجاع:</strong>
                     <p className="mt-1">{product.returnPolicy}</p>
-                    {product.returnDetails && (
-                      <p className="text-xs mt-1 text-orange-600">{product.returnDetails}</p>
-                    )}
                   </div>
                 </div>
               </div>

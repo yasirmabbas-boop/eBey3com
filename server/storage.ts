@@ -114,9 +114,9 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(listings.createdAt));
   }
 
-  async getListingsBySeller(sellerName: string): Promise<Listing[]> {
+  async getListingsBySeller(sellerId: string): Promise<Listing[]> {
     return db.select().from(listings)
-      .where(and(eq(listings.isActive, true), eq(listings.sellerName, sellerName)))
+      .where(and(eq(listings.isActive, true), eq(listings.sellerId, sellerId)))
       .orderBy(desc(listings.createdAt));
   }
 

@@ -20,9 +20,14 @@ export async function registerRoutes(
 
   app.get("/api/listings", async (req, res) => {
     try {
-      const { category } = req.query;
+      const { category, sellerId } = req.query;
       let listings;
-      if (category && typeof category === "string") {
+      if (sellerId && typeof sellerId === "string") {
+        listings = await storage.getListingsBySeller(sellerId);
+        if (category && typeof category === "string") {
+          listings = listings.filter(l => l.category === category);
+        }
+      } else if (category && typeof category === "string") {
         listings = await storage.getListingsByCategory(category);
       } else {
         listings = await storage.getListings();
@@ -62,6 +67,7 @@ export async function registerRoutes(
         returnPolicy: req.body.returnPolicy,
         returnDetails: req.body.returnDetails || null,
         sellerName: req.body.sellerName,
+        sellerId: req.body.sellerId || null,
         sellerPhone: req.body.sellerPhone || null,
         city: req.body.city,
       };

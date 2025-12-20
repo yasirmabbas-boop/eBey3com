@@ -73,12 +73,18 @@ export default function SellPage() {
     deliveryWindow: "",
     returnPolicy: "",
     returnDetails: "",
-    sellerName: "",
+    sellerName: user?.username || "",
     city: "",
     auctionDuration: "",
     startDate: "",
     startHour: "",
   });
+
+  useEffect(() => {
+    if (user?.username && !formData.sellerName) {
+      setFormData(prev => ({ ...prev, sellerName: user.username || "" }));
+    }
+  }, [user]);
 
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [watchSpecs, setWatchSpecs] = useState({
@@ -280,7 +286,7 @@ export default function SellPage() {
         returnPolicy: formData.returnPolicy,
         returnDetails: formData.returnDetails || null,
         sellerName: formData.sellerName,
-        sellerId: user?.id || 1,
+        sellerId: user?.id || null,
         city: formData.city,
       };
 
@@ -1046,13 +1052,11 @@ export default function SellPage() {
                     placeholder="مثال: أحمد العراقي"
                     required
                     value={formData.sellerName}
-                    onChange={(e) => handleInputChange("sellerName", e.target.value)}
-                    className={validationErrors.sellerName ? "border-red-500" : ""}
+                    readOnly
+                    className="bg-gray-100 cursor-not-allowed"
                     data-testid="input-seller-name"
                   />
-                  {validationErrors.sellerName && (
-                    <p className="text-xs text-red-500">{validationErrors.sellerName}</p>
-                  )}
+                  <p className="text-xs text-muted-foreground">يتم تعبئة هذا الحقل تلقائياً من حسابك</p>
                 </div>
 
                 <div className="space-y-2">

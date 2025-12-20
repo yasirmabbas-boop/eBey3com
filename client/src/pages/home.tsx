@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
-import { PRODUCTS } from "@/lib/mock-data";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +78,7 @@ export default function Home() {
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const currentAd = ADS[currentAdIndex];
 
   useEffect(() => {
@@ -96,16 +97,19 @@ export default function Home() {
     }
   };
 
+  const sellerId = user?.id;
+
   const { data: listings = [], isLoading } = useQuery<Listing[]>({
-    queryKey: ["/api/listings"],
+    queryKey: ["/api/listings", sellerId],
     queryFn: async () => {
-      const res = await fetch("/api/listings");
+      const url = sellerId ? `/api/listings?sellerId=${encodeURIComponent(sellerId)}` : "/api/listings";
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch listings");
       return res.json();
     },
   });
 
-  const displayProducts = listings.length > 0 ? listings.map(l => ({
+  const displayProducts = listings.map(l => ({
     id: l.id,
     productCode: (l as any).productCode || `P-${l.id.slice(0, 6)}`,
     title: l.title,
@@ -124,7 +128,7 @@ export default function Home() {
     deliveryWindow: l.deliveryWindow,
     returnPolicy: l.returnPolicy,
     city: l.city,
-  })) : PRODUCTS;
+  }));
 
   const recommendedProducts = displayProducts.slice(0, 6);
   
