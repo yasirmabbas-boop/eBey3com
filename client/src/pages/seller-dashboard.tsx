@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Lock } from "lucide-react";
+import type { Listing } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -51,110 +53,28 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const SELLER_STATS = {
-  totalProducts: 12,
-  activeListings: 8,
-  soldItems: 15,
-  totalRevenue: 4250000,
-  pendingShipments: 3,
-  totalViews: 1247,
-  averageRating: 4.8,
-  totalReviews: 23,
-};
-
-const SELLER_PRODUCTS = [
-  {
-    id: "1",
-    title: "ساعة سيكو فينتاج 1970",
-    price: 280000,
-    image: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=500&h=500&fit=crop",
-    status: "active",
-    type: "auction",
-    views: 156,
-    bids: 8,
-    currentBid: 320000,
-    endDate: "2025-12-25",
-    category: "ساعات",
-    productCode: "P-SW-001",
-  },
-  {
-    id: "2",
-    title: "ساعة كاسيو جي شوك",
-    price: 75000,
-    image: "https://images.unsplash.com/photo-1533139502658-0198f920d8e8?w=500&h=500&fit=crop",
-    status: "sold",
-    type: "fixed",
-    views: 89,
-    soldDate: "2025-12-18",
-    category: "ساعات",
-    productCode: "P-SW-002",
-    buyer: {
-      name: "فاطمة أحمد",
-      phone: "07701234567",
-      address: "البصرة، حي الجزائر",
-      district: "البصرة",
-    },
-  },
-  {
-    id: "3",
-    title: "لابتوب ماك بوك برو 2020",
-    price: 850000,
-    image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&h=500&fit=crop",
-    status: "active",
-    type: "fixed",
-    views: 234,
-    category: "إلكترونيات",
-    productCode: "P-EL-003",
-  },
-  {
-    id: "4",
-    title: "ساعة أوميغا سيماستر",
-    price: 450000,
-    image: "https://images.unsplash.com/photo-1523170335684-f42f53bba104?w=500&h=500&fit=crop",
-    status: "pending_shipment",
-    type: "auction",
-    views: 312,
-    soldDate: "2025-12-15",
-    finalPrice: 520000,
-    category: "ساعات",
-    productCode: "P-SW-004",
-    buyer: {
-      name: "علي محمد",
-      phone: "07801234567",
-      address: "بغداد، حي المنصور، شارع 14 رمضان",
-      district: "بغداد - الكرخ",
-    },
-  },
-  {
-    id: "5",
-    title: "آيفون 14 برو ماكس",
-    price: 1200000,
-    image: "https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=500&h=500&fit=crop",
-    status: "draft",
-    type: "fixed",
-    views: 0,
-    category: "إلكترونيات",
-    productCode: "P-EL-005",
-  },
-  {
-    id: "6",
-    title: "سجادة فارسية أصلية",
-    price: 350000,
-    image: "https://images.unsplash.com/photo-1600166898405-da9535204843?w=500&h=500&fit=crop",
-    status: "shipped",
-    type: "fixed",
-    views: 78,
-    soldDate: "2025-12-10",
-    category: "تحف وأثاث",
-    productCode: "P-AN-006",
-    buyer: {
-      name: "سارة العبيدي",
-      phone: "07901234567",
-      address: "أربيل، عينكاوا",
-      district: "أربيل",
-    },
-  },
-];
+interface SellerProduct {
+  id: string;
+  title: string;
+  price: number;
+  image: string;
+  status: string;
+  type: string;
+  views: number;
+  bids?: number;
+  currentBid?: number;
+  endDate?: string;
+  soldDate?: string;
+  finalPrice?: number;
+  category: string;
+  productCode: string;
+  buyer?: {
+    name: string;
+    phone: string;
+    address: string;
+    district: string;
+  };
+}
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -188,24 +108,66 @@ const getTypeBadge = (type: string) => {
 };
 
 export default function SellerDashboard() {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showShippingLabel, setShowShippingLabel] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<typeof SELLER_PRODUCTS[0] | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<SellerProduct | null>(null);
+
+  const { data: listings = [], isLoading: listingsLoading } = useQuery<Listing[]>({
+    queryKey: ["/api/listings", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const res = await fetch(`/api/listings?sellerId=${encodeURIComponent(user.id)}`);
+      if (!res.ok) throw new Error("Failed to fetch listings");
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  const sellerProducts: SellerProduct[] = listings.map(l => ({
+    id: l.id,
+    title: l.title,
+    price: l.price,
+    image: l.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400",
+    status: l.isActive ? "active" : "draft",
+    type: l.saleType || "fixed",
+    views: 0,
+    bids: l.totalBids || 0,
+    currentBid: l.currentBid || undefined,
+    endDate: l.auctionEndTime ? new Date(l.auctionEndTime).toLocaleDateString("ar-IQ") : undefined,
+    category: l.category,
+    productCode: (l as any).productCode || `P-${l.id.slice(0, 6)}`,
+  }));
+
+  const deleteMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      const res = await fetch(`/api/listings/${productId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete listing");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم حذف المنتج", description: "تم حذف المنتج بنجاح من قائمتك" });
+      queryClient.invalidateQueries({ queryKey: ["/api/listings", user?.id] });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في حذف المنتج", variant: "destructive" });
+    },
+  });
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       toast({
         title: "يجب تسجيل الدخول",
         description: "يرجى تسجيل الدخول للوصول إلى لوحة تحكم البائع",
         variant: "destructive",
       });
       navigate("/signin?redirect=/seller-dashboard");
-    } else if (!isLoading && isAuthenticated && user?.accountType !== "seller") {
+    } else if (!authLoading && isAuthenticated && user?.accountType !== "seller") {
       toast({
         title: "غير مصرح",
         description: "هذه الصفحة مخصصة للبائعين فقط",
@@ -213,9 +175,9 @@ export default function SellerDashboard() {
       });
       navigate("/buyer-dashboard");
     }
-  }, [isLoading, isAuthenticated, user, navigate, toast]);
+  }, [authLoading, isAuthenticated, user, navigate, toast]);
 
-  const filteredProducts = SELLER_PRODUCTS.filter(product => {
+  const filteredProducts = sellerProducts.filter(product => {
     const matchesSearch = product.title.includes(searchQuery) || 
                           product.productCode.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || product.status === statusFilter;
@@ -223,20 +185,38 @@ export default function SellerDashboard() {
   });
 
   const handleDeleteProduct = (productId: string) => {
-    toast({
-      title: "تم حذف المنتج",
-      description: "تم حذف المنتج بنجاح من قائمتك",
-    });
+    deleteMutation.mutate(productId);
   };
 
-  const handlePrintLabel = (product: typeof SELLER_PRODUCTS[0]) => {
+  const handlePrintLabel = (product: SellerProduct) => {
     setSelectedProduct(product);
     setShowShippingLabel(true);
   };
 
-  const activeProducts = SELLER_PRODUCTS.filter(p => p.status === "active");
-  const soldProducts = SELLER_PRODUCTS.filter(p => ["sold", "pending_shipment", "shipped"].includes(p.status));
-  const pendingShipments = SELLER_PRODUCTS.filter(p => p.status === "pending_shipment" || p.status === "sold");
+  const handleEditProduct = (productId: string) => {
+    navigate(`/sell?edit=${productId}`);
+  };
+
+  const activeProducts = sellerProducts.filter(p => p.status === "active");
+  const soldProducts = sellerProducts.filter(p => ["sold", "pending_shipment", "shipped"].includes(p.status));
+  const pendingShipments = sellerProducts.filter(p => p.status === "pending_shipment" || p.status === "sold");
+
+  const SELLER_STATS = {
+    totalProducts: sellerProducts.length,
+    activeListings: activeProducts.length,
+    soldItems: soldProducts.length,
+    totalRevenue: soldProducts.length > 0 
+      ? soldProducts.reduce((sum, p) => sum + (p.finalPrice || p.currentBid || p.price), 0)
+      : 0,
+    pendingShipments: pendingShipments.length,
+    totalViews: sellerProducts.length > 0 
+      ? sellerProducts.reduce((sum, p) => sum + (p.views || 0), 0)
+      : 0,
+    averageRating: (user as any)?.rating || 4.5,
+    totalReviews: (user as any)?.ratingCount || 0,
+  };
+
+  const isLoading = authLoading || listingsLoading;
 
   if (isLoading) {
     return (
@@ -536,20 +516,22 @@ export default function SellerDashboard() {
               {filteredProducts.map(product => (
                 <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="flex flex-col md:flex-row">
-                    <div className="relative">
+                    <Link href={`/product/${product.id}`} className="relative cursor-pointer">
                       <img 
                         src={product.image} 
                         alt={product.title} 
-                        className="w-full md:w-40 h-40 object-cover"
+                        className="w-full md:w-40 h-40 object-cover hover:opacity-90 transition-opacity"
                       />
                       <div className="absolute top-2 right-2">
                         {getTypeBadge(product.type)}
                       </div>
-                    </div>
+                    </Link>
                     <div className="flex-1 p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <h3 className="font-bold text-lg">{product.title}</h3>
+                          <Link href={`/product/${product.id}`} className="cursor-pointer hover:text-primary transition-colors">
+                            <h3 className="font-bold text-lg">{product.title}</h3>
+                          </Link>
                           <p className="text-sm text-gray-500">كود: {product.productCode} • {product.category}</p>
                         </div>
                         {getStatusBadge(product.status)}
@@ -596,7 +578,13 @@ export default function SellerDashboard() {
                           )}
                           {product.status === "active" || product.status === "draft" ? (
                             <>
-                              <Button size="sm" variant="outline" className="gap-1" data-testid={`button-edit-${product.id}`}>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="gap-1" 
+                                onClick={() => handleEditProduct(product.id)}
+                                data-testid={`button-edit-${product.id}`}
+                              >
                                 <Edit className="h-4 w-4" />
                                 تعديل
                               </Button>
