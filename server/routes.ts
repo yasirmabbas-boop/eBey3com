@@ -54,6 +54,7 @@ export async function registerRoutes(
 
   app.post("/api/listings", async (req, res) => {
     try {
+      const sessionUserId = (req.session as any)?.userId;
       const listingData = {
         title: req.body.title,
         description: req.body.description,
@@ -67,7 +68,7 @@ export async function registerRoutes(
         returnPolicy: req.body.returnPolicy,
         returnDetails: req.body.returnDetails || null,
         sellerName: req.body.sellerName,
-        sellerId: req.body.sellerId || null,
+        sellerId: sessionUserId || req.body.sellerId || null,
         sellerPhone: req.body.sellerPhone || null,
         city: req.body.city,
       };
