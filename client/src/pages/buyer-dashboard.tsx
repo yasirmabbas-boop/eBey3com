@@ -18,6 +18,8 @@ import {
   Loader2,
   Lock,
   HandCoins,
+  XCircle,
+  ArrowLeftRight,
 } from "lucide-react";
 
 interface BuyerSummary {
@@ -43,6 +45,24 @@ interface Purchase {
   };
 }
 
+interface BuyerOffer {
+  id: string;
+  listingId: string;
+  offerAmount: number;
+  message?: string;
+  status: string;
+  counterAmount?: number;
+  counterMessage?: string;
+  createdAt: string;
+  listing?: {
+    id: string;
+    title: string;
+    price: number;
+    images: string[];
+    sellerName: string;
+  };
+}
+
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "delivered":
@@ -53,6 +73,23 @@ const getStatusBadge = (status: string) => {
     case "processing":
     case "pending":
       return <Badge className="bg-yellow-100 text-yellow-800 border-0"><Clock className="h-3 w-3 ml-1" />قيد التجهيز</Badge>;
+    default:
+      return <Badge className="bg-gray-100 text-gray-800 border-0">{status}</Badge>;
+  }
+};
+
+const getOfferStatusBadge = (status: string) => {
+  switch (status) {
+    case "pending":
+      return <Badge className="bg-yellow-100 text-yellow-800 border-0"><Clock className="h-3 w-3 ml-1" />قيد الانتظار</Badge>;
+    case "accepted":
+      return <Badge className="bg-green-100 text-green-800 border-0"><CheckCircle className="h-3 w-3 ml-1" />مقبول</Badge>;
+    case "rejected":
+      return <Badge className="bg-red-100 text-red-800 border-0"><XCircle className="h-3 w-3 ml-1" />مرفوض</Badge>;
+    case "countered":
+      return <Badge className="bg-purple-100 text-purple-800 border-0"><ArrowLeftRight className="h-3 w-3 ml-1" />عرض مقابل</Badge>;
+    case "expired":
+      return <Badge className="bg-gray-100 text-gray-800 border-0"><Clock className="h-3 w-3 ml-1" />منتهي</Badge>;
     default:
       return <Badge className="bg-gray-100 text-gray-800 border-0">{status}</Badge>;
   }
@@ -70,6 +107,11 @@ export default function BuyerDashboard() {
 
   const { data: purchases = [], isLoading: purchasesLoading } = useQuery<Purchase[]>({
     queryKey: ["/api/account/purchases"],
+    enabled: !!user?.id && user?.accountType === "buyer",
+  });
+
+  const { data: myOffers = [], isLoading: offersLoading } = useQuery<BuyerOffer[]>({
+    queryKey: ["/api/my-offers"],
     enabled: !!user?.id && user?.accountType === "buyer",
   });
 
@@ -270,6 +312,73 @@ export default function BuyerDashboard() {
                     <div className="text-left">
                       {getStatusBadge(purchase.status)}
                       <p className="text-sm font-bold mt-1">{purchase.amount?.toLocaleString() || 0} د.ع</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* My Offers */}
+        <Card className="mt-8">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                <HandCoins className="h-5 w-5 text-primary" />
+                عروضي
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {offersLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : myOffers.length === 0 ? (
+              <div className="text-center py-8">
+                <HandCoins className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">لم تقدم أي عروض بعد</p>
+                <p className="text-sm text-gray-400 mt-1">عندما تقدم عروض على منتجات قابلة للتفاوض، ستظهر هنا</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {myOffers.map((offer) => (
+                  <div key={offer.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors" data-testid={`card-offer-${offer.id}`}>
+                    {offer.listing?.images?.[0] ? (
+                      <img
+                        src={offer.listing.images[0]}
+                        alt={offer.listing?.title || "منتج"}
+                        className="w-16 h-16 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
+                        <Package className="h-6 w-6 text-gray-400" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <Link href={`/product/${offer.listingId}`}>
+                        <h3 className="font-medium hover:text-primary transition-colors">{offer.listing?.title || "منتج"}</h3>
+                      </Link>
+                      <p className="text-sm text-muted-foreground">
+                        عرضك: {offer.offerAmount?.toLocaleString()} د.ع
+                        {offer.listing?.price && (
+                          <span className="text-gray-400 mr-2">
+                            (السعر الأصلي: {offer.listing.price.toLocaleString()} د.ع)
+                          </span>
+                        )}
+                      </p>
+                      {offer.status === "countered" && offer.counterAmount && (
+                        <p className="text-sm text-purple-600 font-medium">
+                          عرض البائع المقابل: {offer.counterAmount.toLocaleString()} د.ع
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(offer.createdAt).toLocaleDateString("ar-IQ")}
+                      </p>
+                    </div>
+                    <div className="text-left">
+                      {getOfferStatusBadge(offer.status)}
                     </div>
                   </div>
                 ))}
