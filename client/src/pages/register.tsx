@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check, X, Eye, EyeOff, User, Lock, UserPlus } from "lucide-react";
+import { Loader2, Check, X, Eye, EyeOff, User, Lock, UserPlus, Phone, Calendar } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 const passwordRequirements = [
@@ -78,6 +78,27 @@ const IRAQI_DISTRICTS = [
   "ذي قار", "المثنى", "القادسية", "بابل",
 ];
 
+const AGE_BRACKETS = [
+  { value: "18-24", label: "18-24 سنة" },
+  { value: "25-34", label: "25-34 سنة" },
+  { value: "35-44", label: "35-44 سنة" },
+  { value: "45-54", label: "45-54 سنة" },
+  { value: "55+", label: "55 سنة فأكثر" },
+];
+
+const INTEREST_OPTIONS = [
+  { value: "electronics", label: "إلكترونيات" },
+  { value: "phones", label: "هواتف ذكية" },
+  { value: "cars", label: "سيارات" },
+  { value: "clothing", label: "ملابس" },
+  { value: "furniture", label: "أثاث" },
+  { value: "antiques", label: "تحف وأنتيكات" },
+  { value: "sports", label: "رياضة" },
+  { value: "books", label: "كتب" },
+  { value: "jewelry", label: "مجوهرات" },
+  { value: "home", label: "منزل وحديقة" },
+];
+
 export default function Register() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -96,9 +117,17 @@ export default function Register() {
     password: "",
     displayName: "",
     district: "",
+    phone: "",
+    ageBracket: "",
+    interests: [] as string[],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validatePhone = (phone: string) => {
+    const iraqPhoneRegex = /^07[3-9]\d{8}$/;
+    return iraqPhoneRegex.test(phone.replace(/\s/g, ''));
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -120,6 +149,16 @@ export default function Register() {
       if (passedReqs < 5) {
         newErrors.password = "كلمة المرور لا تستوفي جميع المتطلبات";
       }
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = "رقم الهاتف مطلوب";
+    } else if (!validatePhone(formData.phone)) {
+      newErrors.phone = "رقم هاتف عراقي غير صالح (مثال: 07xxxxxxxxx)";
+    }
+
+    if (!formData.ageBracket) {
+      newErrors.ageBracket = "الفئة العمرية مطلوبة";
     }
     
     if (!agreeTerms) {
@@ -158,6 +197,10 @@ export default function Register() {
           password: formData.password,
           displayName: formData.displayName,
           accountType: activeTab,
+          phone: formData.phone,
+          ageBracket: formData.ageBracket,
+          interests: formData.interests,
+          city: formData.district,
         }),
       });
 
@@ -267,6 +310,67 @@ export default function Register() {
                   </div>
                   {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
                   <PasswordStrengthIndicator password={formData.password} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">رقم الهاتف</Label>
+                  <div className="relative">
+                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="07xxxxxxxxx"
+                      value={formData.phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      className="pr-10"
+                      dir="ltr"
+                      data-testid="input-phone"
+                    />
+                  </div>
+                  {errors.phone && <p className="text-red-500 text-xs">{errors.phone}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>الفئة العمرية</Label>
+                  <Select
+                    value={formData.ageBracket}
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, ageBracket: v }))}
+                  >
+                    <SelectTrigger data-testid="select-age-bracket">
+                      <SelectValue placeholder="اختر الفئة العمرية" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AGE_BRACKETS.map((bracket) => (
+                        <SelectItem key={bracket.value} value={bracket.value}>{bracket.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.ageBracket && <p className="text-red-500 text-xs">{errors.ageBracket}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>الاهتمامات (اختياري)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {INTEREST_OPTIONS.map((interest) => (
+                      <div key={interest.value} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`interest-${interest.value}`}
+                          checked={formData.interests.includes(interest.value)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setFormData(prev => ({ ...prev, interests: [...prev.interests, interest.value] }));
+                            } else {
+                              setFormData(prev => ({ ...prev, interests: prev.interests.filter(i => i !== interest.value) }));
+                            }
+                          }}
+                          data-testid={`checkbox-interest-${interest.value}`}
+                        />
+                        <label htmlFor={`interest-${interest.value}`} className="text-sm cursor-pointer">
+                          {interest.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {activeTab === "buyer" && (

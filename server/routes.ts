@@ -424,7 +424,7 @@ export async function registerRoutes(
   // Custom username/password authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { username, password, displayName, accountType } = req.body;
+      const { username, password, displayName, accountType, phone, ageBracket, interests, city } = req.body;
       
       if (!username || !password) {
         return res.status(400).json({ error: "اسم المستخدم وكلمة المرور مطلوبان" });
@@ -446,6 +446,10 @@ export async function registerRoutes(
         displayName: displayName || username,
         accountType: accountType || "seller",
         authProvider: "local",
+        phone: phone || null,
+        ageBracket: ageBracket || null,
+        interests: interests || [],
+        city: city || null,
       });
 
       // Set session
@@ -572,6 +576,9 @@ export async function registerRoutes(
       ratingCount: user.ratingCount,
       totalSales: user.totalSales,
       createdAt: user.createdAt,
+      ageBracket: user.ageBracket,
+      interests: user.interests,
+      surveyCompleted: user.surveyCompleted,
     });
   });
 
@@ -583,7 +590,7 @@ export async function registerRoutes(
     }
 
     try {
-      const allowedFields = ["displayName", "phone", "city", "district", "addressLine1", "addressLine2"];
+      const allowedFields = ["displayName", "phone", "city", "district", "addressLine1", "addressLine2", "ageBracket", "interests", "surveyCompleted"];
       const updates: Record<string, any> = {};
       
       for (const field of allowedFields) {
@@ -610,6 +617,9 @@ export async function registerRoutes(
         district: user.district,
         addressLine1: user.addressLine1,
         addressLine2: user.addressLine2,
+        ageBracket: user.ageBracket,
+        interests: user.interests,
+        surveyCompleted: user.surveyCompleted,
       });
     } catch (error) {
       console.error("Error updating profile:", error);

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -32,7 +33,31 @@ interface UserProfile {
   ratingCount?: number;
   totalSales?: number;
   createdAt?: string;
+  ageBracket?: string;
+  interests?: string[];
+  surveyCompleted?: boolean;
 }
+
+const AGE_BRACKETS = [
+  { value: "18-24", label: "18-24 سنة" },
+  { value: "25-34", label: "25-34 سنة" },
+  { value: "35-44", label: "35-44 سنة" },
+  { value: "45-54", label: "45-54 سنة" },
+  { value: "55+", label: "55 سنة فأكثر" },
+];
+
+const INTEREST_OPTIONS = [
+  { value: "electronics", label: "إلكترونيات" },
+  { value: "phones", label: "هواتف ذكية" },
+  { value: "cars", label: "سيارات" },
+  { value: "clothing", label: "ملابس" },
+  { value: "furniture", label: "أثاث" },
+  { value: "antiques", label: "تحف وأنتيكات" },
+  { value: "sports", label: "رياضة" },
+  { value: "books", label: "كتب" },
+  { value: "jewelry", label: "مجوهرات" },
+  { value: "home", label: "منزل وحديقة" },
+];
 
 interface BuyerAddress {
   id: string;
@@ -66,6 +91,8 @@ export default function Settings() {
     district: "",
     addressLine1: "",
     addressLine2: "",
+    ageBracket: "",
+    interests: [] as string[],
   });
 
   const [passwordForm, setPasswordForm] = useState({
@@ -108,6 +135,8 @@ export default function Settings() {
         district: profile.district || "",
         addressLine1: profile.addressLine1 || "",
         addressLine2: profile.addressLine2 || "",
+        ageBracket: profile.ageBracket || "",
+        interests: profile.interests || [],
       });
     }
   }, [profile]);
@@ -449,6 +478,46 @@ export default function Settings() {
                     placeholder="الشارع، رقم المنزل، معلم قريب"
                     data-testid="input-address"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label>الفئة العمرية</Label>
+                  <Select 
+                    value={profileForm.ageBracket} 
+                    onValueChange={(value) => setProfileForm(prev => ({ ...prev, ageBracket: value }))}
+                  >
+                    <SelectTrigger data-testid="select-age-bracket">
+                      <SelectValue placeholder="اختر الفئة العمرية" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AGE_BRACKETS.map(bracket => (
+                        <SelectItem key={bracket.value} value={bracket.value}>{bracket.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>الاهتمامات</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-3 border rounded-lg bg-gray-50">
+                    {INTEREST_OPTIONS.map((interest) => (
+                      <div key={interest.value} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`settings-interest-${interest.value}`}
+                          checked={profileForm.interests.includes(interest.value)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setProfileForm(prev => ({ ...prev, interests: [...prev.interests, interest.value] }));
+                            } else {
+                              setProfileForm(prev => ({ ...prev, interests: prev.interests.filter(i => i !== interest.value) }));
+                            }
+                          }}
+                          data-testid={`checkbox-settings-interest-${interest.value}`}
+                        />
+                        <label htmlFor={`settings-interest-${interest.value}`} className="text-sm cursor-pointer">
+                          {interest.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
