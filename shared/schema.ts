@@ -225,6 +225,34 @@ export const insertCartItemSchema = createInsertSchema(cartItems).omit({
 export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
 export type CartItem = typeof cartItems.$inferSelect;
 
+// Price offers for negotiable items
+export const offers = pgTable("offers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  listingId: varchar("listing_id").notNull(),
+  buyerId: varchar("buyer_id").notNull(),
+  sellerId: varchar("seller_id").notNull(),
+  offerAmount: integer("offer_amount").notNull(),
+  message: text("message"),
+  status: text("status").notNull().default("pending"), // pending, accepted, rejected, countered, expired
+  counterAmount: integer("counter_amount"),
+  counterMessage: text("counter_message"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  respondedAt: timestamp("responded_at"),
+});
+
+export const insertOfferSchema = createInsertSchema(offers).omit({
+  id: true,
+  createdAt: true,
+  respondedAt: true,
+  status: true,
+  counterAmount: true,
+  counterMessage: true,
+});
+
+export type InsertOffer = z.infer<typeof insertOfferSchema>;
+export type Offer = typeof offers.$inferSelect;
+
 export const listings = pgTable("listings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   productCode: text("product_code").unique(),

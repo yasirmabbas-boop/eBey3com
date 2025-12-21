@@ -957,5 +957,157 @@ export async function registerRoutes(
     }
   });
 
+  // ===== OFFERS API =====
+  
+  // Create a new offer
+  app.post("/api/offers", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "يجب تسجيل الدخول لتقديم عرض" });
+    }
+
+    try {
+      const { listingId, offerAmount, message } = req.body;
+      
+      if (!listingId || !offerAmount) {
+        return res.status(400).json({ error: "بيانات العرض غير مكتملة" });
+      }
+      
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      if (!listing.isNegotiable) {
+        return res.status(400).json({ error: "هذا المنتج لا يقبل التفاوض" });
+      }
+      
+      if (!listing.sellerId) {
+        return res.status(400).json({ error: "لا يمكن إرسال عرض لهذا المنتج" });
+      }
+      
+      if (listing.sellerId === userId) {
+        return res.status(400).json({ error: "لا يمكنك تقديم عرض على منتجك" });
+      }
+
+      const offer = await storage.createOffer({
+        listingId,
+        buyerId: userId,
+        sellerId: listing.sellerId,
+        offerAmount: parseInt(offerAmount, 10),
+        message: message || null,
+        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours expiry
+      });
+      
+      res.status(201).json(offer);
+    } catch (error) {
+      console.error("Error creating offer:", error);
+      res.status(500).json({ error: "فشل في إنشاء العرض" });
+    }
+  });
+
+  // Get offers for a listing (seller view)
+  app.get("/api/listings/:id/offers", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const listing = await storage.getListing(req.params.id);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      // Only seller can see all offers for their listing
+      if (listing.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بعرض هذه العروض" });
+      }
+
+      const offers = await storage.getOffersForListing(req.params.id);
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching offers:", error);
+      res.status(500).json({ error: "فشل في جلب العروض" });
+    }
+  });
+
+  // Get my offers (buyer view)
+  app.get("/api/my-offers", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const offers = await storage.getOffersByBuyer(userId);
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching my offers:", error);
+      res.status(500).json({ error: "فشل في جلب عروضي" });
+    }
+  });
+
+  // Get offers received (seller view)
+  app.get("/api/received-offers", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const offers = await storage.getOffersBySeller(userId);
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching received offers:", error);
+      res.status(500).json({ error: "فشل في جلب العروض المستلمة" });
+    }
+  });
+
+  // Respond to an offer (accept/reject/counter)
+  app.patch("/api/offers/:id", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { status, counterAmount, counterMessage } = req.body;
+      
+      if (!["accepted", "rejected", "countered"].includes(status)) {
+        return res.status(400).json({ error: "حالة العرض غير صالحة" });
+      }
+      
+      const offer = await storage.getOffer(req.params.id);
+      if (!offer) {
+        return res.status(404).json({ error: "العرض غير موجود" });
+      }
+      
+      if (offer.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بالرد على هذا العرض" });
+      }
+      
+      if (offer.status !== "pending") {
+        return res.status(400).json({ error: "تم الرد على هذا العرض مسبقاً" });
+      }
+
+      if (status === "countered" && !counterAmount) {
+        return res.status(400).json({ error: "يجب تحديد السعر المقترح" });
+      }
+
+      const updated = await storage.updateOfferStatus(
+        req.params.id, 
+        status, 
+        status === "countered" ? parseInt(counterAmount, 10) : undefined,
+        counterMessage
+      );
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating offer:", error);
+      res.status(500).json({ error: "فشل في تحديث العرض" });
+    }
+  });
+
   return httpServer;
 }

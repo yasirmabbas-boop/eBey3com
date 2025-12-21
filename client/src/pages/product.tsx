@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
@@ -39,6 +43,45 @@ export default function ProductPage() {
   const { toast } = useToast();
   const { isAuthenticated, user } = useAuth();
   const { addToCart, isAdding } = useCart();
+  const queryClient = useQueryClient();
+
+  // Offer dialog state
+  const [offerDialogOpen, setOfferDialogOpen] = useState(false);
+  const [offerAmount, setOfferAmount] = useState("");
+  const [offerMessage, setOfferMessage] = useState("");
+
+  // Create offer mutation
+  const createOfferMutation = useMutation({
+    mutationFn: async (data: { listingId: string; offerAmount: number; message?: string }) => {
+      const res = await fetch("/api/offers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "فشل في إرسال العرض");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم إرسال العرض",
+        description: "سيتم إعلامك عندما يرد البائع على عرضك",
+      });
+      setOfferDialogOpen(false);
+      setOfferAmount("");
+      setOfferMessage("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const { data: listing, isLoading, error } = useQuery<Listing>({
     queryKey: ["/api/listings", params?.id],
@@ -315,10 +358,8 @@ export default function ProductPage() {
                     className="w-full text-lg h-12 mt-3 border-primary text-primary hover:bg-primary/10"
                     onClick={() => {
                       if (!requireAuth("offer")) return;
-                      toast({
-                        title: "تقديم عرض",
-                        description: "ميزة تقديم العروض قيد التطوير وستكون متاحة قريباً",
-                      });
+                      setOfferAmount(Math.floor(product.price * 0.9).toString());
+                      setOfferDialogOpen(true);
                     }}
                     data-testid="button-make-offer"
                   >
@@ -498,6 +539,90 @@ export default function ProductPage() {
           </Carousel>
         </div>
       </section>
+
+      {/* Make an Offer Dialog */}
+      <Dialog open={offerDialogOpen} onOpenChange={setOfferDialogOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">تقديم عرض سعر</DialogTitle>
+            <DialogDescription className="text-right">
+              قدّم عرضك للبائع. السعر المطلوب: {product?.price.toLocaleString()} د.ع
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="offer-amount">عرضك (د.ع)</Label>
+              <Input
+                id="offer-amount"
+                type="number"
+                placeholder="أدخل السعر المقترح"
+                value={offerAmount}
+                onChange={(e) => setOfferAmount(e.target.value)}
+                className="text-left"
+                dir="ltr"
+                data-testid="input-offer-amount"
+              />
+              {offerAmount && product && (
+                <p className="text-xs text-muted-foreground">
+                  {parseInt(offerAmount) < product.price ? (
+                    <span className="text-amber-600">
+                      أقل من السعر المطلوب بـ {((1 - parseInt(offerAmount) / product.price) * 100).toFixed(0)}%
+                    </span>
+                  ) : (
+                    <span className="text-green-600">
+                      يساوي أو أعلى من السعر المطلوب
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="offer-message">رسالة للبائع (اختياري)</Label>
+              <Textarea
+                id="offer-message"
+                placeholder="أضف رسالة توضيحية..."
+                value={offerMessage}
+                onChange={(e) => setOfferMessage(e.target.value)}
+                rows={3}
+                data-testid="input-offer-message"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setOfferDialogOpen(false)}
+              data-testid="button-cancel-offer"
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => {
+                if (!listing?.id || !offerAmount) return;
+                createOfferMutation.mutate({
+                  listingId: listing.id,
+                  offerAmount: parseInt(offerAmount, 10),
+                  message: offerMessage || undefined,
+                });
+              }}
+              disabled={!offerAmount || parseInt(offerAmount) <= 0 || createOfferMutation.isPending}
+              data-testid="button-submit-offer"
+            >
+              {createOfferMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  جاري الإرسال...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 ml-2" />
+                  إرسال العرض
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       </Layout>
   );

@@ -10,7 +10,8 @@ import {
   type Category, type InsertCategory,
   type BuyerAddress, type InsertBuyerAddress,
   type CartItem, type InsertCartItem,
-  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems 
+  type Offer, type InsertOffer,
+  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers 
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -84,6 +85,14 @@ export interface IStorage {
   updateCartItemQuantity(id: string, quantity: number): Promise<CartItem | undefined>;
   removeFromCart(id: string): Promise<boolean>;
   clearCart(userId: string): Promise<boolean>;
+  
+  // Offer operations
+  createOffer(offer: InsertOffer): Promise<Offer>;
+  getOffer(id: string): Promise<Offer | undefined>;
+  getOffersForListing(listingId: string): Promise<Offer[]>;
+  getOffersByBuyer(buyerId: string): Promise<Offer[]>;
+  getOffersBySeller(sellerId: string): Promise<Offer[]>;
+  updateOfferStatus(id: string, status: string, counterAmount?: number, counterMessage?: string): Promise<Offer | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -449,6 +458,47 @@ export class DatabaseStorage implements IStorage {
   async clearCart(userId: string): Promise<boolean> {
     await db.delete(cartItems).where(eq(cartItems.userId, userId));
     return true;
+  }
+
+  // Offer operations
+  async createOffer(offer: InsertOffer): Promise<Offer> {
+    const [newOffer] = await db.insert(offers).values(offer).returning();
+    return newOffer;
+  }
+
+  async getOffer(id: string): Promise<Offer | undefined> {
+    const [offer] = await db.select().from(offers).where(eq(offers.id, id));
+    return offer;
+  }
+
+  async getOffersForListing(listingId: string): Promise<Offer[]> {
+    return db.select().from(offers)
+      .where(eq(offers.listingId, listingId))
+      .orderBy(desc(offers.createdAt));
+  }
+
+  async getOffersByBuyer(buyerId: string): Promise<Offer[]> {
+    return db.select().from(offers)
+      .where(eq(offers.buyerId, buyerId))
+      .orderBy(desc(offers.createdAt));
+  }
+
+  async getOffersBySeller(sellerId: string): Promise<Offer[]> {
+    return db.select().from(offers)
+      .where(eq(offers.sellerId, sellerId))
+      .orderBy(desc(offers.createdAt));
+  }
+
+  async updateOfferStatus(id: string, status: string, counterAmount?: number, counterMessage?: string): Promise<Offer | undefined> {
+    const updateData: any = { status, respondedAt: new Date() };
+    if (counterAmount !== undefined) updateData.counterAmount = counterAmount;
+    if (counterMessage !== undefined) updateData.counterMessage = counterMessage;
+    
+    const [updated] = await db.update(offers)
+      .set(updateData)
+      .where(eq(offers.id, id))
+      .returning();
+    return updated;
   }
 }
 
