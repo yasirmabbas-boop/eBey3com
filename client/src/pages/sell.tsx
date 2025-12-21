@@ -70,6 +70,10 @@ export default function SellPage() {
     price: "",
     category: "",
     condition: "",
+    brand: "",
+    customBrand: "",
+    serialNumber: "",
+    quantityAvailable: "1",
     deliveryWindow: "",
     returnPolicy: "",
     returnDetails: "",
@@ -224,6 +228,11 @@ export default function SellPage() {
     if (!formData.returnPolicy) errors.returnPolicy = "سياسة الإرجاع مطلوبة";
     if (images.length === 0) errors.images = "يجب إضافة صورة واحدة على الأقل";
     
+    // Serial number required for watches and items over 1,000,000 IQD
+    if ((formData.category === "ساعات" || parseInt(formData.price) >= 1000000) && !formData.serialNumber.trim()) {
+      errors.serialNumber = "الرقم التسلسلي مطلوب للساعات والمنتجات الثمينة";
+    }
+    
     if (saleType === "auction") {
       if (!formData.auctionDuration) errors.auctionDuration = "مدة المزاد مطلوبة";
       if (startTimeOption === "schedule") {
@@ -272,12 +281,15 @@ export default function SellPage() {
         }
       }
       
+      const finalBrand = formData.brand === "أخرى" ? formData.customBrand : formData.brand;
+      
       const listingData = {
         title: formData.title,
         description: formData.description,
         price: parseInt(formData.price) || 0,
         category: formData.category,
         condition: formData.condition,
+        brand: finalBrand || null,
         images: images,
         saleType: saleType,
         timeLeft: saleType === "auction" ? formData.auctionDuration : null,
@@ -288,6 +300,9 @@ export default function SellPage() {
         sellerName: formData.sellerName,
         sellerId: user?.id || null,
         city: formData.city,
+        isNegotiable: allowOffers,
+        serialNumber: formData.serialNumber || null,
+        quantityAvailable: parseInt(formData.quantityAvailable) || 1,
       };
 
       const response = await fetch("/api/listings", {
@@ -452,11 +467,36 @@ export default function SellPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="brand">الماركة / العلامة التجارية</Label>
-                  <Input 
-                    id="brand" 
-                    placeholder="مثال: Rolex, Omega, Seiko..."
-                    data-testid="input-brand"
-                  />
+                  <Select value={formData.brand || ""} onValueChange={(v) => handleInputChange("brand", v)}>
+                    <SelectTrigger data-testid="select-brand">
+                      <SelectValue placeholder="اختر الماركة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Rolex">Rolex</SelectItem>
+                      <SelectItem value="Omega">Omega</SelectItem>
+                      <SelectItem value="Seiko">Seiko</SelectItem>
+                      <SelectItem value="Casio">Casio</SelectItem>
+                      <SelectItem value="Citizen">Citizen</SelectItem>
+                      <SelectItem value="Tag Heuer">Tag Heuer</SelectItem>
+                      <SelectItem value="Tissot">Tissot</SelectItem>
+                      <SelectItem value="Apple">Apple</SelectItem>
+                      <SelectItem value="Samsung">Samsung</SelectItem>
+                      <SelectItem value="Sony">Sony</SelectItem>
+                      <SelectItem value="LG">LG</SelectItem>
+                      <SelectItem value="Nike">Nike</SelectItem>
+                      <SelectItem value="Adidas">Adidas</SelectItem>
+                      <SelectItem value="بدون ماركة">بدون ماركة</SelectItem>
+                      <SelectItem value="أخرى">أخرى</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {formData.brand === "أخرى" && (
+                    <Input 
+                      placeholder="أدخل اسم الماركة..."
+                      className="mt-2"
+                      onChange={(e) => handleInputChange("customBrand", e.target.value)}
+                      data-testid="input-custom-brand"
+                    />
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -1014,7 +1054,8 @@ export default function SellPage() {
                     type="number" 
                     placeholder="1"
                     min="1"
-                    defaultValue="1"
+                    value={formData.quantityAvailable}
+                    onChange={(e) => handleInputChange("quantityAvailable", e.target.value)}
                     required
                     data-testid="input-quantity"
                   />
@@ -1032,6 +1073,27 @@ export default function SellPage() {
                   />
                 </div>
               </div>
+
+              {/* Serial Number - Required for watches and high-value items */}
+              {(formData.category === "ساعات" || (parseInt(formData.price) >= 1000000)) && (
+                <div className="space-y-2 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <Label htmlFor="serialNumber" className="font-bold flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    الرقم التسلسلي (Serial Number) *
+                  </Label>
+                  <Input 
+                    id="serialNumber" 
+                    placeholder="أدخل الرقم التسلسلي للمنتج"
+                    value={formData.serialNumber}
+                    onChange={(e) => handleInputChange("serialNumber", e.target.value)}
+                    required
+                    data-testid="input-serial-number"
+                  />
+                  <p className="text-xs text-amber-700">
+                    مطلوب للساعات والمنتجات التي تزيد قيمتها عن 1,000,000 دينار لضمان الأصالة
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -1152,11 +1214,15 @@ export default function SellPage() {
                     <SelectValue placeholder="اختر السياسة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="لا يوجد إرجاع">لا يوجد إرجاع</SelectItem>
-                    <SelectItem value="3 أيام">3 أيام</SelectItem>
-                    <SelectItem value="7 أيام">7 أيام</SelectItem>
-                    <SelectItem value="14 يوم">14 يوم</SelectItem>
-                    <SelectItem value="30 يوم">30 يوم</SelectItem>
+                    <SelectItem value="لا يوجد إرجاع">لا يوجد إرجاع - البيع نهائي</SelectItem>
+                    <SelectItem value="يوم واحد">إرجاع خلال يوم واحد</SelectItem>
+                    <SelectItem value="3 أيام">إرجاع خلال 3 أيام</SelectItem>
+                    <SelectItem value="7 أيام">إرجاع خلال 7 أيام</SelectItem>
+                    <SelectItem value="14 يوم">إرجاع خلال 14 يوم</SelectItem>
+                    <SelectItem value="30 يوم">إرجاع خلال 30 يوم</SelectItem>
+                    <SelectItem value="استبدال فقط">استبدال فقط - لا إرجاع نقدي</SelectItem>
+                    <SelectItem value="ضمان المنتج">ضمان المنتج من الشركة المصنعة</SelectItem>
+                    <SelectItem value="أخرى">أخرى - أحدد في التفاصيل</SelectItem>
                   </SelectContent>
                 </Select>
                 {validationErrors.returnPolicy && (
@@ -1187,24 +1253,18 @@ export default function SellPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="space-y-1">
-                  <Label className="font-bold">إظهار رقم الهاتف</Label>
-                  <p className="text-xs text-muted-foreground">
-                    السماح للمشترين بالتواصل معك مباشرة
-                  </p>
-                </div>
-                <Switch data-testid="switch-show-phone" />
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                 <div className="space-y-1">
                   <Label className="font-bold">قابل للتفاوض</Label>
                   <p className="text-xs text-muted-foreground">
-                    إظهار أن السعر قابل للتفاوض
+                    السماح للمشترين بتقديم عروض سعر مختلفة
                   </p>
                 </div>
-                <Switch data-testid="switch-negotiable" />
+                <Switch 
+                  checked={allowOffers}
+                  onCheckedChange={setAllowOffers}
+                  data-testid="switch-negotiable" 
+                />
               </div>
 
               <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">

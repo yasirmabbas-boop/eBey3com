@@ -185,6 +185,7 @@ export const listings = pgTable("listings", {
   price: integer("price").notNull(),
   category: text("category").notNull(),
   condition: text("condition").notNull(),
+  brand: text("brand"),
   images: text("images").array().notNull().default(sql`ARRAY[]::text[]`),
   saleType: text("sale_type").notNull().default("fixed"),
   currentBid: integer("current_bid"),
@@ -198,6 +199,12 @@ export const listings = pgTable("listings", {
   sellerId: varchar("seller_id"),
   city: text("city").notNull(),
   isActive: boolean("is_active").notNull().default(true),
+  isPaused: boolean("is_paused").notNull().default(false),
+  isNegotiable: boolean("is_negotiable").notNull().default(false),
+  serialNumber: text("serial_number"),
+  quantityAvailable: integer("quantity_available").notNull().default(1),
+  quantitySold: integer("quantity_sold").notNull().default(0),
+  views: integer("views").notNull().default(0),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 

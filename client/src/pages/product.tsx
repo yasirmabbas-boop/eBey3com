@@ -47,6 +47,18 @@ export default function ProductPage() {
     },
     enabled: !!params?.id,
   });
+  
+  // Fetch seller data to get real rating info
+  const { data: sellerData } = useQuery({
+    queryKey: ["/api/users", listing?.sellerId],
+    queryFn: async () => {
+      if (!listing?.sellerId) return null;
+      const res = await fetch(`/api/users/${listing.sellerId}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!listing?.sellerId,
+  });
 
   const product = listing ? {
     id: listing.id,
@@ -60,16 +72,27 @@ export default function ProductPage() {
     saleType: listing.saleType as "auction" | "fixed",
     timeLeft: listing.timeLeft || undefined,
     auctionEndTime: listing.auctionEndTime,
-    seller: { name: listing.sellerName, salesCount: 0, rating: 95 },
+    seller: { 
+      name: listing.sellerName, 
+      salesCount: sellerData?.totalSales || 0, 
+      rating: sellerData?.rating || 0, 
+      ratingCount: sellerData?.ratingCount || 0 
+    },
     sellerName: listing.sellerName,
-    sellerTotalSales: 0,
-    sellerRating: 5,
+    sellerId: listing.sellerId,
+    sellerTotalSales: sellerData?.totalSales || 0,
+    sellerRating: sellerData?.rating || 0,
+    sellerRatingCount: sellerData?.ratingCount || 0,
     category: listing.category,
     condition: listing.condition as "New" | "Used - Like New" | "Used - Good" | "Vintage",
+    brand: (listing as any).brand || null,
     deliveryWindow: listing.deliveryWindow,
     returnPolicy: listing.returnPolicy,
     city: listing.city,
     description: listing.description,
+    isNegotiable: (listing as any).isNegotiable || false,
+    quantityAvailable: (listing as any).quantityAvailable || 1,
+    quantitySold: (listing as any).quantitySold || 0,
   } : null;
 
   const requireAuth = (action: string) => {
@@ -181,13 +204,19 @@ export default function ProductPage() {
                     />
                   </div>
                   <div className="flex items-center gap-1 mt-2">
-                    <div className="flex text-yellow-400">
-                      {[1, 2, 3, 4, 5].map(i => (
-                        <Star key={i} className={`h-4 w-4 ${i <= Math.round(product.seller.rating / 20) ? 'fill-current' : 'text-gray-300'}`} />
-                      ))}
-                    </div>
-                    <span className="text-sm text-gray-600 font-bold">({(product.seller.rating / 20).toFixed(1)})</span>
-                    <span className="text-xs text-gray-500">- {product.seller.salesCount} عميل</span>
+                    {product.seller.ratingCount > 0 ? (
+                      <>
+                        <div className="flex text-yellow-400">
+                          {[1, 2, 3, 4, 5].map(i => (
+                            <Star key={i} className={`h-4 w-4 ${i <= Math.round(product.seller.rating / 20) ? 'fill-current' : 'text-gray-300'}`} />
+                          ))}
+                        </div>
+                        <span className="text-sm text-gray-600 font-bold">({(product.seller.rating / 20).toFixed(1)})</span>
+                        <span className="text-xs text-gray-500">- {product.seller.salesCount} عميل</span>
+                      </>
+                    ) : (
+                      <span className="text-sm text-gray-500">التقييم: غير متوفر</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -230,15 +259,50 @@ export default function ProductPage() {
                   <span className="text-4xl font-bold text-primary">
                     {(product.currentBid || product.price).toLocaleString()} <span className="text-lg">د.ع</span>
                   </span>
+                  {product.isNegotiable && (
+                    <Badge variant="secondary" className="mr-2">قابل للتفاوض</Badge>
+                  )}
                 </div>
+                
+                {/* Stock availability */}
+                <div className="text-sm mb-3">
+                  {product.quantityAvailable > 10 ? (
+                    <span className="text-green-600 font-medium">✓ في المخزون</span>
+                  ) : product.quantityAvailable > 0 ? (
+                    <span className="text-amber-600 font-medium">متبقي {product.quantityAvailable} قطعة فقط</span>
+                  ) : (
+                    <span className="text-red-600 font-medium">غير متوفر حالياً</span>
+                  )}
+                </div>
+                
                 <Button 
                   size="lg" 
                   className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold mt-4"
                   onClick={handleBuyNowDirect}
+                  disabled={product.quantityAvailable === 0}
                   data-testid="button-buy-now-fixed"
                 >
                   شراء الآن
                 </Button>
+                
+                {/* Make an Offer button for negotiable items */}
+                {product.isNegotiable && (
+                  <Button 
+                    variant="outline"
+                    size="lg" 
+                    className="w-full text-lg h-12 mt-3 border-primary text-primary hover:bg-primary/10"
+                    onClick={() => {
+                      if (!requireAuth("offer")) return;
+                      toast({
+                        title: "تقديم عرض",
+                        description: "ميزة تقديم العروض قيد التطوير وستكون متاحة قريباً",
+                      });
+                    }}
+                    data-testid="button-make-offer"
+                  >
+                    قدّم عرضك
+                  </Button>
+                )}
               </div>
             )}
 
@@ -333,11 +397,15 @@ export default function ProductPage() {
                   </li>
                   <li className="flex justify-between border-b py-2">
                     <span className="text-muted-foreground">الماركة</span>
-                    <span>غير محدد</span>
+                    <span>{product.brand || "غير محدد"}</span>
                   </li>
                   <li className="flex justify-between border-b py-2">
                     <span className="text-muted-foreground">الموقع</span>
-                    <span>بغداد، الكرادة</span>
+                    <span>{product.city || "غير محدد"}</span>
+                  </li>
+                  <li className="flex justify-between border-b py-2">
+                    <span className="text-muted-foreground">الفئة</span>
+                    <span>{product.category}</span>
                   </li>
                 </ul>
               </div>

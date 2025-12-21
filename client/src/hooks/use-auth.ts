@@ -41,14 +41,19 @@ async function fetchUser(): Promise<AuthUser | null> {
 async function logout(): Promise<void> {
   // Try custom logout first
   try {
-    await fetch("/api/auth/logout", {
+    const response = await fetch("/api/auth/logout", {
       method: "POST",
       credentials: "include",
     });
+    if (response.ok) {
+      // Custom auth logout successful, just reload
+      window.location.href = "/";
+      return;
+    }
   } catch (e) {
-    // Ignore errors
+    // Ignore errors, try Replit logout
   }
-  // Then redirect to Replit logout
+  // Fall back to Replit logout only if custom logout didn't work
   window.location.href = "/api/logout";
 }
 
