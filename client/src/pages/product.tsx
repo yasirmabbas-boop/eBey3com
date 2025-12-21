@@ -357,21 +357,23 @@ export default function ProductPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-6">
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="h-12" 
-                onClick={handleAddCart}
-                disabled={isAdding || listing?.saleType === "auction"}
-                data-testid="button-add-cart"
-              >
-                {isAdding ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                    جاري الإضافة...
-                  </>
-                ) : "أضف للسلة"}
-              </Button>
+              {listing?.saleType !== "auction" && (
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="h-12" 
+                  onClick={handleAddCart}
+                  disabled={isAdding}
+                  data-testid="button-add-cart"
+                >
+                  {isAdding ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                      جاري الإضافة...
+                    </>
+                  ) : "أضف للسلة"}
+                </Button>
+              )}
               <ContactSeller 
                 sellerName={product.seller.name}
                 productTitle={product.title}
