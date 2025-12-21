@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema } from "@shared/schema";
+import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema, insertBuyerAddressSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { broadcastBidUpdate } from "./websocket";
@@ -537,6 +537,269 @@ export async function registerRoutes(
       avatar: user.avatar,
       isVerified: user.isVerified,
     });
+  });
+
+  // Account Management Routes
+
+  // Get full profile (for account settings)
+  app.get("/api/account/profile", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(401).json({ error: "المستخدم غير موجود" });
+    }
+
+    res.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      displayName: user.displayName,
+      phone: user.phone,
+      avatar: user.avatar,
+      city: user.city,
+      district: user.district,
+      addressLine1: user.addressLine1,
+      addressLine2: user.addressLine2,
+      accountType: user.accountType,
+      accountCode: user.accountCode,
+      isVerified: user.isVerified,
+      verificationStatus: user.verificationStatus,
+      rating: user.rating,
+      ratingCount: user.ratingCount,
+      totalSales: user.totalSales,
+      createdAt: user.createdAt,
+    });
+  });
+
+  // Update profile
+  app.put("/api/account/profile", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const allowedFields = ["displayName", "phone", "city", "district", "addressLine1", "addressLine2"];
+      const updates: Record<string, any> = {};
+      
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) {
+          updates[field] = req.body[field];
+        }
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: "لم يتم تقديم أي حقول للتحديث" });
+      }
+
+      const user = await storage.updateUser(userId, updates);
+      if (!user) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+
+      res.json({
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        phone: user.phone,
+        city: user.city,
+        district: user.district,
+        addressLine1: user.addressLine1,
+        addressLine2: user.addressLine2,
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ error: "فشل في تحديث الملف الشخصي" });
+    }
+  });
+
+  // Change password
+  app.post("/api/account/password", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "كلمة المرور الحالية والجديدة مطلوبتان" });
+      }
+
+      if (newPassword.length < 4) {
+        return res.status(400).json({ error: "كلمة المرور الجديدة قصيرة جداً" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user || !user.password) {
+        return res.status(400).json({ error: "لا يمكن تغيير كلمة المرور لهذا الحساب" });
+      }
+
+      const isValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isValid) {
+        return res.status(401).json({ error: "كلمة المرور الحالية غير صحيحة" });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await storage.updateUser(userId, { password: hashedPassword } as any);
+
+      res.json({ success: true, message: "تم تغيير كلمة المرور بنجاح" });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ error: "فشل في تغيير كلمة المرور" });
+    }
+  });
+
+  // Get buyer addresses
+  app.get("/api/account/addresses", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const addresses = await storage.getBuyerAddresses(userId);
+      res.json(addresses);
+    } catch (error) {
+      console.error("Error fetching addresses:", error);
+      res.status(500).json({ error: "فشل في جلب العناوين" });
+    }
+  });
+
+  // Create buyer address
+  app.post("/api/account/addresses", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const addressData = {
+        ...req.body,
+        userId,
+      };
+      const validatedData = insertBuyerAddressSchema.parse(addressData);
+      const address = await storage.createBuyerAddress(validatedData);
+      res.status(201).json(address);
+    } catch (error) {
+      console.error("Error creating address:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "بيانات العنوان غير صحيحة", details: error.errors });
+      }
+      res.status(500).json({ error: "فشل في إضافة العنوان" });
+    }
+  });
+
+  // Update buyer address
+  app.put("/api/account/addresses/:id", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const addresses = await storage.getBuyerAddresses(userId);
+      const addressOwned = addresses.some(a => a.id === req.params.id);
+      if (!addressOwned) {
+        return res.status(403).json({ error: "لا يمكنك تعديل هذا العنوان" });
+      }
+
+      const address = await storage.updateBuyerAddress(req.params.id, req.body);
+      if (!address) {
+        return res.status(404).json({ error: "العنوان غير موجود" });
+      }
+      res.json(address);
+    } catch (error) {
+      console.error("Error updating address:", error);
+      res.status(500).json({ error: "فشل في تحديث العنوان" });
+    }
+  });
+
+  // Delete buyer address
+  app.delete("/api/account/addresses/:id", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const addresses = await storage.getBuyerAddresses(userId);
+      const addressOwned = addresses.some(a => a.id === req.params.id);
+      if (!addressOwned) {
+        return res.status(403).json({ error: "لا يمكنك حذف هذا العنوان" });
+      }
+
+      const success = await storage.deleteBuyerAddress(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "العنوان غير موجود" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting address:", error);
+      res.status(500).json({ error: "فشل في حذف العنوان" });
+    }
+  });
+
+  // Set default address
+  app.post("/api/account/addresses/:id/default", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const success = await storage.setDefaultAddress(userId, req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "العنوان غير موجود" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error setting default address:", error);
+      res.status(500).json({ error: "فشل في تعيين العنوان الافتراضي" });
+    }
+  });
+
+  // Get seller summary (stats)
+  app.get("/api/account/seller-summary", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const user = await storage.getUser(userId);
+      if (!user || user.accountType !== "seller") {
+        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين فقط" });
+      }
+
+      const summary = await storage.getSellerSummary(userId);
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching seller summary:", error);
+      res.status(500).json({ error: "فشل في جلب بيانات البائع" });
+    }
+  });
+
+  // Get purchase history for buyers
+  app.get("/api/account/purchases", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const transactions = await storage.getTransactionsForUser(userId);
+      const purchases = transactions.filter(t => t.buyerId === userId);
+      res.json(purchases);
+    } catch (error) {
+      console.error("Error fetching purchases:", error);
+      res.status(500).json({ error: "فشل في جلب سجل المشتريات" });
+    }
   });
 
   return httpServer;
