@@ -149,12 +149,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <>
                     <Link href="/seller-dashboard" className="text-lg text-primary font-semibold">لوحة التحكم</Link>
                     <Link href="/sell" className="text-lg">إضافة منتج</Link>
+                    <Link href="/settings" className="text-lg">إعدادات الحساب</Link>
                   </>
                 )}
                 {isAuthenticated && user?.accountType === "buyer" && (
                   <>
                     <Link href="/buyer-dashboard" className="text-lg text-primary font-semibold">لوحة التحكم</Link>
                     <Link href="/my-purchases" className="text-lg">مشترياتي</Link>
+                    <Link href="/settings" className="text-lg">إعدادات الحساب</Link>
                   </>
                 )}
                 {!isAuthenticated && (

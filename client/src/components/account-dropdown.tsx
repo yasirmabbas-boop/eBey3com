@@ -35,7 +35,7 @@ export function AccountDropdown() {
         <DropdownMenuLabel className="font-bold">حسابي</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <Link href="/profile" asChild>
+        <Link href="/settings" asChild>
           <DropdownMenuItem className="cursor-pointer">
             <User className="h-4 w-4 ml-2" />
             <span>ملفي الشخصي</span>

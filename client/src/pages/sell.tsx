@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation, Link, useSearch } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import type { Listing } from "@shared/schema";
 import { 
   Camera, 
   Upload, 
@@ -53,7 +55,24 @@ const HOURS = Array.from({ length: 24 }, (_, i) => {
 export default function SellPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const { user, isLoading: authLoading } = useAuth();
+  
+  // Parse edit query parameter
+  const urlParams = new URLSearchParams(searchString);
+  const editListingId = urlParams.get("edit");
+  const isEditMode = !!editListingId;
+
+  // Fetch existing listing for edit mode
+  const { data: editListing, isLoading: editListingLoading } = useQuery<Listing>({
+    queryKey: ["/api/listings", editListingId],
+    queryFn: async () => {
+      const res = await fetch(`/api/listings/${editListingId}`);
+      if (!res.ok) throw new Error("Listing not found");
+      return res.json();
+    },
+    enabled: isEditMode,
+  });
   
   const [saleType, setSaleType] = useState<"auction" | "fixed">("auction");
   const [hasBuyNow, setHasBuyNow] = useState(false);
@@ -89,6 +108,34 @@ export default function SellPage() {
       setFormData(prev => ({ ...prev, sellerName: user.username || "" }));
     }
   }, [user]);
+
+  // Populate form when editing an existing listing
+  useEffect(() => {
+    if (editListing && isEditMode) {
+      setFormData({
+        title: editListing.title || "",
+        description: editListing.description || "",
+        price: editListing.price?.toString() || "",
+        category: editListing.category || "",
+        condition: editListing.condition || "",
+        brand: editListing.brand || "",
+        customBrand: "",
+        serialNumber: editListing.serialNumber || "",
+        quantityAvailable: editListing.quantityAvailable?.toString() || "1",
+        deliveryWindow: editListing.deliveryWindow || "",
+        returnPolicy: editListing.returnPolicy || "",
+        returnDetails: editListing.returnDetails || "",
+        sellerName: editListing.sellerName || user?.username || "",
+        city: editListing.city || "",
+        auctionDuration: editListing.timeLeft || "",
+        startDate: "",
+        startHour: "",
+      });
+      setImages(editListing.images || []);
+      setSaleType((editListing.saleType as "auction" | "fixed") || "fixed");
+      setAllowOffers(editListing.isNegotiable || false);
+    }
+  }, [editListing, isEditMode]);
 
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [watchSpecs, setWatchSpecs] = useState({
@@ -305,22 +352,25 @@ export default function SellPage() {
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
       };
 
-      const response = await fetch("/api/listings", {
-        method: "POST",
+      const url = isEditMode ? `/api/listings/${editListingId}` : "/api/listings";
+      const method = isEditMode ? "PATCH" : "POST";
+      
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(listingData),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create listing");
+        throw new Error(isEditMode ? "Failed to update listing" : "Failed to create listing");
       }
 
       toast({
-        title: "تم نشر المنتج بنجاح!",
-        description: "يمكنك رؤية منتجك في الصفحة الرئيسية.",
+        title: isEditMode ? "تم تحديث المنتج بنجاح!" : "تم نشر المنتج بنجاح!",
+        description: isEditMode ? "تم حفظ التغييرات." : "يمكنك رؤية منتجك في الصفحة الرئيسية.",
       });
       
-      setLocation("/");
+      setLocation(isEditMode ? "/seller-dashboard" : "/");
     } catch (error) {
       console.error("Error:", error);
       toast({
@@ -337,8 +387,18 @@ export default function SellPage() {
     <Layout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">بيع منتج جديد</h1>
-          <p className="text-muted-foreground">أضف منتجك للبيع على منصة اي-بيع</p>
+          <h1 className="text-3xl font-bold text-primary mb-2">
+            {isEditMode ? "تعديل المنتج" : "بيع منتج جديد"}
+          </h1>
+          <p className="text-muted-foreground">
+            {isEditMode ? "قم بتعديل تفاصيل منتجك" : "أضف منتجك للبيع على منصة اي-بيع"}
+          </p>
+          {isEditMode && editListingLoading && (
+            <div className="flex items-center gap-2 mt-2 text-gray-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              جاري تحميل بيانات المنتج...
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
