@@ -9,7 +9,8 @@ import {
   type Transaction, type InsertTransaction,
   type Category, type InsertCategory,
   type BuyerAddress, type InsertBuyerAddress,
-  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses 
+  type CartItem, type InsertCartItem,
+  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems 
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -75,6 +76,14 @@ export interface IStorage {
     averageRating: number;
     ratingCount: number;
   }>;
+  
+  // Cart operations
+  getCartItems(userId: string): Promise<CartItem[]>;
+  getCartItemWithListing(userId: string, listingId: string): Promise<CartItem | undefined>;
+  addToCart(item: InsertCartItem): Promise<CartItem>;
+  updateCartItemQuantity(id: string, quantity: number): Promise<CartItem | undefined>;
+  removeFromCart(id: string): Promise<boolean>;
+  clearCart(userId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -385,6 +394,61 @@ export class DatabaseStorage implements IStorage {
       averageRating: user?.rating || 0,
       ratingCount: user?.ratingCount || 0,
     };
+  }
+
+  // Cart operations
+  async getCartItems(userId: string): Promise<CartItem[]> {
+    return db.select().from(cartItems)
+      .where(eq(cartItems.userId, userId))
+      .orderBy(desc(cartItems.createdAt));
+  }
+
+  async getCartItemWithListing(userId: string, listingId: string): Promise<CartItem | undefined> {
+    const [item] = await db.select().from(cartItems)
+      .where(and(eq(cartItems.userId, userId), eq(cartItems.listingId, listingId)));
+    return item;
+  }
+
+  async addToCart(item: InsertCartItem): Promise<CartItem> {
+    // Check if item already exists in cart
+    const existing = await this.getCartItemWithListing(item.userId, item.listingId);
+    if (existing) {
+      // Update quantity instead
+      const [updated] = await db.update(cartItems)
+        .set({ 
+          quantity: existing.quantity + (item.quantity || 1),
+          updatedAt: new Date()
+        })
+        .where(eq(cartItems.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [newItem] = await db.insert(cartItems).values(item).returning();
+    return newItem;
+  }
+
+  async updateCartItemQuantity(id: string, quantity: number): Promise<CartItem | undefined> {
+    if (quantity <= 0) {
+      await this.removeFromCart(id);
+      return undefined;
+    }
+    const [updated] = await db.update(cartItems)
+      .set({ quantity, updatedAt: new Date() })
+      .where(eq(cartItems.id, id))
+      .returning();
+    return updated;
+  }
+
+  async removeFromCart(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(cartItems)
+      .where(eq(cartItems.id, id))
+      .returning();
+    return !!deleted;
+  }
+
+  async clearCart(userId: string): Promise<boolean> {
+    await db.delete(cartItems).where(eq(cartItems.userId, userId));
+    return true;
   }
 }
 
