@@ -129,6 +129,18 @@ export default function SellerDashboard() {
     enabled: !!user?.id,
   });
 
+  const { data: sellerSummary } = useQuery<{
+    totalListings: number;
+    activeListings: number;
+    totalSales: number;
+    totalRevenue: number;
+    averageRating: number;
+    ratingCount: number;
+  }>({
+    queryKey: ["/api/account/seller-summary"],
+    enabled: !!user?.id && user?.accountType === "seller",
+  });
+
   const sellerProducts: SellerProduct[] = listings.map(l => ({
     id: l.id,
     title: l.title,
@@ -202,18 +214,18 @@ export default function SellerDashboard() {
   const pendingShipments = sellerProducts.filter(p => p.status === "pending_shipment" || p.status === "sold");
 
   const SELLER_STATS = {
-    totalProducts: sellerProducts.length,
-    activeListings: activeProducts.length,
-    soldItems: soldProducts.length,
-    totalRevenue: soldProducts.length > 0 
+    totalProducts: sellerSummary?.totalListings || sellerProducts.length,
+    activeListings: sellerSummary?.activeListings || activeProducts.length,
+    soldItems: sellerSummary?.totalSales || soldProducts.length,
+    totalRevenue: sellerSummary?.totalRevenue || (soldProducts.length > 0 
       ? soldProducts.reduce((sum, p) => sum + (p.finalPrice || p.currentBid || p.price), 0)
-      : 0,
+      : 0),
     pendingShipments: pendingShipments.length,
     totalViews: sellerProducts.length > 0 
       ? sellerProducts.reduce((sum, p) => sum + (p.views || 0), 0)
       : 0,
-    averageRating: (user as any)?.rating || 4.5,
-    totalReviews: (user as any)?.ratingCount || 0,
+    averageRating: sellerSummary?.averageRating || 0,
+    totalReviews: sellerSummary?.ratingCount || 0,
   };
 
   const isLoading = authLoading || listingsLoading;
