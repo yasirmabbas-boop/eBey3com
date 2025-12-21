@@ -17,6 +17,7 @@ import {
   Bell,
   Heart,
   LogOut,
+  MessageSquare,
 } from "lucide-react";
 
 export function AccountDropdown() {
@@ -67,6 +68,13 @@ export function AccountDropdown() {
           <DropdownMenuItem className="cursor-pointer">
             <Heart className="h-4 w-4 ml-2" />
             <span>قائمة المفضلة</span>
+          </DropdownMenuItem>
+        </Link>
+
+        <Link href="/messages" asChild>
+          <DropdownMenuItem className="cursor-pointer">
+            <MessageSquare className="h-4 w-4 ml-2" />
+            <span>الرسائل</span>
           </DropdownMenuItem>
         </Link>
 

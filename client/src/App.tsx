@@ -26,6 +26,7 @@ import BuyerDashboard from "@/pages/buyer-dashboard";
 import SellPage from "@/pages/sell";
 import DealsGuide from "@/pages/deals-guide";
 import CartPage from "@/pages/cart";
+import MessagesPage from "@/pages/messages";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -59,6 +60,7 @@ function Router() {
       <Route path="/sell" component={SellPage} />
       <Route path="/deals-guide" component={DealsGuide} />
       <Route path="/cart" component={CartPage} />
+      <Route path="/messages" component={MessagesPage} />
       <Route component={NotFound} />
     </Switch>
   );
