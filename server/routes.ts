@@ -785,6 +785,89 @@ export async function registerRoutes(
     }
   });
 
+  // Get buyer purchases (transactions where user is the buyer)
+  app.get("/api/account/purchases", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const allTransactions = await storage.getTransactionsForUser(userId);
+      const buyerPurchases = allTransactions.filter(t => t.buyerId === userId);
+      
+      // Enrich with listing and seller details
+      const enrichedPurchases = await Promise.all(
+        buyerPurchases.map(async (purchase) => {
+          const listing = await storage.getListing(purchase.listingId);
+          const seller = listing ? await storage.getUser(listing.sellerId) : null;
+          return {
+            ...purchase,
+            listing: listing ? {
+              id: listing.id,
+              title: listing.title,
+              price: listing.price,
+              images: listing.images,
+              sellerName: seller?.displayName || "بائع",
+              city: listing.city || "العراق",
+            } : undefined,
+          };
+        })
+      );
+      
+      res.json(enrichedPurchases);
+    } catch (error) {
+      console.error("Error fetching purchases:", error);
+      res.status(500).json({ error: "فشل في جلب المشتريات" });
+    }
+  });
+
+  // Get seller orders (transactions)
+  app.get("/api/account/seller-orders", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const user = await storage.getUser(userId);
+      if (!user || user.accountType !== "seller") {
+        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين فقط" });
+      }
+
+      const allTransactions = await storage.getTransactionsForUser(userId);
+      const sellerOrders = allTransactions.filter(t => t.sellerId === userId);
+      
+      // Enrich with listing and buyer details
+      const enrichedOrders = await Promise.all(
+        sellerOrders.map(async (order) => {
+          const listing = await storage.getListing(order.listingId);
+          const buyer = await storage.getUser(order.buyerId);
+          return {
+            ...order,
+            listing: listing ? {
+              id: listing.id,
+              title: listing.title,
+              price: listing.price,
+              images: listing.images,
+              productCode: listing.productCode,
+            } : undefined,
+            buyer: buyer ? {
+              id: buyer.id,
+              name: buyer.displayName,
+              phone: buyer.phone,
+            } : undefined,
+          };
+        })
+      );
+      
+      res.json(enrichedOrders);
+    } catch (error) {
+      console.error("Error fetching seller orders:", error);
+      res.status(500).json({ error: "فشل في جلب الطلبات" });
+    }
+  });
+
   // Get seller summary (stats)
   app.get("/api/account/seller-summary", async (req, res) => {
     const userId = (req.session as any)?.userId;
@@ -1169,6 +1252,31 @@ export async function registerRoutes(
         status === "countered" ? parseInt(counterAmount, 10) : undefined,
         counterMessage
       );
+      
+      // If offer is accepted, create a transaction and update listing
+      if (status === "accepted" && updated) {
+        const listing = await storage.getListing(offer.listingId);
+        
+        // Create transaction record
+        const transaction = await storage.createTransaction({
+          listingId: offer.listingId,
+          sellerId: offer.sellerId,
+          buyerId: offer.buyerId,
+          amount: offer.offerAmount,
+          status: "pending",
+          paymentMethod: "cash",
+          deliveryStatus: "pending",
+        });
+        
+        // Update listing quantitySold
+        if (listing) {
+          await storage.updateListing(offer.listingId, {
+            quantitySold: (listing.quantitySold || 0) + 1,
+          });
+        }
+        
+        console.log("Transaction created for accepted offer:", transaction.id);
+      }
       
       res.json(updated);
     } catch (error) {

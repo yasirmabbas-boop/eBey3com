@@ -70,11 +70,27 @@ interface SellerProduct {
   finalPrice?: number;
   category: string;
   productCode: string;
+}
+
+interface SellerOrder {
+  id: string;
+  listingId: string;
+  amount: number;
+  status: string;
+  deliveryStatus: string;
+  createdAt: string;
+  completedAt?: string;
+  listing?: {
+    id: string;
+    title: string;
+    price: number;
+    images: string[];
+    productCode?: string;
+  };
   buyer?: {
+    id: string;
     name: string;
-    phone: string;
-    address: string;
-    district: string;
+    phone?: string;
   };
 }
 
@@ -153,6 +169,16 @@ export default function SellerDashboard() {
     enabled: !!user?.id && user?.accountType === "seller",
   });
 
+  const { data: sellerOrders = [], isLoading: ordersLoading } = useQuery<SellerOrder[]>({
+    queryKey: ["/api/account/seller-orders"],
+    queryFn: async () => {
+      const res = await fetch("/api/account/seller-orders");
+      if (!res.ok) throw new Error("Failed to fetch orders");
+      return res.json();
+    },
+    enabled: !!user?.id && user?.accountType === "seller",
+  });
+
   const sellerProducts: SellerProduct[] = listings.map(l => {
     let status = "draft";
     if (l.isActive) {
@@ -205,12 +231,16 @@ export default function SellerDashboard() {
     },
     onSuccess: (_, variables) => {
       const messages: Record<string, string> = {
-        accepted: "تم قبول العرض بنجاح",
+        accepted: "تم قبول العرض بنجاح - تم إنشاء طلب جديد",
         rejected: "تم رفض العرض",
         countered: "تم إرسال عرض مقابل",
       };
       toast({ title: "تم", description: messages[variables.status] || "تم تحديث العرض" });
       queryClient.invalidateQueries({ queryKey: ["/api/received-offers"] });
+      if (variables.status === "accepted") {
+        queryClient.invalidateQueries({ queryKey: ["/api/account/seller-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/account/seller-summary"] });
+      }
     },
     onError: () => {
       toast({ title: "خطأ", description: "فشل في الرد على العرض", variant: "destructive" });
@@ -829,65 +859,84 @@ export default function SellerDashboard() {
           </TabsContent>
 
           <TabsContent value="sales" className="space-y-4">
-            <div className="grid gap-4">
-              {soldProducts.map(product => (
-                <Card key={product.id} className="overflow-hidden">
-                  <div className="flex flex-col md:flex-row">
-                    <img 
-                      src={product.image} 
-                      alt={product.title} 
-                      className="w-full md:w-32 h-32 object-cover"
-                    />
-                    <div className="flex-1 p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-bold text-lg">{product.title}</h3>
-                          <p className="text-sm text-gray-500">بيع في {product.soldDate}</p>
-                        </div>
-                        {getStatusBadge(product.status)}
-                      </div>
-
-                      {product.buyer && (
-                        <div className="bg-blue-50 p-3 rounded-lg mb-3">
-                          <p className="text-sm font-semibold text-blue-800 mb-1 flex items-center gap-1">
-                            <Users className="h-4 w-4" />
-                            معلومات المشتري
-                          </p>
-                          <p className="text-sm">{product.buyer.name}</p>
-                          <p className="text-xs text-gray-600 flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {product.buyer.address}
-                          </p>
-                        </div>
+            {ordersLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : sellerOrders.length === 0 ? (
+              <Card className="p-8 text-center">
+                <ShoppingBag className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">لا توجد طلبات حتى الآن</p>
+                <p className="text-sm text-gray-400 mt-2">عندما يقبل المشترون عروضك أو يشترون منتجاتك، ستظهر الطلبات هنا</p>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {sellerOrders.map(order => (
+                  <Card key={order.id} className="overflow-hidden" data-testid={`order-card-${order.id}`}>
+                    <div className="flex flex-col md:flex-row">
+                      {order.listing?.images?.[0] && (
+                        <img 
+                          src={order.listing.images[0]} 
+                          alt={order.listing?.title || "منتج"} 
+                          className="w-full md:w-32 h-32 object-cover"
+                        />
                       )}
-
-                      <div className="flex items-center justify-between">
-                        <p className="text-xl font-bold text-green-600">
-                          {(product.finalPrice || product.price).toLocaleString()} د.ع
-                        </p>
-                        {(product.status === "sold" || product.status === "pending_shipment") && product.buyer && (
-                          <Button 
-                            onClick={() => handlePrintLabel(product)}
-                            className="gap-2"
-                            data-testid={`button-print-sales-${product.id}`}
+                      <div className="flex-1 p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h3 className="font-bold text-lg">{order.listing?.title || "منتج"}</h3>
+                            <p className="text-sm text-gray-500">
+                              طلب في {new Date(order.createdAt).toLocaleDateString("ar-IQ")}
+                            </p>
+                            {order.listing?.productCode && (
+                              <p className="text-xs text-gray-400">كود المنتج: {order.listing.productCode}</p>
+                            )}
+                          </div>
+                          <Badge 
+                            variant={order.status === "completed" ? "default" : "secondary"}
+                            className={
+                              order.status === "completed" ? "bg-green-100 text-green-800" :
+                              order.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                              "bg-blue-100 text-blue-800"
+                            }
                           >
-                            <Printer className="h-4 w-4" />
-                            طباعة بطاقة الشحن
-                          </Button>
+                            {order.status === "pending" ? "قيد الانتظار" :
+                             order.status === "completed" ? "مكتمل" :
+                             order.status === "processing" ? "قيد المعالجة" :
+                             order.status}
+                          </Badge>
+                        </div>
+
+                        {order.buyer && (
+                          <div className="bg-blue-50 p-3 rounded-lg mb-3">
+                            <p className="text-sm font-semibold text-blue-800 mb-1 flex items-center gap-1">
+                              <Users className="h-4 w-4" />
+                              معلومات المشتري
+                            </p>
+                            <p className="text-sm">{order.buyer.name || "مشتري"}</p>
+                            {order.buyer.phone && (
+                              <p className="text-xs text-gray-600">{order.buyer.phone}</p>
+                            )}
+                          </div>
                         )}
+
+                        <div className="flex items-center justify-between">
+                          <p className="text-xl font-bold text-green-600">
+                            {order.amount.toLocaleString()} د.ع
+                          </p>
+                          <Badge variant="outline" className="text-xs">
+                            {order.deliveryStatus === "pending" ? "بانتظار الشحن" :
+                             order.deliveryStatus === "shipped" ? "تم الشحن" :
+                             order.deliveryStatus === "delivered" ? "تم التوصيل" :
+                             order.deliveryStatus}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
-
-              {soldProducts.length === 0 && (
-                <Card className="p-8 text-center">
-                  <ShoppingBag className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">لا توجد مبيعات حتى الآن</p>
-                </Card>
-              )}
-            </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
