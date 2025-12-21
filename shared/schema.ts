@@ -177,6 +177,30 @@ export const insertCategorySchema = createInsertSchema(categories).omit({
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Category = typeof categories.$inferSelect;
 
+// Buyer delivery addresses
+export const buyerAddresses = pgTable("buyer_addresses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  label: text("label").notNull(), // e.g., "المنزل", "العمل"
+  recipientName: text("recipient_name").notNull(),
+  phone: text("phone").notNull(),
+  city: text("city").notNull(),
+  district: text("district"),
+  addressLine1: text("address_line_1").notNull(),
+  addressLine2: text("address_line_2"),
+  notes: text("notes"),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertBuyerAddressSchema = createInsertSchema(buyerAddresses).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertBuyerAddress = z.infer<typeof insertBuyerAddressSchema>;
+export type BuyerAddress = typeof buyerAddresses.$inferSelect;
+
 export const listings = pgTable("listings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   productCode: text("product_code").unique(),

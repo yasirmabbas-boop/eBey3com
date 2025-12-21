@@ -8,7 +8,8 @@ import {
   type Review, type InsertReview,
   type Transaction, type InsertTransaction,
   type Category, type InsertCategory,
-  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories 
+  type BuyerAddress, type InsertBuyerAddress,
+  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses 
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -57,6 +58,23 @@ export interface IStorage {
   
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
+  
+  // Buyer addresses
+  getBuyerAddresses(userId: string): Promise<BuyerAddress[]>;
+  createBuyerAddress(address: InsertBuyerAddress): Promise<BuyerAddress>;
+  updateBuyerAddress(id: string, address: Partial<InsertBuyerAddress>): Promise<BuyerAddress | undefined>;
+  deleteBuyerAddress(id: string): Promise<boolean>;
+  setDefaultAddress(userId: string, addressId: string): Promise<boolean>;
+  
+  // Seller summary
+  getSellerSummary(sellerId: string): Promise<{
+    totalListings: number;
+    activeListings: number;
+    totalSales: number;
+    totalRevenue: number;
+    averageRating: number;
+    ratingCount: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -294,6 +312,79 @@ export class DatabaseStorage implements IStorage {
   async createCategory(category: InsertCategory): Promise<Category> {
     const [cat] = await db.insert(categories).values(category).returning();
     return cat;
+  }
+
+  // Buyer addresses methods
+  async getBuyerAddresses(userId: string): Promise<BuyerAddress[]> {
+    return db.select().from(buyerAddresses)
+      .where(eq(buyerAddresses.userId, userId))
+      .orderBy(desc(buyerAddresses.isDefault), desc(buyerAddresses.createdAt));
+  }
+
+  async createBuyerAddress(address: InsertBuyerAddress): Promise<BuyerAddress> {
+    // If this is marked as default, unset other defaults first
+    if (address.isDefault) {
+      await db.update(buyerAddresses)
+        .set({ isDefault: false })
+        .where(eq(buyerAddresses.userId, address.userId));
+    }
+    const [newAddress] = await db.insert(buyerAddresses).values(address).returning();
+    return newAddress;
+  }
+
+  async updateBuyerAddress(id: string, updates: Partial<InsertBuyerAddress>): Promise<BuyerAddress | undefined> {
+    const [address] = await db.update(buyerAddresses)
+      .set(updates)
+      .where(eq(buyerAddresses.id, id))
+      .returning();
+    return address;
+  }
+
+  async deleteBuyerAddress(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(buyerAddresses)
+      .where(eq(buyerAddresses.id, id))
+      .returning();
+    return !!deleted;
+  }
+
+  async setDefaultAddress(userId: string, addressId: string): Promise<boolean> {
+    // Unset all defaults for this user
+    await db.update(buyerAddresses)
+      .set({ isDefault: false })
+      .where(eq(buyerAddresses.userId, userId));
+    // Set the new default
+    const [updated] = await db.update(buyerAddresses)
+      .set({ isDefault: true })
+      .where(and(eq(buyerAddresses.id, addressId), eq(buyerAddresses.userId, userId)))
+      .returning();
+    return !!updated;
+  }
+
+  // Seller summary
+  async getSellerSummary(sellerId: string): Promise<{
+    totalListings: number;
+    activeListings: number;
+    totalSales: number;
+    totalRevenue: number;
+    averageRating: number;
+    ratingCount: number;
+  }> {
+    const allListings = await db.select().from(listings).where(eq(listings.sellerId, sellerId));
+    const activeListings = allListings.filter(l => l.isActive);
+    const sellerTransactions = await db.select().from(transactions)
+      .where(and(eq(transactions.sellerId, sellerId), eq(transactions.status, "completed")));
+    const totalRevenue = sellerTransactions.reduce((sum, t) => sum + t.amount, 0);
+    
+    const user = await this.getUser(sellerId);
+    
+    return {
+      totalListings: allListings.length,
+      activeListings: activeListings.length,
+      totalSales: user?.totalSales || 0,
+      totalRevenue,
+      averageRating: user?.rating || 0,
+      ratingCount: user?.ratingCount || 0,
+    };
   }
 }
 
