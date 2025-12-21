@@ -7,18 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, History, Sparkles, Loader2, Clock, Camera } from "lucide-react";
+import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, Sparkles, Loader2, Clock, Camera } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 import type { Listing } from "@shared/schema";
-
-const RECENT_SEARCHES = [
-  { term: "آيفون 14", count: 5 },
-  { term: "ساعات رولكس", count: 3 },
-  { term: "بلايستيشن 5", count: 2 },
-  { term: "ذهب عراقي", count: 2 },
-  { term: "ماك بوك", count: 1 },
-];
 
 const CATEGORIES = [
   { id: "ساعات", name: "ساعات", nameEn: "watches" },
@@ -261,37 +253,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Personalized Section - Based on History & Searches */}
-      <section className="py-8 bg-white border-b">
-        <div className="container mx-auto px-4">
-          {/* Recent Searches */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <History className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-bold text-primary">عمليات البحث الأخيرة</h2>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {RECENT_SEARCHES.map((search, i) => (
-                <Link key={i} href={`/search?q=${encodeURIComponent(search.term)}`}>
-                  <Badge 
-                    variant="outline" 
-                    className="px-4 py-2 text-sm cursor-pointer hover:bg-primary hover:text-white transition-colors"
-                    data-testid={`badge-recent-search-${i}`}
-                  >
-                    {search.term}
-                    <span className="mr-2 text-xs text-muted-foreground">({search.count})</span>
-                  </Badge>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Recommended Items Based on History */}
-          <div>
+      {/* Recommended Items Section */}
+      {recommendedProducts.length > 0 && (
+        <section className="py-8 bg-white border-b">
+          <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-amber-500" />
-                <h2 className="text-xl font-bold text-primary">مقترحة لك بناءً على اهتماماتك</h2>
+                <h2 className="text-xl font-bold text-primary">منتجات مقترحة</h2>
               </div>
               <Link href="/search" className="text-accent hover:underline font-medium text-sm">عرض المزيد</Link>
             </div>
@@ -324,8 +293,8 @@ export default function Home() {
               ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Categories - Quick Access */}
       <section className="py-6 bg-gray-100">
