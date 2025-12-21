@@ -483,24 +483,32 @@ export default function SellerDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {soldProducts.slice(0, 3).map(product => (
-                      <div key={product.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg">
-                        <img src={product.image} alt={product.title} className="w-12 h-12 object-cover rounded" />
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm line-clamp-1">{product.title}</p>
-                          <p className="text-xs text-gray-500">{product.soldDate}</p>
-                        </div>
-                        <div className="text-left">
-                          {getStatusBadge(product.status)}
-                        </div>
+                  {soldProducts.length === 0 ? (
+                    <div className="text-center py-6">
+                      <ShoppingBag className="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-500 text-sm">لا توجد مبيعات حتى الآن</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-3">
+                        {soldProducts.slice(0, 3).map(product => (
+                          <div key={product.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg">
+                            <img src={product.image} alt={product.title} className="w-12 h-12 object-cover rounded" />
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm line-clamp-1">{product.title}</p>
+                            </div>
+                            <div className="text-left">
+                              {getStatusBadge(product.status)}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  {soldProducts.length > 3 && (
-                    <Button variant="ghost" className="w-full mt-2" onClick={() => setActiveTab("sales")}>
-                      عرض الكل ({soldProducts.length})
-                    </Button>
+                      {soldProducts.length > 3 && (
+                        <Button variant="ghost" className="w-full mt-2" onClick={() => setActiveTab("sales")}>
+                          عرض الكل ({soldProducts.length})
+                        </Button>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
