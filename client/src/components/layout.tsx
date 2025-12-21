@@ -10,12 +10,14 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
+import { useCart } from "@/hooks/use-cart";
 import { ImageSearchModal } from "@/components/image-search-modal";
 import { NotificationsButton } from "@/components/notifications";
 import { SmartSearch } from "@/components/smart-search";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { totalItems } = useCart();
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
 
   return (
@@ -121,9 +123,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             )}
             <NotificationsButton />
-            <Link href="/my-purchases" className="flex items-center gap-1 cursor-pointer hover:text-blue-200 transition-colors">
+            <Link href="/cart" className="flex items-center gap-1 cursor-pointer hover:text-blue-200 transition-colors" data-testid="link-cart">
               <ShoppingCart className="h-3 w-3" />
-              <span className="bg-red-500 text-white text-[9px] rounded-full px-1 h-3 flex items-center justify-center font-bold">0</span>
+              {totalItems > 0 && (
+                <span className="bg-red-500 text-white text-[9px] rounded-full px-1 h-3 flex items-center justify-center font-bold">{totalItems > 99 ? '99+' : totalItems}</span>
+              )}
             </Link>
           </div>
         </div>

@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useCart } from "@/hooks/use-cart";
 import { BiddingWindow } from "@/components/bidding-window";
 import { SellerTrustBadge } from "@/components/seller-trust-badge";
 import { ContactSeller } from "@/components/contact-seller";
@@ -37,6 +38,7 @@ export default function ProductPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, user } = useAuth();
+  const { addToCart, isAdding } = useCart();
 
   const { data: listing, isLoading, error } = useQuery<Listing>({
     queryKey: ["/api/listings", params?.id],
@@ -108,12 +110,32 @@ export default function ProductPage() {
     return true;
   };
 
-  const handleAddCart = () => {
+  const handleAddCart = async () => {
     if (!requireAuth("cart")) return;
-    toast({
-      title: "تم الإضافة للسلة",
-      description: "يمكنك الاستمرار في التصفح أو الذهاب للسلة.",
-    });
+    if (!listing) return;
+    
+    if (listing.saleType === "auction") {
+      toast({
+        title: "غير متاح",
+        description: "لا يمكن إضافة منتجات المزاد إلى السلة",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      await addToCart({ listingId: listing.id, quantity: 1 });
+      toast({
+        title: "تم الإضافة للسلة",
+        description: "يمكنك الاستمرار في التصفح أو الذهاب للسلة.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "حدث خطأ",
+        description: error.message || "فشل في إضافة المنتج للسلة",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAddWishlist = () => {
@@ -340,9 +362,15 @@ export default function ProductPage() {
                 size="lg" 
                 className="h-12" 
                 onClick={handleAddCart}
+                disabled={isAdding || listing?.saleType === "auction"}
                 data-testid="button-add-cart"
               >
-                أضف للسلة
+                {isAdding ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                    جاري الإضافة...
+                  </>
+                ) : "أضف للسلة"}
               </Button>
               <ContactSeller 
                 sellerName={product.seller.name}
