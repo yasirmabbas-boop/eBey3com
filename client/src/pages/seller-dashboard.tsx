@@ -153,20 +153,30 @@ export default function SellerDashboard() {
     enabled: !!user?.id && user?.accountType === "seller",
   });
 
-  const sellerProducts: SellerProduct[] = listings.map(l => ({
-    id: l.id,
-    title: l.title,
-    price: l.price,
-    image: l.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400",
-    status: l.isActive ? "active" : "draft",
-    type: l.saleType || "fixed",
-    views: 0,
-    bids: l.totalBids || 0,
-    currentBid: l.currentBid || undefined,
-    endDate: l.auctionEndTime ? new Date(l.auctionEndTime).toLocaleDateString("ar-IQ") : undefined,
-    category: l.category,
-    productCode: (l as any).productCode || `P-${l.id.slice(0, 6)}`,
-  }));
+  const sellerProducts: SellerProduct[] = listings.map(l => {
+    let status = "draft";
+    if (l.isActive) {
+      status = "active";
+    }
+    if ((l.quantitySold || 0) > 0) {
+      status = "sold";
+    }
+    
+    return {
+      id: l.id,
+      title: l.title,
+      price: l.price,
+      image: l.images?.[0] || "",
+      status,
+      type: l.saleType || "fixed",
+      views: l.views || 0,
+      bids: l.totalBids || 0,
+      currentBid: l.currentBid || undefined,
+      endDate: l.auctionEndTime ? new Date(l.auctionEndTime).toLocaleDateString("ar-IQ") : undefined,
+      category: l.category,
+      productCode: l.productCode || `P-${l.id.slice(0, 6)}`,
+    };
+  });
 
   const deleteMutation = useMutation({
     mutationFn: async (productId: string) => {
@@ -250,18 +260,13 @@ export default function SellerDashboard() {
   const pendingShipments = sellerProducts.filter(p => p.status === "pending_shipment" || p.status === "sold");
 
   const SELLER_STATS = {
-    totalProducts: sellerSummary?.totalListings || sellerProducts.length,
-    activeListings: sellerSummary?.activeListings || activeProducts.length,
-    soldItems: sellerSummary?.totalSales || soldProducts.length,
-    totalRevenue: sellerSummary?.totalRevenue || (soldProducts.length > 0 
-      ? soldProducts.reduce((sum, p) => sum + (p.finalPrice || p.currentBid || p.price), 0)
-      : 0),
-    pendingShipments: pendingShipments.length,
-    totalViews: sellerProducts.length > 0 
-      ? sellerProducts.reduce((sum, p) => sum + (p.views || 0), 0)
-      : 0,
-    averageRating: sellerSummary?.averageRating || 0,
-    totalReviews: sellerSummary?.ratingCount || 0,
+    totalProducts: sellerSummary?.totalListings ?? sellerProducts.length,
+    activeListings: sellerSummary?.activeListings ?? activeProducts.length,
+    soldItems: sellerSummary?.totalSales ?? 0,
+    totalRevenue: sellerSummary?.totalRevenue ?? 0,
+    pendingOffers: receivedOffers.filter(o => o.status === "pending").length,
+    averageRating: sellerSummary?.averageRating ?? 0,
+    totalReviews: sellerSummary?.ratingCount ?? 0,
   };
 
   const isLoading = authLoading || listingsLoading;
@@ -522,8 +527,8 @@ export default function SellerDashboard() {
                   <Separator orientation="vertical" className="h-16" />
                   <div className="flex-1 grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <p className="text-2xl font-bold text-blue-600">{SELLER_STATS.totalViews}</p>
-                      <p className="text-sm text-gray-500">مشاهدة</p>
+                      <p className="text-2xl font-bold text-blue-600">{SELLER_STATS.pendingOffers}</p>
+                      <p className="text-sm text-gray-500">عروض معلقة</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-green-600">{SELLER_STATS.soldItems}</p>
@@ -881,23 +886,21 @@ export default function SellerDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm text-gray-500">إجمالي المشاهدات</CardTitle>
+                  <CardTitle className="text-sm text-gray-500">إجمالي المنتجات</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-4xl font-bold text-blue-600">{SELLER_STATS.totalViews}</p>
-                  <p className="text-sm text-green-600 mt-1">↑ 12% من الأسبوع الماضي</p>
+                  <p className="text-4xl font-bold text-blue-600">{SELLER_STATS.totalProducts}</p>
+                  <p className="text-sm text-gray-500 mt-1">منتج في متجرك</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm text-gray-500">معدل التحويل</CardTitle>
+                  <CardTitle className="text-sm text-gray-500">العروض المعلقة</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-4xl font-bold text-purple-600">
-                    {((SELLER_STATS.soldItems / SELLER_STATS.totalViews) * 100).toFixed(1)}%
-                  </p>
-                  <p className="text-sm text-green-600 mt-1">↑ 3% من الشهر الماضي</p>
+                  <p className="text-4xl font-bold text-purple-600">{SELLER_STATS.pendingOffers}</p>
+                  <p className="text-sm text-gray-500 mt-1">تحتاج ردك</p>
                 </CardContent>
               </Card>
 
@@ -907,7 +910,7 @@ export default function SellerDashboard() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-4xl font-bold text-green-600">
-                    {Math.round(SELLER_STATS.totalRevenue / SELLER_STATS.soldItems / 1000)}K
+                    {SELLER_STATS.soldItems > 0 ? Math.round(SELLER_STATS.totalRevenue / SELLER_STATS.soldItems / 1000) : 0}K
                   </p>
                   <p className="text-xs text-gray-500 mt-1">د.ع</p>
                 </CardContent>
@@ -916,38 +919,43 @@ export default function SellerDashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>أداء الفئات</CardTitle>
+                <CardTitle>توزيع منتجاتك حسب الفئة</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span>ساعات</span>
-                    <div className="flex-1 mx-4">
-                      <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-500 rounded-full" style={{ width: "65%" }}></div>
-                      </div>
-                    </div>
-                    <span className="font-bold">65%</span>
+                {sellerProducts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">أضف منتجات لعرض التوزيع حسب الفئات</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span>إلكترونيات</span>
-                    <div className="flex-1 mx-4">
-                      <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-green-500 rounded-full" style={{ width: "25%" }}></div>
-                      </div>
-                    </div>
-                    <span className="font-bold">25%</span>
+                ) : (
+                  <div className="space-y-4">
+                    {(() => {
+                      const categoryCount: Record<string, number> = {};
+                      sellerProducts.forEach(p => {
+                        categoryCount[p.category] = (categoryCount[p.category] || 0) + 1;
+                      });
+                      const total = sellerProducts.length;
+                      const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-yellow-500", "bg-red-500"];
+                      return Object.entries(categoryCount)
+                        .sort(([,a], [,b]) => b - a)
+                        .slice(0, 5)
+                        .map(([category, count], index) => {
+                          const percentage = Math.round((count / total) * 100);
+                          return (
+                            <div key={category} className="flex items-center justify-between">
+                              <span className="min-w-[100px]">{category}</span>
+                              <div className="flex-1 mx-4">
+                                <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                  <div className={`h-full ${colors[index % colors.length]} rounded-full`} style={{ width: `${percentage}%` }}></div>
+                                </div>
+                              </div>
+                              <span className="font-bold">{percentage}%</span>
+                            </div>
+                          );
+                        });
+                    })()}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span>تحف وأثاث</span>
-                    <div className="flex-1 mx-4">
-                      <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-purple-500 rounded-full" style={{ width: "10%" }}></div>
-                      </div>
-                    </div>
-                    <span className="font-bold">10%</span>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -962,8 +970,8 @@ export default function SellerDashboard() {
             orderId: `ORD-${selectedProduct.id}`,
             productTitle: selectedProduct.title,
             productCode: selectedProduct.productCode,
-            sellerName: "أحمد العراقي",
-            sellerCity: "بغداد",
+            sellerName: user?.displayName || "البائع",
+            sellerCity: "العراق",
             buyerName: selectedProduct.buyer.name,
             buyerPhone: selectedProduct.buyer.phone,
             deliveryAddress: selectedProduct.buyer.address,

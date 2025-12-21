@@ -806,6 +806,41 @@ export async function registerRoutes(
     }
   });
 
+  // Get buyer summary (stats)
+  app.get("/api/account/buyer-summary", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const transactions = await storage.getTransactionsForUser(userId);
+      const purchases = transactions.filter(t => t.buyerId === userId);
+      const watchlistItems = await storage.getWatchlist(userId);
+      const offers = await storage.getOffersByBuyer(userId);
+      
+      const pendingOrders = purchases.filter(p => 
+        p.status === "pending" || p.status === "processing" || p.status === "in_transit"
+      ).length;
+      const completedOrders = purchases.filter(p => p.status === "completed" || p.status === "delivered").length;
+      const totalSpent = purchases
+        .filter(p => p.status === "completed" || p.status === "delivered")
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
+      
+      res.json({
+        totalPurchases: purchases.length,
+        pendingOrders,
+        completedOrders,
+        totalSpent,
+        wishlistItems: watchlistItems.length,
+        activeOffers: offers.filter(o => o.status === "pending").length,
+      });
+    } catch (error) {
+      console.error("Error fetching buyer summary:", error);
+      res.status(500).json({ error: "فشل في جلب بيانات المشتري" });
+    }
+  });
+
   // Get purchase history for buyers
   app.get("/api/account/purchases", async (req, res) => {
     const userId = (req.session as any)?.userId;
@@ -816,7 +851,22 @@ export async function registerRoutes(
     try {
       const transactions = await storage.getTransactionsForUser(userId);
       const purchases = transactions.filter(t => t.buyerId === userId);
-      res.json(purchases);
+      
+      // Enrich with listing data
+      const enrichedPurchases = await Promise.all(purchases.map(async (purchase) => {
+        const listing = await storage.getListing(purchase.listingId);
+        return {
+          ...purchase,
+          listing: listing ? {
+            id: listing.id,
+            title: listing.title,
+            price: listing.price,
+            images: listing.images,
+          } : null
+        };
+      }));
+      
+      res.json(enrichedPurchases);
     } catch (error) {
       console.error("Error fetching purchases:", error);
       res.status(500).json({ error: "فشل في جلب سجل المشتريات" });
