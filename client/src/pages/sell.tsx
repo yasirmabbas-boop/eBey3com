@@ -109,6 +109,18 @@ export default function SellPage() {
     }
   }, [user]);
 
+  // Redirect non-sellers away from the sell page
+  useEffect(() => {
+    if (!authLoading && user && user.accountType !== "seller") {
+      toast({
+        title: "غير مصرح",
+        description: "فقط البائعون يمكنهم إضافة منتجات",
+        variant: "destructive",
+      });
+      setLocation("/");
+    }
+  }, [user, authLoading, setLocation, toast]);
+
   // Populate form when editing an existing listing
   useEffect(() => {
     if (editListing && isEditMode) {

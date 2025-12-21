@@ -55,6 +55,17 @@ export async function registerRoutes(
   app.post("/api/listings", async (req, res) => {
     try {
       const sessionUserId = (req.session as any)?.userId;
+      
+      // Only allow sellers to create listings
+      if (!sessionUserId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول لإضافة منتج" });
+      }
+      
+      const user = await storage.getUser(sessionUserId);
+      if (!user || user.accountType !== "seller") {
+        return res.status(403).json({ error: "فقط البائعون يمكنهم إضافة منتجات" });
+      }
+      
       const listingData = {
         title: req.body.title,
         description: req.body.description,
