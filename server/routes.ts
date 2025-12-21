@@ -1091,7 +1091,25 @@ export async function registerRoutes(
 
     try {
       const offers = await storage.getOffersByBuyer(userId);
-      res.json(offers);
+      
+      // Enrich offers with listing details
+      const enrichedOffers = await Promise.all(
+        offers.map(async (offer) => {
+          const listing = await storage.getListing(offer.listingId);
+          return {
+            ...offer,
+            listing: listing ? {
+              id: listing.id,
+              title: listing.title,
+              price: listing.price,
+              images: listing.images,
+              sellerName: listing.sellerName,
+            } : undefined,
+          };
+        })
+      );
+      
+      res.json(enrichedOffers);
     } catch (error) {
       console.error("Error fetching my offers:", error);
       res.status(500).json({ error: "فشل في جلب عروضي" });
