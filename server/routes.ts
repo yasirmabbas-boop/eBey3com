@@ -802,5 +802,139 @@ export async function registerRoutes(
     }
   });
 
+  // Cart routes
+  app.get("/api/cart", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const items = await storage.getCartItems(userId);
+      // Enrich cart items with listing data
+      const enrichedItems = await Promise.all(items.map(async (item) => {
+        const listing = await storage.getListing(item.listingId);
+        return {
+          ...item,
+          listing: listing ? {
+            id: listing.id,
+            title: listing.title,
+            price: listing.price,
+            images: listing.images,
+            saleType: listing.saleType,
+            quantityAvailable: listing.quantityAvailable,
+            isActive: listing.isActive,
+            sellerId: listing.sellerId,
+            sellerName: listing.sellerName,
+          } : null
+        };
+      }));
+      res.json(enrichedItems);
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+      res.status(500).json({ error: "فشل في جلب سلة التسوق" });
+    }
+  });
+
+  app.post("/api/cart", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { listingId, quantity = 1 } = req.body;
+      if (!listingId) {
+        return res.status(400).json({ error: "معرف المنتج مطلوب" });
+      }
+
+      // Get listing to verify it exists and get price
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      if (!listing.isActive) {
+        return res.status(400).json({ error: "هذا المنتج غير متاح حالياً" });
+      }
+      
+      if (listing.saleType === "auction") {
+        return res.status(400).json({ error: "لا يمكن إضافة منتجات المزاد إلى السلة" });
+      }
+
+      const item = await storage.addToCart({
+        userId,
+        listingId,
+        quantity,
+        priceSnapshot: listing.price,
+      });
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      res.status(500).json({ error: "فشل في إضافة المنتج للسلة" });
+    }
+  });
+
+  app.patch("/api/cart/:id", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { id } = req.params;
+      const { quantity } = req.body;
+      
+      if (typeof quantity !== "number" || quantity < 0) {
+        return res.status(400).json({ error: "الكمية غير صالحة" });
+      }
+
+      const updated = await storage.updateCartItemQuantity(id, quantity);
+      if (!updated && quantity > 0) {
+        return res.status(404).json({ error: "العنصر غير موجود" });
+      }
+      
+      res.json(updated || { deleted: true });
+    } catch (error) {
+      console.error("Error updating cart item:", error);
+      res.status(500).json({ error: "فشل في تحديث السلة" });
+    }
+  });
+
+  app.delete("/api/cart/:id", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { id } = req.params;
+      const deleted = await storage.removeFromCart(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "العنصر غير موجود" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing from cart:", error);
+      res.status(500).json({ error: "فشل في حذف العنصر من السلة" });
+    }
+  });
+
+  app.delete("/api/cart", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      await storage.clearCart(userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error clearing cart:", error);
+      res.status(500).json({ error: "فشل في إفراغ السلة" });
+    }
+  });
+
   return httpServer;
 }
