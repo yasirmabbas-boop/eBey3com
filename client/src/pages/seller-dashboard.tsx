@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Lock } from "lucide-react";
-import type { Listing } from "@shared/schema";
+import type { Listing, Offer } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,6 +33,8 @@ import {
   Users,
   Star,
   MapPin,
+  HandCoins,
+  MessageSquare,
 } from "lucide-react";
 import {
   Select,
@@ -129,6 +131,16 @@ export default function SellerDashboard() {
     enabled: !!user?.id,
   });
 
+  const { data: receivedOffers = [], isLoading: offersLoading } = useQuery<(Offer & { listing?: Listing; buyerName?: string })[]>({
+    queryKey: ["/api/received-offers"],
+    queryFn: async () => {
+      const res = await fetch("/api/received-offers");
+      if (!res.ok) throw new Error("Failed to fetch offers");
+      return res.json();
+    },
+    enabled: !!user?.id && user?.accountType === "seller",
+  });
+
   const { data: sellerSummary } = useQuery<{
     totalListings: number;
     activeListings: number;
@@ -168,6 +180,30 @@ export default function SellerDashboard() {
     },
     onError: () => {
       toast({ title: "خطأ", description: "فشل في حذف المنتج", variant: "destructive" });
+    },
+  });
+
+  const offerResponseMutation = useMutation({
+    mutationFn: async ({ offerId, status, counterAmount }: { offerId: string; status: string; counterAmount?: number }) => {
+      const res = await fetch(`/api/offers/${offerId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, counterAmount }),
+      });
+      if (!res.ok) throw new Error("Failed to respond to offer");
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      const messages: Record<string, string> = {
+        accepted: "تم قبول العرض بنجاح",
+        rejected: "تم رفض العرض",
+        countered: "تم إرسال عرض مقابل",
+      };
+      toast({ title: "تم", description: messages[variables.status] || "تم تحديث العرض" });
+      queryClient.invalidateQueries({ queryKey: ["/api/received-offers"] });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في الرد على العرض", variant: "destructive" });
     },
   });
 
@@ -363,7 +399,7 @@ export default function SellerDashboard() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full max-w-xl">
+          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
             <TabsTrigger value="overview" className="gap-2">
               <BarChart3 className="h-4 w-4" />
               نظرة عامة
@@ -371,6 +407,15 @@ export default function SellerDashboard() {
             <TabsTrigger value="products" className="gap-2">
               <Package className="h-4 w-4" />
               المنتجات
+            </TabsTrigger>
+            <TabsTrigger value="offers" className="gap-2">
+              <HandCoins className="h-4 w-4" />
+              العروض
+              {receivedOffers.filter(o => o.status === "pending").length > 0 && (
+                <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 mr-1">
+                  {receivedOffers.filter(o => o.status === "pending").length}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="sales" className="gap-2">
               <ShoppingBag className="h-4 w-4" />
@@ -637,6 +682,137 @@ export default function SellerDashboard() {
                 </Card>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="offers" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HandCoins className="h-5 w-5 text-primary" />
+                  العروض المستلمة
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {offersLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : receivedOffers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <HandCoins className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">لا توجد عروض مستلمة حالياً</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {receivedOffers.map(offer => {
+                      const listing = listings.find(l => l.id === offer.listingId);
+                      return (
+                        <div key={offer.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                          <div className="flex items-start gap-4">
+                            {listing?.images?.[0] && (
+                              <img 
+                                src={listing.images[0]} 
+                                alt={listing?.title} 
+                                className="w-20 h-20 object-cover rounded"
+                              />
+                            )}
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between mb-2">
+                                <div>
+                                  <Link href={`/product/${offer.listingId}`}>
+                                    <h4 className="font-bold text-lg hover:text-primary cursor-pointer">
+                                      {listing?.title || "منتج"}
+                                    </h4>
+                                  </Link>
+                                  <p className="text-sm text-gray-500">
+                                    السعر الأصلي: {listing?.price?.toLocaleString()} د.ع
+                                  </p>
+                                </div>
+                                <Badge className={
+                                  offer.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                                  offer.status === "accepted" ? "bg-green-100 text-green-800" :
+                                  offer.status === "rejected" ? "bg-red-100 text-red-800" :
+                                  offer.status === "countered" ? "bg-blue-100 text-blue-800" :
+                                  "bg-gray-100 text-gray-800"
+                                }>
+                                  {offer.status === "pending" ? "بانتظار الرد" :
+                                   offer.status === "accepted" ? "مقبول" :
+                                   offer.status === "rejected" ? "مرفوض" :
+                                   offer.status === "countered" ? "عرض مقابل" :
+                                   offer.status === "expired" ? "منتهي" : offer.status}
+                                </Badge>
+                              </div>
+
+                              <div className="bg-primary/5 p-3 rounded-lg mb-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-gray-600">العرض المقدم:</span>
+                                  <span className="text-xl font-bold text-primary">
+                                    {offer.offerAmount.toLocaleString()} د.ع
+                                  </span>
+                                </div>
+                                {offer.message && (
+                                  <p className="text-sm text-gray-600 mt-2 flex items-start gap-1">
+                                    <MessageSquare className="h-4 w-4 mt-0.5 shrink-0" />
+                                    {offer.message}
+                                  </p>
+                                )}
+                                <p className="text-xs text-gray-400 mt-2">
+                                  {new Date(offer.createdAt).toLocaleDateString("ar-IQ", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit"
+                                  })}
+                                </p>
+                              </div>
+
+                              {offer.status === "pending" && (
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => offerResponseMutation.mutate({ 
+                                      offerId: offer.id, 
+                                      status: "accepted" 
+                                    })}
+                                    disabled={offerResponseMutation.isPending}
+                                    className="bg-green-600 hover:bg-green-700"
+                                    data-testid={`button-accept-offer-${offer.id}`}
+                                  >
+                                    <CheckCircle className="h-4 w-4 ml-1" />
+                                    قبول
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => offerResponseMutation.mutate({ 
+                                      offerId: offer.id, 
+                                      status: "rejected" 
+                                    })}
+                                    disabled={offerResponseMutation.isPending}
+                                    data-testid={`button-reject-offer-${offer.id}`}
+                                  >
+                                    رفض
+                                  </Button>
+                                </div>
+                              )}
+
+                              {offer.status === "countered" && offer.counterAmount && (
+                                <div className="bg-blue-50 p-2 rounded mt-2">
+                                  <p className="text-sm text-blue-800">
+                                    عرضك المقابل: {offer.counterAmount.toLocaleString()} د.ع
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="sales" className="space-y-4">
