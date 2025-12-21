@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, LogOut, Loader2, Phone, Plus, Store } from "lucide-react";
+import { ShoppingCart, User, Menu, LogOut, Loader2, Phone, Plus, Store, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { AccountDropdown } from "@/components/account-dropdown";
@@ -123,6 +123,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             )}
             <NotificationsButton />
+            {isAuthenticated && (
+              <Link href="/messages" className="flex items-center gap-1 cursor-pointer hover:text-blue-200 transition-colors" data-testid="link-messages">
+                <MessageSquare className="h-3 w-3" />
+              </Link>
+            )}
             <Link href="/cart" className="flex items-center gap-1 cursor-pointer hover:text-blue-200 transition-colors" data-testid="link-cart">
               <ShoppingCart className="h-3 w-3" />
               {totalItems > 0 && (
