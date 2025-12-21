@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, Sparkles, Loader2, Clock, Camera } from "lucide-react";
+import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, Sparkles, Loader2, Clock, Camera, ShoppingBag } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 import type { Listing } from "@shared/schema";
@@ -53,16 +53,6 @@ const ADS = [
     buttonText: "اكتشف الجديد",
     link: "/search",
     color: "bg-purple-800"
-  },
-  {
-    id: 4,
-    title: "مزادات حية 🔴",
-    description: "قريباً - شارك في مزادات مباشرة وتنافس للفوز بأفضل الصفقات",
-    image: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=1200&h=300&fit=crop",
-    badgeText: "قريباً",
-    buttonText: "سجّل للإشعار",
-    link: "/live-auction",
-    color: "bg-amber-800"
   },
 ];
 
@@ -457,7 +447,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* Join Auction CTA */}
+      {/* Browse Products CTA */}
       <section className="relative py-16 w-full overflow-hidden bg-primary">
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-20"
@@ -468,15 +458,15 @@ export default function Home() {
             سوق العراق الأول
           </Badge>
           <h2 className="text-2xl md:text-4xl font-bold mb-4 leading-tight">
-            مزادات <span className="text-accent">النوادر والمميز</span>
+            اكتشف <span className="text-accent">آلاف المنتجات المميزة</span>
           </h2>
           <p className="text-lg opacity-90 mb-6 max-w-xl mx-auto">
-            سجل الآن وابدأ المزايدة على آلاف المنتجات المميزة
+            سجل الآن وابدأ التسوق من أفضل البائعين في العراق
           </p>
-          <Link href="/live-auction">
+          <Link href="/search">
             <Button size="lg" className="bg-accent text-white hover:bg-accent/90 font-bold px-8 h-12 text-lg flex items-center gap-2 mx-auto">
-              <Gavel className="h-5 w-5" />
-              شارك في المزاد
+              <ShoppingBag className="h-5 w-5" />
+              تصفح المنتجات
             </Button>
           </Link>
         </div>

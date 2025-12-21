@@ -85,9 +85,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-4">
             <Link href="/" className="hover:text-blue-200 transition-colors font-medium">الرئيسية</Link>
-            <Link href="/live-auction" className="hover:text-blue-200 transition-colors font-medium flex items-center gap-1">
-              🔴 مزاد حي
-            </Link>
             <Link href="/search?category=ساعات" className="hover:text-blue-200 transition-colors">ساعات</Link>
             <Link href="/search?category=إلكترونيات" className="hover:text-blue-200 transition-colors">إلكترونيات</Link>
             <Link href="/search?category=ملابس" className="hover:text-blue-200 transition-colors">ملابس</Link>
@@ -147,7 +144,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <SheetContent side="right">
               <nav className="flex flex-col gap-4 mt-8">
                 <Link href="/" className="text-lg font-semibold">الرئيسية</Link>
-                <Link href="/live-auction" className="text-lg text-red-600 font-bold">🔴 مزاد حي</Link>
                 <Link href="/search" className="text-lg">البحث</Link>
                 {isAuthenticated && user?.accountType === "seller" && (
                   <>

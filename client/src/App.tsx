@@ -18,7 +18,6 @@ import ContactUs from "@/pages/contact";
 import SecurityGuide from "@/pages/security-guide";
 import Security from "@/pages/security";
 import Settings from "@/pages/settings";
-import LiveAuction from "@/pages/live-auction";
 import MyPurchases from "@/pages/my-purchases";
 import MySales from "@/pages/my-sales";
 import SellerDashboard from "@/pages/seller-dashboard";
@@ -47,7 +46,6 @@ function Router() {
       <Route path="/search" component={SearchPage} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
-      <Route path="/live-auction" component={LiveAuction} />
       <Route path="/my-purchases" component={MyPurchases} />
       <Route path="/my-sales" component={MySales} />
       <Route path="/seller-dashboard" component={SellerDashboard} />

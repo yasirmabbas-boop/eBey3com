@@ -251,12 +251,6 @@ export default function BuyerDashboard() {
               <span>تصفح المنتجات</span>
             </Button>
           </Link>
-          <Link href="/live-auction">
-            <Button variant="outline" className="w-full h-20 flex flex-col gap-2" data-testid="button-auctions">
-              <Clock className="h-6 w-6" />
-              <span>المزادات الحية</span>
-            </Button>
-          </Link>
           <Link href="/settings">
             <Button variant="outline" className="w-full h-20 flex flex-col gap-2" data-testid="button-settings">
               <Star className="h-6 w-6" />
