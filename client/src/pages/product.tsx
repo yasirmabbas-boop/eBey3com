@@ -330,42 +330,59 @@ export default function ProductPage() {
                 </div>
                 
                 {/* Stock availability */}
-                <div className="text-sm mb-3">
-                  {product.quantityAvailable > 10 ? (
-                    <span className="text-green-600 font-medium">✓ في المخزون</span>
-                  ) : product.quantityAvailable > 0 ? (
-                    <span className="text-amber-600 font-medium">متبقي {product.quantityAvailable} قطعة فقط</span>
-                  ) : (
-                    <span className="text-red-600 font-medium">غير متوفر حالياً</span>
-                  )}
-                </div>
-                
-                <Button 
-                  size="lg" 
-                  className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold mt-4"
-                  onClick={handleBuyNowDirect}
-                  disabled={product.quantityAvailable === 0}
-                  data-testid="button-buy-now-fixed"
-                >
-                  شراء الآن
-                </Button>
-                
-                {/* Make an Offer button for negotiable items */}
-                {product.isNegotiable && (
-                  <Button 
-                    variant="outline"
-                    size="lg" 
-                    className="w-full text-lg h-12 mt-3 border-primary text-primary hover:bg-primary/10"
-                    onClick={() => {
-                      if (!requireAuth("offer")) return;
-                      setOfferAmount(Math.floor(product.price * 0.9).toString());
-                      setOfferDialogOpen(true);
-                    }}
-                    data-testid="button-make-offer"
-                  >
-                    قدّم عرضك
-                  </Button>
-                )}
+                {(() => {
+                  const remainingQuantity = product.quantityAvailable - product.quantitySold;
+                  const isSoldOut = remainingQuantity <= 0;
+                  
+                  return (
+                    <>
+                      <div className="text-sm mb-3">
+                        {isSoldOut ? (
+                          <span className="text-red-600 font-bold text-base">🚫 نفد - تم البيع</span>
+                        ) : remainingQuantity > 10 ? (
+                          <span className="text-green-600 font-medium">✓ في المخزون</span>
+                        ) : (
+                          <span className="text-amber-600 font-medium">متبقي {remainingQuantity} قطعة فقط</span>
+                        )}
+                      </div>
+                      
+                      {isSoldOut ? (
+                        <div className="bg-red-100 border-2 border-red-300 p-4 rounded-xl text-center mt-4">
+                          <p className="text-red-700 font-bold text-lg">هذا المنتج غير متوفر حالياً</p>
+                          <p className="text-red-600 text-sm mt-1">تم بيع جميع الكميات المتاحة</p>
+                        </div>
+                      ) : (
+                        <>
+                          <Button 
+                            size="lg" 
+                            className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold mt-4"
+                            onClick={handleBuyNowDirect}
+                            data-testid="button-buy-now-fixed"
+                          >
+                            شراء الآن
+                          </Button>
+                          
+                          {/* Make an Offer button for negotiable items */}
+                          {product.isNegotiable && (
+                            <Button 
+                              variant="outline"
+                              size="lg" 
+                              className="w-full text-lg h-12 mt-3 border-primary text-primary hover:bg-primary/10"
+                              onClick={() => {
+                                if (!requireAuth("offer")) return;
+                                setOfferAmount(Math.floor(product.price * 0.9).toString());
+                                setOfferDialogOpen(true);
+                              }}
+                              data-testid="button-make-offer"
+                            >
+                              قدّم عرضك
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -378,27 +395,29 @@ export default function ProductPage() {
               </p>
             </div>
 
-            {/* Buy Now Option - Optional for Sellers */}
-            <div className="bg-green-50 border-2 border-green-200 p-6 rounded-xl mb-6">
-              <div className="flex items-end gap-2 mb-2">
-                <span className="text-sm text-green-700 font-semibold mb-1">🛒 شراء فوري (اختياري):</span>
-                <span className="text-3xl font-bold text-green-600">
-                  450,000 <span className="text-lg">د.ع</span>
-                </span>
+            {/* Buy Now Option - Only show if product is available */}
+            {product && (product.quantityAvailable - product.quantitySold) > 0 && (
+              <div className="bg-green-50 border-2 border-green-200 p-6 rounded-xl mb-6">
+                <div className="flex items-end gap-2 mb-2">
+                  <span className="text-sm text-green-700 font-semibold mb-1">🛒 شراء فوري (اختياري):</span>
+                  <span className="text-3xl font-bold text-green-600">
+                    450,000 <span className="text-lg">د.ع</span>
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 mb-3">شراء مباشر بدون انتظار نتيجة المزاد</p>
+                <Button 
+                  size="lg" 
+                  className="w-full text-lg h-12 bg-green-600 hover:bg-green-700 text-white font-bold"
+                  onClick={handleBuyNowDirect}
+                  data-testid="button-buy-now-direct"
+                >
+                  🛒 اشتر الآن مباشرة
+                </Button>
               </div>
-              <p className="text-xs text-gray-600 mb-3">شراء مباشر بدون انتظار نتيجة المزاد</p>
-              <Button 
-                size="lg" 
-                className="w-full text-lg h-12 bg-green-600 hover:bg-green-700 text-white font-bold"
-                onClick={handleBuyNowDirect}
-                data-testid="button-buy-now-direct"
-              >
-                🛒 اشتر الآن مباشرة
-              </Button>
-            </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3 mb-6">
-              {listing?.saleType !== "auction" && (
+              {listing?.saleType !== "auction" && product && (product.quantityAvailable - product.quantitySold) > 0 && (
                 <Button 
                   variant="outline" 
                   size="lg" 

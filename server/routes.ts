@@ -8,6 +8,7 @@ import { broadcastBidUpdate } from "./websocket";
 
 const updateListingSchema = insertListingSchema.extend({
   auctionEndTime: z.union([z.string(), z.date(), z.null()]).optional(),
+  isActive: z.boolean().optional(),
 }).partial().refine(
   (data) => Object.keys(data).length > 0,
   { message: "At least one field must be provided for update" }
@@ -413,7 +414,29 @@ export async function registerRoutes(
   app.post("/api/transactions", async (req, res) => {
     try {
       const validatedData = insertTransactionSchema.parse(req.body);
+      
+      // Check if listing is still available
+      const listing = await storage.getListing(validatedData.listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      const availableQuantity = (listing.quantityAvailable || 1) - (listing.quantitySold || 0);
+      
+      if (availableQuantity <= 0) {
+        return res.status(400).json({ error: "المنتج نفد - غير متوفر للشراء" });
+      }
+      
       const transaction = await storage.createTransaction(validatedData);
+      
+      // Update listing quantitySold
+      const newQuantitySold = (listing.quantitySold || 0) + 1;
+      await storage.updateListing(validatedData.listingId, {
+        quantitySold: newQuantitySold,
+        // Mark as inactive if sold out
+        isActive: newQuantitySold < (listing.quantityAvailable || 1)
+      });
+      
       res.status(201).json(transaction);
     } catch (error) {
       console.error("Error creating transaction:", error);
@@ -1292,10 +1315,13 @@ export async function registerRoutes(
           deliveryStatus: "pending",
         });
         
-        // Update listing quantitySold
+        // Update listing quantitySold and mark as inactive if sold out
         if (listing) {
+          const newQuantitySold = (listing.quantitySold || 0) + 1;
+          const isSoldOut = newQuantitySold >= (listing.quantityAvailable || 1);
           await storage.updateListing(offer.listingId, {
-            quantitySold: (listing.quantitySold || 0) + 1,
+            quantitySold: newQuantitySold,
+            isActive: !isSoldOut,
           });
         }
         

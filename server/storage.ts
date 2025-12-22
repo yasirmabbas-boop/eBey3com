@@ -29,7 +29,7 @@ export interface IStorage {
   getListingsBySeller(sellerId: string): Promise<Listing[]>;
   getListing(id: string): Promise<Listing | undefined>;
   createListing(listing: InsertListing): Promise<Listing>;
-  updateListing(id: string, listing: Partial<InsertListing> & { auctionEndTime?: Date | string | null }): Promise<Listing | undefined>;
+  updateListing(id: string, listing: Partial<InsertListing> & { auctionEndTime?: Date | string | null; isActive?: boolean }): Promise<Listing | undefined>;
   deleteListing(id: string): Promise<boolean>;
   
   getBidsForListing(listingId: string): Promise<Bid[]>;
@@ -183,7 +183,7 @@ export class DatabaseStorage implements IStorage {
     return listing;
   }
 
-  async updateListing(id: string, updates: Partial<InsertListing> & { auctionEndTime?: Date | string | null }): Promise<Listing | undefined> {
+  async updateListing(id: string, updates: Partial<InsertListing> & { auctionEndTime?: Date | string | null; isActive?: boolean }): Promise<Listing | undefined> {
     const dbUpdates: Record<string, unknown> = { ...updates };
     if (updates.auctionEndTime !== undefined) {
       dbUpdates.auctionEndTime = updates.auctionEndTime instanceof Date 
