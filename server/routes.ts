@@ -355,6 +355,30 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/seller-messages", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+    try {
+      const msgs = await storage.getMessagesForSeller(userId);
+      const messagesWithDetails = await Promise.all(msgs.map(async (msg) => {
+        const sender = await storage.getUser(msg.senderId);
+        const listing = msg.listingId ? await storage.getListing(msg.listingId) : null;
+        return {
+          ...msg,
+          senderName: sender?.displayName || sender?.username || "مستخدم",
+          listingTitle: listing?.title || null,
+          listingImage: listing?.images?.[0] || null,
+        };
+      }));
+      res.json(messagesWithDetails);
+    } catch (error) {
+      console.error("Error fetching seller messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
   app.get("/api/reviews/seller/:sellerId", async (req, res) => {
     try {
       const reviews = await storage.getReviewsForSeller(req.params.sellerId);
@@ -800,7 +824,7 @@ export async function registerRoutes(
       const enrichedPurchases = await Promise.all(
         buyerPurchases.map(async (purchase) => {
           const listing = await storage.getListing(purchase.listingId);
-          const seller = listing ? await storage.getUser(listing.sellerId) : null;
+          const seller = listing?.sellerId ? await storage.getUser(listing.sellerId) : null;
           return {
             ...purchase,
             listing: listing ? {

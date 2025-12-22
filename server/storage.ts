@@ -284,6 +284,12 @@ export class DatabaseStorage implements IStorage {
     return !!msg;
   }
 
+  async getMessagesForSeller(sellerId: string): Promise<Message[]> {
+    return db.select().from(messages)
+      .where(eq(messages.receiverId, sellerId))
+      .orderBy(desc(messages.createdAt));
+  }
+
   async getReviewsForSeller(sellerId: string): Promise<Review[]> {
     return db.select().from(reviews).where(eq(reviews.sellerId, sellerId)).orderBy(desc(reviews.createdAt));
   }

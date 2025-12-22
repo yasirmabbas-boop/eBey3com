@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Lock } from "lucide-react";
-import type { Listing, Offer } from "@shared/schema";
+import type { Listing, Offer, Message } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -94,6 +94,12 @@ interface SellerOrder {
   };
 }
 
+interface SellerMessage extends Message {
+  senderName: string;
+  listingTitle: string | null;
+  listingImage: string | null;
+}
+
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "active":
@@ -174,6 +180,16 @@ export default function SellerDashboard() {
     queryFn: async () => {
       const res = await fetch("/api/account/seller-orders");
       if (!res.ok) throw new Error("Failed to fetch orders");
+      return res.json();
+    },
+    enabled: !!user?.id && user?.accountType === "seller",
+  });
+
+  const { data: sellerMessages = [], isLoading: messagesLoading } = useQuery<SellerMessage[]>({
+    queryKey: ["/api/seller-messages"],
+    queryFn: async () => {
+      const res = await fetch("/api/seller-messages");
+      if (!res.ok) throw new Error("Failed to fetch messages");
       return res.json();
     },
     enabled: !!user?.id && user?.accountType === "seller",
@@ -434,7 +450,7 @@ export default function SellerDashboard() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-6 w-full max-w-3xl">
             <TabsTrigger value="overview" className="gap-2">
               <BarChart3 className="h-4 w-4" />
               نظرة عامة
@@ -442,6 +458,15 @@ export default function SellerDashboard() {
             <TabsTrigger value="products" className="gap-2">
               <Package className="h-4 w-4" />
               المنتجات
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="gap-2">
+              <MessageSquare className="h-4 w-4" />
+              الرسائل
+              {sellerMessages.filter(m => !m.isRead).length > 0 && (
+                <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 mr-1">
+                  {sellerMessages.filter(m => !m.isRead).length}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="offers" className="gap-2">
               <HandCoins className="h-4 w-4" />
@@ -725,6 +750,111 @@ export default function SellerDashboard() {
                 </Card>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="messages" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  رسائل العملاء
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {messagesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : sellerMessages.length === 0 ? (
+                  <div className="text-center py-8">
+                    <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">لا توجد رسائل من العملاء حالياً</p>
+                    <p className="text-sm text-gray-400 mt-2">عندما يرسل العملاء استفسارات عن منتجاتك، ستظهر هنا</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {sellerMessages.map(message => (
+                      <div 
+                        key={message.id} 
+                        className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors ${!message.isRead ? 'bg-blue-50 border-blue-200' : ''}`}
+                        data-testid={`message-${message.id}`}
+                      >
+                        <div className="flex items-start gap-4">
+                          {message.listingImage && (
+                            <Link href={`/product/${message.listingId}`}>
+                              <img 
+                                src={message.listingImage} 
+                                alt={message.listingTitle || ""} 
+                                className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80"
+                              />
+                            </Link>
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <Users className="h-4 w-4 text-gray-500" />
+                                  <span className="font-semibold">{message.senderName}</span>
+                                  {!message.isRead && (
+                                    <Badge className="bg-blue-500 text-white text-xs">جديد</Badge>
+                                  )}
+                                </div>
+                                {message.listingTitle && (
+                                  <Link href={`/product/${message.listingId}`}>
+                                    <p className="text-sm text-primary hover:underline cursor-pointer">
+                                      بخصوص: {message.listingTitle}
+                                    </p>
+                                  </Link>
+                                )}
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                {new Date(message.createdAt).toLocaleDateString("ar-IQ", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit"
+                                })}
+                              </span>
+                            </div>
+                            <div className="bg-gray-100 p-3 rounded-lg">
+                              <p className="text-gray-800">{message.content}</p>
+                            </div>
+                            <div className="flex gap-2 mt-3">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => navigate(`/messages/${message.senderId}`)}
+                                className="gap-1"
+                                data-testid={`button-reply-${message.id}`}
+                              >
+                                <MessageSquare className="h-4 w-4" />
+                                رد على الرسالة
+                              </Button>
+                              {!message.isRead && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={async () => {
+                                    await fetch(`/api/messages/${message.id}/read`, { method: "PATCH" });
+                                    queryClient.invalidateQueries({ queryKey: ["/api/seller-messages"] });
+                                  }}
+                                  className="gap-1"
+                                  data-testid={`button-mark-read-${message.id}`}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                  تحديد كمقروء
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="offers" className="space-y-4">
