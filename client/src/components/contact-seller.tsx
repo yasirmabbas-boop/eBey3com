@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { MessageSquare, Send, AlertTriangle, Shield } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { MessageSquare, Send, AlertTriangle, Shield, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -66,17 +67,29 @@ function filterMessage(message: string): { filtered: string; hasBlocked: boolean
 
 interface ContactSellerProps {
   sellerName: string;
+  sellerId: string;
+  listingId: string;
   productTitle: string;
   productCode: string;
 }
 
-export function ContactSeller({ sellerName, productTitle, productCode }: ContactSellerProps) {
+export function ContactSeller({ sellerName, sellerId, listingId, productTitle, productCode }: ContactSellerProps) {
   const [message, setMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
 
   const handleSend = async () => {
+    if (!isAuthenticated || !user) {
+      toast({
+        title: "تسجيل الدخول مطلوب",
+        description: "يجب تسجيل الدخول لإرسال رسالة",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!message.trim()) {
       toast({
         title: "الرسالة فارغة",
@@ -98,16 +111,39 @@ export function ContactSeller({ sellerName, productTitle, productCode }: Contact
 
     setIsSending(true);
     
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          senderId: user.id,
+          receiverId: sellerId,
+          listingId: listingId,
+          content: filtered,
+        }),
+      });
 
-    toast({
-      title: "تم إرسال الرسالة",
-      description: `تم إرسال رسالتك إلى ${sellerName} بنجاح`,
-    });
+      if (!res.ok) {
+        throw new Error("Failed to send message");
+      }
 
-    setMessage("");
-    setIsSending(false);
-    setIsOpen(false);
+      toast({
+        title: "تم إرسال الرسالة",
+        description: `تم إرسال رسالتك إلى ${sellerName} بنجاح`,
+      });
+
+      setMessage("");
+      setIsOpen(false);
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "فشل في إرسال الرسالة. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const predefinedMessages = [

@@ -417,6 +417,8 @@ export default function ProductPage() {
               )}
               <ContactSeller 
                 sellerName={product.seller.name}
+                sellerId={listing?.sellerId || ""}
+                listingId={listing?.id || ""}
                 productTitle={product.title}
                 productCode={product.productCode}
               />
