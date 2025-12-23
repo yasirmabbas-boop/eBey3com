@@ -1009,6 +1009,7 @@ export async function registerRoutes(
               title: listing.title,
               price: listing.price,
               images: listing.images,
+              sellerId: listing.sellerId,
               sellerName: seller?.displayName || "بائع",
               city: listing.city || "العراق",
             } : undefined,

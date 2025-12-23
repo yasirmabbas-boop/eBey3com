@@ -12,10 +12,15 @@ import {
   Truck,
   CheckCircle,
   Clock,
-  AlertCircle,
   Loader2,
   ShoppingBag,
   Lock,
+  MapPin,
+  Phone,
+  CreditCard,
+  MessageCircle,
+  ExternalLink,
+  ChevronLeft,
 } from "lucide-react";
 
 interface Purchase {
@@ -23,67 +28,140 @@ interface Purchase {
   listingId: string;
   amount: number;
   status: string;
+  deliveryStatus?: string;
+  deliveryAddress?: string;
+  deliveryPhone?: string;
+  deliveryCity?: string;
+  paymentMethod?: string;
+  trackingNumber?: string;
+  shippedAt?: string;
+  trackingAvailableAt?: string;
   createdAt: string;
   completedAt?: string;
-  deliveryAddress?: string;
   listing?: {
     id: string;
     title: string;
     price: number;
     images: string[];
     sellerName: string;
+    sellerId: string;
     city: string;
   };
 }
+
+type DeliveryStep = "paid" | "tracking" | "delivered";
+
+const getDeliverySteps = (purchase: Purchase): { step: DeliveryStep; completed: boolean; date?: string }[] => {
+  const status = purchase.deliveryStatus || purchase.status;
+  
+  return [
+    {
+      step: "paid" as DeliveryStep,
+      completed: true,
+      date: purchase.createdAt,
+    },
+    {
+      step: "tracking" as DeliveryStep,
+      completed: !!purchase.trackingNumber || status === "in_transit" || status === "delivered" || status === "completed",
+      date: purchase.trackingAvailableAt || purchase.shippedAt,
+    },
+    {
+      step: "delivered" as DeliveryStep,
+      completed: status === "delivered" || status === "completed",
+      date: purchase.completedAt,
+    },
+  ];
+};
+
+const getStepLabel = (step: DeliveryStep): string => {
+  switch (step) {
+    case "paid": return "تم الدفع";
+    case "tracking": return "رقم التتبع متاح";
+    case "delivered": return "تم التسليم";
+  }
+};
 
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "delivered":
     case "completed":
       return (
-        <Badge className="bg-green-100 text-green-800 border-0">
-          <CheckCircle className="h-3 w-3 ml-1" />
+        <Badge className="bg-green-500 text-white border-0 text-sm px-3 py-1">
           تم التسليم
         </Badge>
       );
     case "in_transit":
       return (
-        <Badge className="bg-blue-100 text-blue-800 border-0">
-          <Truck className="h-3 w-3 ml-1" />
+        <Badge className="bg-blue-500 text-white border-0 text-sm px-3 py-1">
           قيد التوصيل
         </Badge>
       );
     case "processing":
     case "pending":
       return (
-        <Badge className="bg-yellow-100 text-yellow-800 border-0">
-          <Clock className="h-3 w-3 ml-1" />
+        <Badge className="bg-yellow-500 text-white border-0 text-sm px-3 py-1">
           قيد التجهيز
         </Badge>
       );
     default:
       return (
-        <Badge className="bg-gray-100 text-gray-800 border-0">
+        <Badge className="bg-gray-500 text-white border-0 text-sm px-3 py-1">
           {status}
         </Badge>
       );
   }
 };
 
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case "delivered":
-    case "completed":
-      return <CheckCircle className="h-5 w-5 text-green-600" />;
-    case "in_transit":
-      return <Truck className="h-5 w-5 text-blue-600" />;
-    case "processing":
-    case "pending":
-      return <Clock className="h-5 w-5 text-yellow-600" />;
-    default:
-      return <AlertCircle className="h-5 w-5 text-gray-600" />;
-  }
-};
+function DeliveryTimeline({ purchase }: { purchase: Purchase }) {
+  const steps = getDeliverySteps(purchase);
+  
+  return (
+    <div className="py-6">
+      <div className="flex items-center justify-between relative">
+        {steps.map((stepInfo, index) => (
+          <div key={stepInfo.step} className="flex flex-col items-center flex-1 relative z-10">
+            <div 
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                stepInfo.completed 
+                  ? "bg-green-500 text-white" 
+                  : "bg-gray-200 text-gray-400"
+              }`}
+            >
+              {stepInfo.completed ? (
+                <CheckCircle className="h-5 w-5" />
+              ) : (
+                <div className="w-3 h-3 rounded-full bg-current" />
+              )}
+            </div>
+            <p className={`text-xs mt-2 font-medium text-center ${
+              stepInfo.completed ? "text-green-600" : "text-gray-400"
+            }`}>
+              {getStepLabel(stepInfo.step)}
+            </p>
+            {stepInfo.date && (
+              <p className="text-[10px] text-gray-500 mt-0.5">
+                {new Date(stepInfo.date).toLocaleDateString("ar-IQ", { 
+                  month: "short", 
+                  day: "numeric" 
+                })}
+              </p>
+            )}
+          </div>
+        ))}
+        
+        {/* Progress lines */}
+        <div className="absolute top-4 right-[16.66%] left-[16.66%] h-0.5 bg-gray-200 -z-0">
+          <div 
+            className="h-full bg-green-500 transition-all"
+            style={{ 
+              width: steps[2].completed ? "100%" : steps[1].completed ? "50%" : "0%" 
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function MyPurchases() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
@@ -148,13 +226,14 @@ export default function MyPurchases() {
   }
 
   const currentOrder = selectedOrder || purchases[0];
+  const deliveryStatus = currentOrder?.deliveryStatus || currentOrder?.status;
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-primary mb-2">مشترياتي</h1>
-          <p className="text-gray-600">تتبع طلباتك وتسليماتك</p>
+          <p className="text-gray-600">تتبع طلباتك وتسليماتك في مكان واحد</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -192,7 +271,7 @@ export default function MyPurchases() {
                       {purchase.amount?.toLocaleString() || 0} د.ع
                     </p>
                     <div className="mt-2">
-                      {getStatusBadge(purchase.status)}
+                      {getStatusBadge(purchase.deliveryStatus || purchase.status)}
                     </div>
                   </div>
                 </div>
@@ -200,87 +279,199 @@ export default function MyPurchases() {
             ))}
           </div>
 
-          {/* Order Details */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Order Details - eBay Style */}
+          <div className="lg:col-span-2 space-y-4">
             {currentOrder && (
               <>
-                {/* Order Header */}
-                <Card className="p-6 border-2 border-primary">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">
-                        {currentOrder.listing?.title || "منتج"}
-                      </h2>
-                      <p className="text-gray-600 mt-1">
-                        رقم الطلب: {currentOrder.id.slice(0, 8).toUpperCase()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(currentOrder.status)}
-                      {getStatusBadge(currentOrder.status)}
-                    </div>
-                  </div>
-
-                  <Separator className="my-4" />
-
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-600 mb-1">السعر</p>
-                      <p className="font-bold text-lg">
-                        {currentOrder.amount?.toLocaleString() || 0}
-                        <span className="text-sm mr-1">د.ع</span>
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600 mb-1">تاريخ الطلب</p>
-                      <p className="font-semibold text-sm">
-                        {new Date(currentOrder.createdAt).toLocaleDateString("ar-IQ")}
-                      </p>
-                    </div>
-                    {currentOrder.listing?.city && (
-                      <div>
-                        <p className="text-xs text-gray-600 mb-1">الموقع</p>
-                        <p className="font-semibold text-sm">
-                          {currentOrder.listing.city}
-                        </p>
+                {/* Order Header with Status */}
+                <Card className="p-6 bg-gray-900 text-white">
+                  <div className="flex items-start gap-4">
+                    {currentOrder.listing?.images?.[0] ? (
+                      <img
+                        src={currentOrder.listing.images[0]}
+                        alt={currentOrder.listing?.title || "منتج"}
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 bg-gray-700 rounded-lg flex items-center justify-center">
+                        <Package className="h-8 w-8 text-gray-500" />
                       </div>
                     )}
+                    <div className="flex-1">
+                      <div className="mb-2">
+                        {getStatusBadge(deliveryStatus)}
+                      </div>
+                      <p className="text-sm text-gray-300">
+                        {deliveryStatus === "delivered" || deliveryStatus === "completed" 
+                          ? `تم التسليم في ${currentOrder.completedAt ? new Date(currentOrder.completedAt).toLocaleDateString("ar-IQ", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : ""}`
+                          : deliveryStatus === "in_transit"
+                          ? "الطلب في الطريق إليك"
+                          : "جاري تجهيز طلبك"}
+                      </p>
+                      <h2 className="text-lg font-bold mt-2">
+                        {currentOrder.listing?.title || "منتج"}
+                      </h2>
+                      {currentOrder.trackingNumber && (
+                        <p className="text-sm text-gray-400 flex items-center gap-1 mt-1">
+                          رقم التتبع: {currentOrder.trackingNumber}
+                          <ExternalLink className="h-3 w-3" />
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </Card>
 
-                {/* Seller Info */}
-                {currentOrder.listing?.sellerName && (
-                  <Card className="p-6 bg-blue-50 border-blue-200">
-                    <h3 className="font-bold text-lg mb-4">معلومات البائع</h3>
-                    <div>
-                      <p className="text-xs text-gray-600">اسم البائع</p>
-                      <p className="font-semibold text-lg">{currentOrder.listing.sellerName}</p>
+                {/* Track Package Button */}
+                {currentOrder.trackingNumber && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full py-6 text-lg border-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+                    data-testid="button-track-package"
+                  >
+                    <Truck className="h-5 w-5 ml-2" />
+                    تتبع الشحنة
+                  </Button>
+                )}
+
+                {/* Delivery Timeline */}
+                <Card className="p-6">
+                  <h3 className="font-bold text-lg mb-2">معلومات التوصيل</h3>
+                  {(deliveryStatus === "delivered" || deliveryStatus === "completed") && currentOrder.completedAt && (
+                    <p className="text-green-600 font-medium mb-2">
+                      تم التسليم في {new Date(currentOrder.completedAt).toLocaleDateString("ar-IQ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                    </p>
+                  )}
+                  <DeliveryTimeline purchase={currentOrder} />
+                </Card>
+
+                {/* Order Details Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Shipping Address */}
+                  <Card className="p-5">
+                    <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-primary" />
+                      عنوان الشحن
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      {currentOrder.deliveryAddress ? (
+                        <>
+                          <p className="font-medium">{currentOrder.deliveryAddress}</p>
+                          {currentOrder.deliveryCity && (
+                            <p className="text-gray-600">{currentOrder.deliveryCity}</p>
+                          )}
+                          {currentOrder.deliveryPhone && (
+                            <p className="text-gray-600 flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {currentOrder.deliveryPhone}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-gray-500">لم يتم تحديد عنوان</p>
+                      )}
+                    </div>
+                  </Card>
+
+                  {/* Payment Info */}
+                  <Card className="p-5">
+                    <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+                      <CreditCard className="h-5 w-5 text-primary" />
+                      معلومات الدفع
+                    </h3>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">طريقة الدفع</span>
+                        <span className="font-medium">
+                          {currentOrder.paymentMethod === "card" ? "بطاقة ائتمان" : "الدفع عند الاستلام"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">تاريخ الطلب</span>
+                        <span className="font-medium">
+                          {new Date(currentOrder.createdAt).toLocaleDateString("ar-IQ")}
+                        </span>
+                      </div>
+                      <Separator />
+                      <div className="flex justify-between text-base">
+                        <span className="font-bold">المجموع</span>
+                        <span className="font-bold text-primary">
+                          {currentOrder.amount?.toLocaleString() || 0} د.ع
+                        </span>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Item Info */}
+                <Card className="p-5">
+                  <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" />
+                    معلومات المنتج
+                  </h3>
+                  <div className="flex gap-4">
+                    {currentOrder.listing?.images?.[0] ? (
+                      <img
+                        src={currentOrder.listing.images[0]}
+                        alt={currentOrder.listing?.title || "منتج"}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                        <Package className="h-6 w-6 text-gray-400" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <Link href={`/product/${currentOrder.listingId}`}>
+                        <h4 className="font-semibold hover:text-primary transition-colors">
+                          {currentOrder.listing?.title || "منتج"}
+                        </h4>
+                      </Link>
+                      <p className="text-lg font-bold text-primary mt-1">
+                        {currentOrder.amount?.toLocaleString() || 0} د.ع
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        لا يمكن إرجاع المنتج
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Tracking Details */}
+                {currentOrder.trackingNumber && (
+                  <Card className="p-5">
+                    <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+                      <Truck className="h-5 w-5 text-primary" />
+                      تفاصيل التتبع
+                    </h3>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">رقم التتبع</p>
+                        <p className="font-mono font-medium text-lg">{currentOrder.trackingNumber}</p>
+                      </div>
+                      <Button variant="outline" size="sm" className="gap-1">
+                        <ExternalLink className="h-4 w-4" />
+                        تتبع
+                      </Button>
                     </div>
                   </Card>
                 )}
 
-                {/* Order Status */}
-                <Card className="p-6">
-                  <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
-                    <Package className="h-5 w-5 text-primary" />
-                    حالة الطلب
-                  </h3>
-                  <div className="flex items-center gap-4">
-                    {getStatusIcon(currentOrder.status)}
-                    <div>
-                      <p className="font-bold">
-                        {currentOrder.status === "completed" || currentOrder.status === "delivered" 
-                          ? "تم التسليم بنجاح" 
-                          : currentOrder.status === "in_transit" 
-                          ? "الطلب في الطريق إليك" 
-                          : "الطلب قيد التجهيز"}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {currentOrder.completedAt 
-                          ? `تم التسليم في ${new Date(currentOrder.completedAt).toLocaleDateString("ar-IQ")}`
-                          : "سيتم إعلامك عند تحديث الحالة"}
-                      </p>
-                    </div>
+                {/* Actions */}
+                <Card className="p-5">
+                  <h3 className="font-bold text-base mb-4">إجراءات أخرى</h3>
+                  <div className="space-y-3">
+                    {currentOrder.listing?.sellerId && (
+                      <Link href={`/messages?to=${currentOrder.listing.sellerId}`}>
+                        <Button variant="ghost" className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                          <MessageCircle className="h-4 w-4 ml-2" />
+                          تواصل مع البائع
+                        </Button>
+                      </Link>
+                    )}
+                    <Button variant="ghost" className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                      <ChevronLeft className="h-4 w-4 ml-2" />
+                      الإبلاغ عن مشكلة
+                    </Button>
                   </div>
                 </Card>
               </>

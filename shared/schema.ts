@@ -151,7 +151,12 @@ export const transactions = pgTable("transactions", {
   status: text("status").notNull().default("pending"),
   paymentMethod: text("payment_method").default("cash"),
   deliveryAddress: text("delivery_address"),
+  deliveryPhone: text("delivery_phone"),
+  deliveryCity: text("delivery_city"),
   deliveryStatus: text("delivery_status").default("pending"),
+  trackingNumber: text("tracking_number"),
+  shippedAt: timestamp("shipped_at"),
+  trackingAvailableAt: timestamp("tracking_available_at"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   completedAt: timestamp("completed_at"),
 });
