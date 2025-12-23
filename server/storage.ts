@@ -315,8 +315,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPurchasesForBuyer(buyerId: string): Promise<Transaction[]> {
+    // Only return purchases where the buyer is NOT also the seller (exclude self-purchases)
     return db.select().from(transactions)
-      .where(eq(transactions.buyerId, buyerId))
+      .where(sql`${transactions.buyerId} = ${buyerId} AND ${transactions.sellerId} != ${buyerId}`)
       .orderBy(desc(transactions.createdAt));
   }
 
