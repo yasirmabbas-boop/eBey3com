@@ -709,17 +709,19 @@ export default function SellerDashboard() {
                               طباعة الشحن
                             </Button>
                           )}
-                          {/* Edit button - available for all products */}
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="gap-1" 
-                            onClick={() => handleEditProduct(product.id)}
-                            data-testid={`button-edit-${product.id}`}
-                          >
-                            <Edit className="h-4 w-4" />
-                            تعديل
-                          </Button>
+                          {/* Edit button - only for active/draft products (not sold) */}
+                          {(product.status === "active" || product.status === "draft") && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="gap-1" 
+                              onClick={() => handleEditProduct(product.id)}
+                              data-testid={`button-edit-${product.id}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                              تعديل
+                            </Button>
+                          )}
                           
                           {/* Relist button - for sold/shipped items */}
                           {["sold", "pending_shipment", "shipped"].includes(product.status) && (

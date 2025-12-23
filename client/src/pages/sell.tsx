@@ -370,6 +370,7 @@ export default function SellPage() {
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
       };
 
+      // Only edit mode uses PATCH, relist and template create new listings via POST
       const url = isEditMode ? `/api/listings/${editListingId}` : "/api/listings";
       const method = isEditMode ? "PATCH" : "POST";
       
@@ -383,12 +384,23 @@ export default function SellPage() {
         throw new Error(isEditMode ? "Failed to update listing" : "Failed to create listing");
       }
 
+      const successTitle = isEditMode 
+        ? "تم تحديث المنتج بنجاح!" 
+        : isRelistMode 
+          ? "تم إعادة عرض المنتج بنجاح!" 
+          : "تم نشر المنتج بنجاح!";
+      const successDesc = isEditMode 
+        ? "تم حفظ التغييرات." 
+        : isRelistMode 
+          ? "تم إنشاء عرض جديد برقم منتج جديد."
+          : "يمكنك رؤية منتجك في الصفحة الرئيسية.";
+      
       toast({
-        title: isEditMode ? "تم تحديث المنتج بنجاح!" : "تم نشر المنتج بنجاح!",
-        description: isEditMode ? "تم حفظ التغييرات." : "يمكنك رؤية منتجك في الصفحة الرئيسية.",
+        title: successTitle,
+        description: successDesc,
       });
       
-      setLocation(isEditMode ? "/seller-dashboard" : "/");
+      setLocation("/seller-dashboard");
     } catch (error) {
       console.error("Error:", error);
       toast({

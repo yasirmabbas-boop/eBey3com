@@ -102,6 +102,17 @@ export async function registerRoutes(
 
   app.patch("/api/listings/:id", async (req, res) => {
     try {
+      // Check if listing has any sales - prevent editing if sold
+      const existingListing = await storage.getListing(req.params.id);
+      if (!existingListing) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+      
+      // Prevent editing if any quantity has been sold
+      if ((existingListing.quantitySold || 0) > 0) {
+        return res.status(403).json({ error: "لا يمكن تعديل المنتج بعد البيع. يمكنك إعادة عرضه كمنتج جديد." });
+      }
+      
       if (req.body.price !== undefined) {
         req.body.price = typeof req.body.price === "number" 
           ? req.body.price 
