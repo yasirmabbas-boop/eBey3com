@@ -58,20 +58,26 @@ export default function SellPage() {
   const searchString = useSearch();
   const { user, isLoading: authLoading } = useAuth();
   
-  // Parse edit query parameter
+  // Parse query parameters for edit, relist, and template modes
   const urlParams = new URLSearchParams(searchString);
   const editListingId = urlParams.get("edit");
+  const relistListingId = urlParams.get("relist");
+  const templateListingId = urlParams.get("template");
+  
   const isEditMode = !!editListingId;
+  const isRelistMode = !!relistListingId;
+  const isTemplateMode = !!templateListingId;
+  const sourceListingId = editListingId || relistListingId || templateListingId;
 
-  // Fetch existing listing for edit mode
-  const { data: editListing, isLoading: editListingLoading } = useQuery<Listing>({
-    queryKey: ["/api/listings", editListingId],
+  // Fetch existing listing for edit/relist/template mode
+  const { data: sourceListing, isLoading: sourceListingLoading } = useQuery<Listing>({
+    queryKey: ["/api/listings", sourceListingId],
     queryFn: async () => {
-      const res = await fetch(`/api/listings/${editListingId}`);
+      const res = await fetch(`/api/listings/${sourceListingId}`);
       if (!res.ok) throw new Error("Listing not found");
       return res.json();
     },
-    enabled: isEditMode,
+    enabled: !!sourceListingId,
   });
   
   const [saleType, setSaleType] = useState<"auction" | "fixed">("auction");
@@ -121,33 +127,33 @@ export default function SellPage() {
     }
   }, [user, authLoading, setLocation, toast]);
 
-  // Populate form when editing an existing listing
+  // Populate form when editing, relisting, or using as template
   useEffect(() => {
-    if (editListing && isEditMode) {
+    if (sourceListing && sourceListingId) {
       setFormData({
-        title: editListing.title || "",
-        description: editListing.description || "",
-        price: editListing.price?.toString() || "",
-        category: editListing.category || "",
-        condition: editListing.condition || "",
-        brand: editListing.brand || "",
+        title: isTemplateMode ? "" : sourceListing.title || "",
+        description: sourceListing.description || "",
+        price: sourceListing.price?.toString() || "",
+        category: sourceListing.category || "",
+        condition: sourceListing.condition || "",
+        brand: sourceListing.brand || "",
         customBrand: "",
-        serialNumber: editListing.serialNumber || "",
-        quantityAvailable: editListing.quantityAvailable?.toString() || "1",
-        deliveryWindow: editListing.deliveryWindow || "",
-        returnPolicy: editListing.returnPolicy || "",
-        returnDetails: editListing.returnDetails || "",
-        sellerName: editListing.sellerName || user?.username || "",
-        city: editListing.city || "",
-        auctionDuration: editListing.timeLeft || "",
+        serialNumber: isTemplateMode ? "" : sourceListing.serialNumber || "",
+        quantityAvailable: isRelistMode ? "1" : sourceListing.quantityAvailable?.toString() || "1",
+        deliveryWindow: sourceListing.deliveryWindow || "",
+        returnPolicy: sourceListing.returnPolicy || "",
+        returnDetails: sourceListing.returnDetails || "",
+        sellerName: sourceListing.sellerName || user?.username || "",
+        city: sourceListing.city || "",
+        auctionDuration: sourceListing.timeLeft || "",
         startDate: "",
         startHour: "",
       });
-      setImages(editListing.images || []);
-      setSaleType((editListing.saleType as "auction" | "fixed") || "fixed");
-      setAllowOffers(editListing.isNegotiable || false);
+      setImages(sourceListing.images || []);
+      setSaleType((sourceListing.saleType as "auction" | "fixed") || "fixed");
+      setAllowOffers(sourceListing.isNegotiable || false);
     }
-  }, [editListing, isEditMode]);
+  }, [sourceListing, sourceListingId, isTemplateMode, isRelistMode]);
 
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [watchSpecs, setWatchSpecs] = useState({
@@ -400,12 +406,18 @@ export default function SellPage() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">
-            {isEditMode ? "تعديل المنتج" : "بيع منتج جديد"}
+            {isEditMode ? "تعديل المنتج" : isRelistMode ? "إعادة عرض المنتج" : isTemplateMode ? "منتج جديد (من قالب)" : "بيع منتج جديد"}
           </h1>
           <p className="text-muted-foreground">
-            {isEditMode ? "قم بتعديل تفاصيل منتجك" : "أضف منتجك للبيع على منصة اي-بيع"}
+            {isEditMode 
+              ? "قم بتعديل تفاصيل منتجك" 
+              : isRelistMode 
+                ? "أنشئ عرض جديد لنفس المنتج" 
+                : isTemplateMode 
+                  ? "استخدم هذا المنتج كقالب لمنتج جديد"
+                  : "أضف منتجك للبيع على منصة اي-بيع"}
           </p>
-          {isEditMode && editListingLoading && (
+          {sourceListingId && sourceListingLoading && (
             <div className="flex items-center gap-2 mt-2 text-gray-500">
               <Loader2 className="h-4 w-4 animate-spin" />
               جاري تحميل بيانات المنتج...

@@ -70,6 +70,14 @@ interface SellerProduct {
   finalPrice?: number;
   category: string;
   productCode: string;
+  buyer?: {
+    id: string;
+    name: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    district?: string;
+  };
 }
 
 interface SellerOrder {
@@ -701,41 +709,68 @@ export default function SellerDashboard() {
                               طباعة الشحن
                             </Button>
                           )}
-                          {product.status === "active" || product.status === "draft" ? (
-                            <>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="gap-1" 
-                                onClick={() => handleEditProduct(product.id)}
-                                data-testid={`button-edit-${product.id}`}
-                              >
-                                <Edit className="h-4 w-4" />
-                                تعديل
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button size="sm" variant="destructive" className="gap-1" data-testid={`button-delete-${product.id}`}>
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      سيتم حذف المنتج "{product.title}" نهائياً. لا يمكن التراجع عن هذا الإجراء.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteProduct(product.id)}>
-                                      حذف
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </>
-                          ) : null}
+                          {/* Edit button - available for all products */}
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="gap-1" 
+                            onClick={() => handleEditProduct(product.id)}
+                            data-testid={`button-edit-${product.id}`}
+                          >
+                            <Edit className="h-4 w-4" />
+                            تعديل
+                          </Button>
+                          
+                          {/* Relist button - for sold/shipped items */}
+                          {["sold", "pending_shipment", "shipped"].includes(product.status) && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="gap-1 border-green-500 text-green-600 hover:bg-green-50" 
+                              onClick={() => navigate(`/sell?relist=${product.id}`)}
+                              data-testid={`button-relist-${product.id}`}
+                            >
+                              <Plus className="h-4 w-4" />
+                              إعادة عرض
+                            </Button>
+                          )}
+                          
+                          {/* Use as template button */}
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="gap-1 text-blue-600 hover:bg-blue-50" 
+                            onClick={() => navigate(`/sell?template=${product.id}`)}
+                            data-testid={`button-template-${product.id}`}
+                          >
+                            <Package className="h-4 w-4" />
+                            كقالب
+                          </Button>
+                          
+                          {/* Delete button - only for active/draft */}
+                          {(product.status === "active" || product.status === "draft") && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="destructive" className="gap-1" data-testid={`button-delete-${product.id}`}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    سيتم حذف المنتج "{product.title}" نهائياً. لا يمكن التراجع عن هذا الإجراء.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteProduct(product.id)}>
+                                    حذف
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1161,9 +1196,9 @@ export default function SellerDashboard() {
             sellerCity: "العراق",
             buyerName: selectedProduct.buyer.name,
             buyerPhone: selectedProduct.buyer.phone,
-            deliveryAddress: selectedProduct.buyer.address,
-            city: selectedProduct.buyer.district,
-            district: selectedProduct.buyer.district,
+            deliveryAddress: selectedProduct.buyer.address || "",
+            city: selectedProduct.buyer.city || "",
+            district: selectedProduct.buyer.district || "",
             price: selectedProduct.finalPrice || selectedProduct.price,
             saleDate: new Date(selectedProduct.soldDate || Date.now()),
             paymentMethod: "الدفع عند الاستلام",
