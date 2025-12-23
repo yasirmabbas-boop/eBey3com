@@ -17,12 +17,20 @@ export function AuctionCountdown({ endTime, onExpired }: AuctionCountdownProps) 
 
   useEffect(() => {
     if (!endTime) {
-      setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
+      // No end time set - show as "no time limit" not expired
+      setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: false });
       return;
     }
 
     const calculateTimeLeft = () => {
       const end = typeof endTime === "string" ? new Date(endTime) : endTime;
+      
+      // Check if the date is valid
+      if (isNaN(end.getTime())) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: false });
+        return;
+      }
+      
       const now = new Date();
       const difference = end.getTime() - now.getTime();
 
@@ -51,6 +59,16 @@ export function AuctionCountdown({ endTime, onExpired }: AuctionCountdownProps) 
       <div className="flex items-center gap-2 text-gray-500 text-sm font-medium" data-testid="auction-expired">
         <Clock className="h-4 w-4" />
         <span>انتهى المزاد</span>
+      </div>
+    );
+  }
+
+  // If no end time is set, show open auction message
+  if (!endTime) {
+    return (
+      <div className="flex items-center gap-2 text-green-600 text-sm font-medium" data-testid="auction-open">
+        <Clock className="h-4 w-4" />
+        <span>مزاد مفتوح</span>
       </div>
     );
   }
