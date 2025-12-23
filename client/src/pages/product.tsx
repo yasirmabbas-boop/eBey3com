@@ -57,6 +57,9 @@ export default function ProductPage() {
   const [guestAddress, setGuestAddress] = useState("");
   const [guestCity, setGuestCity] = useState("");
 
+  // Image gallery state
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
   // Create offer mutation
   const createOfferMutation = useMutation({
     mutationFn: async (data: { listingId: string; offerAmount: number; message?: string }) => {
@@ -317,27 +320,85 @@ export default function ProductPage() {
     <Layout>
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         
-        {/* Image Gallery - Horizontal scroll thumbnails */}
-        <div className="mb-6">
-          <div className="aspect-[4/3] md:aspect-[16/9] bg-gray-100 rounded-xl overflow-hidden mb-3">
-            <img 
-              src={product.image} 
-              alt={product.title} 
-              className="w-full h-full object-contain bg-white"
-            />
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {(product.images.length > 0 ? product.images : [product.image, product.image, product.image, product.image]).map((img, i) => (
-              <div key={i} className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border-2 cursor-pointer hover:border-primary transition-colors">
+        {/* Image Gallery - Interactive Slider */}
+        {(() => {
+          const images = product.images && product.images.length > 0 
+            ? product.images 
+            : [product.image];
+          
+          const goToPrevious = () => {
+            setSelectedImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1);
+          };
+          
+          const goToNext = () => {
+            setSelectedImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1);
+          };
+
+          return (
+            <div className="mb-6">
+              {/* Main Image with Navigation */}
+              <div className="relative aspect-[4/3] md:aspect-[16/9] bg-gray-100 rounded-xl overflow-hidden mb-3 group">
                 <img 
-                  src={img} 
-                  alt={`thumbnail ${i + 1}`} 
-                  className="w-full h-full object-cover"
+                  src={images[selectedImageIndex] || product.image} 
+                  alt={product.title} 
+                  className="w-full h-full object-contain bg-white"
+                  data-testid="img-main-product"
                 />
+                
+                {/* Navigation Arrows - Only show if multiple images */}
+                {images.length > 1 && (
+                  <>
+                    <button 
+                      onClick={goToPrevious}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg rounded-full w-10 h-10 flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                      data-testid="button-prev-image"
+                    >
+                      ›
+                    </button>
+                    <button 
+                      onClick={goToNext}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg rounded-full w-10 h-10 flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                      data-testid="button-next-image"
+                    >
+                      ‹
+                    </button>
+                  </>
+                )}
+
+                {/* Image Counter */}
+                {images.length > 1 && (
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full">
+                    {selectedImageIndex + 1} / {images.length}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
+
+              {/* Thumbnail Strip */}
+              {images.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {images.map((img, i) => (
+                    <div 
+                      key={i} 
+                      onClick={() => setSelectedImageIndex(i)}
+                      className={`w-16 h-16 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
+                        selectedImageIndex === i 
+                          ? 'border-primary ring-2 ring-primary/30' 
+                          : 'border-gray-200 hover:border-gray-400'
+                      }`}
+                      data-testid={`thumbnail-${i}`}
+                    >
+                      <img 
+                        src={img} 
+                        alt={`صورة ${i + 1}`} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Product Title */}
         <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight mb-4" data-testid="text-product-title">
