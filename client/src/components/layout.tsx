@@ -37,8 +37,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {isAuthenticated && (user as any)?.accountType === "seller" && (
                 <>
                   <span className="hidden sm:inline">|</span>
-                  <Link href="/seller-dashboard" className="hidden sm:inline hover:underline font-medium">
-                    لوحة التحكم
+                  <Link href="/my-account" className="hidden sm:inline hover:underline font-medium">
+                    حسابي
                   </Link>
                   <Link href="/my-sales" className="hidden sm:inline hover:underline font-medium">
                     مبيعاتي
@@ -68,11 +68,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <User className="h-4 w-4" />
               <span className="font-bold">حساب المشتري</span>
               <span className="hidden sm:inline">|</span>
+              <Link href="/my-account" className="hidden sm:inline hover:underline font-medium">
+                حسابي
+              </Link>
               <Link href="/my-purchases" className="hidden sm:inline hover:underline font-medium">
                 مشترياتي
-              </Link>
-              <Link href="/buyer-dashboard" className="hidden sm:inline hover:underline font-medium">
-                لوحة التحكم
               </Link>
             </div>
           </div>
@@ -145,18 +145,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <nav className="flex flex-col gap-4 mt-8">
                 <Link href="/" className="text-lg font-semibold">الرئيسية</Link>
                 <Link href="/search" className="text-lg">البحث</Link>
-                {isAuthenticated && user?.accountType === "seller" && (
+                {isAuthenticated && (
                   <>
-                    <Link href="/seller-dashboard" className="text-lg text-primary font-semibold">لوحة التحكم</Link>
-                    <Link href="/sell" className="text-lg">إضافة منتج</Link>
-                    <Link href="/settings" className="text-lg">إعدادات الحساب</Link>
-                  </>
-                )}
-                {isAuthenticated && user?.accountType === "buyer" && (
-                  <>
-                    <Link href="/buyer-dashboard" className="text-lg text-primary font-semibold">لوحة التحكم</Link>
+                    <Link href="/my-account" className="text-lg text-primary font-semibold">حسابي</Link>
+                    {user?.accountType === "seller" && (
+                      <>
+                        <Link href="/seller-dashboard" className="text-lg">لوحة البائع</Link>
+                        <Link href="/sell" className="text-lg">إضافة منتج</Link>
+                      </>
+                    )}
                     <Link href="/my-purchases" className="text-lg">مشترياتي</Link>
-                    <Link href="/settings" className="text-lg">إعدادات الحساب</Link>
+                    <Link href="/messages" className="text-lg">الرسائل</Link>
+                    <Link href="/settings" className="text-lg">الإعدادات</Link>
                   </>
                 )}
                 {!isAuthenticated && (

@@ -27,6 +27,7 @@ import DealsGuide from "@/pages/deals-guide";
 import CartPage from "@/pages/cart";
 import CheckoutPage from "@/pages/checkout";
 import MessagesPage from "@/pages/messages";
+import MyAccount from "@/pages/my-account";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/checkout" component={CheckoutPage} />
       <Route path="/messages" component={MessagesPage} />
       <Route path="/messages/:partnerId" component={MessagesPage} />
+      <Route path="/my-account" component={MyAccount} />
       <Route component={NotFound} />
     </Switch>
   );
