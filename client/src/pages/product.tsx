@@ -549,13 +549,15 @@ export default function ProductPage() {
                   ) : isPurchaseDisabled ? "جاري التحميل..." : "أضف للسلة"}
                 </Button>
               )}
-              <ContactSeller 
-                sellerName={product.seller.name}
-                sellerId={listing?.sellerId || ""}
-                listingId={listing?.id || ""}
-                productTitle={product.title}
-                productCode={product.productCode}
-              />
+              {!isOwnProduct && (
+                <ContactSeller 
+                  sellerName={product.seller.name}
+                  sellerId={listing?.sellerId || ""}
+                  listingId={listing?.id || ""}
+                  productTitle={product.title}
+                  productCode={product.productCode}
+                />
+              )}
             </div>
 
             {/* Seller Tools - Print Shipping Label - Only visible after purchase completion */}

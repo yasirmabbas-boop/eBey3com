@@ -349,6 +349,12 @@ export async function registerRoutes(
   app.post("/api/messages", async (req, res) => {
     try {
       const validatedData = insertMessageSchema.parse(req.body);
+      
+      // Prevent users from messaging themselves
+      if (validatedData.senderId === validatedData.receiverId) {
+        return res.status(400).json({ error: "لا يمكنك إرسال رسالة لنفسك" });
+      }
+      
       const message = await storage.sendMessage(validatedData);
       res.status(201).json(message);
     } catch (error) {
