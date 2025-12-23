@@ -41,7 +41,7 @@ export default function ProductPage() {
   const [match, params] = useRoute("/product/:id");
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
   const { addToCart, isAdding } = useCart();
   const queryClient = useQueryClient();
 
@@ -188,6 +188,12 @@ export default function ProductPage() {
     quantityAvailable: (listing as any).quantityAvailable || 1,
     quantitySold: (listing as any).quantitySold || 0,
   } : null;
+
+  // Check if current user is the seller of this product
+  // Wait for auth to load before determining ownership to avoid race conditions
+  const isOwnProduct = !isAuthLoading && isAuthenticated && user?.id && listing?.sellerId === user.id;
+  // While auth is loading, disable purchase actions for logged-in users to prevent race conditions
+  const isPurchaseDisabled = isAuthLoading && listing?.sellerId;
 
   const requireAuth = (action: string) => {
     if (!isAuthenticated) {
@@ -411,15 +417,35 @@ export default function ProductPage() {
 
             <Separator className="my-6" />
 
+            {/* Show notice if this is the user's own product */}
+            {isOwnProduct && (
+              <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded-xl text-center mb-6">
+                <p className="text-blue-700 font-bold">هذا منتجك الخاص</p>
+                <p className="text-blue-600 text-sm mt-1">لا يمكنك شراء أو المزايدة على منتجاتك</p>
+              </div>
+            )}
+
             {product.currentBid ? (
-              <BiddingWindow
-                listingId={params?.id || ""}
-                currentBid={product.currentBid}
-                totalBids={product.totalBids || 0}
-                minimumBid={(product.currentBid || 0) + 5000}
-                timeLeft={product.timeLeft}
-                onRequireAuth={() => requireAuth("bid")}
-              />
+              !isOwnProduct ? (
+                <BiddingWindow
+                  listingId={params?.id || ""}
+                  currentBid={product.currentBid}
+                  totalBids={product.totalBids || 0}
+                  minimumBid={(product.currentBid || 0) + 5000}
+                  timeLeft={product.timeLeft}
+                  onRequireAuth={() => requireAuth("bid")}
+                />
+              ) : (
+                <div className="bg-muted/30 p-6 rounded-xl border mb-6">
+                  <div className="flex items-end gap-2 mb-2">
+                    <span className="text-sm text-muted-foreground mb-1">السعر الحالي:</span>
+                    <span className="text-4xl font-bold text-primary">
+                      {product.currentBid.toLocaleString()} <span className="text-lg">د.ع</span>
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">عدد المزايدات: {product.totalBids}</p>
+                </div>
+              )
             ) : (
               <div className="bg-muted/30 p-6 rounded-xl border mb-6">
                 <div className="flex items-end gap-2 mb-2">
@@ -454,15 +480,16 @@ export default function ProductPage() {
                           <p className="text-red-700 font-bold text-lg">هذا المنتج غير متوفر حالياً</p>
                           <p className="text-red-600 text-sm mt-1">تم بيع جميع الكميات المتاحة</p>
                         </div>
-                      ) : (
+                      ) : !isOwnProduct ? (
                         <>
                           <Button 
                             size="lg" 
                             className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold mt-4"
                             onClick={handleBuyNowDirect}
+                            disabled={!!isPurchaseDisabled}
                             data-testid="button-buy-now-fixed"
                           >
-                            شراء الآن
+                            {isPurchaseDisabled ? "جاري التحميل..." : "شراء الآن"}
                           </Button>
                           
                           {/* Make an Offer button for negotiable items */}
@@ -482,7 +509,7 @@ export default function ProductPage() {
                             </Button>
                           )}
                         </>
-                      )}
+                      ) : null}
                     </>
                   );
                 })()}
@@ -498,8 +525,8 @@ export default function ProductPage() {
               </p>
             </div>
 
-            {/* Buy Now Option - Only show if product is available */}
-            {product && (product.quantityAvailable - product.quantitySold) > 0 && (
+            {/* Buy Now Option - Only show if product is available and not own product */}
+            {product && !isOwnProduct && (product.quantityAvailable - product.quantitySold) > 0 && listing?.saleType === "auction" && (
               <div className="bg-green-50 border-2 border-green-200 p-6 rounded-xl mb-6">
                 <div className="flex items-end gap-2 mb-2">
                   <span className="text-sm text-green-700 font-semibold mb-1">🛒 شراء فوري (اختياري):</span>
@@ -512,21 +539,22 @@ export default function ProductPage() {
                   size="lg" 
                   className="w-full text-lg h-12 bg-green-600 hover:bg-green-700 text-white font-bold"
                   onClick={handleBuyNowDirect}
+                  disabled={!!isPurchaseDisabled}
                   data-testid="button-buy-now-direct"
                 >
-                  🛒 اشتر الآن مباشرة
+                  {isPurchaseDisabled ? "جاري التحميل..." : "🛒 اشتر الآن مباشرة"}
                 </Button>
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3 mb-6">
-              {listing?.saleType !== "auction" && product && (product.quantityAvailable - product.quantitySold) > 0 && (
+              {listing?.saleType !== "auction" && product && !isOwnProduct && (product.quantityAvailable - product.quantitySold) > 0 && (
                 <Button 
                   variant="outline" 
                   size="lg" 
                   className="h-12" 
                   onClick={handleAddCart}
-                  disabled={isAdding}
+                  disabled={isAdding || !!isPurchaseDisabled}
                   data-testid="button-add-cart"
                 >
                   {isAdding ? (
@@ -534,7 +562,7 @@ export default function ProductPage() {
                       <Loader2 className="h-4 w-4 animate-spin ml-2" />
                       جاري الإضافة...
                     </>
-                  ) : "أضف للسلة"}
+                  ) : isPurchaseDisabled ? "جاري التحميل..." : "أضف للسلة"}
                 </Button>
               )}
               <ContactSeller 

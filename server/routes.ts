@@ -425,11 +425,17 @@ export async function registerRoutes(
   app.post("/api/transactions", async (req, res) => {
     try {
       const validatedData = insertTransactionSchema.parse(req.body);
+      const sessionUserId = (req.session as any)?.userId;
       
       // Check if listing is still available
       const listing = await storage.getListing(validatedData.listingId);
       if (!listing) {
         return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      // Prevent sellers from buying their own products
+      if (sessionUserId && listing.sellerId === sessionUserId) {
+        return res.status(400).json({ error: "لا يمكنك شراء منتجك الخاص" });
       }
       
       const availableQuantity = (listing.quantityAvailable || 1) - (listing.quantitySold || 0);
@@ -1170,6 +1176,11 @@ export async function registerRoutes(
         return res.status(404).json({ error: "المنتج غير موجود" });
       }
       
+      // Prevent sellers from adding their own products to cart
+      if (listing.sellerId === userId) {
+        return res.status(400).json({ error: "لا يمكنك إضافة منتجك الخاص للسلة" });
+      }
+      
       if (!listing.isActive) {
         return res.status(400).json({ error: "هذا المنتج غير متاح حالياً" });
       }
@@ -1273,16 +1284,17 @@ export async function registerRoutes(
         return res.status(404).json({ error: "المنتج غير موجود" });
       }
       
+      // Prevent sellers from making offers on their own products
+      if (listing.sellerId === userId) {
+        return res.status(400).json({ error: "لا يمكنك تقديم عرض على منتجك الخاص" });
+      }
+      
       if (!listing.isNegotiable) {
         return res.status(400).json({ error: "هذا المنتج لا يقبل التفاوض" });
       }
       
       if (!listing.sellerId) {
         return res.status(400).json({ error: "لا يمكن إرسال عرض لهذا المنتج" });
-      }
-      
-      if (listing.sellerId === userId) {
-        return res.status(400).json({ error: "لا يمكنك تقديم عرض على منتجك" });
       }
 
       const offer = await storage.createOffer({
