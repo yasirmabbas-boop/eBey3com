@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Bell, X, Clock, Gavel, Tag, ShoppingBag, AlertCircle, Check } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Bell, X, Clock, Gavel, Tag, ShoppingBag, MessageSquare, Check, Truck, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -8,71 +9,32 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import type { Message } from "@shared/schema";
 
 interface Notification {
   id: string;
-  type: "auction_ending" | "outbid" | "auction_won" | "price_drop" | "new_item" | "watchlist";
+  type: "message" | "shipping" | "offer" | "bid" | "sale";
   title: string;
   message: string;
   timestamp: Date;
   read: boolean;
   productId?: string;
-  image?: string;
+  senderId?: string;
 }
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    type: "auction_ending",
-    title: "المزاد ينتهي قريباً",
-    message: "ساعة رولكس صبمارينر ينتهي مزادها خلال ساعة واحدة!",
-    timestamp: new Date(Date.now() - 30 * 60 * 1000),
-    read: false,
-    productId: "1",
-  },
-  {
-    id: "2",
-    type: "outbid",
-    title: "تم تجاوز مزايدتك",
-    message: "شخص آخر قدم مزايدة أعلى على سجادة نائين الملكية",
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    read: false,
-    productId: "17",
-  },
-  {
-    id: "3",
-    type: "watchlist",
-    title: "تحديث قائمة المتابعة",
-    message: "تم تخفيض سعر ساعة كاسيو التي تتابعها",
-    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    read: true,
-    productId: "6",
-  },
-  {
-    id: "4",
-    type: "new_item",
-    title: "منتج جديد في فئتك المفضلة",
-    message: "تم إضافة سجادة تبريز جديدة في قسم التحف والأثاث",
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    read: true,
-    productId: "8",
-  },
-];
 
 const getNotificationIcon = (type: Notification["type"]) => {
   switch (type) {
-    case "auction_ending":
-      return <Clock className="h-5 w-5 text-amber-500" />;
-    case "outbid":
-      return <AlertCircle className="h-5 w-5 text-red-500" />;
-    case "auction_won":
-      return <Gavel className="h-5 w-5 text-green-500" />;
-    case "price_drop":
-      return <Tag className="h-5 w-5 text-blue-500" />;
-    case "new_item":
-      return <ShoppingBag className="h-5 w-5 text-purple-500" />;
-    case "watchlist":
-      return <Bell className="h-5 w-5 text-blue-500" />;
+    case "message":
+      return <MessageSquare className="h-5 w-5 text-blue-500" />;
+    case "shipping":
+      return <Truck className="h-5 w-5 text-green-500" />;
+    case "offer":
+      return <Tag className="h-5 w-5 text-purple-500" />;
+    case "bid":
+      return <Gavel className="h-5 w-5 text-amber-500" />;
+    case "sale":
+      return <ShoppingBag className="h-5 w-5 text-green-600" />;
     default:
       return <Bell className="h-5 w-5" />;
   }
@@ -88,25 +50,95 @@ const formatTimeAgo = (date: Date) => {
   return `منذ ${Math.floor(seconds / 604800)} أسبوع`;
 };
 
+const categorizeMessage = (content: string): { type: Notification["type"]; title: string } => {
+  if (content.includes("تم شحن طلبك") || content.includes("📦")) {
+    return { type: "shipping", title: "تحديث الشحن" };
+  }
+  if (content.includes("عرض جديد") || content.includes("تم قبول عرضك") || content.includes("تم رفض")) {
+    return { type: "offer", title: "تحديث العرض" };
+  }
+  if (content.includes("مزايدة") || content.includes("مزاد")) {
+    return { type: "bid", title: "تحديث المزاد" };
+  }
+  if (content.includes("تم بيع") || content.includes("طلب جديد")) {
+    return { type: "sale", title: "طلب جديد" };
+  }
+  return { type: "message", title: "رسالة جديدة" };
+};
+
 export function NotificationsButton() {
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  
+  const queryClient = useQueryClient();
+
+  const { data: messages = [] } = useQuery<Message[]>({
+    queryKey: ["/api/messages", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const res = await fetch(`/api/messages/${user.id}`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user?.id,
+    refetchInterval: 30000,
+  });
+
+  const markAsReadMutation = useMutation({
+    mutationFn: async (messageId: string) => {
+      const res = await fetch(`/api/messages/${messageId}/read`, {
+        method: "PATCH",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to mark as read");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
+    },
+  });
+
+  const notifications: Notification[] = messages
+    .filter(msg => msg.receiverId === user?.id)
+    .slice(0, 20)
+    .map(msg => {
+      const { type, title } = categorizeMessage(msg.content);
+      return {
+        id: msg.id,
+        type,
+        title,
+        message: msg.content.length > 100 ? msg.content.substring(0, 100) + "..." : msg.content,
+        timestamp: new Date(msg.createdAt),
+        read: msg.isRead,
+        productId: msg.listingId || undefined,
+        senderId: msg.senderId,
+      };
+    });
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    markAsReadMutation.mutate(id);
   };
 
   const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    notifications.filter(n => !n.read).forEach(n => {
+      markAsReadMutation.mutate(n.id);
+    });
   };
 
-  const removeNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  };
+  if (!user) {
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        className="relative"
+        data-testid="button-notifications"
+        onClick={() => window.location.href = "/auth"}
+      >
+        <Bell className="h-5 w-5" />
+      </Button>
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -155,6 +187,7 @@ export function NotificationsButton() {
             <div className="flex flex-col items-center justify-center py-12 text-gray-400">
               <Bell className="h-12 w-12 mb-3 opacity-50" />
               <p>لا توجد إشعارات</p>
+              <p className="text-sm mt-1">ستظهر هنا الرسائل وتحديثات الطلبات</p>
             </div>
           ) : (
             <div className="divide-y">
@@ -169,6 +202,9 @@ export function NotificationsButton() {
                     markAsRead(notification.id);
                     if (notification.productId) {
                       window.location.href = `/product/${notification.productId}`;
+                      setOpen(false);
+                    } else {
+                      window.location.href = `/messages`;
                       setOpen(false);
                     }
                   }}
@@ -186,16 +222,6 @@ export function NotificationsButton() {
                         )}>
                           {notification.title}
                         </p>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeNotification(notification.id);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded"
-                          data-testid={`button-remove-notification-${notification.id}`}
-                        >
-                          <X className="h-4 w-4 text-gray-400" />
-                        </button>
                       </div>
                       <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                         {notification.message}
@@ -219,11 +245,12 @@ export function NotificationsButton() {
             variant="outline"
             className="w-full text-sm"
             onClick={() => {
+              window.location.href = "/messages";
               setOpen(false);
             }}
             data-testid="button-all-notifications"
           >
-            عرض جميع الإشعارات
+            عرض جميع الرسائل
           </Button>
         </div>
       </PopoverContent>
