@@ -102,15 +102,42 @@ export async function registerRoutes(
 
   app.patch("/api/listings/:id", async (req, res) => {
     try {
-      // Check if listing has any sales - prevent editing if sold
       const existingListing = await storage.getListing(req.params.id);
       if (!existingListing) {
         return res.status(404).json({ error: "Listing not found" });
       }
       
-      // Prevent editing if any quantity has been sold
-      if ((existingListing.quantitySold || 0) > 0) {
-        return res.status(403).json({ error: "لا يمكن تعديل المنتج بعد البيع. يمكنك إعادة عرضه كمنتج جديد." });
+      const quantitySold = existingListing.quantitySold || 0;
+      
+      // If items have been sold, only allow updating quantityAvailable
+      if (quantitySold > 0) {
+        const allowedFields = ['quantityAvailable', 'isActive'];
+        const requestedFields = Object.keys(req.body);
+        const disallowedFields = requestedFields.filter(f => !allowedFields.includes(f));
+        
+        if (disallowedFields.length > 0) {
+          return res.status(403).json({ 
+            error: "بعد البيع، يمكنك فقط تعديل الكمية المتوفرة. لتعديل باقي التفاصيل، أعد عرض المنتج كمنتج جديد." 
+          });
+        }
+        
+        // Ensure new quantity is at least equal to quantity sold
+        if (req.body.quantityAvailable !== undefined) {
+          const newQuantity = typeof req.body.quantityAvailable === "number" 
+            ? req.body.quantityAvailable 
+            : parseInt(req.body.quantityAvailable, 10);
+          
+          if (isNaN(newQuantity) || newQuantity < quantitySold) {
+            return res.status(400).json({ 
+              error: `الكمية الجديدة يجب أن تكون ${quantitySold} على الأقل (عدد المبيعات الحالية)` 
+            });
+          }
+          req.body.quantityAvailable = newQuantity;
+          // Re-activate listing if adding more stock
+          if (newQuantity > quantitySold) {
+            req.body.isActive = true;
+          }
+        }
       }
       
       if (req.body.price !== undefined) {

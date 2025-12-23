@@ -54,6 +54,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 interface SellerProduct {
   id: string;
@@ -70,6 +79,8 @@ interface SellerProduct {
   finalPrice?: number;
   category: string;
   productCode: string;
+  quantityAvailable: number;
+  quantitySold: number;
   buyer?: {
     id: string;
     name: string;
@@ -149,6 +160,9 @@ export default function SellerDashboard() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showShippingLabel, setShowShippingLabel] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<SellerProduct | null>(null);
+  const [stockDialogOpen, setStockDialogOpen] = useState(false);
+  const [stockProductId, setStockProductId] = useState<string | null>(null);
+  const [newStockQuantity, setNewStockQuantity] = useState("");
 
   const { data: listings = [], isLoading: listingsLoading } = useQuery<Listing[]>({
     queryKey: ["/api/listings", user?.id],
@@ -225,6 +239,8 @@ export default function SellerDashboard() {
       endDate: l.auctionEndTime ? new Date(l.auctionEndTime).toLocaleDateString("ar-IQ") : undefined,
       category: l.category,
       productCode: l.productCode || `P-${l.id.slice(0, 6)}`,
+      quantityAvailable: l.quantityAvailable || 1,
+      quantitySold: l.quantitySold || 0,
     };
   });
 
@@ -270,6 +286,45 @@ export default function SellerDashboard() {
       toast({ title: "خطأ", description: "فشل في الرد على العرض", variant: "destructive" });
     },
   });
+
+  const stockUpdateMutation = useMutation({
+    mutationFn: async ({ productId, quantityAvailable }: { productId: string; quantityAvailable: number }) => {
+      const res = await fetch(`/api/listings/${productId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantityAvailable }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to update stock");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم تحديث المخزون", description: "تم تحديث الكمية المتوفرة بنجاح" });
+      queryClient.invalidateQueries({ queryKey: ["/api/listings", user?.id] });
+      setStockDialogOpen(false);
+      setStockProductId(null);
+      setNewStockQuantity("");
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleUpdateStock = (product: SellerProduct) => {
+    setStockProductId(product.id);
+    setNewStockQuantity(product.quantityAvailable.toString());
+    setStockDialogOpen(true);
+  };
+
+  const submitStockUpdate = () => {
+    if (!stockProductId || !newStockQuantity) return;
+    stockUpdateMutation.mutate({ 
+      productId: stockProductId, 
+      quantityAvailable: parseInt(newStockQuantity, 10) 
+    });
+  };
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -734,6 +789,20 @@ export default function SellerDashboard() {
                             >
                               <Plus className="h-4 w-4" />
                               إعادة عرض
+                            </Button>
+                          )}
+                          
+                          {/* Update Stock button - for partially sold items with remaining stock or to add more */}
+                          {product.quantitySold > 0 && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="gap-1 border-orange-500 text-orange-600 hover:bg-orange-50" 
+                              onClick={() => handleUpdateStock(product)}
+                              data-testid={`button-update-stock-${product.id}`}
+                            >
+                              <Package className="h-4 w-4" />
+                              تعديل الكمية
                             </Button>
                           )}
                           
@@ -1207,6 +1276,72 @@ export default function SellerDashboard() {
           }}
         />
       )}
+
+      <Dialog open={stockDialogOpen} onOpenChange={setStockDialogOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              تعديل الكمية المتوفرة
+            </DialogTitle>
+            <DialogDescription>
+              قم بتحديث عدد القطع المتوفرة لهذا المنتج. لا يمكن تقليل الكمية عن عدد المبيعات الحالية.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {(() => {
+            const product = sellerProducts.find(p => p.id === stockProductId);
+            return product ? (
+              <div className="space-y-4">
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <p className="font-medium text-primary">{product.title}</p>
+                  <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+                    <span>المبيعات: {product.quantitySold}</span>
+                    <span>الحالي: {product.quantityAvailable}</span>
+                    <span>المتبقي: {product.quantityAvailable - product.quantitySold}</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="newQuantity">الكمية الجديدة</Label>
+                  <Input
+                    id="newQuantity"
+                    type="number"
+                    min={product.quantitySold}
+                    value={newStockQuantity}
+                    onChange={(e) => setNewStockQuantity(e.target.value)}
+                    placeholder={`الحد الأدنى: ${product.quantitySold}`}
+                    data-testid="input-new-quantity"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    يجب أن تكون الكمية {product.quantitySold} على الأقل (عدد المبيعات الحالية)
+                  </p>
+                </div>
+              </div>
+            ) : null;
+          })()}
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setStockDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button 
+              onClick={submitStockUpdate}
+              disabled={stockUpdateMutation.isPending}
+              data-testid="button-confirm-stock-update"
+            >
+              {stockUpdateMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  جاري الحفظ...
+                </>
+              ) : (
+                "حفظ التغييرات"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
