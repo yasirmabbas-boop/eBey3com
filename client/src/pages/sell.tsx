@@ -104,9 +104,10 @@ export default function SellPage() {
     returnDetails: "",
     sellerName: user?.username || "",
     city: "",
-    auctionDuration: "",
     startDate: "",
     startHour: "",
+    endDate: "",
+    endHour: "",
   });
 
   useEffect(() => {
@@ -145,9 +146,10 @@ export default function SellPage() {
         returnDetails: sourceListing.returnDetails || "",
         sellerName: sourceListing.sellerName || user?.username || "",
         city: sourceListing.city || "",
-        auctionDuration: sourceListing.timeLeft || "",
         startDate: "",
         startHour: "",
+        endDate: "",
+        endHour: "",
       });
       setImages(sourceListing.images || []);
       setSaleType((sourceListing.saleType as "auction" | "fixed") || "fixed");
@@ -299,11 +301,12 @@ export default function SellPage() {
     }
     
     if (saleType === "auction") {
-      if (!formData.auctionDuration) errors.auctionDuration = "مدة المزاد مطلوبة";
       if (startTimeOption === "schedule") {
         if (!formData.startDate) errors.startDate = "تاريخ البدء مطلوب";
         if (!formData.startHour) errors.startHour = "وقت البدء مطلوب";
       }
+      if (!formData.endDate) errors.endDate = "تاريخ الانتهاء مطلوب";
+      if (!formData.endHour) errors.endHour = "وقت الانتهاء مطلوب";
     }
     
     setValidationErrors(errors);
@@ -325,24 +328,20 @@ export default function SellPage() {
     setIsSubmitting(true);
     
     try {
+      let auctionStartTime = null;
       let auctionEndTime = null;
-      if (saleType === "auction" && formData.auctionDuration) {
-        const durationMap: Record<string, number> = {
-          "يوم واحد": 24 * 60 * 60 * 1000,
-          "3 أيام": 3 * 24 * 60 * 60 * 1000,
-          "5 أيام": 5 * 24 * 60 * 60 * 1000,
-          "أسبوع": 7 * 24 * 60 * 60 * 1000,
-          "10 أيام": 10 * 24 * 60 * 60 * 1000,
-          "أسبوعين": 14 * 24 * 60 * 60 * 1000,
-          "شهر": 30 * 24 * 60 * 60 * 1000,
-        };
-        const durationMs = durationMap[formData.auctionDuration] || 7 * 24 * 60 * 60 * 1000;
-        
+      
+      if (saleType === "auction") {
+        // Set start time
         if (startTimeOption === "schedule" && formData.startDate && formData.startHour) {
-          const startDateTime = new Date(`${formData.startDate}T${formData.startHour}:00`);
-          auctionEndTime = new Date(startDateTime.getTime() + durationMs).toISOString();
+          auctionStartTime = new Date(`${formData.startDate}T${formData.startHour}:00`).toISOString();
         } else {
-          auctionEndTime = new Date(Date.now() + durationMs).toISOString();
+          auctionStartTime = new Date().toISOString();
+        }
+        
+        // Set end time
+        if (formData.endDate && formData.endHour) {
+          auctionEndTime = new Date(`${formData.endDate}T${formData.endHour}:00`).toISOString();
         }
       }
       
@@ -357,7 +356,8 @@ export default function SellPage() {
         brand: finalBrand || null,
         images: images,
         saleType: saleType,
-        timeLeft: saleType === "auction" ? formData.auctionDuration : null,
+        timeLeft: null,
+        auctionStartTime: auctionStartTime,
         auctionEndTime: auctionEndTime,
         deliveryWindow: formData.deliveryWindow,
         returnPolicy: formData.returnPolicy,
@@ -1053,48 +1053,27 @@ export default function SellPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-primary" />
-                  مدة المزاد والتوقيت
+                  توقيت المزاد
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">مدة المزاد *</Label>
-                    <Select value={formData.auctionDuration} onValueChange={(v) => handleInputChange("auctionDuration", v)}>
-                      <SelectTrigger data-testid="select-duration" className={validationErrors.auctionDuration ? "border-red-500" : ""}>
-                        <SelectValue placeholder="اختر المدة" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="يوم واحد">يوم واحد</SelectItem>
-                        <SelectItem value="3 أيام">3 أيام</SelectItem>
-                        <SelectItem value="5 أيام">5 أيام</SelectItem>
-                        <SelectItem value="أسبوع">أسبوع</SelectItem>
-                        <SelectItem value="10 أيام">10 أيام</SelectItem>
-                        <SelectItem value="أسبوعين">أسبوعين</SelectItem>
-                        <SelectItem value="شهر">شهر</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {validationErrors.auctionDuration && (
-                      <p className="text-xs text-red-500">{validationErrors.auctionDuration}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="startTime">موعد بدء المزاد *</Label>
-                    <Select value={startTimeOption} onValueChange={setStartTimeOption}>
-                      <SelectTrigger data-testid="select-start-time">
-                        <SelectValue placeholder="ابدأ فوراً" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="now">ابدأ فوراً</SelectItem>
-                        <SelectItem value="schedule">جدولة موعد محدد</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* Start Time Option */}
+                <div className="space-y-2">
+                  <Label htmlFor="startTime">موعد بدء المزاد</Label>
+                  <Select value={startTimeOption} onValueChange={setStartTimeOption}>
+                    <SelectTrigger data-testid="select-start-time">
+                      <SelectValue placeholder="ابدأ فوراً" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="now">ابدأ فوراً</SelectItem>
+                      <SelectItem value="schedule">جدولة موعد محدد</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
+                {/* Scheduled Start Date/Time */}
                 {startTimeOption === "schedule" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-blue-50 rounded-lg">
                     <div className="space-y-2">
                       <Label htmlFor="startDate">تاريخ البدء *</Label>
                       <Input 
@@ -1129,6 +1108,42 @@ export default function SellPage() {
                     </div>
                   </div>
                 )}
+
+                {/* End Date/Time */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-orange-50 rounded-lg">
+                  <div className="space-y-2">
+                    <Label htmlFor="endDate">تاريخ انتهاء المزاد *</Label>
+                    <Input 
+                      id="endDate" 
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) => handleInputChange("endDate", e.target.value)}
+                      min={formData.startDate || new Date().toISOString().split('T')[0]}
+                      className={validationErrors.endDate ? "border-red-500" : ""}
+                      data-testid="input-end-date"
+                    />
+                    {validationErrors.endDate && (
+                      <p className="text-xs text-red-500">{validationErrors.endDate}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="endHour">وقت الانتهاء *</Label>
+                    <Select value={formData.endHour} onValueChange={(v) => handleInputChange("endHour", v)}>
+                      <SelectTrigger data-testid="select-end-hour" className={validationErrors.endHour ? "border-red-500" : ""}>
+                        <SelectValue placeholder="اختر الساعة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {HOURS.map(({ value, label }) => (
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {validationErrors.endHour && (
+                      <p className="text-xs text-red-500">{validationErrors.endHour}</p>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
