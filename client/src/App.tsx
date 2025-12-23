@@ -25,6 +25,7 @@ import BuyerDashboard from "@/pages/buyer-dashboard";
 import SellPage from "@/pages/sell";
 import DealsGuide from "@/pages/deals-guide";
 import CartPage from "@/pages/cart";
+import CheckoutPage from "@/pages/checkout";
 import MessagesPage from "@/pages/messages";
 
 function ScrollToTop() {
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/sell" component={SellPage} />
       <Route path="/deals-guide" component={DealsGuide} />
       <Route path="/cart" component={CartPage} />
+      <Route path="/checkout" component={CheckoutPage} />
       <Route path="/messages" component={MessagesPage} />
       <Route path="/messages/:partnerId" component={MessagesPage} />
       <Route component={NotFound} />

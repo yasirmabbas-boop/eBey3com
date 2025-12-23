@@ -244,41 +244,25 @@ export default function ProductPage() {
     });
   };
 
-  const handleBuyNowDirect = () => {
+  const handleBuyNowDirect = async () => {
     if (isAuthenticated) {
-      // Logged in user - create transaction directly
+      // Logged in user - add to cart and redirect to checkout
       if (!listing) return;
-      fetch("/api/transactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          listingId: listing.id,
-          sellerId: listing.sellerId,
-          buyerId: user?.id,
-          amount: listing.price,
-          status: "pending",
-          paymentMethod: "cash",
-        }),
-      })
-        .then(res => {
-          if (!res.ok) throw new Error("فشل في إتمام الطلب");
-          return res.json();
-        })
-        .then(() => {
-          toast({
-            title: "تم الطلب بنجاح! 🎉",
-            description: "سيتواصل معك البائع قريباً",
-          });
-          queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
-        })
-        .catch(() => {
-          toast({
-            title: "خطأ",
-            description: "فشل في إتمام الطلب",
-            variant: "destructive",
-          });
+      
+      try {
+        await addToCart({ listingId: listing.id, quantity: 1 });
+        toast({
+          title: "تم إضافة المنتج للسلة",
+          description: "سيتم توجيهك لإتمام الشراء...",
         });
+        navigate("/checkout");
+      } catch (error: any) {
+        toast({
+          title: "خطأ",
+          description: error.message || "فشل في إضافة المنتج للسلة",
+          variant: "destructive",
+        });
+      }
     } else {
       // Guest user - open checkout dialog
       setGuestCheckoutOpen(true);

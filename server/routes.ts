@@ -1263,6 +1263,103 @@ export async function registerRoutes(
     }
   });
 
+  // ===== CHECKOUT API =====
+  app.post("/api/checkout", async (req, res) => {
+    const userId = (req.session as any)?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "يجب تسجيل الدخول لإتمام الشراء" });
+    }
+
+    try {
+      const { fullName, phone, city, addressLine1, addressLine2 } = req.body;
+      
+      if (!fullName || !phone || !city || !addressLine1) {
+        return res.status(400).json({ error: "جميع الحقول المطلوبة يجب ملؤها" });
+      }
+
+      // Get cart items
+      const cartItems = await storage.getCartItems(userId);
+      if (cartItems.length === 0) {
+        return res.status(400).json({ error: "سلة التسوق فارغة" });
+      }
+
+      // Process each cart item into a transaction
+      const transactions = [];
+      for (const item of cartItems) {
+        const listing = await storage.getListing(item.listingId);
+        if (!listing) {
+          continue; // Skip unavailable listings
+        }
+
+        // Check availability
+        const availableQuantity = (listing.quantityAvailable || 1) - (listing.quantitySold || 0);
+        if (availableQuantity < item.quantity) {
+          return res.status(400).json({ 
+            error: `الكمية المطلوبة من "${listing.title}" غير متوفرة. المتبقي: ${availableQuantity}` 
+          });
+        }
+
+        // Prevent sellers from buying their own products
+        if (listing.sellerId === userId) {
+          return res.status(400).json({ error: "لا يمكنك شراء منتجك الخاص" });
+        }
+
+        // Build delivery address string
+        const deliveryAddress = `الاسم: ${fullName}\nالهاتف: ${phone}\nالمدينة: ${city}\nالعنوان: ${addressLine1}${addressLine2 ? '\n' + addressLine2 : ''}`;
+
+        // Create transaction
+        const transaction = await storage.createTransaction({
+          listingId: item.listingId,
+          sellerId: listing.sellerId || "",
+          buyerId: userId,
+          amount: item.priceSnapshot * item.quantity,
+          status: "pending",
+          paymentMethod: "cash",
+          deliveryAddress,
+        });
+        transactions.push(transaction);
+
+        // Update listing quantitySold
+        const newQuantitySold = (listing.quantitySold || 0) + item.quantity;
+        await storage.updateListing(item.listingId, {
+          quantitySold: newQuantitySold,
+          isActive: newQuantitySold < (listing.quantityAvailable || 1),
+        });
+
+        // Notify seller via message system
+        if (listing.sellerId) {
+          try {
+            await storage.sendMessage({
+              senderId: userId,
+              receiverId: listing.sellerId,
+              content: `🛒 طلب جديد! تم شراء "${listing.title}" بقيمة ${(item.priceSnapshot * item.quantity).toLocaleString()} د.ع.\n\nبيانات التوصيل:\n${deliveryAddress}`,
+              listingId: item.listingId,
+            });
+          } catch (msgError) {
+            console.error("Error sending sale notification:", msgError);
+          }
+        }
+      }
+
+      // Update user's address info
+      await storage.updateUser(userId, {
+        displayName: fullName,
+        phone,
+        city,
+        addressLine1,
+        addressLine2: addressLine2 || null,
+      });
+
+      // Clear cart after successful checkout
+      await storage.clearCart(userId);
+
+      res.json({ success: true, transactions });
+    } catch (error) {
+      console.error("Error during checkout:", error);
+      res.status(500).json({ error: "فشل في إتمام الطلب" });
+    }
+  });
+
   // ===== OFFERS API =====
   
   // Create a new offer
