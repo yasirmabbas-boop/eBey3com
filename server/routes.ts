@@ -1126,38 +1126,6 @@ export async function registerRoutes(
     }
   });
 
-  // Get purchase history for buyers
-  app.get("/api/account/purchases", async (req, res) => {
-    const userId = (req.session as any)?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
-    try {
-      const transactions = await storage.getTransactionsForUser(userId);
-      const purchases = transactions.filter(t => t.buyerId === userId);
-      
-      // Enrich with listing data
-      const enrichedPurchases = await Promise.all(purchases.map(async (purchase) => {
-        const listing = await storage.getListing(purchase.listingId);
-        return {
-          ...purchase,
-          listing: listing ? {
-            id: listing.id,
-            title: listing.title,
-            price: listing.price,
-            images: listing.images,
-          } : null
-        };
-      }));
-      
-      res.json(enrichedPurchases);
-    } catch (error) {
-      console.error("Error fetching purchases:", error);
-      res.status(500).json({ error: "فشل في جلب سجل المشتريات" });
-    }
-  });
-
   // Cart routes
   app.get("/api/cart", async (req, res) => {
     const userId = (req.session as any)?.userId;

@@ -115,39 +115,46 @@ const getStatusBadge = (status: string) => {
 function DeliveryTimeline({ purchase }: { purchase: Purchase }) {
   const steps = getDeliverySteps(purchase);
   
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return null;
+    return date.toLocaleDateString("ar-IQ", { month: "short", day: "numeric" });
+  };
+  
   return (
     <div className="py-6">
       <div className="flex items-center justify-between relative">
-        {steps.map((stepInfo, index) => (
-          <div key={stepInfo.step} className="flex flex-col items-center flex-1 relative z-10">
-            <div 
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                stepInfo.completed 
-                  ? "bg-green-500 text-white" 
-                  : "bg-gray-200 text-gray-400"
-              }`}
-            >
-              {stepInfo.completed ? (
-                <CheckCircle className="h-5 w-5" />
-              ) : (
-                <div className="w-3 h-3 rounded-full bg-current" />
-              )}
-            </div>
-            <p className={`text-xs mt-2 font-medium text-center ${
-              stepInfo.completed ? "text-green-600" : "text-gray-400"
-            }`}>
-              {getStepLabel(stepInfo.step)}
-            </p>
-            {stepInfo.date && (
-              <p className="text-[10px] text-gray-500 mt-0.5">
-                {new Date(stepInfo.date).toLocaleDateString("ar-IQ", { 
-                  month: "short", 
-                  day: "numeric" 
-                })}
+        {steps.map((stepInfo, index) => {
+          const formattedDate = formatDate(stepInfo.date);
+          return (
+            <div key={stepInfo.step} className="flex flex-col items-center flex-1 relative z-10">
+              <div 
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  stepInfo.completed 
+                    ? "bg-green-500 text-white" 
+                    : "bg-gray-200 text-gray-400"
+                }`}
+              >
+                {stepInfo.completed ? (
+                  <CheckCircle className="h-5 w-5" />
+                ) : (
+                  <div className="w-3 h-3 rounded-full bg-current" />
+                )}
+              </div>
+              <p className={`text-xs mt-2 font-medium text-center ${
+                stepInfo.completed ? "text-green-600" : "text-gray-400"
+              }`}>
+                {getStepLabel(stepInfo.step)}
               </p>
-            )}
-          </div>
-        ))}
+              {formattedDate ? (
+                <p className="text-[10px] text-gray-500 mt-0.5">{formattedDate}</p>
+              ) : !stepInfo.completed ? (
+                <p className="text-[10px] text-gray-400 mt-0.5">في انتظار التحديث</p>
+              ) : null}
+            </div>
+          );
+        })}
         
         {/* Progress lines */}
         <div className="absolute top-4 right-[16.66%] left-[16.66%] h-0.5 bg-gray-200 -z-0">
