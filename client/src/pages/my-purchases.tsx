@@ -75,7 +75,7 @@ const getDeliverySteps = (purchase: Purchase): { step: DeliveryStep; completed: 
 
 const getStepLabel = (step: DeliveryStep): string => {
   switch (step) {
-    case "paid": return "تم الدفع";
+    case "paid": return "تم الطلب";
     case "tracking": return "رقم التتبع متاح";
     case "delivered": return "تم التسليم";
   }
