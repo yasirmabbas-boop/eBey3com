@@ -50,6 +50,13 @@ export default function ProductPage() {
   const [offerAmount, setOfferAmount] = useState("");
   const [offerMessage, setOfferMessage] = useState("");
 
+  // Guest checkout dialog state
+  const [guestCheckoutOpen, setGuestCheckoutOpen] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [guestAddress, setGuestAddress] = useState("");
+  const [guestCity, setGuestCity] = useState("");
+
   // Create offer mutation
   const createOfferMutation = useMutation({
     mutationFn: async (data: { listingId: string; offerAmount: number; message?: string }) => {
@@ -73,6 +80,48 @@ export default function ProductPage() {
       setOfferDialogOpen(false);
       setOfferAmount("");
       setOfferMessage("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Guest checkout mutation
+  const guestCheckoutMutation = useMutation({
+    mutationFn: async (data: { 
+      listingId: string; 
+      guestName: string; 
+      guestPhone: string; 
+      guestAddress: string;
+      guestCity: string;
+      amount: number;
+    }) => {
+      const res = await fetch("/api/transactions/guest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "فشل في إتمام الطلب");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم الطلب بنجاح! 🎉",
+        description: "سيتواصل معك البائع قريباً لتأكيد التوصيل",
+      });
+      setGuestCheckoutOpen(false);
+      setGuestName("");
+      setGuestPhone("");
+      setGuestAddress("");
+      setGuestCity("");
+      queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
     },
     onError: (error: Error) => {
       toast({
@@ -190,10 +239,64 @@ export default function ProductPage() {
   };
 
   const handleBuyNowDirect = () => {
-    if (!requireAuth("buy")) return;
-    toast({
-      title: "تم إضافة الطلب!",
-      description: "ستنتقل إلى صفحة الدفع قريباً.",
+    if (isAuthenticated) {
+      // Logged in user - create transaction directly
+      if (!listing) return;
+      fetch("/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          listingId: listing.id,
+          sellerId: listing.sellerId,
+          buyerId: user?.id,
+          amount: listing.price,
+          status: "pending",
+          paymentMethod: "cash",
+        }),
+      })
+        .then(res => {
+          if (!res.ok) throw new Error("فشل في إتمام الطلب");
+          return res.json();
+        })
+        .then(() => {
+          toast({
+            title: "تم الطلب بنجاح! 🎉",
+            description: "سيتواصل معك البائع قريباً",
+          });
+          queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
+        })
+        .catch(() => {
+          toast({
+            title: "خطأ",
+            description: "فشل في إتمام الطلب",
+            variant: "destructive",
+          });
+        });
+    } else {
+      // Guest user - open checkout dialog
+      setGuestCheckoutOpen(true);
+    }
+  };
+
+  const handleGuestCheckout = () => {
+    if (!guestName.trim() || !guestPhone.trim() || !guestAddress.trim()) {
+      toast({
+        title: "بيانات ناقصة",
+        description: "يرجى ملء جميع الحقول المطلوبة",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!listing) return;
+    
+    guestCheckoutMutation.mutate({
+      listingId: listing.id,
+      guestName: guestName.trim(),
+      guestPhone: guestPhone.trim(),
+      guestAddress: guestAddress.trim(),
+      guestCity: guestCity.trim(),
+      amount: listing.price,
     });
   };
 
@@ -639,6 +742,94 @@ export default function ProductPage() {
                   <Send className="h-4 w-4 ml-2" />
                   إرسال العرض
                 </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Guest Checkout Dialog */}
+      <Dialog open={guestCheckoutOpen} onOpenChange={setGuestCheckoutOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">إتمام الشراء كضيف</DialogTitle>
+            <DialogDescription className="text-right">
+              أدخل بياناتك لإتمام عملية الشراء. سيتواصل معك البائع لتأكيد الطلب.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="guest-name">الاسم الكامل *</Label>
+              <Input
+                id="guest-name"
+                placeholder="أدخل اسمك الكامل"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                data-testid="input-guest-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="guest-phone">رقم الهاتف *</Label>
+              <Input
+                id="guest-phone"
+                type="tel"
+                placeholder="07xxxxxxxxx"
+                value={guestPhone}
+                onChange={(e) => setGuestPhone(e.target.value)}
+                className="text-left"
+                dir="ltr"
+                data-testid="input-guest-phone"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="guest-city">المدينة / المحافظة</Label>
+              <Input
+                id="guest-city"
+                placeholder="مثال: بغداد"
+                value={guestCity}
+                onChange={(e) => setGuestCity(e.target.value)}
+                data-testid="input-guest-city"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="guest-address">العنوان الكامل *</Label>
+              <Textarea
+                id="guest-address"
+                placeholder="أدخل عنوانك بالتفصيل للتوصيل"
+                value={guestAddress}
+                onChange={(e) => setGuestAddress(e.target.value)}
+                rows={3}
+                data-testid="input-guest-address"
+              />
+            </div>
+            <div className="bg-muted p-3 rounded-lg">
+              <p className="text-sm font-semibold">ملخص الطلب:</p>
+              <p className="text-sm text-muted-foreground">{product?.title}</p>
+              <p className="text-lg font-bold text-primary">{product?.price.toLocaleString()} د.ع</p>
+              <p className="text-xs text-muted-foreground mt-1">الدفع عند الاستلام</p>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setGuestCheckoutOpen(false)}
+              data-testid="button-cancel-guest-checkout"
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleGuestCheckout}
+              disabled={!guestName || !guestPhone || !guestAddress || guestCheckoutMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+              data-testid="button-confirm-guest-checkout"
+            >
+              {guestCheckoutMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  جاري التأكيد...
+                </>
+              ) : (
+                "تأكيد الطلب"
               )}
             </Button>
           </DialogFooter>

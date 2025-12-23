@@ -444,6 +444,53 @@ export async function registerRoutes(
     }
   });
 
+  // Guest checkout - allows purchases without authentication
+  app.post("/api/transactions/guest", async (req, res) => {
+    try {
+      const { listingId, guestName, guestPhone, guestAddress, guestCity, amount } = req.body;
+      
+      if (!listingId || !guestName || !guestPhone || !guestAddress) {
+        return res.status(400).json({ error: "جميع الحقول مطلوبة" });
+      }
+      
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      const availableQuantity = (listing.quantityAvailable || 1) - (listing.quantitySold || 0);
+      if (availableQuantity <= 0) {
+        return res.status(400).json({ error: "المنتج نفد - غير متوفر للشراء" });
+      }
+      
+      // Create transaction with guest info in delivery address
+      const guestInfo = `الاسم: ${guestName}\nالهاتف: ${guestPhone}\nالمدينة: ${guestCity || 'غير محدد'}\nالعنوان: ${guestAddress}`;
+      
+      const transaction = await storage.createTransaction({
+        listingId,
+        sellerId: listing.sellerId || "",
+        buyerId: "guest",
+        amount: amount || listing.price,
+        status: "pending",
+        paymentMethod: "cash",
+        deliveryAddress: guestInfo,
+        deliveryStatus: "pending",
+      });
+      
+      // Update listing quantitySold
+      const newQuantitySold = (listing.quantitySold || 0) + 1;
+      await storage.updateListing(listingId, {
+        quantitySold: newQuantitySold,
+        isActive: newQuantitySold < (listing.quantityAvailable || 1)
+      });
+      
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error("Error creating guest transaction:", error);
+      res.status(400).json({ error: "فشل في إتمام الطلب", details: String(error) });
+    }
+  });
+
   app.patch("/api/transactions/:id/status", async (req, res) => {
     try {
       const { status } = req.body;
