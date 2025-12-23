@@ -57,7 +57,7 @@ export default function MyAccount() {
 
   const { data: buyerSummary } = useQuery<BuyerSummary>({
     queryKey: ["/api/account/buyer-summary"],
-    enabled: !!user?.id && user?.accountType === "buyer",
+    enabled: !!user?.id,
   });
 
   const { data: sellerSummary } = useQuery<SellerSummary>({

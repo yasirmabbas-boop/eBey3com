@@ -986,7 +986,7 @@ export async function registerRoutes(
     }
   });
 
-  // Get buyer purchases (transactions where user is the buyer)
+  // Get buyer purchases (transactions where user is the buyer ONLY)
   app.get("/api/account/purchases", async (req, res) => {
     const userId = (req.session as any)?.userId;
     if (!userId) {
@@ -994,8 +994,8 @@ export async function registerRoutes(
     }
 
     try {
-      const allTransactions = await storage.getTransactionsForUser(userId);
-      const buyerPurchases = allTransactions.filter(t => t.buyerId === userId);
+      // Use dedicated method that queries ONLY purchases where user is buyer
+      const buyerPurchases = await storage.getPurchasesForBuyer(userId);
       
       // Enrich with listing and seller details
       const enrichedPurchases = await Promise.all(
@@ -1024,7 +1024,7 @@ export async function registerRoutes(
     }
   });
 
-  // Get seller orders (transactions)
+  // Get seller orders (transactions where user is the seller ONLY)
   app.get("/api/account/seller-orders", async (req, res) => {
     const userId = (req.session as any)?.userId;
     if (!userId) {
@@ -1037,8 +1037,8 @@ export async function registerRoutes(
         return res.status(403).json({ error: "هذه الميزة متاحة للبائعين فقط" });
       }
 
-      const allTransactions = await storage.getTransactionsForUser(userId);
-      const sellerOrders = allTransactions.filter(t => t.sellerId === userId);
+      // Use dedicated method that queries ONLY sales where user is seller
+      const sellerOrders = await storage.getSalesForSeller(userId);
       
       // Enrich with listing and buyer details
       const enrichedOrders = await Promise.all(
@@ -1091,7 +1091,7 @@ export async function registerRoutes(
     }
   });
 
-  // Get buyer summary (stats)
+  // Get buyer summary (stats) - ONLY purchases where user is buyer
   app.get("/api/account/buyer-summary", async (req, res) => {
     const userId = (req.session as any)?.userId;
     if (!userId) {
@@ -1099,8 +1099,8 @@ export async function registerRoutes(
     }
 
     try {
-      const transactions = await storage.getTransactionsForUser(userId);
-      const purchases = transactions.filter(t => t.buyerId === userId);
+      // Use dedicated method that queries ONLY purchases where user is buyer
+      const purchases = await storage.getPurchasesForBuyer(userId);
       const watchlistItems = await storage.getWatchlist(userId);
       const offers = await storage.getOffersByBuyer(userId);
       
