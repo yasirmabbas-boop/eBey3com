@@ -315,241 +315,200 @@ export default function ProductPage() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-          
-          {/* Image Gallery */}
-          <div className="space-y-4">
-            <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden border">
-              <img 
-                src={product.image} 
-                alt={product.title} 
-                className="w-full h-full object-cover"
-              />
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        
+        {/* Image Gallery - Horizontal scroll thumbnails */}
+        <div className="mb-6">
+          <div className="aspect-[4/3] md:aspect-[16/9] bg-gray-100 rounded-xl overflow-hidden mb-3">
+            <img 
+              src={product.image} 
+              alt={product.title} 
+              className="w-full h-full object-contain bg-white"
+            />
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {(product.images.length > 0 ? product.images : [product.image, product.image, product.image, product.image]).map((img, i) => (
+              <div key={i} className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border-2 cursor-pointer hover:border-primary transition-colors">
+                <img 
+                  src={img} 
+                  alt={`thumbnail ${i + 1}`} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Product Title */}
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight mb-4" data-testid="text-product-title">
+          {product.title}
+        </h1>
+
+        {/* Seller Info Row */}
+        <div className="flex items-center gap-3 py-3 border-b">
+          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-sm">
+            {product.seller.name.charAt(0)}
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm">{product.seller.name}</span>
+              {product.seller.salesCount > 0 && (
+                <span className="text-xs text-gray-500">({product.seller.salesCount})</span>
+              )}
             </div>
-            <div className="grid grid-cols-4 gap-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="aspect-square bg-gray-100 rounded-lg overflow-hidden border cursor-pointer hover:border-primary">
-                  <img 
-                    src={product.image} 
-                    alt="thumbnail" 
-                    className="w-full h-full object-cover opacity-70 hover:opacity-100"
-                  />
-                </div>
-              ))}
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              {product.seller.ratingCount > 0 ? (
+                <>
+                  <span className="text-green-600 font-medium">
+                    {Math.round(product.seller.rating)}% تقييم إيجابي
+                  </span>
+                </>
+              ) : (
+                <span>بائع جديد</span>
+              )}
             </div>
           </div>
+          {!isOwnProduct && (
+            <Button variant="ghost" size="icon" className="text-gray-400">
+              <Send className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
 
-          {/* Product Info */}
-          <div className="flex flex-col">
-            <div className="mb-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex gap-2 mb-2">
-                    <Badge variant="outline">{product.condition}</Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      <Tag className="h-3 w-3 ml-1" />
-                      {product.productCode}
-                    </Badge>
-                  </div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
-                  <div className="mt-2">
-                    <span className="text-muted-foreground">البائع: </span>
-                    <SellerTrustBadge 
-                      salesCount={product.seller.salesCount}
-                      rating={product.seller.rating}
-                      sellerName={product.seller.name}
-                    />
-                  </div>
-                  <div className="flex items-center gap-1 mt-2">
-                    {product.seller.ratingCount > 0 ? (
-                      <>
-                        <div className="flex text-yellow-400">
-                          {[1, 2, 3, 4, 5].map(i => (
-                            <Star key={i} className={`h-4 w-4 ${i <= Math.round(product.seller.rating / 20) ? 'fill-current' : 'text-gray-300'}`} />
-                          ))}
-                        </div>
-                        <span className="text-sm text-gray-600 font-bold">({(product.seller.rating / 20).toFixed(1)})</span>
-                        <span className="text-xs text-gray-500">- {product.seller.salesCount} عميل</span>
-                      </>
-                    ) : (
-                      <span className="text-sm text-gray-500">التقييم: غير متوفر</span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-muted-foreground hover:text-red-500"
-                    onClick={handleAddWishlist}
-                    data-testid="button-add-wishlist"
-                  >
-                    <Heart className="h-6 w-6" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-muted-foreground"
-                    data-testid="button-share"
-                  >
-                    <Share2 className="h-6 w-6" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <Separator className="my-6" />
-
-            {/* Show notice if this is the user's own product */}
-            {isOwnProduct && (
-              <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded-xl text-center mb-6">
-                <p className="text-blue-700 font-bold">هذا منتجك الخاص</p>
-                <p className="text-blue-600 text-sm mt-1">لا يمكنك شراء أو المزايدة على منتجاتك</p>
-              </div>
-            )}
-
-            {product.currentBid ? (
-              !isOwnProduct ? (
-                <BiddingWindow
-                  listingId={params?.id || ""}
-                  currentBid={product.currentBid}
-                  totalBids={product.totalBids || 0}
-                  minimumBid={(product.currentBid || 0) + 5000}
-                  timeLeft={product.timeLeft}
-                  onRequireAuth={() => requireAuth("bid")}
-                />
-              ) : (
-                <div className="bg-muted/30 p-6 rounded-xl border mb-6">
-                  <div className="flex items-end gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground mb-1">السعر الحالي:</span>
-                    <span className="text-4xl font-bold text-primary">
-                      {product.currentBid.toLocaleString()} <span className="text-lg">د.ع</span>
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">عدد المزايدات: {product.totalBids}</p>
-                </div>
-              )
-            ) : (
-              <div className="bg-muted/30 p-6 rounded-xl border mb-6">
-                <div className="flex items-end gap-2 mb-2">
-                  <span className="text-sm text-muted-foreground mb-1">السعر:</span>
-                  <span className="text-4xl font-bold text-primary">
-                    {(product.currentBid || product.price).toLocaleString()} <span className="text-lg">د.ع</span>
-                  </span>
-                  {product.isNegotiable && (
-                    <Badge variant="secondary" className="mr-2">قابل للتفاوض</Badge>
-                  )}
-                </div>
-                
-                {/* Stock availability */}
-                {(() => {
-                  const remainingQuantity = product.quantityAvailable - product.quantitySold;
-                  const isSoldOut = remainingQuantity <= 0;
-                  
-                  return (
-                    <>
-                      <div className="text-sm mb-3">
-                        {isSoldOut ? (
-                          <span className="text-red-600 font-bold text-base">🚫 نفد - تم البيع</span>
-                        ) : remainingQuantity > 10 ? (
-                          <span className="text-green-600 font-medium">✓ في المخزون</span>
-                        ) : (
-                          <span className="text-amber-600 font-medium">متبقي {remainingQuantity} قطعة فقط</span>
-                        )}
-                      </div>
-                      
-                      {isSoldOut ? (
-                        <div className="bg-red-100 border-2 border-red-300 p-4 rounded-xl text-center mt-4">
-                          <p className="text-red-700 font-bold text-lg">هذا المنتج غير متوفر حالياً</p>
-                          <p className="text-red-600 text-sm mt-1">تم بيع جميع الكميات المتاحة</p>
-                        </div>
-                      ) : !isOwnProduct ? (
-                        <>
-                          <Button 
-                            size="lg" 
-                            className="w-full text-lg h-12 bg-accent hover:bg-accent/90 text-white font-bold mt-4"
-                            onClick={handleBuyNowDirect}
-                            disabled={!!isPurchaseDisabled}
-                            data-testid="button-buy-now-fixed"
-                          >
-                            {isPurchaseDisabled ? "جاري التحميل..." : "شراء الآن"}
-                          </Button>
-                          
-                          {/* Make an Offer button for negotiable items */}
-                          {product.isNegotiable && (
-                            <Button 
-                              variant="outline"
-                              size="lg" 
-                              className="w-full text-lg h-12 mt-3 border-primary text-primary hover:bg-primary/10"
-                              onClick={() => {
-                                if (!requireAuth("offer")) return;
-                                setOfferAmount(Math.floor(product.price * 0.9).toString());
-                                setOfferDialogOpen(true);
-                              }}
-                              data-testid="button-make-offer"
-                            >
-                              قدّم عرضك
-                            </Button>
-                          )}
-                        </>
-                      ) : null}
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-
-            {/* Cash Payment Note */}
-            <div className="bg-green-100 border border-green-300 rounded-lg p-3 mb-4 flex items-start gap-2 text-sm text-green-900">
-              <Banknote className="h-5 w-5 shrink-0 text-green-700" />
-              <p>
-                <strong>ملاحظة:</strong> الدفع حالياً نقداً عند الاستلام فقط (Cash on Delivery).
-                خدمة الدفع بالبطاقات ستتوفر قريباً.
+        {/* Price Section */}
+        <div className="py-4 border-b">
+          {product.saleType === "auction" ? (
+            <>
+              <p className="text-3xl font-bold">{(product.currentBid || product.price).toLocaleString()} د.ع</p>
+              <p className="text-sm text-gray-500 mt-1">
+                {product.totalBids && product.totalBids > 0 
+                  ? `${product.totalBids} مزايدة` 
+                  : "سعر المزايدة الابتدائي"}
               </p>
-            </div>
-
-            {/* Buy Now Option - Only show if product is available and not own product */}
-            {product && !isOwnProduct && (product.quantityAvailable - product.quantitySold) > 0 && listing?.saleType === "auction" && (
-              <div className="bg-green-50 border-2 border-green-200 p-6 rounded-xl mb-6">
-                <div className="flex items-end gap-2 mb-2">
-                  <span className="text-sm text-green-700 font-semibold mb-1">🛒 شراء فوري (اختياري):</span>
-                  <span className="text-3xl font-bold text-green-600">
-                    450,000 <span className="text-lg">د.ع</span>
-                  </span>
-                </div>
-                <p className="text-xs text-gray-600 mb-3">شراء مباشر بدون انتظار نتيجة المزاد</p>
-                <Button 
-                  size="lg" 
-                  className="w-full text-lg h-12 bg-green-600 hover:bg-green-700 text-white font-bold"
-                  onClick={handleBuyNowDirect}
-                  disabled={!!isPurchaseDisabled}
-                  data-testid="button-buy-now-direct"
-                >
-                  {isPurchaseDisabled ? "جاري التحميل..." : "🛒 اشتر الآن مباشرة"}
-                </Button>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              {listing?.saleType !== "auction" && product && !isOwnProduct && (product.quantityAvailable - product.quantitySold) > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="h-12" 
-                  onClick={handleAddCart}
-                  disabled={isAdding || !!isPurchaseDisabled}
-                  data-testid="button-add-cart"
-                >
-                  {isAdding ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                      جاري الإضافة...
-                    </>
-                  ) : isPurchaseDisabled ? "جاري التحميل..." : "أضف للسلة"}
-                </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-3xl font-bold">{product.price.toLocaleString()} د.ع</p>
+              {product.isNegotiable && (
+                <p className="text-sm text-gray-500 mt-1">أو أفضل عرض</p>
               )}
-              {!isOwnProduct && (
+            </>
+          )}
+        </div>
+
+        {/* Shipping & Condition Info */}
+        <div className="py-4 border-b space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-500 text-sm">التوصيل</span>
+            <span className="text-sm font-medium">{product.deliveryWindow || "3-5 أيام"}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-500 text-sm">الحالة</span>
+            <span className="text-sm font-medium">{product.condition}</span>
+          </div>
+          {product.city && (
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500 text-sm">الموقع</span>
+              <span className="text-sm font-medium">{product.city}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Show notice if this is the user's own product */}
+        {isOwnProduct && (
+          <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl text-center my-4">
+            <p className="text-blue-700 font-semibold">هذا منتجك الخاص</p>
+            <p className="text-blue-600 text-sm">لا يمكنك شراء أو المزايدة على منتجاتك</p>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="py-4 space-y-3">
+          {(() => {
+            const remainingQuantity = product.quantityAvailable - product.quantitySold;
+            const isSoldOut = remainingQuantity <= 0;
+            
+            if (isSoldOut) {
+              return (
+                <div className="bg-red-50 border border-red-200 p-4 rounded-xl text-center">
+                  <p className="text-red-700 font-semibold">غير متوفر</p>
+                  <p className="text-red-600 text-sm">تم بيع جميع الكميات</p>
+                </div>
+              );
+            }
+
+            if (isOwnProduct) return null;
+
+            return (
+              <>
+                {/* Auction Bidding - Show for all auction items */}
+                {product.saleType === "auction" && (
+                  <BiddingWindow
+                    listingId={params?.id || ""}
+                    userId={user?.id}
+                    currentBid={product.currentBid || product.price}
+                    totalBids={product.totalBids || 0}
+                    minimumBid={(product.currentBid || product.price) + 1000}
+                    timeLeft={product.timeLeft}
+                    onRequireAuth={() => requireAuth("bid")}
+                  />
+                )}
+
+                {/* Fixed Price Buttons */}
+                {product.saleType !== "auction" && (
+                  <>
+                    <Button 
+                      size="lg" 
+                      className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90"
+                      onClick={handleBuyNowDirect}
+                      disabled={!!isPurchaseDisabled}
+                      data-testid="button-buy-now"
+                    >
+                      {isPurchaseDisabled ? "جاري التحميل..." : "اشتر الآن"}
+                    </Button>
+
+                    <Button 
+                      variant="outline"
+                      size="lg" 
+                      className="w-full h-14 text-lg font-medium"
+                      onClick={handleAddCart}
+                      disabled={isAdding || !!isPurchaseDisabled}
+                      data-testid="button-add-cart"
+                    >
+                      {isAdding ? "جاري الإضافة..." : "أضف للسلة"}
+                    </Button>
+
+                    {product.isNegotiable && (
+                      <Button 
+                        variant="outline"
+                        size="lg" 
+                        className="w-full h-14 text-lg font-medium"
+                        onClick={() => {
+                          if (!requireAuth("offer")) return;
+                          setOfferAmount(Math.floor(product.price * 0.9).toString());
+                          setOfferDialogOpen(true);
+                        }}
+                        data-testid="button-make-offer"
+                      >
+                        قدّم عرضك
+                      </Button>
+                    )}
+                  </>
+                )}
+
+                {/* Watchlist Button */}
+                <Button 
+                  variant="outline"
+                  size="lg" 
+                  className="w-full h-14 text-lg font-medium"
+                  onClick={handleAddWishlist}
+                  data-testid="button-watchlist"
+                >
+                  <Heart className="h-5 w-5 ml-2" />
+                  أضف للمفضلة
+                </Button>
+
+                {/* Contact Seller */}
                 <ContactSeller 
                   sellerName={product.seller.name}
                   sellerId={listing?.sellerId || ""}
@@ -557,126 +516,82 @@ export default function ProductPage() {
                   productTitle={product.title}
                   productCode={product.productCode}
                 />
-              )}
+              </>
+            );
+          })()}
+        </div>
+
+        {/* Stock Info */}
+        {(() => {
+          const remainingQuantity = product.quantityAvailable - product.quantitySold;
+          if (remainingQuantity > 0 && remainingQuantity <= 10) {
+            return (
+              <div className="flex items-center gap-2 py-3 text-sm">
+                <Clock className="h-4 w-4 text-amber-500" />
+                <span className="text-amber-700 font-medium">متبقي {remainingQuantity} قطعة فقط!</span>
+              </div>
+            );
+          }
+          return null;
+        })()}
+
+        {/* Cash Payment Note */}
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 my-4 flex items-start gap-3">
+          <Banknote className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium text-green-800 text-sm">الدفع عند الاستلام</p>
+            <p className="text-green-700 text-xs">ادفع نقداً عند استلام طلبك</p>
+          </div>
+        </div>
+
+        {/* Buyer Protection */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+          <ShieldCheck className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium text-blue-800 text-sm">حماية المشتري</p>
+            <p className="text-blue-700 text-xs">أموالك محفوظة حتى تستلم المنتج</p>
+          </div>
+        </div>
+
+        {/* Description Section */}
+        <div className="py-4 border-t">
+          <h2 className="font-bold text-lg mb-3">الوصف</h2>
+          <p className="text-gray-600 leading-relaxed text-sm">
+            {product.description || "لا يوجد وصف متوفر لهذا المنتج."}
+          </p>
+        </div>
+
+        {/* Specs Section */}
+        <div className="py-4 border-t">
+          <h2 className="font-bold text-lg mb-3">المواصفات</h2>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between py-2 border-b border-gray-100">
+              <span className="text-gray-500">الحالة</span>
+              <span className="font-medium">{product.condition}</span>
             </div>
-
-            {/* Seller Tools - Print Shipping Label - Only visible after purchase completion */}
-            {/* This section is hidden on product pages - it will appear in the seller's 
-                order management page after a buyer completes a purchase */}
-
-            <div className="space-y-4">
-              {/* Delivery & Return Policy */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="flex items-start gap-3 p-4 bg-purple-50 text-purple-800 rounded-lg text-sm" data-testid="delivery-info">
-                  <Truck className="h-5 w-5 mt-0.5 shrink-0 text-purple-600" />
-                  <div>
-                    <strong>موعد التوصيل:</strong>
-                    <p className="mt-1">{product.deliveryWindow}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-4 bg-orange-50 text-orange-800 rounded-lg text-sm" data-testid="return-info">
-                  <RotateCcw className="h-5 w-5 mt-0.5 shrink-0 text-orange-600" />
-                  <div>
-                    <strong>سياسة الإرجاع:</strong>
-                    <p className="mt-1">{product.returnPolicy}</p>
-                  </div>
-                </div>
+            {product.brand && (
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-gray-500">الماركة</span>
+                <span className="font-medium">{product.brand}</span>
               </div>
-
-              <div className="flex items-start gap-3 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm">
-                <ShieldCheck className="h-5 w-5 mt-0.5 shrink-0" />
-                <p>
-                  <strong>حماية المشتري:</strong> أموالك محفوظة حتى تستلم المنتج وتتأكد من مطابقته للمواصفات.
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="font-bold text-lg">الوصف</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  {product.description || "هذا النص هو مثال لنص يمكن أن يستبدل في نفس المساحة، لقد تم توليد هذا النص من مولد النص العربى، حيث يمكنك أن تولد مثل هذا النص أو العديد من النصوص الأخرى إضافة إلى زيادة عدد الحروف التى يولدها التطبيق."}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-bold text-lg">المواصفات</h3>
-                <ul className="grid grid-cols-2 gap-2 text-sm">
-                  <li className="flex justify-between border-b py-2">
-                    <span className="text-muted-foreground">الحالة</span>
-                    <span>{product.condition}</span>
-                  </li>
-                  <li className="flex justify-between border-b py-2">
-                    <span className="text-muted-foreground">الماركة</span>
-                    <span>{product.brand || "غير محدد"}</span>
-                  </li>
-                  <li className="flex justify-between border-b py-2">
-                    <span className="text-muted-foreground">الموقع</span>
-                    <span>{product.city || "غير محدد"}</span>
-                  </li>
-                  <li className="flex justify-between border-b py-2">
-                    <span className="text-muted-foreground">الفئة</span>
-                    <span>{product.category}</span>
-                  </li>
-                </ul>
-              </div>
+            )}
+            <div className="flex justify-between py-2 border-b border-gray-100">
+              <span className="text-gray-500">الفئة</span>
+              <span className="font-medium">{product.category}</span>
             </div>
-
+            <div className="flex justify-between py-2 border-b border-gray-100">
+              <span className="text-gray-500">رمز المنتج</span>
+              <span className="font-medium text-xs">{product.productCode}</span>
+            </div>
+            {product.city && (
+              <div className="flex justify-between py-2">
+                <span className="text-gray-500">الموقع</span>
+                <span className="font-medium">{product.city}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Similar Suggestions Slider */}
-      <section className="bg-gray-50 py-12 border-t">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-primary mb-8 text-center">قد يعجبك أيضاً</h2>
-          <Carousel 
-            opts={{
-              align: "start",
-              direction: "rtl",
-            }}
-            className="w-full"
-          >
-            <CarouselContent className="-ml-4">
-              {SIMILAR_PRODUCTS.map((item) => (
-                <CarouselItem key={item.id} className="pl-4 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
-                  <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border aspect-square flex flex-col">
-                    <div className="relative h-2/3 bg-gray-200">
-                      <img 
-                        src={item.image} 
-                        alt={item.title} 
-                        className="w-full h-full object-cover"
-                      />
-                      <Badge className="absolute top-2 right-2 bg-black/50 hover:bg-black/60 border-0 backdrop-blur-sm">
-                        ينتهي: {item.timeLeft}
-                      </Badge>
-                    </div>
-                    <div className="p-3 flex flex-col justify-between flex-1">
-                      <div>
-                        <h3 className="font-bold text-sm line-clamp-1 mb-1">{item.title}</h3>
-                        <div className="flex items-center gap-1 text-xs text-yellow-500 mb-2">
-                          <Star className="h-3 w-3 fill-current" />
-                          <span className="font-medium text-gray-700">{item.rating}</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <p className="text-xs text-gray-500">السعر الحالي</p>
-                          <p className="font-bold text-primary">{item.price.toLocaleString()} د.ع</p>
-                        </div>
-                        <div className="text-xs text-gray-500 flex items-center gap-1">
-                          <span className="font-bold text-gray-900">{item.bids}</span>
-                          مزايدة
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="hidden md:flex left-0" />
-            <CarouselNext className="hidden md:flex right-0" />
-          </Carousel>
-        </div>
-      </section>
 
       {/* Make an Offer Dialog */}
       <Dialog open={offerDialogOpen} onOpenChange={setOfferDialogOpen}>
