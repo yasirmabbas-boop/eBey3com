@@ -181,6 +181,37 @@ export default function MySales() {
     },
   });
 
+  const markAsShippedMutation = useMutation({
+    mutationFn: async (transactionId: string) => {
+      const res = await fetch(`/api/transactions/${transactionId}/ship`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("فشل في تحديث حالة الشحن");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "تم تأكيد الشحن! 📦",
+        description: data.isGuestBuyer 
+          ? "يرجى التواصل مع المشتري عبر الهاتف لإبلاغه بالشحن" 
+          : "تم إرسال إشعار للمشتري",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/seller-transactions"] });
+      if (selectedSale) {
+        setSelectedSale({ ...selectedSale, status: "shipped" });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "فشل في تحديث حالة الشحن",
+        variant: "destructive",
+      });
+    },
+  });
+
   const pendingOffers = offers.filter(o => o.status === "pending");
   const completedSales = transactions.filter(t => t.status === "completed" || t.status === "delivered");
   const pendingSales = transactions.filter(t => t.status === "pending" || t.status === "shipped");
@@ -413,6 +444,45 @@ export default function MySales() {
                               <Printer className="h-5 w-5" />
                               طباعة
                             </Button>
+                          </div>
+                        </Card>
+                      )}
+
+                      {/* Mark as Shipped Button */}
+                      {selectedSale.status === "pending" && (
+                        <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-bold text-blue-800 text-lg mb-1 flex items-center gap-2">
+                                <Truck className="h-5 w-5" />
+                                تأكيد الشحن
+                              </h3>
+                              <p className="text-sm text-blue-700">
+                                بعد إرسال الطرد، اضغط لإبلاغ المشتري
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => markAsShippedMutation.mutate(selectedSale.id)}
+                              disabled={markAsShippedMutation.isPending}
+                              className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                              data-testid="button-mark-shipped"
+                            >
+                              {markAsShippedMutation.isPending ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                              ) : (
+                                <Truck className="h-5 w-5" />
+                              )}
+                              تم الشحن
+                            </Button>
+                          </div>
+                        </Card>
+                      )}
+                      
+                      {selectedSale.status === "shipped" && (
+                        <Card className="p-4 bg-blue-100 border-blue-300">
+                          <div className="flex items-center gap-2 text-blue-800">
+                            <Truck className="h-5 w-5" />
+                            <span className="font-semibold">تم شحن هذا الطلب - في طريقه للمشتري</span>
                           </div>
                         </Card>
                       )}

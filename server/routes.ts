@@ -505,6 +505,63 @@ export async function registerRoutes(
     }
   });
 
+  // Mark transaction as shipped (seller action)
+  app.patch("/api/transactions/:id/ship", async (req, res) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      const transactionId = req.params.id;
+      
+      // Authentication required
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول لتحديث حالة الشحن" });
+      }
+      
+      // Get the specific transaction directly
+      const transaction = await storage.getTransactionById(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+      
+      // Verify seller owns this transaction
+      if (transaction.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بتحديث هذا الطلب" });
+      }
+      
+      // Update delivery status to shipped
+      const updated = await storage.updateTransactionStatus(transactionId, "shipped");
+      if (!updated) {
+        return res.status(500).json({ error: "فشل في تحديث حالة الشحن" });
+      }
+      
+      // If buyer is registered (not guest), send them a notification message
+      if (transaction.buyerId && transaction.buyerId !== "guest") {
+        const listing = await storage.getListing(transaction.listingId);
+        try {
+          await storage.sendMessage({
+            senderId: transaction.sellerId,
+            receiverId: transaction.buyerId,
+            content: `تم شحن طلبك! 📦\n\nالمنتج: ${listing?.title || 'منتج'}\nرقم الطلب: ${transactionId.slice(0, 8).toUpperCase()}\n\nسيصلك قريباً. شكراً لتسوقك معنا!`,
+            listingId: transaction.listingId,
+          });
+        } catch (e) {
+          console.log("Could not send shipping notification message:", e);
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "تم تحديث حالة الشحن بنجاح",
+        transaction: updated,
+        isGuestBuyer: transaction.buyerId === "guest",
+        guestInfo: transaction.buyerId === "guest" ? transaction.deliveryAddress : null,
+      });
+    } catch (error) {
+      console.error("Error marking as shipped:", error);
+      res.status(500).json({ error: "فشل في تحديث حالة الشحن" });
+    }
+  });
+
   app.get("/api/categories", async (req, res) => {
     try {
       const categories = await storage.getCategories();

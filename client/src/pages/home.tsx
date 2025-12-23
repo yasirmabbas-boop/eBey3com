@@ -91,26 +91,33 @@ export default function Home() {
     },
   });
 
-  const displayProducts = listings.map(l => ({
-    id: l.id,
-    productCode: (l as any).productCode || `P-${l.id.slice(0, 6)}`,
-    title: l.title,
-    price: l.price,
-    currentBid: l.currentBid || undefined,
-    image: l.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
-    saleType: l.saleType as "auction" | "fixed",
-    timeLeft: l.timeLeft || undefined,
-    auctionEndTime: l.auctionEndTime,
-    seller: { name: l.sellerName, salesCount: 0, rating: 95 },
-    sellerName: l.sellerName,
-    sellerTotalSales: 0,
-    sellerRating: 5,
-    category: l.category,
-    condition: l.condition as "New" | "Used - Like New" | "Used - Good" | "Vintage",
-    deliveryWindow: l.deliveryWindow,
-    returnPolicy: l.returnPolicy,
-    city: l.city,
-  }));
+  const displayProducts = listings
+    .filter(l => {
+      const remaining = (l.quantityAvailable || 1) - (l.quantitySold || 0);
+      return remaining > 0;
+    })
+    .map(l => ({
+      id: l.id,
+      productCode: (l as any).productCode || `P-${l.id.slice(0, 6)}`,
+      title: l.title,
+      price: l.price,
+      currentBid: l.currentBid || undefined,
+      image: l.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
+      saleType: l.saleType as "auction" | "fixed",
+      timeLeft: l.timeLeft || undefined,
+      auctionEndTime: l.auctionEndTime,
+      seller: { name: l.sellerName, salesCount: 0, rating: 95 },
+      sellerName: l.sellerName,
+      sellerTotalSales: 0,
+      sellerRating: 5,
+      category: l.category,
+      condition: l.condition as "New" | "Used - Like New" | "Used - Good" | "Vintage",
+      deliveryWindow: l.deliveryWindow,
+      returnPolicy: l.returnPolicy,
+      city: l.city,
+      quantityAvailable: l.quantityAvailable || 1,
+      quantitySold: l.quantitySold || 0,
+    }));
 
   const recommendedProducts = displayProducts.slice(0, 6);
   

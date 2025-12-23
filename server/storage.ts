@@ -55,6 +55,7 @@ export interface IStorage {
   createReview(review: InsertReview): Promise<Review>;
   
   getTransactionsForUser(userId: string): Promise<Transaction[]>;
+  getTransactionById(id: string): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransactionStatus(id: string, status: string): Promise<Transaction | undefined>;
   
@@ -309,6 +310,11 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(transactions)
       .where(sql`${transactions.sellerId} = ${userId} OR ${transactions.buyerId} = ${userId}`)
       .orderBy(desc(transactions.createdAt));
+  }
+
+  async getTransactionById(id: string): Promise<Transaction | undefined> {
+    const [txn] = await db.select().from(transactions).where(eq(transactions.id, id));
+    return txn;
   }
 
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
