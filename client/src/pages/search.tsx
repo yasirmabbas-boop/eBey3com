@@ -623,63 +623,76 @@ export default function SearchPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="space-y-4">
               {filteredProducts.map((product) => (
                 <Link key={product.id} href={`/product/${product.id}`}>
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-muted" data-testid={`search-result-${product.id}`}>
-                    <div className="relative aspect-square overflow-hidden bg-gray-100">
-                      <img 
-                        src={product.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"} 
-                        alt={product.title} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute top-2 right-2 flex flex-col gap-1">
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 bg-white" data-testid={`search-result-${product.id}`}>
+                    <div className="flex gap-4 p-3">
+                      {/* Product Image */}
+                      <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                        <img 
+                          src={product.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"} 
+                          alt={product.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                      
+                      {/* Product Details */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+                        <div>
+                          {/* Title */}
+                          <h3 className="font-semibold text-base sm:text-lg text-gray-900 line-clamp-2 group-hover:text-primary transition-colors leading-tight mb-1">
+                            {product.title}
+                          </h3>
+                          
+                          {/* Condition & Brand */}
+                          <p className="text-sm text-gray-600 mb-1">
+                            <span className="font-medium">{product.condition}</span>
+                            {product.brand && <span> · {product.brand}</span>}
+                          </p>
+                        </div>
+                        
+                        {/* Price Section */}
+                        <div className="mt-auto">
+                          <p className="font-bold text-lg sm:text-xl text-gray-900">
+                            {(product.currentBid || product.price).toLocaleString()} <span className="text-sm font-normal">د.ع</span>
+                          </p>
+                          
+                          {/* Delivery & Location Info */}
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs sm:text-sm text-gray-500">
+                            {product.city && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {product.city}
+                              </span>
+                            )}
+                            {product.saleType === "auction" && product.totalBids ? (
+                              <span>{product.totalBids} مزايدة</span>
+                            ) : null}
+                          </div>
+                          
+                          {/* Auction Timer */}
+                          {product.saleType === "auction" && product.auctionEndTime && (
+                            <div className="mt-1">
+                              <AuctionCountdown endTime={product.auctionEndTime} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Sale Type Badge */}
+                      <div className="flex-shrink-0 self-start">
                         {product.saleType === "auction" ? (
-                          <Badge className="bg-primary text-white">
-                            <Gavel className="h-3 w-3 ml-1" />
+                          <Badge className="bg-purple-100 text-purple-800 border-0 text-xs">
                             مزاد
                           </Badge>
                         ) : (
-                          <Badge className="bg-green-600 text-white">
-                            <ShoppingBag className="h-3 w-3 ml-1" />
-                            سعر ثابت
+                          <Badge className="bg-green-100 text-green-800 border-0 text-xs">
+                            شراء فوري
                           </Badge>
                         )}
                       </div>
-                      {product.city && (
-                        <Badge variant="secondary" className="absolute bottom-2 right-2 text-xs">
-                          <MapPin className="h-3 w-3 ml-1" />
-                          {product.city}
-                        </Badge>
-                      )}
                     </div>
-                    <CardContent className="p-4">
-                      <div className="text-xs text-muted-foreground mb-1">{product.category}</div>
-                      <h3 className="font-bold text-lg mb-2 line-clamp-1 group-hover:text-primary transition-colors">
-                        {product.title}
-                      </h3>
-                      <div className="flex justify-between items-center mt-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">
-                            {product.saleType === "auction" ? "السعر الحالي" : "السعر"}
-                          </p>
-                          <p className="font-bold text-xl text-primary">
-                            {(product.currentBid || product.price).toLocaleString()} د.ع
-                          </p>
-                        </div>
-                        {product.saleType === "auction" && product.totalBids && (
-                          <div className="text-left">
-                            <p className="text-xs text-muted-foreground">المزايدات</p>
-                            <p className="font-bold text-primary">{product.totalBids}</p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                    {product.saleType === "auction" && product.auctionEndTime && (
-                      <CardFooter className="px-4 py-2 bg-orange-50">
-                        <AuctionCountdown endTime={product.auctionEndTime} />
-                      </CardFooter>
-                    )}
                   </Card>
                 </Link>
               ))}

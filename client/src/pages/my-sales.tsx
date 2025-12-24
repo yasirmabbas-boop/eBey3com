@@ -212,6 +212,35 @@ export default function MySales() {
     },
   });
 
+  const markAsDeliveredMutation = useMutation({
+    mutationFn: async (transactionId: string) => {
+      const res = await fetch(`/api/transactions/${transactionId}/deliver`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("فشل في تحديث حالة التسليم");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم تأكيد التسليم! ✅",
+        description: "تم تسجيل الطلب كمُسلّم بنجاح",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/seller-transactions"] });
+      if (selectedSale) {
+        setSelectedSale({ ...selectedSale, status: "delivered" });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "فشل في تحديث حالة التسليم",
+        variant: "destructive",
+      });
+    },
+  });
+
   const pendingOffers = offers.filter(o => o.status === "pending");
   const completedSales = transactions.filter(t => t.status === "completed" || t.status === "delivered");
   const pendingSales = transactions.filter(t => t.status === "pending" || t.status === "shipped");
@@ -479,10 +508,30 @@ export default function MySales() {
                       )}
                       
                       {selectedSale.status === "shipped" && (
-                        <Card className="p-4 bg-blue-100 border-blue-300">
-                          <div className="flex items-center gap-2 text-blue-800">
-                            <Truck className="h-5 w-5" />
-                            <span className="font-semibold">تم شحن هذا الطلب - في طريقه للمشتري</span>
+                        <Card className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-bold text-green-800 text-lg mb-1 flex items-center gap-2">
+                                <CheckCircle className="h-5 w-5" />
+                                تأكيد التسليم
+                              </h3>
+                              <p className="text-sm text-green-700">
+                                بعد وصول الطرد للمشتري، اضغط لتأكيد التسليم
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => markAsDeliveredMutation.mutate(selectedSale.id)}
+                              disabled={markAsDeliveredMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700 text-white gap-2"
+                              data-testid="button-mark-delivered"
+                            >
+                              {markAsDeliveredMutation.isPending ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                              ) : (
+                                <CheckCircle className="h-5 w-5" />
+                              )}
+                              تم التسليم
+                            </Button>
                           </div>
                         </Card>
                       )}
