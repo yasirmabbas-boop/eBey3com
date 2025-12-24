@@ -5,7 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SurveyManager } from "@/components/survey-manager";
-import { useSwipeNavigation } from "@/hooks/use-swipe-navigation";
+import { SwipeBackNavigation } from "@/components/swipe-back-navigation";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
@@ -40,10 +40,6 @@ function ScrollToTop() {
   return null;
 }
 
-function SwipeNavigationHandler() {
-  useSwipeNavigation();
-  return null;
-}
 
 function Router() {
   return (
@@ -80,10 +76,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ScrollToTop />
-        <SwipeNavigationHandler />
         <Toaster />
         <SurveyManager />
-        <Router />
+        <SwipeBackNavigation>
+          <Router />
+        </SwipeBackNavigation>
       </TooltipProvider>
     </QueryClientProvider>
   );
