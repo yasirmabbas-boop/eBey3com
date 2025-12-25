@@ -12,10 +12,21 @@ interface AuthUser {
   isVerified?: boolean;
 }
 
+function getAuthToken(): string | null {
+  return localStorage.getItem("authToken");
+}
+
 async function fetchUser(): Promise<AuthUser | null> {
-  // Try custom auth first
+  // Try custom auth first with token fallback for Safari
+  const authToken = getAuthToken();
+  const headers: HeadersInit = {};
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+  
   const meResponse = await fetch("/api/auth/me", {
     credentials: "include",
+    headers,
   });
 
   if (meResponse.ok) {
@@ -39,6 +50,9 @@ async function fetchUser(): Promise<AuthUser | null> {
 }
 
 async function logout(): Promise<void> {
+  // Clear auth token from localStorage
+  localStorage.removeItem("authToken");
+  
   // Try custom logout first
   try {
     const response = await fetch("/api/auth/logout", {

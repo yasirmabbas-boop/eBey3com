@@ -47,6 +47,11 @@ export default function SignIn() {
         throw new Error(data.error || "فشل تسجيل الدخول");
       }
 
+      // Store auth token in localStorage for Safari/ITP compatibility
+      if (data.authToken) {
+        localStorage.setItem("authToken", data.authToken);
+      }
+      
       toast({
         title: "تم تسجيل الدخول بنجاح",
         description: `مرحباً ${data.displayName}`,

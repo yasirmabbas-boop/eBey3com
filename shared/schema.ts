@@ -35,6 +35,7 @@ export const users = pgTable("users", {
   surveyCompleted: boolean("survey_completed").notNull().default(false),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   lastLoginAt: timestamp("last_login_at"),
+  authToken: text("auth_token"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({

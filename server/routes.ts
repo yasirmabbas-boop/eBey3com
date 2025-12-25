@@ -754,10 +754,17 @@ export async function registerRoutes(
         return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
       }
 
-      // Update last login
-      await storage.updateUser(user.id, { lastLoginAt: new Date() } as any);
+      // Generate auth token for Safari/ITP compatibility
+      const crypto = await import("crypto");
+      const authToken = crypto.randomBytes(32).toString("hex");
 
-      // Set session
+      // Update last login and store auth token
+      await storage.updateUser(user.id, { 
+        lastLoginAt: new Date(),
+        authToken: authToken,
+      } as any);
+
+      // Set session (for browsers that support cookies)
       (req.session as any).userId = user.id;
 
       res.json({ 
@@ -767,6 +774,7 @@ export async function registerRoutes(
         accountType: user.accountType,
         accountCode: user.accountCode,
         avatar: user.avatar,
+        authToken: authToken,
       });
     } catch (error) {
       console.error("Error logging in:", error);
@@ -784,7 +792,20 @@ export async function registerRoutes(
   });
 
   app.get("/api/auth/me", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    let userId = (req.session as any)?.userId;
+    
+    // Safari/ITP fallback: check Authorization header for token
+    if (!userId) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.substring(7);
+        const user = await storage.getUserByAuthToken(token);
+        if (user) {
+          userId = user.id;
+        }
+      }
+    }
+    
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
