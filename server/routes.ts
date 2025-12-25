@@ -1,10 +1,31 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema, insertBuyerAddressSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { broadcastBidUpdate } from "./websocket";
+
+// Helper to get user ID from session or auth token (Safari/ITP fallback)
+async function getUserIdFromRequest(req: Request): Promise<string | null> {
+  // Try session first
+  const sessionUserId = (req.session as any)?.userId;
+  if (sessionUserId) {
+    return sessionUserId;
+  }
+  
+  // Fallback to Authorization header token for Safari
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.substring(7);
+    const user = await storage.getUserByAuthToken(token);
+    if (user) {
+      return user.id;
+    }
+  }
+  
+  return null;
+}
 
 const updateListingSchema = insertListingSchema.extend({
   auctionEndTime: z.union([z.string(), z.date(), z.null()]).optional(),
@@ -402,7 +423,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/seller-messages", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -831,7 +852,7 @@ export async function registerRoutes(
 
   // Get full profile (for account settings)
   app.get("/api/account/profile", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -868,7 +889,7 @@ export async function registerRoutes(
 
   // Update profile
   app.put("/api/account/profile", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1060,7 +1081,7 @@ export async function registerRoutes(
 
   // Get buyer purchases (transactions where user is the buyer ONLY)
   app.get("/api/account/purchases", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1098,7 +1119,7 @@ export async function registerRoutes(
 
   // Get seller orders (transactions where user is the seller ONLY)
   app.get("/api/account/seller-orders", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1144,7 +1165,7 @@ export async function registerRoutes(
 
   // Get seller summary (stats)
   app.get("/api/account/seller-summary", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1165,7 +1186,7 @@ export async function registerRoutes(
 
   // Get buyer summary (stats) - ONLY purchases where user is buyer
   app.get("/api/account/buyer-summary", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1200,7 +1221,7 @@ export async function registerRoutes(
 
   // Cart routes
   app.get("/api/cart", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1233,7 +1254,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/cart", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1278,7 +1299,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/cart/:id", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1304,7 +1325,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/cart/:id", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1323,7 +1344,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/cart", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1512,7 +1533,7 @@ export async function registerRoutes(
 
   // Get my offers (buyer view)
   app.get("/api/my-offers", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1546,7 +1567,7 @@ export async function registerRoutes(
 
   // Get offers received (seller view)
   app.get("/api/received-offers", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }

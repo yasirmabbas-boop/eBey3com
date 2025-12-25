@@ -2,6 +2,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./use-auth";
 import type { CartItem, Listing } from "@shared/schema";
 
+function getAuthHeaders(): HeadersInit {
+  const headers: HeadersInit = {};
+  const authToken = localStorage.getItem("authToken");
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+  return headers;
+}
+
 export interface CartItemWithListing extends CartItem {
   listing: {
     id: string;
@@ -23,7 +32,10 @@ export function useCart() {
   const { data: cartItems = [], isLoading, error } = useQuery<CartItemWithListing[]>({
     queryKey: ["/api/cart"],
     queryFn: async () => {
-      const res = await fetch("/api/cart", { credentials: "include" });
+      const res = await fetch("/api/cart", { 
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) {
         if (res.status === 401) return [];
         throw new Error("Failed to fetch cart");
@@ -37,7 +49,7 @@ export function useCart() {
     mutationFn: async ({ listingId, quantity = 1 }: { listingId: string; quantity?: number }) => {
       const res = await fetch("/api/cart", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         credentials: "include",
         body: JSON.stringify({ listingId, quantity }),
       });
@@ -56,7 +68,7 @@ export function useCart() {
     mutationFn: async ({ id, quantity }: { id: string; quantity: number }) => {
       const res = await fetch(`/api/cart/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         credentials: "include",
         body: JSON.stringify({ quantity }),
       });
@@ -76,6 +88,7 @@ export function useCart() {
       const res = await fetch(`/api/cart/${id}`, {
         method: "DELETE",
         credentials: "include",
+        headers: getAuthHeaders(),
       });
       if (!res.ok) {
         const error = await res.json();
@@ -93,6 +106,7 @@ export function useCart() {
       const res = await fetch("/api/cart", {
         method: "DELETE",
         credentials: "include",
+        headers: getAuthHeaders(),
       });
       if (!res.ok) {
         const error = await res.json();
