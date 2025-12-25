@@ -85,6 +85,8 @@ export default function SellPage() {
   const [hasReservePrice, setHasReservePrice] = useState(false);
   const [allowOffers, setAllowOffers] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [startTimeOption, setStartTimeOption] = useState("now");
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -166,6 +168,7 @@ export default function SellPage() {
         if (draft.images) setImages(draft.images);
         if (draft.saleType) setSaleType(draft.saleType);
         if (draft.allowOffers !== undefined) setAllowOffers(draft.allowOffers);
+        if (draft.tags) setTags(draft.tags);
         toast({ title: "تم استرجاع المسودة", description: "تم تحميل البيانات المحفوظة مسبقاً" });
       } catch (e) {
         console.error("Failed to load draft:", e);
@@ -184,11 +187,11 @@ export default function SellPage() {
     if (isNewListing && draftLoaded && !showDraftBanner) {
       const hasContent = formData.title || formData.description || formData.price || images.length > 0;
       if (hasContent) {
-        const draft = { formData, images, saleType, allowOffers, savedAt: new Date().toISOString() };
+        const draft = { formData, images, saleType, allowOffers, tags, savedAt: new Date().toISOString() };
         localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
       }
     }
-  }, [formData, images, saleType, allowOffers, isNewListing, draftLoaded, showDraftBanner]);
+  }, [formData, images, saleType, allowOffers, tags, isNewListing, draftLoaded, showDraftBanner]);
 
   // Populate form when editing, relisting, or using as template
   useEffect(() => {
@@ -216,6 +219,7 @@ export default function SellPage() {
       setImages(sourceListing.images || []);
       setSaleType((sourceListing.saleType as "auction" | "fixed") || "fixed");
       setAllowOffers(sourceListing.isNegotiable || false);
+      setTags((sourceListing as any).tags || []);
     }
   }, [sourceListing, sourceListingId, isTemplateMode, isRelistMode]);
 
@@ -430,6 +434,7 @@ export default function SellPage() {
         isNegotiable: allowOffers,
         serialNumber: formData.serialNumber || null,
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
+        tags: tags.length > 0 ? tags : null,
       };
 
       // Only edit mode uses PATCH, relist and template create new listings via POST
@@ -701,6 +706,61 @@ export default function SellPage() {
                     data-testid="input-model"
                   />
                 </div>
+              </div>
+
+              {/* Tags Input */}
+              <div className="space-y-3">
+                <Label>الكلمات المفتاحية (Tags)</Label>
+                <p className="text-sm text-gray-500">أضف كلمات تساعد المشترين في العثور على منتجك</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && tagInput.trim()) {
+                        e.preventDefault();
+                        const newTag = tagInput.trim();
+                        if (!tags.includes(newTag) && tags.length < 10) {
+                          setTags([...tags, newTag]);
+                          setTagInput("");
+                        }
+                      }
+                    }}
+                    placeholder="اكتب واضغط Enter لإضافة..."
+                    data-testid="input-tags"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (tagInput.trim() && !tags.includes(tagInput.trim()) && tags.length < 10) {
+                        setTags([...tags, tagInput.trim()]);
+                        setTagInput("");
+                      }
+                    }}
+                    data-testid="button-add-tag"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag, idx) => (
+                      <Badge key={idx} variant="secondary" className="gap-1 py-1 px-3">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => setTags(tags.filter((_, i) => i !== idx))}
+                          className="ml-1 hover:text-red-500"
+                          data-testid={`remove-tag-${idx}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-gray-400">{tags.length}/10 كلمات مفتاحية</p>
               </div>
 
               {/* Watch Specifications - Only show when category is watches */}
