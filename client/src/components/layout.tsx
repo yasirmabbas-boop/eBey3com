@@ -14,6 +14,8 @@ import { useCart } from "@/hooks/use-cart";
 import { ImageSearchModal } from "@/components/image-search-modal";
 import { NotificationsButton } from "@/components/notifications";
 import { SmartSearch } from "@/components/smart-search";
+import { MobileNavBar } from "@/components/mobile-nav-bar";
+import { BackButton } from "@/components/back-button";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
@@ -134,6 +136,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50 shadow-sm">
         <div className="container mx-auto px-4 py-3 flex items-center gap-4 md:gap-6">
           
+          {/* Back Button - Mobile */}
+          <BackButton className="md:hidden" />
+
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild>
@@ -210,9 +215,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 pb-20 md:pb-0">
         {children}
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileNavBar />
 
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-300 py-12 mt-20">
