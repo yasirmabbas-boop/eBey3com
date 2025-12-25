@@ -288,6 +288,7 @@ export const listings = pgTable("listings", {
   quantityAvailable: integer("quantity_available").notNull().default(1),
   quantitySold: integer("quantity_sold").notNull().default(0),
   views: integer("views").notNull().default(0),
+  tags: text("tags").array().default(sql`ARRAY[]::text[]`),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 

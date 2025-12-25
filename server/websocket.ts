@@ -10,6 +10,9 @@ interface BidUpdate {
   bidderName: string;
   bidderId: string;
   timestamp: string;
+  auctionEndTime?: string;
+  timeExtended?: boolean;
+  previousHighBidderId?: string;
 }
 
 interface SubscribeMessage {

@@ -97,6 +97,12 @@ export interface IStorage {
   getOffersByBuyer(buyerId: string): Promise<Offer[]>;
   getOffersBySeller(sellerId: string): Promise<Offer[]>;
   updateOfferStatus(id: string, status: string, counterAmount?: number, counterMessage?: string): Promise<Offer | undefined>;
+  
+  // View tracking
+  incrementListingViews(listingId: string): Promise<number>;
+  
+  // Bid with user info
+  getBidsWithUserInfo(listingId: string): Promise<Array<Bid & { bidderName: string; bidderAvatar?: string | null }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -544,6 +550,36 @@ export class DatabaseStorage implements IStorage {
       .where(eq(offers.id, id))
       .returning();
     return updated;
+  }
+
+  async incrementListingViews(listingId: string): Promise<number> {
+    const [updated] = await db.update(listings)
+      .set({ views: sql`${listings.views} + 1` })
+      .where(eq(listings.id, listingId))
+      .returning();
+    return updated?.views ?? 0;
+  }
+
+  async getBidsWithUserInfo(listingId: string): Promise<Array<Bid & { bidderName: string; bidderAvatar?: string | null }>> {
+    const result = await db.select({
+      id: bids.id,
+      listingId: bids.listingId,
+      userId: bids.userId,
+      amount: bids.amount,
+      isWinning: bids.isWinning,
+      createdAt: bids.createdAt,
+      bidderName: users.displayName,
+      bidderAvatar: users.avatar,
+    })
+    .from(bids)
+    .leftJoin(users, eq(bids.userId, users.id))
+    .where(eq(bids.listingId, listingId))
+    .orderBy(desc(bids.amount));
+    
+    return result.map(r => ({
+      ...r,
+      bidderName: r.bidderName || "مستخدم مجهول",
+    }));
   }
 }
 

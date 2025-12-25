@@ -210,6 +210,28 @@ export async function registerRoutes(
     }
   });
 
+  // Get bids with bidder information (for seller dashboard)
+  app.get("/api/listings/:id/bids/detailed", async (req, res) => {
+    try {
+      const bids = await storage.getBidsWithUserInfo(req.params.id);
+      res.json(bids);
+    } catch (error) {
+      console.error("Error fetching detailed bids:", error);
+      res.status(500).json({ error: "Failed to fetch bids" });
+    }
+  });
+
+  // Track listing view
+  app.post("/api/listings/:id/view", async (req, res) => {
+    try {
+      const views = await storage.incrementListingViews(req.params.id);
+      res.json({ views });
+    } catch (error) {
+      console.error("Error tracking view:", error);
+      res.status(500).json({ error: "Failed to track view" });
+    }
+  });
+
   app.post("/api/bids", async (req, res) => {
     try {
       const validatedData = insertBidSchema.parse(req.body);
@@ -240,14 +262,29 @@ export async function registerRoutes(
         });
       }
       
+      // Get previous high bidder before creating new bid
+      const previousHighBid = highestBid;
+      
       const bid = await storage.createBid(validatedData);
       
-      if (listing.saleType === "auction") {
-        const currentEndTime = listing.auctionEndTime ? new Date(listing.auctionEndTime) : new Date();
-        const extendedEndTime = new Date(currentEndTime.getTime() + 55 * 1000);
-        await storage.updateListing(validatedData.listingId, { 
-          auctionEndTime: extendedEndTime 
-        });
+      // Anti-sniping: Add 45 seconds if bid placed in last 2 minutes
+      let timeExtended = false;
+      let newEndTime: Date | undefined;
+      
+      if (listing.saleType === "auction" && listing.auctionEndTime) {
+        const currentEndTime = new Date(listing.auctionEndTime);
+        const now = new Date();
+        const timeRemaining = currentEndTime.getTime() - now.getTime();
+        const twoMinutes = 2 * 60 * 1000;
+        
+        if (timeRemaining > 0 && timeRemaining <= twoMinutes) {
+          // Bid in last 2 minutes - extend by 45 seconds
+          newEndTime = new Date(currentEndTime.getTime() + 45 * 1000);
+          await storage.updateListing(validatedData.listingId, { 
+            auctionEndTime: newEndTime 
+          });
+          timeExtended = true;
+        }
       }
       
       const allBids = await storage.getBidsForListing(validatedData.listingId);
@@ -264,6 +301,9 @@ export async function registerRoutes(
         bidderName: bidder?.displayName || bidder?.username || "مستخدم مجهول",
         bidderId: validatedData.userId,
         timestamp: new Date().toISOString(),
+        auctionEndTime: newEndTime?.toISOString() || listing.auctionEndTime?.toISOString(),
+        timeExtended,
+        previousHighBidderId: previousHighBid?.userId,
       });
       
       res.status(201).json(bid);
