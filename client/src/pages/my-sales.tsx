@@ -331,7 +331,9 @@ export default function MySales() {
                               <img
                                 src={sale.listing?.images?.[0] || "https://via.placeholder.com/100"}
                                 alt={sale.listing?.title || "منتج"}
-                                className="w-16 h-16 object-cover rounded"
+                                className="w-20 h-20 object-cover rounded-lg"
+                                loading="lazy"
+                                style={{ imageRendering: "auto" }}
                               />
                               <div className="flex-1">
                                 <h4 className="font-semibold text-sm line-clamp-2">
@@ -369,7 +371,9 @@ export default function MySales() {
                               <img
                                 src={sale.listing?.images?.[0] || "https://via.placeholder.com/100"}
                                 alt={sale.listing?.title || "منتج"}
-                                className="w-16 h-16 object-cover rounded"
+                                className="w-20 h-20 object-cover rounded-lg"
+                                loading="lazy"
+                                style={{ imageRendering: "auto" }}
                               />
                               <div className="flex-1">
                                 <h4 className="font-semibold text-sm line-clamp-2">
@@ -392,23 +396,40 @@ export default function MySales() {
                   {selectedSale ? (
                     <>
                       <Card className="p-6 border-2 border-primary">
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <h2 className="text-2xl font-bold text-gray-900">
-                              {selectedSale.listing?.title || "منتج"}
-                            </h2>
-                            <p className="text-gray-600 mt-1">
-                              رقم الطلب: {selectedSale.id.slice(0, 8).toUpperCase()}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {getStatusBadge(selectedSale.status)}
+                        <div className="flex items-start gap-4 mb-4">
+                          {selectedSale.listing?.images?.[0] && (
+                            <Link href={`/product/${selectedSale.listingId}`}>
+                              <img
+                                src={selectedSale.listing.images[0]}
+                                alt={selectedSale.listing?.title || "منتج"}
+                                className="w-24 h-24 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                loading="lazy"
+                                style={{ imageRendering: "auto" }}
+                              />
+                            </Link>
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <Link href={`/product/${selectedSale.listingId}`}>
+                                  <h2 className="text-xl font-bold text-gray-900 hover:text-primary transition-colors">
+                                    {selectedSale.listing?.title || "منتج"}
+                                  </h2>
+                                </Link>
+                                <p className="text-gray-600 mt-1">
+                                  رقم الطلب: {selectedSale.id.slice(0, 8).toUpperCase()}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {getStatusBadge(selectedSale.status)}
+                              </div>
+                            </div>
                           </div>
                         </div>
 
                         <Separator className="my-4" />
 
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div>
                             <p className="text-xs text-gray-600 mb-1">السعر</p>
                             <p className="font-bold text-lg text-green-600">
@@ -425,6 +446,13 @@ export default function MySales() {
                           <div>
                             <p className="text-xs text-gray-600 mb-1">طريقة الدفع</p>
                             <p className="font-semibold text-sm">{selectedSale.paymentMethod || "نقداً"}</p>
+                          </div>
+                          <div>
+                            <Link href={`/product/${selectedSale.listingId}`}>
+                              <Button variant="outline" size="sm" className="w-full">
+                                عرض المنتج
+                              </Button>
+                            </Link>
                           </div>
                         </div>
                       </Card>

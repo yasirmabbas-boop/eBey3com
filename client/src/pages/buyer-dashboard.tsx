@@ -290,11 +290,13 @@ export default function BuyerDashboard() {
                       <img
                         src={purchase.listing.images[0]}
                         alt={purchase.listing?.title || "منتج"}
-                        className="w-16 h-16 rounded-lg object-cover"
+                        className="w-20 h-20 rounded-lg object-cover"
+                        loading="lazy"
+                        style={{ imageRendering: "auto" }}
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
-                        <Package className="h-6 w-6 text-gray-400" />
+                      <div className="w-20 h-20 rounded-lg bg-gray-200 flex items-center justify-center">
+                        <Package className="h-8 w-8 text-gray-400" />
                       </div>
                     )}
                     <div className="flex-1">
@@ -343,11 +345,13 @@ export default function BuyerDashboard() {
                       <img
                         src={offer.listing.images[0]}
                         alt={offer.listing?.title || "منتج"}
-                        className="w-16 h-16 rounded-lg object-cover"
+                        className="w-20 h-20 rounded-lg object-cover"
+                        loading="lazy"
+                        style={{ imageRendering: "auto" }}
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
-                        <Package className="h-6 w-6 text-gray-400" />
+                      <div className="w-20 h-20 rounded-lg bg-gray-200 flex items-center justify-center">
+                        <Package className="h-8 w-8 text-gray-400" />
                       </div>
                     )}
                     <div className="flex-1">

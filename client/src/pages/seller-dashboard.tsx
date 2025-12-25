@@ -992,7 +992,9 @@ export default function SellerDashboard() {
                               <img 
                                 src={listing.images[0]} 
                                 alt={listing?.title} 
-                                className="w-20 h-20 object-cover rounded"
+                                className="w-20 h-20 object-cover rounded-lg"
+                                loading="lazy"
+                                style={{ imageRendering: "auto" }}
                               />
                             )}
                             <div className="flex-1">
@@ -1115,6 +1117,8 @@ export default function SellerDashboard() {
                           src={order.listing.images[0]} 
                           alt={order.listing?.title || "منتج"} 
                           className="w-full md:w-32 h-32 object-cover"
+                          loading="lazy"
+                          style={{ imageRendering: "auto" }}
                         />
                       )}
                       <div className="flex-1 p-4">

@@ -313,12 +313,14 @@ export default function CheckoutPage() {
               <div className="space-y-3">
                 {cartItems.map((item) => (
                   <div key={item.id} className="flex items-center gap-3 py-2 border-b last:border-0" data-testid={`checkout-item-${item.id}`}>
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                    <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                       {item.listing?.images?.[0] ? (
                         <img 
                           src={item.listing.images[0]} 
                           alt={item.listing?.title || "منتج"} 
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          style={{ imageRendering: "auto" }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">

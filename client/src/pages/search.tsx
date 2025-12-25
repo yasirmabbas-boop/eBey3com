@@ -634,6 +634,8 @@ export default function SearchPage() {
                           src={product.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"} 
                           alt={product.title} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                          style={{ imageRendering: "auto" }}
                         />
                       </div>
                       

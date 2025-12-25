@@ -21,6 +21,9 @@ import {
   MessageCircle,
   ExternalLink,
   ChevronLeft,
+  Store,
+  Star,
+  Calendar,
 } from "lucide-react";
 
 interface Purchase {
@@ -263,18 +266,20 @@ export default function MyPurchases() {
                     <img
                       src={purchase.listing.images[0]}
                       alt={purchase.listing?.title || "منتج"}
-                      className="w-16 h-16 object-cover rounded"
+                      className="w-20 h-20 object-cover rounded-lg"
+                      loading="lazy"
+                      style={{ imageRendering: "auto" }}
                     />
                   ) : (
-                    <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
-                      <Package className="h-6 w-6 text-gray-400" />
+                    <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <Package className="h-8 w-8 text-gray-400" />
                     </div>
                   )}
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-sm line-clamp-2">
                       {purchase.listing?.title || "منتج"}
                     </h4>
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-sm font-bold text-primary mt-1">
                       {purchase.amount?.toLocaleString() || 0} د.ع
                     </p>
                     <div className="mt-2">
@@ -297,11 +302,13 @@ export default function MyPurchases() {
                       <img
                         src={currentOrder.listing.images[0]}
                         alt={currentOrder.listing?.title || "منتج"}
-                        className="w-20 h-20 object-cover rounded-lg"
+                        className="w-24 h-24 object-cover rounded-lg"
+                        loading="lazy"
+                        style={{ imageRendering: "auto" }}
                       />
                     ) : (
-                      <div className="w-20 h-20 bg-gray-700 rounded-lg flex items-center justify-center">
-                        <Package className="h-8 w-8 text-gray-500" />
+                      <div className="w-24 h-24 bg-gray-700 rounded-lg flex items-center justify-center">
+                        <Package className="h-10 w-10 text-gray-500" />
                       </div>
                     )}
                     <div className="flex-1">
@@ -315,9 +322,11 @@ export default function MyPurchases() {
                           ? "الطلب في الطريق إليك"
                           : "جاري تجهيز طلبك"}
                       </p>
-                      <h2 className="text-lg font-bold mt-2">
-                        {currentOrder.listing?.title || "منتج"}
-                      </h2>
+                      <Link href={`/product/${currentOrder.listingId}`}>
+                        <h2 className="text-lg font-bold mt-2 hover:text-blue-300 transition-colors cursor-pointer">
+                          {currentOrder.listing?.title || "منتج"}
+                        </h2>
+                      </Link>
                       {currentOrder.trackingNumber && (
                         <p className="text-sm text-gray-400 flex items-center gap-1 mt-1">
                           رقم التتبع: {currentOrder.trackingNumber}
@@ -409,6 +418,50 @@ export default function MyPurchases() {
                   </Card>
                 </div>
 
+                {/* Seller Info Card */}
+                <Card className="p-5 bg-blue-50 border-blue-200">
+                  <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+                    <Store className="h-5 w-5 text-blue-600" />
+                    معلومات البائع
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                          <Store className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-lg">{currentOrder.listing?.sellerName || "بائع"}</p>
+                          <p className="text-sm text-gray-600 flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {currentOrder.listing?.city || "العراق"}
+                          </p>
+                        </div>
+                      </div>
+                      {currentOrder.listing?.sellerId && (
+                        <Link href={`/messages?to=${currentOrder.listing.sellerId}`}>
+                          <Button variant="outline" size="sm" className="gap-1">
+                            <MessageCircle className="h-4 w-4" />
+                            مراسلة
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                    <Separator />
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">رقم الطلب</span>
+                      <span className="font-mono font-medium">{currentOrder.id.slice(0, 8).toUpperCase()}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">تاريخ الطلب</span>
+                      <span className="font-medium flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(currentOrder.createdAt).toLocaleDateString("ar-IQ", { year: "numeric", month: "long", day: "numeric" })}
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+
                 {/* Item Info */}
                 <Card className="p-5">
                   <h3 className="font-bold text-base mb-4 flex items-center gap-2">
@@ -417,28 +470,35 @@ export default function MyPurchases() {
                   </h3>
                   <div className="flex gap-4">
                     {currentOrder.listing?.images?.[0] ? (
-                      <img
-                        src={currentOrder.listing.images[0]}
-                        alt={currentOrder.listing?.title || "منتج"}
-                        className="w-16 h-16 object-cover rounded"
-                      />
+                      <Link href={`/product/${currentOrder.listingId}`}>
+                        <img
+                          src={currentOrder.listing.images[0]}
+                          alt={currentOrder.listing?.title || "منتج"}
+                          className="w-24 h-24 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                          loading="lazy"
+                          style={{ imageRendering: "auto" }}
+                        />
+                      </Link>
                     ) : (
-                      <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
-                        <Package className="h-6 w-6 text-gray-400" />
+                      <div className="w-24 h-24 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <Package className="h-8 w-8 text-gray-400" />
                       </div>
                     )}
                     <div className="flex-1">
                       <Link href={`/product/${currentOrder.listingId}`}>
-                        <h4 className="font-semibold hover:text-primary transition-colors">
+                        <h4 className="font-semibold text-lg hover:text-primary transition-colors">
                           {currentOrder.listing?.title || "منتج"}
                         </h4>
                       </Link>
-                      <p className="text-lg font-bold text-primary mt-1">
+                      <p className="text-xl font-bold text-primary mt-2">
                         {currentOrder.amount?.toLocaleString() || 0} د.ع
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        لا يمكن إرجاع المنتج
-                      </p>
+                      <Link href={`/product/${currentOrder.listingId}`}>
+                        <Button variant="outline" size="sm" className="mt-3 gap-1">
+                          <ExternalLink className="h-4 w-4" />
+                          عرض المنتج
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </Card>

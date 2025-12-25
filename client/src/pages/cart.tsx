@@ -116,6 +116,8 @@ export default function CartPage() {
                           src={item.listing.images[0]} 
                           alt={item.listing?.title || "منتج"} 
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          style={{ imageRendering: "auto" }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">

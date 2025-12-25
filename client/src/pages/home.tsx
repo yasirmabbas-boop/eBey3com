@@ -270,6 +270,8 @@ export default function Home() {
                         src={product.image} 
                         alt={product.title} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        style={{ imageRendering: "auto" }}
                       />
                       {product.currentBid && (
                         <Badge className="absolute top-2 right-2 bg-primary text-white text-xs">
@@ -351,6 +353,8 @@ export default function Home() {
                         src={product.image} 
                         alt={product.title} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        style={{ imageRendering: "auto" }}
                       />
                       {product.currentBid && (
                         <Badge className="absolute top-2 right-2 bg-primary text-white">
