@@ -203,7 +203,10 @@ export default function CheckoutPage() {
               <Button onClick={() => navigate("/my-purchases")} className="w-full" data-testid="button-view-orders">
                 عرض طلباتي
               </Button>
-              <Button variant="outline" onClick={() => navigate("/")} className="w-full" data-testid="button-home">
+              <Button variant="outline" onClick={() => navigate("/search")} className="w-full" data-testid="button-continue-shopping">
+                متابعة التسوق
+              </Button>
+              <Button variant="ghost" onClick={() => navigate("/")} className="w-full" data-testid="button-home">
                 العودة للرئيسية
               </Button>
             </div>
