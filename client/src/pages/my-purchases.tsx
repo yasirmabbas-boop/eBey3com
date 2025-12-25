@@ -247,52 +247,8 @@ export default function MyPurchases() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Orders List */}
-          <div className="lg:col-span-1 space-y-4">
-            <h3 className="font-bold text-lg">طلباتي ({purchases.length})</h3>
-            {purchases.map((purchase) => (
-              <Card
-                key={purchase.id}
-                className={`p-4 cursor-pointer transition-all hover:shadow-lg ${
-                  currentOrder?.id === purchase.id
-                    ? "ring-2 ring-primary border-primary"
-                    : ""
-                }`}
-                onClick={() => setSelectedOrder(purchase)}
-                data-testid={`card-purchase-${purchase.id}`}
-              >
-                <div className="flex gap-3">
-                  {purchase.listing?.images?.[0] ? (
-                    <img
-                      src={purchase.listing.images[0]}
-                      alt={purchase.listing?.title || "منتج"}
-                      className="w-20 h-20 object-cover rounded-lg"
-                      loading="lazy"
-                      style={{ imageRendering: "auto" }}
-                    />
-                  ) : (
-                    <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <Package className="h-8 w-8 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm line-clamp-2">
-                      {purchase.listing?.title || "منتج"}
-                    </h4>
-                    <p className="text-sm font-bold text-primary mt-1">
-                      {purchase.amount?.toLocaleString() || 0} د.ع
-                    </p>
-                    <div className="mt-2">
-                      {getStatusBadge(purchase.deliveryStatus || purchase.status)}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          {/* Order Details - eBay Style */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* Order Details - eBay Style (Left side for RTL) */}
+          <div className="lg:col-span-2 space-y-4 order-2 lg:order-1">
             {currentOrder && (
               <>
                 {/* Order Header with Status */}
@@ -543,6 +499,50 @@ export default function MyPurchases() {
                 </Card>
               </>
             )}
+          </div>
+
+          {/* Orders List (Right side for RTL) */}
+          <div className="lg:col-span-1 space-y-4 order-1 lg:order-2">
+            <h3 className="font-bold text-lg">طلباتي ({purchases.length})</h3>
+            {purchases.map((purchase) => (
+              <Card
+                key={purchase.id}
+                className={`p-4 cursor-pointer transition-all hover:shadow-lg ${
+                  currentOrder?.id === purchase.id
+                    ? "ring-2 ring-primary border-primary"
+                    : ""
+                }`}
+                onClick={() => setSelectedOrder(purchase)}
+                data-testid={`card-purchase-${purchase.id}`}
+              >
+                <div className="flex gap-3">
+                  {purchase.listing?.images?.[0] ? (
+                    <img
+                      src={purchase.listing.images[0]}
+                      alt={purchase.listing?.title || "منتج"}
+                      className="w-20 h-20 object-cover rounded-lg"
+                      loading="lazy"
+                      style={{ imageRendering: "auto" }}
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <Package className="h-8 w-8 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-sm line-clamp-2">
+                      {purchase.listing?.title || "منتج"}
+                    </h4>
+                    <p className="text-sm font-bold text-primary mt-1">
+                      {purchase.amount?.toLocaleString() || 0} د.ع
+                    </p>
+                    <div className="mt-2">
+                      {getStatusBadge(purchase.deliveryStatus || purchase.status)}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         </div>
       </div>

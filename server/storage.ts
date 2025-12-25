@@ -344,8 +344,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTransactionStatus(id: string, status: string): Promise<Transaction | undefined> {
-    const [txn] = await db.update(transactions).set({ status }).where(eq(transactions.id, id)).returning();
-    if (status === "completed") {
+    // Map status to appropriate deliveryStatus
+    let deliveryStatus = "pending";
+    if (status === "shipped") {
+      deliveryStatus = "in_transit";
+    } else if (status === "delivered" || status === "completed") {
+      deliveryStatus = "delivered";
+    }
+    
+    const [txn] = await db.update(transactions).set({ 
+      status,
+      deliveryStatus 
+    }).where(eq(transactions.id, id)).returning();
+    
+    if (status === "completed" || status === "delivered") {
       await db.update(transactions).set({ completedAt: new Date() }).where(eq(transactions.id, id));
       if (txn) {
         await db.update(users).set({ 
