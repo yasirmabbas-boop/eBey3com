@@ -202,6 +202,7 @@ export default function ProductPage() {
     isNegotiable: (listing as any).isNegotiable || false,
     quantityAvailable: (listing as any).quantityAvailable || 1,
     quantitySold: (listing as any).quantitySold || 0,
+    tags: listing.tags || [],
   } : null;
 
   // Track view when product loads
@@ -611,10 +612,11 @@ export default function ProductPage() {
                   <BiddingWindow
                     listingId={params?.id || ""}
                     userId={user?.id}
-                    currentBid={product.currentBid || product.price}
-                    totalBids={product.totalBids || 0}
-                    minimumBid={(product.currentBid || product.price) + 1000}
+                    currentBid={liveBidData?.currentBid || product.currentBid || product.price}
+                    totalBids={liveBidData?.totalBids || product.totalBids || 0}
+                    minimumBid={(liveBidData?.currentBid || product.currentBid || product.price) + 1000}
                     timeLeft={product.timeLeft}
+                    auctionEndTime={liveBidData?.auctionEndTime || product.auctionEndTime}
                     onRequireAuth={() => requireAuth("bid")}
                   />
                 )}
@@ -725,6 +727,28 @@ export default function ProductPage() {
             {product.description || "لا يوجد وصف متوفر لهذا المنتج."}
           </p>
         </div>
+
+        {/* Tags Section */}
+        {product.tags && product.tags.length > 0 && (
+          <div className="py-4 border-t">
+            <h2 className="font-bold text-lg mb-3 flex items-center gap-2">
+              <Tag className="h-5 w-5 text-primary" />
+              الكلمات المفتاحية
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {product.tags.map((tag: string, index: number) => (
+                <a
+                  key={index}
+                  href={`/search?q=${encodeURIComponent(tag)}`}
+                  className="inline-flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full text-sm transition-colors"
+                  data-testid={`tag-link-${index}`}
+                >
+                  #{tag}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Specs Section */}
         <div className="py-4 border-t">

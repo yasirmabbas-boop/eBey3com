@@ -147,7 +147,8 @@ export default function SearchPage() {
       result = result.filter(p => 
         p.title.toLowerCase().includes(query) || 
         p.description?.toLowerCase().includes(query) ||
-        p.category?.toLowerCase().includes(query)
+        p.category?.toLowerCase().includes(query) ||
+        (p.tags && p.tags.some((tag: string) => tag.toLowerCase().includes(query)))
       );
     }
 
@@ -668,6 +669,20 @@ export default function SearchPage() {
                           <MapPin className="h-3 w-3" />
                           {product.city}
                         </p>
+                      )}
+
+                      {/* Tags Preview */}
+                      {product.tags && product.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {product.tags.slice(0, 2).map((tag: string, i: number) => (
+                            <span key={i} className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                              #{tag}
+                            </span>
+                          ))}
+                          {product.tags.length > 2 && (
+                            <span className="text-[10px] text-gray-400">+{product.tags.length - 2}</span>
+                          )}
+                        </div>
                       )}
                       
                       {/* Auction Timer */}
