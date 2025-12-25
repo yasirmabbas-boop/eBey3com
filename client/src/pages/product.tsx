@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send } from "lucide-react";
+import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send, Trophy, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
@@ -59,6 +59,18 @@ export default function ProductPage() {
 
   // Image gallery state
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  // Live bidding state
+  const [liveBidData, setLiveBidData] = useState<{
+    currentBid: number;
+    totalBids: number;
+    bidderId: string;
+    bidderName: string;
+    auctionEndTime?: string;
+  } | null>(null);
+  const [wasOutbid, setWasOutbid] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
+  const viewTracked = useRef(false);
 
   // Create offer mutation
   const createOfferMutation = useMutation({
@@ -191,6 +203,76 @@ export default function ProductPage() {
     quantityAvailable: (listing as any).quantityAvailable || 1,
     quantitySold: (listing as any).quantitySold || 0,
   } : null;
+
+  // Track view when product loads
+  useEffect(() => {
+    if (listing?.id && !viewTracked.current) {
+      viewTracked.current = true;
+      fetch(`/api/listings/${listing.id}/view`, { method: "POST" }).catch(() => {});
+    }
+  }, [listing?.id]);
+
+  // WebSocket connection for live bidding
+  useEffect(() => {
+    if (!listing?.id || listing.saleType !== "auction") return;
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: "subscribe", listingId: listing.id }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "bid_update" && data.listingId === listing.id) {
+          setLiveBidData({
+            currentBid: data.currentBid,
+            totalBids: data.totalBids,
+            bidderId: data.bidderId,
+            bidderName: data.bidderName,
+            auctionEndTime: data.auctionEndTime,
+          });
+
+          // Check if current user was outbid
+          if (data.previousHighBidderId === user?.id && data.bidderId !== user?.id) {
+            setWasOutbid(true);
+            toast({
+              title: "تم تجاوز مزايدتك! 📢",
+              description: `قام ${data.bidderName} بتقديم مزايدة أعلى (${data.currentBid.toLocaleString()} د.ع)`,
+              variant: "destructive",
+            });
+          }
+
+          // Notify about time extension
+          if (data.timeExtended) {
+            toast({
+              title: "تم تمديد الوقت ⏰",
+              description: "تم إضافة 45 ثانية للمزاد بسبب مزايدة في اللحظة الأخيرة",
+            });
+          }
+
+          // Invalidate listing query to refresh data
+          queryClient.invalidateQueries({ queryKey: ["/api/listings", listing.id] });
+        }
+      } catch (e) {
+        console.error("WebSocket message error:", e);
+      }
+    };
+
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "unsubscribe", listingId: listing.id }));
+      }
+      ws.close();
+    };
+  }, [listing?.id, listing?.saleType, user?.id, toast, queryClient]);
+
+  // Determine if current user is winning
+  const currentHighBidderId = liveBidData?.bidderId || null;
+  const isWinning = user?.id && currentHighBidderId === user.id;
 
   // Check if current user is the seller of this product
   // Wait for auth to load before determining ownership to avoid race conditions
@@ -502,6 +584,28 @@ export default function ProductPage() {
 
             return (
               <>
+                {/* Winning bidder status */}
+                {product.saleType === "auction" && isWinning && (
+                  <div className="bg-green-50 border border-green-200 p-4 rounded-xl flex items-center gap-3 mb-3" data-testid="winning-banner">
+                    <Trophy className="h-6 w-6 text-green-600" />
+                    <div>
+                      <p className="text-green-700 font-bold">أنت صاحب أعلى مزايدة! 🎉</p>
+                      <p className="text-green-600 text-sm">مزايدتك الحالية: {(liveBidData?.currentBid || product.currentBid || product.price).toLocaleString()} د.ع</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Outbid notification */}
+                {product.saleType === "auction" && wasOutbid && !isWinning && (
+                  <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl flex items-center gap-3 mb-3" data-testid="outbid-banner">
+                    <AlertCircle className="h-6 w-6 text-orange-600" />
+                    <div>
+                      <p className="text-orange-700 font-bold">تم تجاوز مزايدتك!</p>
+                      <p className="text-orange-600 text-sm">قم بزيادة مزايدتك للفوز بالمزاد</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Auction Bidding - Show for all auction items */}
                 {product.saleType === "auction" && (
                   <BiddingWindow
