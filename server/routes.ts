@@ -77,7 +77,7 @@ export async function registerRoutes(
 
   app.post("/api/listings", async (req, res) => {
     try {
-      const sessionUserId = (req.session as any)?.userId;
+      const sessionUserId = await getUserIdFromRequest(req);
       
       // Only allow sellers to create listings
       if (!sessionUserId) {
@@ -480,7 +480,7 @@ export async function registerRoutes(
   app.post("/api/transactions", async (req, res) => {
     try {
       const validatedData = insertTransactionSchema.parse(req.body);
-      const sessionUserId = (req.session as any)?.userId;
+      const sessionUserId = await getUserIdFromRequest(req);
       
       // Check if listing is still available
       const listing = await storage.getListing(validatedData.listingId);
@@ -580,7 +580,7 @@ export async function registerRoutes(
   // Mark transaction as shipped (seller action)
   app.patch("/api/transactions/:id/ship", async (req, res) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = await getUserIdFromRequest(req);
       const transactionId = req.params.id;
       
       // Authentication required
@@ -637,7 +637,7 @@ export async function registerRoutes(
   // Mark transaction as delivered (seller action)
   app.patch("/api/transactions/:id/deliver", async (req, res) => {
     try {
-      const userId = (req.session as any)?.userId;
+      const userId = await getUserIdFromRequest(req);
       const transactionId = req.params.id;
       
       if (!userId) {
@@ -934,7 +934,7 @@ export async function registerRoutes(
 
   // Change password
   app.post("/api/account/password", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -972,7 +972,7 @@ export async function registerRoutes(
 
   // Get buyer addresses
   app.get("/api/account/addresses", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -988,7 +988,7 @@ export async function registerRoutes(
 
   // Create buyer address
   app.post("/api/account/addresses", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1012,7 +1012,7 @@ export async function registerRoutes(
 
   // Update buyer address
   app.put("/api/account/addresses/:id", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1037,7 +1037,7 @@ export async function registerRoutes(
 
   // Delete buyer address
   app.delete("/api/account/addresses/:id", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1062,7 +1062,7 @@ export async function registerRoutes(
 
   // Set default address
   app.post("/api/account/addresses/:id/default", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1360,7 +1360,7 @@ export async function registerRoutes(
 
   // ===== CHECKOUT API =====
   app.post("/api/checkout", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "يجب تسجيل الدخول لإتمام الشراء" });
     }
@@ -1459,7 +1459,7 @@ export async function registerRoutes(
   
   // Create a new offer
   app.post("/api/offers", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "يجب تسجيل الدخول لتقديم عرض" });
     }
@@ -1507,7 +1507,7 @@ export async function registerRoutes(
 
   // Get offers for a listing (seller view)
   app.get("/api/listings/:id/offers", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
@@ -1583,7 +1583,7 @@ export async function registerRoutes(
 
   // Respond to an offer (accept/reject/counter)
   app.patch("/api/offers/:id", async (req, res) => {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
