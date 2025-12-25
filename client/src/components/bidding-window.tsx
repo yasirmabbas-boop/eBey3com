@@ -14,6 +14,7 @@ interface BiddingWindowProps {
   totalBids: number;
   minimumBid: number;
   timeLeft?: string;
+  auctionEndTime?: string | null;
   onBidSuccess?: (bidAmount: number) => void;
   onRequireAuth?: () => boolean;
 }

@@ -205,7 +205,11 @@ export default function ProductPage() {
     tags: listing.tags || [],
   } : null;
 
-  // Track view when product loads
+  // Track view when product loads - reset ref on listing change
+  useEffect(() => {
+    viewTracked.current = false;
+  }, [params?.id]);
+
   useEffect(() => {
     if (listing?.id && !viewTracked.current) {
       viewTracked.current = true;
