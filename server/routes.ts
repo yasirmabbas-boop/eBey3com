@@ -8,6 +8,7 @@ import { broadcastBidUpdate } from "./websocket";
 
 const updateListingSchema = insertListingSchema.extend({
   auctionEndTime: z.union([z.string(), z.date(), z.null()]).optional(),
+  auctionStartTime: z.union([z.string(), z.date(), z.null()]).optional(),
   isActive: z.boolean().optional(),
 }).partial().refine(
   (data) => Object.keys(data).length > 0,
