@@ -55,7 +55,7 @@ interface Purchase {
 type DeliveryStep = "paid" | "tracking" | "delivered";
 
 const getDeliverySteps = (purchase: Purchase): { step: DeliveryStep; completed: boolean; date?: string }[] => {
-  const status = purchase.deliveryStatus || purchase.status;
+  const status = purchase.status || purchase.deliveryStatus || "pending";
   
   return [
     {
@@ -65,7 +65,7 @@ const getDeliverySteps = (purchase: Purchase): { step: DeliveryStep; completed: 
     },
     {
       step: "tracking" as DeliveryStep,
-      completed: !!purchase.trackingNumber || status === "in_transit" || status === "delivered" || status === "completed",
+      completed: !!purchase.trackingNumber || status === "shipped" || status === "in_transit" || status === "delivered" || status === "completed",
       date: purchase.trackingAvailableAt || purchase.shippedAt,
     },
     {
@@ -79,7 +79,7 @@ const getDeliverySteps = (purchase: Purchase): { step: DeliveryStep; completed: 
 const getStepLabel = (step: DeliveryStep): string => {
   switch (step) {
     case "paid": return "تم الطلب";
-    case "tracking": return "رقم التتبع متاح";
+    case "tracking": return "تم الشحن";
     case "delivered": return "تم التسليم";
   }
 };
@@ -93,10 +93,11 @@ const getStatusBadge = (status: string) => {
           تم التسليم
         </Badge>
       );
+    case "shipped":
     case "in_transit":
       return (
         <Badge className="bg-blue-500 text-white border-0 text-sm px-3 py-1">
-          قيد التوصيل
+          تم الشحن - قيد التوصيل
         </Badge>
       );
     case "processing":
@@ -236,7 +237,7 @@ export default function MyPurchases() {
   }
 
   const currentOrder = selectedOrder || purchases[0];
-  const deliveryStatus = currentOrder?.deliveryStatus || currentOrder?.status;
+  const deliveryStatus = currentOrder?.status || currentOrder?.deliveryStatus || "pending";
 
   return (
     <Layout>
@@ -274,8 +275,8 @@ export default function MyPurchases() {
                       <p className="text-sm text-gray-300">
                         {deliveryStatus === "delivered" || deliveryStatus === "completed" 
                           ? `تم التسليم في ${currentOrder.completedAt ? new Date(currentOrder.completedAt).toLocaleDateString("ar-IQ", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : ""}`
-                          : deliveryStatus === "in_transit"
-                          ? "الطلب في الطريق إليك"
+                          : deliveryStatus === "shipped" || deliveryStatus === "in_transit"
+                          ? "تم شحن طلبك - في الطريق إليك"
                           : "جاري تجهيز طلبك"}
                       </p>
                       <Link href={`/product/${currentOrder.listingId}`}>
@@ -537,7 +538,7 @@ export default function MyPurchases() {
                       {purchase.amount?.toLocaleString() || 0} د.ع
                     </p>
                     <div className="mt-2">
-                      {getStatusBadge(purchase.deliveryStatus || purchase.status)}
+                      {getStatusBadge(purchase.status || purchase.deliveryStatus || "pending")}
                     </div>
                   </div>
                 </div>
