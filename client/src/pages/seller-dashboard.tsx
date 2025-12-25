@@ -35,6 +35,8 @@ import {
   MapPin,
   HandCoins,
   MessageSquare,
+  Truck,
+  ExternalLink,
 } from "lucide-react";
 import {
   Select,
@@ -309,6 +311,45 @@ export default function SellerDashboard() {
     },
     onError: (error: Error) => {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const markAsShippedMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const res = await fetch(`/api/transactions/${orderId}/ship`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("فشل في تحديث حالة الشحن");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم تأكيد الشحن! 📦", description: "تم إرسال إشعار للمشتري" });
+      queryClient.invalidateQueries({ queryKey: ["/api/account/seller-orders"] });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في تحديث حالة الشحن", variant: "destructive" });
+    },
+  });
+
+  const markAsDeliveredMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const res = await fetch(`/api/transactions/${orderId}/deliver`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("فشل في تحديث حالة التسليم");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم التسليم! ✅", description: "تم إكمال الطلب بنجاح" });
+      queryClient.invalidateQueries({ queryKey: ["/api/account/seller-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/account/seller-summary"] });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في تحديث حالة التسليم", variant: "destructive" });
     },
   });
 
@@ -1110,21 +1151,31 @@ export default function SellerDashboard() {
             ) : (
               <div className="grid gap-4">
                 {sellerOrders.map(order => (
-                  <Card key={order.id} className="overflow-hidden" data-testid={`order-card-${order.id}`}>
+                  <Card key={order.id} className="overflow-hidden hover:shadow-lg transition-shadow" data-testid={`order-card-${order.id}`}>
                     <div className="flex flex-col md:flex-row">
-                      {order.listing?.images?.[0] && (
-                        <img 
-                          src={order.listing.images[0]} 
-                          alt={order.listing?.title || "منتج"} 
-                          className="w-full md:w-32 h-32 object-cover"
-                          loading="lazy"
-                          style={{ imageRendering: "auto" }}
-                        />
-                      )}
+                      <Link href={`/product/${order.listingId}`} className="relative cursor-pointer group">
+                        {order.listing?.images?.[0] && (
+                          <img 
+                            src={order.listing.images[0]} 
+                            alt={order.listing?.title || "منتج"} 
+                            className="w-full md:w-40 h-40 object-cover group-hover:opacity-80 transition-opacity"
+                            loading="lazy"
+                            style={{ imageRendering: "auto" }}
+                          />
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                          <ExternalLink className="h-6 w-6 text-white" />
+                        </div>
+                      </Link>
                       <div className="flex-1 p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <h3 className="font-bold text-lg">{order.listing?.title || "منتج"}</h3>
+                            <Link href={`/product/${order.listingId}`} className="hover:text-primary transition-colors">
+                              <h3 className="font-bold text-lg flex items-center gap-2">
+                                {order.listing?.title || "منتج"}
+                                <ExternalLink className="h-4 w-4 text-gray-400" />
+                              </h3>
+                            </Link>
                             <p className="text-sm text-gray-500">
                               طلب في {new Date(order.createdAt).toLocaleDateString("ar-IQ")}
                             </p>
@@ -1133,15 +1184,16 @@ export default function SellerDashboard() {
                             )}
                           </div>
                           <Badge 
-                            variant={order.status === "completed" ? "default" : "secondary"}
                             className={
-                              order.status === "completed" ? "bg-green-100 text-green-800" :
-                              order.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-                              "bg-blue-100 text-blue-800"
+                              order.status === "completed" || order.status === "delivered" ? "bg-green-100 text-green-800 border-0" :
+                              order.status === "shipped" ? "bg-blue-100 text-blue-800 border-0" :
+                              order.status === "pending" ? "bg-yellow-100 text-yellow-800 border-0" :
+                              "bg-gray-100 text-gray-800 border-0"
                             }
                           >
-                            {order.status === "pending" ? "قيد الانتظار" :
-                             order.status === "completed" ? "مكتمل" :
+                            {order.status === "pending" ? "بانتظار الشحن" :
+                             order.status === "shipped" ? "تم الشحن" :
+                             order.status === "completed" || order.status === "delivered" ? "تم التسليم" :
                              order.status === "processing" ? "قيد المعالجة" :
                              order.status}
                           </Badge>
@@ -1160,16 +1212,46 @@ export default function SellerDashboard() {
                           </div>
                         )}
 
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
                           <p className="text-xl font-bold text-green-600">
                             {order.amount.toLocaleString()} د.ع
                           </p>
-                          <Badge variant="outline" className="text-xs">
-                            {order.deliveryStatus === "pending" ? "بانتظار الشحن" :
-                             order.deliveryStatus === "shipped" ? "تم الشحن" :
-                             order.deliveryStatus === "delivered" ? "تم التوصيل" :
-                             order.deliveryStatus}
-                          </Badge>
+                          <div className="flex gap-2 flex-wrap">
+                            {order.status === "pending" && (
+                              <Button
+                                size="sm"
+                                onClick={() => markAsShippedMutation.mutate(order.id)}
+                                disabled={markAsShippedMutation.isPending}
+                                className="bg-blue-600 hover:bg-blue-700 gap-1"
+                                data-testid={`button-ship-${order.id}`}
+                              >
+                                <Truck className="h-4 w-4" />
+                                تأكيد الشحن
+                              </Button>
+                            )}
+                            {order.status === "shipped" && (
+                              <Button
+                                size="sm"
+                                onClick={() => markAsDeliveredMutation.mutate(order.id)}
+                                disabled={markAsDeliveredMutation.isPending}
+                                className="bg-green-600 hover:bg-green-700 gap-1"
+                                data-testid={`button-deliver-${order.id}`}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                تأكيد التسليم
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(`/messages/${order.buyer?.id}`)}
+                              className="gap-1"
+                              data-testid={`button-message-buyer-${order.id}`}
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                              مراسلة
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>

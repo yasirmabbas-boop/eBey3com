@@ -128,6 +128,68 @@ export default function SellPage() {
     }
   }, [user, authLoading, setLocation, toast]);
 
+  // Auto-save draft to localStorage (only for brand new listings - not edit/relist/template)
+  const DRAFT_KEY = "listing_draft";
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+  const isNewListing = !isEditMode && !isRelistMode && !isTemplateMode;
+
+  // Load draft from localStorage on mount (only for new listings)
+  useEffect(() => {
+    if (isNewListing && !draftLoaded) {
+      const savedDraft = localStorage.getItem(DRAFT_KEY);
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          if (draft.formData && Object.values(draft.formData).some((v: unknown) => v !== "" && v !== "1")) {
+            setShowDraftBanner(true);
+          }
+        } catch (e) {
+          localStorage.removeItem(DRAFT_KEY);
+        }
+      }
+      setDraftLoaded(true);
+    } else if (!isNewListing) {
+      // For edit/relist/template modes, don't show draft banner and mark as loaded
+      setShowDraftBanner(false);
+      setDraftLoaded(true);
+    }
+  }, [isNewListing, draftLoaded]);
+
+  const loadDraft = () => {
+    if (!isNewListing) return; // Safety check
+    const savedDraft = localStorage.getItem(DRAFT_KEY);
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        if (draft.formData) setFormData(draft.formData);
+        if (draft.images) setImages(draft.images);
+        if (draft.saleType) setSaleType(draft.saleType);
+        if (draft.allowOffers !== undefined) setAllowOffers(draft.allowOffers);
+        toast({ title: "تم استرجاع المسودة", description: "تم تحميل البيانات المحفوظة مسبقاً" });
+      } catch (e) {
+        console.error("Failed to load draft:", e);
+      }
+    }
+    setShowDraftBanner(false);
+  };
+
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setShowDraftBanner(false);
+  };
+
+  // Save draft to localStorage periodically (only for brand new listings)
+  useEffect(() => {
+    if (isNewListing && draftLoaded && !showDraftBanner) {
+      const hasContent = formData.title || formData.description || formData.price || images.length > 0;
+      if (hasContent) {
+        const draft = { formData, images, saleType, allowOffers, savedAt: new Date().toISOString() };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      }
+    }
+  }, [formData, images, saleType, allowOffers, isNewListing, draftLoaded, showDraftBanner]);
+
   // Populate form when editing, relisting, or using as template
   useEffect(() => {
     if (sourceListing && sourceListingId) {
@@ -381,7 +443,17 @@ export default function SellPage() {
       });
 
       if (!response.ok) {
-        throw new Error(isEditMode ? "Failed to update listing" : "Failed to create listing");
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.fieldErrors) {
+          setValidationErrors(errorData.fieldErrors);
+          toast({
+            title: "يرجى تصحيح الأخطاء",
+            description: "تحقق من الحقول المميزة بالأحمر",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(errorData.error || (isEditMode ? "Failed to update listing" : "Failed to create listing"));
       }
 
       const successTitle = isEditMode 
@@ -399,6 +471,9 @@ export default function SellPage() {
         title: successTitle,
         description: successDesc,
       });
+      
+      // Clear draft on successful submission
+      localStorage.removeItem(DRAFT_KEY);
       
       setLocation("/seller-dashboard");
     } catch (error) {
@@ -436,6 +511,29 @@ export default function SellPage() {
             </div>
           )}
         </div>
+
+        {/* Draft Recovery Banner */}
+        {showDraftBanner && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-100 p-2 rounded-full">
+                <Clock className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-medium text-blue-800">لديك مسودة محفوظة</p>
+                <p className="text-sm text-blue-600">هل تريد استكمال العمل على المنتج السابق؟</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={clearDraft}>
+                تجاهل
+              </Button>
+              <Button type="button" size="sm" onClick={loadDraft} className="bg-blue-600 hover:bg-blue-700">
+                استرجاع المسودة
+              </Button>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           
