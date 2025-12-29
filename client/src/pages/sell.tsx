@@ -189,8 +189,12 @@ export default function SellPage() {
     if (isNewListing && draftLoaded && !showDraftBanner) {
       const hasContent = formData.title || formData.description || formData.price || images.length > 0;
       if (hasContent) {
-        const draft = { formData, images, saleType, allowOffers, allowExchange, tags, savedAt: new Date().toISOString() };
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        try {
+          const draft = { formData, images: images.slice(0, 4), saleType, allowOffers, allowExchange, tags, savedAt: new Date().toISOString() };
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        } catch (e) {
+          console.warn("Failed to save draft to localStorage:", e);
+        }
       }
     }
   }, [formData, images, saleType, allowOffers, allowExchange, tags, isNewListing, draftLoaded, showDraftBanner]);

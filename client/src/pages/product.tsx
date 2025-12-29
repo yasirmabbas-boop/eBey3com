@@ -171,7 +171,7 @@ export default function ProductPage() {
 
   const product = listing ? {
     id: listing.id,
-    productCode: (listing as any).productCode || `P-${listing.id.slice(0, 6)}`,
+    productCode: (listing as any).productCode || `P-${listing.id?.slice(0, 6) || "000000"}`,
     title: listing.title,
     price: listing.price,
     currentBid: listing.currentBid || undefined,
