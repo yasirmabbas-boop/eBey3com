@@ -81,15 +81,21 @@ export default function Home() {
 
   const sellerId = user?.id;
 
-  const { data: listings = [], isLoading } = useQuery<Listing[]>({
+  const { data: listingsData, isLoading } = useQuery({
     queryKey: ["/api/listings", sellerId],
     queryFn: async () => {
-      const url = sellerId ? `/api/listings?sellerId=${encodeURIComponent(sellerId)}` : "/api/listings";
+      const url = sellerId 
+        ? `/api/listings?sellerId=${encodeURIComponent(sellerId)}&limit=50` 
+        : "/api/listings?limit=50";
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch listings");
       return res.json();
     },
   });
+  
+  const listings: Listing[] = Array.isArray(listingsData) 
+    ? listingsData 
+    : (listingsData?.listings || []);
 
   const displayProducts = listings
     .filter(l => {

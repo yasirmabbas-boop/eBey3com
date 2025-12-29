@@ -43,7 +43,11 @@ export async function registerRoutes(
 
   app.get("/api/listings", async (req, res) => {
     try {
-      const { category, sellerId } = req.query;
+      const { category, sellerId, page, limit: limitParam, saleType, exchange } = req.query;
+      const pageNum = parseInt(page as string) || 1;
+      const limit = Math.min(parseInt(limitParam as string) || 20, 100);
+      const offset = (pageNum - 1) * limit;
+      
       let listings;
       if (sellerId && typeof sellerId === "string") {
         listings = await storage.getListingsBySeller(sellerId);
@@ -55,7 +59,31 @@ export async function registerRoutes(
       } else {
         listings = await storage.getListings();
       }
-      res.json(listings);
+      
+      // Filter by saleType if provided
+      if (saleType && typeof saleType === "string") {
+        listings = listings.filter(l => l.saleType === saleType);
+      }
+      
+      // Filter by exchange if requested
+      if (exchange === "true") {
+        listings = listings.filter(l => (l as any).isExchangeable === true);
+      }
+      
+      // Apply pagination
+      const total = listings.length;
+      const paginatedListings = listings.slice(offset, offset + limit);
+      
+      res.json({
+        listings: paginatedListings,
+        pagination: {
+          page: pageNum,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasMore: offset + limit < total
+        }
+      });
     } catch (error) {
       console.error("Error fetching listings:", error);
       res.status(500).json({ error: "Failed to fetch listings" });

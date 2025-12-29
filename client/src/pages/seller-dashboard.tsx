@@ -166,16 +166,20 @@ export default function SellerDashboard() {
   const [stockProductId, setStockProductId] = useState<string | null>(null);
   const [newStockQuantity, setNewStockQuantity] = useState("");
 
-  const { data: listings = [], isLoading: listingsLoading } = useQuery<Listing[]>({
+  const { data: listingsData, isLoading: listingsLoading } = useQuery({
     queryKey: ["/api/listings", user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
-      const res = await fetch(`/api/listings?sellerId=${encodeURIComponent(user.id)}`);
+      if (!user?.id) return { listings: [], pagination: null };
+      const res = await fetch(`/api/listings?sellerId=${encodeURIComponent(user.id)}&limit=100`);
       if (!res.ok) throw new Error("Failed to fetch listings");
       return res.json();
     },
     enabled: !!user?.id,
   });
+  
+  const listings: Listing[] = Array.isArray(listingsData) 
+    ? listingsData 
+    : (listingsData?.listings || []);
 
   const { data: receivedOffers = [], isLoading: offersLoading } = useQuery<(Offer & { listing?: Listing; buyerName?: string })[]>({
     queryKey: ["/api/received-offers"],

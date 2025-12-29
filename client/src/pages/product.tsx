@@ -620,7 +620,11 @@ export default function ProductPage() {
                     totalBids={liveBidData?.totalBids || product.totalBids || 0}
                     minimumBid={(liveBidData?.currentBid || product.currentBid || product.price) + 1000}
                     timeLeft={product.timeLeft}
-                    auctionEndTime={liveBidData?.auctionEndTime || product.auctionEndTime}
+                    auctionEndTime={(() => {
+                      const endTime = liveBidData?.auctionEndTime || product.auctionEndTime;
+                      if (!endTime) return null;
+                      return typeof endTime === 'string' ? endTime : endTime.toISOString();
+                    })()}
                     onRequireAuth={() => requireAuth("bid")}
                   />
                 )}

@@ -110,14 +110,18 @@ export default function SearchPage() {
   const [sortBy, setSortBy] = useState("newest");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  const { data: listings = [], isLoading } = useQuery<Listing[]>({
+  const { data: listingsData, isLoading } = useQuery({
     queryKey: ["/api/listings"],
     queryFn: async () => {
-      const res = await fetch("/api/listings");
+      const res = await fetch("/api/listings?limit=100");
       if (!res.ok) throw new Error("Failed to fetch listings");
       return res.json();
     },
   });
+  
+  const listings: Listing[] = Array.isArray(listingsData) 
+    ? listingsData 
+    : (listingsData?.listings || []);
 
   const allProducts = useMemo(() => {
     return listings.length > 0 ? listings : PRODUCTS.map(p => ({
