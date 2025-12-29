@@ -103,6 +103,30 @@ export async function registerRoutes(
     }
   });
 
+  // Check if user has bid on a listing and if they are the highest bidder
+  app.get("/api/listings/:id/user-bid-status", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.json({ hasBid: false, isHighest: false });
+      }
+      
+      const listing = await storage.getListing(req.params.id);
+      if (!listing) {
+        return res.json({ hasBid: false, isHighest: false });
+      }
+      
+      const userBids = await storage.getUserBids(userId);
+      const hasBid = userBids.some(bid => bid.listingId === req.params.id);
+      const isHighest = (listing as any).highestBidderId === userId;
+      
+      res.json({ hasBid, isHighest });
+    } catch (error) {
+      console.error("Error checking user bid status:", error);
+      res.json({ hasBid: false, isHighest: false });
+    }
+  });
+
   app.post("/api/listings", async (req, res) => {
     try {
       const sessionUserId = await getUserIdFromRequest(req);

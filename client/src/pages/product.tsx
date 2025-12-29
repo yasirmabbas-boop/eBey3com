@@ -169,6 +169,26 @@ export default function ProductPage() {
     enabled: !!listing?.sellerId,
   });
 
+  // Check if user has been outbid on page load (for auction listings)
+  const { data: userBidsOnListing } = useQuery<{ hasBid: boolean; isHighest: boolean }>({
+    queryKey: ["/api/listings", params?.id, "user-bid-status", user?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/listings/${params?.id}/user-bid-status`, {
+        credentials: "include",
+      });
+      if (!res.ok) return { hasBid: false, isHighest: false };
+      return res.json();
+    },
+    enabled: !!params?.id && !!user?.id && listing?.saleType === "auction",
+  });
+
+  // Set outbid status on page load if user has bid but is not highest
+  useEffect(() => {
+    if (userBidsOnListing?.hasBid && !userBidsOnListing?.isHighest) {
+      setWasOutbid(true);
+    }
+  }, [userBidsOnListing]);
+
   const product = listing ? {
     id: listing.id,
     productCode: (listing as any).productCode || `P-${listing.id?.slice(0, 6) || "000000"}`,
@@ -495,20 +515,20 @@ export default function ProductPage() {
         {/* Seller Info Row */}
         <div className="flex items-center gap-3 py-3 border-b">
           <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-sm">
-            {product.seller.name.charAt(0)}
+            {product.seller?.name?.charAt(0) || "ب"}
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm">{product.seller.name}</span>
-              {product.seller.salesCount > 0 && (
-                <span className="text-xs text-gray-500">({product.seller.salesCount})</span>
+              <span className="font-semibold text-sm">{product.seller?.name || product.sellerName || "بائع"}</span>
+              {(product.seller?.salesCount || 0) > 0 && (
+                <span className="text-xs text-gray-500">({product.seller?.salesCount})</span>
               )}
             </div>
             <div className="flex items-center gap-1 text-xs text-gray-500">
-              {product.seller.ratingCount > 0 ? (
+              {(product.seller?.ratingCount || 0) > 0 ? (
                 <>
                   <span className="text-green-600 font-medium">
-                    {Math.round(product.seller.rating)}% تقييم إيجابي
+                    {Math.round(product.seller?.rating || 0)}% تقييم إيجابي
                   </span>
                 </>
               ) : (
@@ -600,13 +620,13 @@ export default function ProductPage() {
                   </div>
                 )}
 
-                {/* Outbid notification */}
+                {/* Outbid notification - RED alert */}
                 {product.saleType === "auction" && wasOutbid && !isWinning && (
-                  <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl flex items-center gap-3 mb-3" data-testid="outbid-banner">
-                    <AlertCircle className="h-6 w-6 text-orange-600" />
+                  <div className="bg-red-50 border-2 border-red-500 p-4 rounded-xl flex items-center gap-3 mb-3 animate-pulse" data-testid="outbid-banner">
+                    <AlertCircle className="h-6 w-6 text-red-600" />
                     <div>
-                      <p className="text-orange-700 font-bold">تم تجاوز مزايدتك!</p>
-                      <p className="text-orange-600 text-sm">قم بزيادة مزايدتك للفوز بالمزاد</p>
+                      <p className="text-red-700 font-bold text-lg">⚠️ تم تجاوز مزايدتك!</p>
+                      <p className="text-red-600 text-sm">قم بزيادة مزايدتك الآن للفوز بالمزاد</p>
                     </div>
                   </div>
                 )}
