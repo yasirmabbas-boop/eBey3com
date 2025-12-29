@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, Loader2, Phone, Plus, Store } from "lucide-react";
+import { ShoppingCart, User, Menu, Loader2, Phone, Plus, Store, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { AccountDropdown } from "@/components/account-dropdown";
@@ -35,18 +35,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Seller Info */}
             <div className="flex items-center gap-3">
               <Store className="h-4 w-4" />
-              <span className="font-bold">حساب البائع</span>
-              {isAuthenticated && (user as any)?.accountType === "seller" && (
-                <>
-                  <span className="hidden sm:inline">|</span>
-                  <Link href="/my-account" className="hidden sm:inline hover:underline font-medium">
-                    حسابي
-                  </Link>
-                  <Link href="/my-sales" className="hidden sm:inline hover:underline font-medium">
-                    مبيعاتي
-                  </Link>
-                </>
-              )}
+              <span className="font-bold">{user?.displayName || user?.username}</span>
+              <span className="hidden sm:inline">|</span>
+              <Link href="/my-account" className="hidden sm:inline hover:underline font-medium">
+                حسابي
+              </Link>
+              <Link href="/my-sales" className="hidden sm:inline hover:underline font-medium">
+                مبيعاتي
+              </Link>
+              <span className="hidden sm:inline">|</span>
+              <button 
+                onClick={() => logout()}
+                className="hover:underline font-medium flex items-center gap-1"
+                data-testid="button-seller-logout"
+              >
+                <LogOut className="h-3 w-3" />
+                خروج
+              </button>
             </div>
             
             {/* List Item Button - Top Right */}
@@ -68,7 +73,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="container mx-auto flex justify-between items-center">
             <div className="flex items-center gap-3">
               <User className="h-4 w-4" />
-              <span className="font-bold">حساب المشتري</span>
+              <span className="font-bold">{user?.displayName || user?.username}</span>
               <span className="hidden sm:inline">|</span>
               <Link href="/my-account" className="hidden sm:inline hover:underline font-medium">
                 حسابي
@@ -76,6 +81,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link href="/my-purchases" className="hidden sm:inline hover:underline font-medium">
                 مشترياتي
               </Link>
+              <span className="hidden sm:inline">|</span>
+              <button 
+                onClick={() => logout()}
+                className="hover:underline font-medium flex items-center gap-1"
+                data-testid="button-buyer-logout"
+              >
+                <LogOut className="h-3 w-3" />
+                خروج
+              </button>
             </div>
           </div>
         </div>
