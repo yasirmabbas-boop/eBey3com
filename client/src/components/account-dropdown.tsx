@@ -48,8 +48,14 @@ export function AccountDropdown() {
           className="hover:text-primary font-semibold transition-colors text-xs flex items-center gap-1"
           data-testid="button-account-dropdown"
         >
-          <User className="h-4 w-4" />
-          حسابي
+          {user.avatar ? (
+            <img src={user.avatar} alt={user.displayName} className="h-5 w-5 rounded-full" />
+          ) : (
+            <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+              {user.displayName?.charAt(0) || "م"}
+            </div>
+          )}
+          {user.displayName || user.username}
           <ChevronDown className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
