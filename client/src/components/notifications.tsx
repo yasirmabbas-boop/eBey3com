@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bell, X, Clock, Gavel, Tag, ShoppingBag, MessageSquare, Check, Truck, Package } from "lucide-react";
+import { Bell, X, Clock, Gavel, Tag, ShoppingBag, MessageSquare, Check, Truck, Package, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -10,17 +10,19 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import type { Message } from "@shared/schema";
+import type { Message, Notification as DBNotification } from "@shared/schema";
 
 interface Notification {
   id: string;
-  type: "message" | "shipping" | "offer" | "bid" | "sale";
+  type: "message" | "shipping" | "offer" | "bid" | "sale" | "outbid" | "new_bid";
   title: string;
   message: string;
   timestamp: Date;
   read: boolean;
   productId?: string;
   senderId?: string;
+  linkUrl?: string;
+  isSystemNotification?: boolean;
 }
 
 const getNotificationIcon = (type: Notification["type"]) => {
@@ -32,7 +34,10 @@ const getNotificationIcon = (type: Notification["type"]) => {
     case "offer":
       return <Tag className="h-5 w-5 text-purple-500" />;
     case "bid":
+    case "new_bid":
       return <Gavel className="h-5 w-5 text-amber-500" />;
+    case "outbid":
+      return <AlertTriangle className="h-5 w-5 text-red-500" />;
     case "sale":
       return <ShoppingBag className="h-5 w-5 text-green-600" />;
     default:
@@ -71,6 +76,7 @@ export function NotificationsButton() {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
+  // Fetch messages
   const { data: messages = [] } = useQuery<Message[]>({
     queryKey: ["/api/messages", user?.id],
     queryFn: async () => {
@@ -83,7 +89,19 @@ export function NotificationsButton() {
     refetchInterval: 30000,
   });
 
-  const markAsReadMutation = useMutation({
+  // Fetch system notifications (outbid, new_bid, etc.)
+  const { data: systemNotifications = [] } = useQuery<DBNotification[]>({
+    queryKey: ["/api/notifications"],
+    queryFn: async () => {
+      const res = await fetch("/api/notifications", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user?.id,
+    refetchInterval: 15000,
+  });
+
+  const markMessageAsReadMutation = useMutation({
     mutationFn: async (messageId: string) => {
       const res = await fetch(`/api/messages/${messageId}/read`, {
         method: "PATCH",
@@ -97,9 +115,38 @@ export function NotificationsButton() {
     },
   });
 
-  const notifications: Notification[] = messages
+  const markNotificationAsReadMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
+      const res = await fetch(`/api/notifications/${notificationId}/read`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to mark as read");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    },
+  });
+
+  const markAllNotificationsAsReadMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/notifications/read-all", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to mark all as read");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    },
+  });
+
+  // Combine messages and system notifications
+  const messageNotifications: Notification[] = messages
     .filter(msg => msg.receiverId === user?.id)
-    .slice(0, 20)
+    .slice(0, 10)
     .map(msg => {
       const { type, title } = categorizeMessage(msg.content);
       return {
@@ -111,18 +158,43 @@ export function NotificationsButton() {
         read: msg.isRead,
         productId: msg.listingId || undefined,
         senderId: msg.senderId,
+        isSystemNotification: false,
       };
     });
 
+  const sysNotifications: Notification[] = systemNotifications
+    .slice(0, 20)
+    .map(notif => ({
+      id: notif.id,
+      type: notif.type as Notification["type"],
+      title: notif.title,
+      message: notif.message,
+      timestamp: new Date(notif.createdAt),
+      read: notif.isRead,
+      productId: notif.relatedId || undefined,
+      linkUrl: notif.linkUrl || undefined,
+      isSystemNotification: true,
+    }));
+
+  // Combine and sort by timestamp
+  const notifications: Notification[] = [...sysNotifications, ...messageNotifications]
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .slice(0, 30);
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAsRead = (id: string) => {
-    markAsReadMutation.mutate(id);
+  const markAsRead = (notification: Notification) => {
+    if (notification.isSystemNotification) {
+      markNotificationAsReadMutation.mutate(notification.id);
+    } else {
+      markMessageAsReadMutation.mutate(notification.id);
+    }
   };
 
   const markAllAsRead = () => {
-    notifications.filter(n => !n.read).forEach(n => {
-      markAsReadMutation.mutate(n.id);
+    markAllNotificationsAsReadMutation.mutate();
+    notifications.filter(n => !n.read && !n.isSystemNotification).forEach(n => {
+      markMessageAsReadMutation.mutate(n.id);
     });
   };
 
@@ -196,11 +268,15 @@ export function NotificationsButton() {
                   key={notification.id}
                   className={cn(
                     "p-4 hover:bg-gray-50 transition-colors cursor-pointer relative group",
-                    !notification.read && "bg-blue-50/50"
+                    !notification.read && "bg-blue-50/50",
+                    notification.type === "outbid" && !notification.read && "bg-red-50 border-r-4 border-red-500"
                   )}
                   onClick={() => {
-                    markAsRead(notification.id);
-                    if (notification.productId) {
+                    markAsRead(notification);
+                    if (notification.linkUrl) {
+                      window.location.href = notification.linkUrl;
+                      setOpen(false);
+                    } else if (notification.productId) {
                       window.location.href = `/product/${notification.productId}`;
                       setOpen(false);
                     } else {
