@@ -106,6 +106,13 @@ export function AccountDropdown() {
           </DropdownMenuItem>
         </Link>
 
+        <Link href="/my-bids">
+          <DropdownMenuItem className="cursor-pointer" data-testid="menu-my-bids">
+            <Gavel className="h-4 w-4 ml-2" />
+            <span>مزايداتي</span>
+          </DropdownMenuItem>
+        </Link>
+
         <Link href="/exchange-offers">
           <DropdownMenuItem className="cursor-pointer" data-testid="menu-exchange-offers">
             <RefreshCw className="h-4 w-4 ml-2" />
