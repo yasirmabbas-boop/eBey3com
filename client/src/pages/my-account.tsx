@@ -135,6 +135,12 @@ export default function MyAccount() {
       badge: buyerSummary?.activeOffers || undefined,
     },
     {
+      icon: <Gavel className="h-6 w-6" />,
+      label: "مزايداتي",
+      description: "جميع المزايدات التي قدمتها",
+      href: "/my-bids",
+    },
+    {
       icon: <Clock className="h-6 w-6" />,
       label: "شوهدت مؤخراً",
       description: "المنتجات التي زرتها",
