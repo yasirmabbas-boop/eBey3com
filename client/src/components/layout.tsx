@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, LogOut, Loader2, Phone, Plus, Store } from "lucide-react";
+import { ShoppingCart, User, Menu, Loader2, Phone, Plus, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { AccountDropdown } from "@/components/account-dropdown";
@@ -95,25 +95,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           
           {/* User Actions */}
           <div className="flex items-center gap-3 mr-auto">
-            {isLoading ? (
-              <div className="flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
-              </div>
-            ) : isAuthenticated && user ? (
-              <div className="flex items-center gap-2">
-                {user.avatar && (
-                  <img src={user.avatar} alt={user.displayName} className="h-5 w-5 rounded-full" />
-                )}
-                <span className="font-medium">{user.displayName}</span>
-                <button 
-                  onClick={() => logout()}
-                  className="hover:text-blue-200 transition-colors flex items-center gap-1"
-                  data-testid="button-logout"
-                >
-                  <LogOut className="h-3 w-3" />
-                </button>
-              </div>
-            ) : (
+            {!isLoading && !isAuthenticated && (
               <Link href="/signin" className="hover:text-blue-200 transition-colors flex items-center gap-1" data-testid="button-login">
                 <User className="h-3 w-3" />
                 تسجيل الدخول
