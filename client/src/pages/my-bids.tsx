@@ -1,9 +1,17 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Gavel,
@@ -14,7 +22,17 @@ import {
   ExternalLink,
   Timer,
   ChevronLeft,
+  Filter,
 } from "lucide-react";
+
+type TimePeriod = "week" | "two_weeks" | "three_months" | "all";
+
+const TIME_PERIODS: { value: TimePeriod; label: string; days: number | null }[] = [
+  { value: "week", label: "آخر أسبوع", days: 7 },
+  { value: "two_weeks", label: "آخر أسبوعين", days: 14 },
+  { value: "three_months", label: "آخر 3 أشهر", days: 90 },
+  { value: "all", label: "جميع المزايدات", days: null },
+];
 
 interface BidWithListing {
   id: string;
@@ -121,11 +139,24 @@ function TimeRemaining({ endDate }: { endDate: string }) {
 
 export default function MyBids() {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
   
   const { data: bids, isLoading, error } = useQuery<BidWithListing[]>({
     queryKey: ["/api/account/my-bids"],
     enabled: isAuthenticated,
   });
+
+  const filteredBids = useMemo(() => {
+    if (!bids) return [];
+    
+    const period = TIME_PERIODS.find(p => p.value === timePeriod);
+    if (!period || period.days === null) return bids;
+    
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - period.days);
+    
+    return bids.filter(bid => new Date(bid.createdAt) >= cutoffDate);
+  }, [bids, timePeriod]);
 
   if (isAuthLoading) {
     return (
@@ -159,22 +190,47 @@ export default function MyBids() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Link href="/my-account">
-            <Button variant="ghost" size="sm" className="gap-1">
-              <ChevronLeft className="h-4 w-4" />
-              العودة
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Gavel className="h-6 w-6 text-primary" />
-              مزايداتي
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              جميع المزايدات التي قدمتها على المزادات
-            </p>
+        <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Link href="/my-account">
+              <Button variant="ghost" size="sm" className="gap-1">
+                <ChevronLeft className="h-4 w-4" />
+                العودة
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Gavel className="h-6 w-6 text-primary" />
+                مزايداتي
+              </h1>
+              <p className="text-muted-foreground text-sm">
+                جميع المزايدات التي قدمتها على المزادات
+              </p>
+            </div>
           </div>
+          
+          {bids && bids.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={timePeriod} onValueChange={(v) => setTimePeriod(v as TimePeriod)}>
+                <SelectTrigger className="w-[160px]" data-testid="select-time-filter">
+                  <SelectValue placeholder="فترة زمنية" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_PERIODS.map((period) => (
+                    <SelectItem key={period.value} value={period.value}>
+                      {period.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {timePeriod !== "all" && (
+                <Badge variant="secondary" className="text-xs">
+                  {filteredBids.length} من {bids.length}
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
 
         {isLoading ? (
@@ -197,9 +253,20 @@ export default function MyBids() {
               <Button>تصفح المزادات</Button>
             </Link>
           </Card>
+        ) : filteredBids.length === 0 ? (
+          <Card className="p-8 text-center">
+            <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-bold mb-2">لا توجد مزايدات في هذه الفترة</h2>
+            <p className="text-muted-foreground mb-4">
+              لم تقم بتقديم مزايدات خلال الفترة المحددة. جرب اختيار فترة أطول.
+            </p>
+            <Button variant="outline" onClick={() => setTimePeriod("all")}>
+              عرض جميع المزايدات
+            </Button>
+          </Card>
         ) : (
           <div className="space-y-4">
-            {bids.map((bid) => {
+            {filteredBids.map((bid) => {
               const status = getBidStatus(bid, user?.id);
               const listing = bid.listing;
               const image = listing?.images?.[0] || "/placeholder.svg";
