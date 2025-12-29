@@ -275,8 +275,8 @@ export default function ProductPage() {
     };
   }, [listing?.id, listing?.saleType, user?.id, toast, queryClient]);
 
-  // Determine if current user is winning
-  const currentHighBidderId = liveBidData?.bidderId || null;
+  // Determine if current user is winning - check both live data and listing data
+  const currentHighBidderId = liveBidData?.bidderId || (listing as any)?.highestBidderId || null;
   const isWinning = user?.id && currentHighBidderId === user.id;
 
   // Check if current user is the seller of this product

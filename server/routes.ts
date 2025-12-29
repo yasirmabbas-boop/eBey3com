@@ -292,8 +292,41 @@ export async function registerRoutes(
       
       // Get previous high bidder before creating new bid
       const previousHighBid = highestBid;
+      const previousHighBidderId = previousHighBid?.userId;
       
       const bid = await storage.createBid(validatedData);
+      
+      // Update listing with new highest bid info
+      await storage.updateListing(validatedData.listingId, {
+        currentBid: validatedData.amount,
+        highestBidderId: validatedData.userId,
+        totalBids: (listing.totalBids || 0) + 1,
+      } as any);
+      
+      // Send notification to previous highest bidder (they've been outbid)
+      if (previousHighBidderId && previousHighBidderId !== validatedData.userId) {
+        await storage.createNotification({
+          userId: previousHighBidderId,
+          type: "outbid",
+          title: "تم تجاوز مزايدتك!",
+          message: `تم تقديم مزايدة أعلى على "${listing.title}". قم بزيادة مزايدتك للفوز.`,
+          linkUrl: `/product/${validatedData.listingId}`,
+          relatedId: validatedData.listingId,
+        });
+      }
+      
+      // Send notification to seller about new bid
+      if (listing.sellerId && listing.sellerId !== validatedData.userId) {
+        const bidder = await storage.getUser(validatedData.userId);
+        await storage.createNotification({
+          userId: listing.sellerId,
+          type: "new_bid",
+          title: "مزايدة جديدة!",
+          message: `${bidder?.displayName || "مستخدم"} قدم مزايدة ${validatedData.amount.toLocaleString()} د.ع على "${listing.title}"`,
+          linkUrl: `/product/${validatedData.listingId}`,
+          relatedId: validatedData.listingId,
+        });
+      }
       
       // Anti-sniping: Add 45 seconds if bid placed in last 2 minutes
       let timeExtended = false;
@@ -1719,6 +1752,78 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error updating offer:", error);
       res.status(500).json({ error: "فشل في تحديث العرض" });
+    }
+  });
+
+  // Notification routes
+  app.get("/api/notifications", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const notificationsList = await storage.getNotifications(userId);
+      res.json(notificationsList);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get("/api/notifications/count", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.json({ count: 0 });
+      }
+      const count = await storage.getUnreadNotificationCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching notification count:", error);
+      res.status(500).json({ error: "Failed to fetch notification count" });
+    }
+  });
+
+  app.post("/api/notifications/:id/read", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const success = await storage.markNotificationAsRead(req.params.id);
+      res.json({ success });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  app.post("/api/notifications/read-all", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const success = await storage.markAllNotificationsAsRead(userId);
+      res.json({ success });
+    } catch (error) {
+      console.error("Error marking notifications as read:", error);
+      res.status(500).json({ error: "Failed to mark notifications as read" });
+    }
+  });
+
+  // User bids with listing info
+  app.get("/api/account/my-bids", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const userBids = await storage.getUserBidsWithListings(userId);
+      res.json(userBids);
+    } catch (error) {
+      console.error("Error fetching user bids:", error);
+      res.status(500).json({ error: "Failed to fetch bids" });
     }
   });
 

@@ -279,6 +279,7 @@ export const listings = pgTable("listings", {
   saleType: text("sale_type").notNull().default("fixed"),
   currentBid: integer("current_bid"),
   totalBids: integer("total_bids").default(0),
+  highestBidderId: varchar("highest_bidder_id"),
   timeLeft: text("time_left"),
   auctionStartTime: timestamp("auction_start_time"),
   auctionEndTime: timestamp("auction_end_time"),
@@ -408,5 +409,27 @@ export const insertMutualRatingSchema = createInsertSchema(mutualRatings).omit({
 
 export type InsertMutualRating = z.infer<typeof insertMutualRatingSchema>;
 export type MutualRating = typeof mutualRatings.$inferSelect;
+
+// Notifications system
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  linkUrl: text("link_url"),
+  relatedId: varchar("related_id"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  isRead: true,
+});
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
 
 export * from "./models/auth";
