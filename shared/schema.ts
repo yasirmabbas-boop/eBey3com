@@ -14,11 +14,18 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("user"),
   accountType: text("account_type").notNull().default("buyer"),
   isVerified: boolean("is_verified").notNull().default(false),
+  isAdmin: boolean("is_admin").notNull().default(false),
+  isTrusted: boolean("is_trusted").notNull().default(false),
+  isBanned: boolean("is_banned").notNull().default(false),
+  banReason: text("ban_reason"),
+  bannedAt: timestamp("banned_at"),
   idDocumentUrl: text("id_document_url"),
   verificationStatus: text("verification_status").default("pending"),
   totalSales: integer("total_sales").notNull().default(0),
   rating: real("rating").default(0),
   ratingCount: integer("rating_count").notNull().default(0),
+  buyerRating: real("buyer_rating").default(0),
+  buyerRatingCount: integer("buyer_rating_count").notNull().default(0),
   authProvider: text("auth_provider").default("email"),
   authProviderId: text("auth_provider_id"),
   twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
@@ -284,11 +291,14 @@ export const listings = pgTable("listings", {
   isActive: boolean("is_active").notNull().default(true),
   isPaused: boolean("is_paused").notNull().default(false),
   isNegotiable: boolean("is_negotiable").notNull().default(false),
+  isExchangeable: boolean("is_exchangeable").notNull().default(false),
   serialNumber: text("serial_number"),
   quantityAvailable: integer("quantity_available").notNull().default(1),
   quantitySold: integer("quantity_sold").notNull().default(0),
   views: integer("views").notNull().default(0),
   tags: text("tags").array().default(sql`ARRAY[]::text[]`),
+  removedByAdmin: boolean("removed_by_admin").notNull().default(false),
+  removalReason: text("removal_reason"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -302,5 +312,101 @@ export const insertListingSchema = createInsertSchema(listings).omit({
 
 export type InsertListing = z.infer<typeof insertListingSchema>;
 export type Listing = typeof listings.$inferSelect;
+
+// Exchange offers (مراوس)
+export const exchangeOffers = pgTable("exchange_offers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  offeredListingId: varchar("offered_listing_id").notNull(),
+  requestedListingId: varchar("requested_listing_id").notNull(),
+  offererId: varchar("offerer_id").notNull(),
+  receiverId: varchar("receiver_id").notNull(),
+  message: text("message"),
+  status: text("status").notNull().default("pending"),
+  respondedAt: timestamp("responded_at"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertExchangeOfferSchema = createInsertSchema(exchangeOffers).omit({
+  id: true,
+  createdAt: true,
+  respondedAt: true,
+  status: true,
+});
+
+export type InsertExchangeOffer = z.infer<typeof insertExchangeOfferSchema>;
+export type ExchangeOffer = typeof exchangeOffers.$inferSelect;
+
+// Reports system
+export const reports = pgTable("reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  reporterId: varchar("reporter_id").notNull(),
+  reportType: text("report_type").notNull(),
+  targetId: varchar("target_id").notNull(),
+  targetType: text("target_type").notNull(),
+  reason: text("reason").notNull(),
+  details: text("details"),
+  status: text("status").notNull().default("pending"),
+  adminNotes: text("admin_notes"),
+  resolvedBy: varchar("resolved_by"),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertReportSchema = createInsertSchema(reports).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  adminNotes: true,
+  resolvedBy: true,
+  resolvedAt: true,
+});
+
+export type InsertReport = z.infer<typeof insertReportSchema>;
+export type Report = typeof reports.$inferSelect;
+
+// Return requests
+export const returnRequests = pgTable("return_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  transactionId: varchar("transaction_id").notNull(),
+  buyerId: varchar("buyer_id").notNull(),
+  sellerId: varchar("seller_id").notNull(),
+  reason: text("reason").notNull(),
+  details: text("details"),
+  status: text("status").notNull().default("pending"),
+  sellerResponse: text("seller_response"),
+  respondedAt: timestamp("responded_at"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertReturnRequestSchema = createInsertSchema(returnRequests).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  sellerResponse: true,
+  respondedAt: true,
+});
+
+export type InsertReturnRequest = z.infer<typeof insertReturnRequestSchema>;
+export type ReturnRequest = typeof returnRequests.$inferSelect;
+
+// Mutual ratings (buyer rates seller, seller rates buyer)
+export const mutualRatings = pgTable("mutual_ratings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  transactionId: varchar("transaction_id").notNull(),
+  raterId: varchar("rater_id").notNull(),
+  ratedId: varchar("rated_id").notNull(),
+  raterRole: text("rater_role").notNull(),
+  rating: integer("rating").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertMutualRatingSchema = createInsertSchema(mutualRatings).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertMutualRating = z.infer<typeof insertMutualRatingSchema>;
+export type MutualRating = typeof mutualRatings.$inferSelect;
 
 export * from "./models/auth";

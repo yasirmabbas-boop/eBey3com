@@ -84,6 +84,7 @@ export default function SellPage() {
   const [hasBuyNow, setHasBuyNow] = useState(false);
   const [hasReservePrice, setHasReservePrice] = useState(false);
   const [allowOffers, setAllowOffers] = useState(false);
+  const [allowExchange, setAllowExchange] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -168,6 +169,7 @@ export default function SellPage() {
         if (draft.images) setImages(draft.images);
         if (draft.saleType) setSaleType(draft.saleType);
         if (draft.allowOffers !== undefined) setAllowOffers(draft.allowOffers);
+        if (draft.allowExchange !== undefined) setAllowExchange(draft.allowExchange);
         if (draft.tags) setTags(draft.tags);
         toast({ title: "تم استرجاع المسودة", description: "تم تحميل البيانات المحفوظة مسبقاً" });
       } catch (e) {
@@ -187,11 +189,11 @@ export default function SellPage() {
     if (isNewListing && draftLoaded && !showDraftBanner) {
       const hasContent = formData.title || formData.description || formData.price || images.length > 0;
       if (hasContent) {
-        const draft = { formData, images, saleType, allowOffers, tags, savedAt: new Date().toISOString() };
+        const draft = { formData, images, saleType, allowOffers, allowExchange, tags, savedAt: new Date().toISOString() };
         localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
       }
     }
-  }, [formData, images, saleType, allowOffers, tags, isNewListing, draftLoaded, showDraftBanner]);
+  }, [formData, images, saleType, allowOffers, allowExchange, tags, isNewListing, draftLoaded, showDraftBanner]);
 
   // Populate form when editing, relisting, or using as template
   useEffect(() => {
@@ -219,6 +221,7 @@ export default function SellPage() {
       setImages(sourceListing.images || []);
       setSaleType((sourceListing.saleType as "auction" | "fixed") || "fixed");
       setAllowOffers(sourceListing.isNegotiable || false);
+      setAllowExchange(sourceListing.isExchangeable || false);
       setTags((sourceListing as any).tags || []);
     }
   }, [sourceListing, sourceListingId, isTemplateMode, isRelistMode]);
@@ -432,6 +435,7 @@ export default function SellPage() {
         sellerId: user?.id || null,
         city: formData.city,
         isNegotiable: allowOffers,
+        isExchangeable: allowExchange,
         serialNumber: formData.serialNumber || null,
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
         tags: tags.length > 0 ? tags : null,
@@ -1198,6 +1202,22 @@ export default function SellPage() {
                       checked={allowOffers}
                       onCheckedChange={setAllowOffers}
                       data-testid="switch-allow-offers"
+                    />
+                  </div>
+
+                  {/* Allow Exchange Toggle (مراوس) */}
+                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                    <div className="space-y-1">
+                      <Label htmlFor="exchangeToggle" className="font-bold">قابل للمراوس</Label>
+                      <p className="text-xs text-muted-foreground">
+                        السماح للمشترين بتقديم عروض تبادل مع منتجاتهم المعروضة
+                      </p>
+                    </div>
+                    <Switch 
+                      id="exchangeToggle" 
+                      checked={allowExchange}
+                      onCheckedChange={setAllowExchange}
+                      data-testid="switch-allow-exchange"
                     />
                   </div>
                 </div>

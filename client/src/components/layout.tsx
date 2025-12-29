@@ -82,16 +82,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Top Navigation Bar */}
-      <div className="bg-blue-600 text-white py-1 text-xs px-4">
+      <div className="bg-blue-600 text-white py-1.5 text-xs px-4">
         <div className="container mx-auto flex justify-between items-center">
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-5">
             <Link href="/" className="hover:text-blue-200 transition-colors font-medium">الرئيسية</Link>
-            <Link href="/search?category=ساعات" className="hover:text-blue-200 transition-colors">ساعات</Link>
-            <Link href="/search?category=إلكترونيات" className="hover:text-blue-200 transition-colors">إلكترونيات</Link>
-            <Link href="/search?category=ملابس" className="hover:text-blue-200 transition-colors">ملابس</Link>
-            <Link href="/search?category=تحف وأثاث" className="hover:text-blue-200 transition-colors">تحف وأثاث</Link>
-            <Link href="/search?category=سيارات" className="hover:text-blue-200 transition-colors">سيارات</Link>
+            <Link href="/search?saleType=auction" className="hover:text-blue-200 transition-colors font-medium">المزادات</Link>
+            <Link href="/search?saleType=fixed" className="hover:text-blue-200 transition-colors font-medium">شراء الآن</Link>
+            <Link href="/search?exchange=true" className="hover:text-blue-200 transition-colors font-medium">مراوس</Link>
             <Link href="/search" className="hover:text-blue-200 transition-colors font-medium">عرض الكل</Link>
           </div>
           
@@ -171,33 +169,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </SheetContent>
           </Sheet>
 
-          {/* Registration/Login Button - Far Right in RTL */}
+          {/* Account Dropdown - Far Right in RTL */}
           <div className="hidden md:flex items-center gap-2">
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-            ) : isAuthenticated && user ? (
-              <div className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg">
-                {user.avatar && (
-                  <img src={user.avatar} alt={user.displayName} className="h-6 w-6 rounded-full" />
-                )}
-                <span className="font-medium text-sm">{user.displayName}</span>
-                <button 
-                  onClick={() => logout()}
-                  className="text-gray-500 hover:text-red-500 transition-colors"
-                  data-testid="button-logout-header"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
-              </div>
             ) : (
-              <Link 
-                href="/signin" 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors"
-                data-testid="button-login-header"
-              >
-                <User className="h-4 w-4" />
-                تسجيل الدخول
-              </Link>
+              <AccountDropdown />
             )}
           </div>
 
