@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
+import { StarRating } from "@/components/star-rating";
+import { useToast } from "@/hooks/use-toast";
 import {
   Package,
   Truck,
@@ -24,6 +27,7 @@ import {
   Store,
   Star,
   Calendar,
+  Send,
 } from "lucide-react";
 
 interface Purchase {
@@ -41,6 +45,7 @@ interface Purchase {
   trackingAvailableAt?: string;
   createdAt: string;
   completedAt?: string;
+  hasReview?: boolean;
   listing?: {
     id: string;
     title: string;
@@ -50,6 +55,117 @@ interface Purchase {
     sellerId: string;
     city: string;
   };
+}
+
+function RateSellerCard({ 
+  purchase, 
+  userId,
+  onReviewSubmitted 
+}: { 
+  purchase: Purchase; 
+  userId: string;
+  onReviewSubmitted: () => void;
+}) {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(purchase.hasReview || false);
+  const { toast } = useToast();
+
+  const submitReviewMutation = useMutation({
+    mutationFn: async (data: { sellerId: string; reviewerId: string; rating: number; comment: string }) => {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to submit review");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم إرسال التقييم",
+        description: "شكراً لك على تقييم البائع",
+      });
+      setIsSubmitted(true);
+      onReviewSubmitted();
+    },
+    onError: () => {
+      toast({
+        title: "فشل إرسال التقييم",
+        description: "حدث خطأ، يرجى المحاولة مرة أخرى",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!purchase.listing?.sellerId || rating === 0) return;
+    submitReviewMutation.mutate({
+      sellerId: purchase.listing.sellerId,
+      reviewerId: userId,
+      rating,
+      comment,
+    });
+  };
+
+  if (isSubmitted) {
+    return (
+      <Card className="p-5 bg-green-50 border-green-200">
+        <div className="flex items-center gap-3">
+          <CheckCircle className="h-8 w-8 text-green-500" />
+          <div>
+            <h3 className="font-bold text-green-700">تم تقييم البائع</h3>
+            <p className="text-sm text-green-600">شكراً لك على مشاركة تجربتك</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-5 bg-yellow-50 border-yellow-200">
+      <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+        <Star className="h-5 w-5 text-yellow-500" />
+        قيّم البائع
+      </h3>
+      <p className="text-sm text-gray-600 mb-4">
+        كيف كانت تجربتك مع {purchase.listing?.sellerName || "البائع"}؟
+      </p>
+      
+      <div className="space-y-4">
+        <div>
+          <p className="text-sm font-medium mb-2">التقييم</p>
+          <StarRating value={rating} onChange={setRating} size="lg" />
+        </div>
+        
+        <div>
+          <p className="text-sm font-medium mb-2">تعليق (اختياري)</p>
+          <Textarea
+            placeholder="شارك تجربتك مع هذا البائع..."
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={3}
+            className="resize-none"
+            data-testid="input-review-comment"
+          />
+        </div>
+        
+        <Button 
+          onClick={handleSubmit}
+          disabled={rating === 0 || submitReviewMutation.isPending}
+          className="w-full gap-2"
+          data-testid="button-submit-review"
+        >
+          {submitReviewMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
+          إرسال التقييم
+        </Button>
+      </div>
+    </Card>
+  );
 }
 
 type DeliveryStep = "paid" | "tracking" | "delivered";
@@ -177,11 +293,16 @@ function DeliveryTimeline({ purchase }: { purchase: Purchase }) {
 export default function MyPurchases() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<Purchase | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: purchases = [], isLoading: purchasesLoading } = useQuery<Purchase[]>({
     queryKey: ["/api/account/purchases"],
     enabled: !!user?.id,
   });
+
+  const handleReviewSubmitted = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/account/purchases"] });
+  };
 
   const isLoading = authLoading || purchasesLoading;
 
@@ -418,6 +539,15 @@ export default function MyPurchases() {
                     </div>
                   </div>
                 </Card>
+
+                {/* Rate Seller - Only show for completed orders */}
+                {(deliveryStatus === "delivered" || deliveryStatus === "completed") && currentOrder.listing?.sellerId && user?.id && (
+                  <RateSellerCard 
+                    purchase={currentOrder} 
+                    userId={user.id}
+                    onReviewSubmitted={handleReviewSubmitted}
+                  />
+                )}
 
                 {/* Item Info */}
                 <Card className="p-5">
