@@ -72,7 +72,7 @@ function RateSellerCard({
   const { toast } = useToast();
 
   const submitReviewMutation = useMutation({
-    mutationFn: async (data: { sellerId: string; reviewerId: string; rating: number; comment: string }) => {
+    mutationFn: async (data: { sellerId: string; reviewerId: string; listingId: string; rating: number; comment: string }) => {
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -99,10 +99,11 @@ function RateSellerCard({
   });
 
   const handleSubmit = () => {
-    if (!purchase.listing?.sellerId || rating === 0) return;
+    if (!purchase.listing?.sellerId || !purchase.listingId || rating === 0) return;
     submitReviewMutation.mutate({
       sellerId: purchase.listing.sellerId,
       reviewerId: userId,
+      listingId: purchase.listingId,
       rating,
       comment,
     });
