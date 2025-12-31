@@ -825,6 +825,50 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/search-suggestions", async (req, res) => {
+    try {
+      const { q } = req.query;
+      const query = typeof q === "string" ? q.toLowerCase() : "";
+      
+      const { listings } = await storage.getListingsPaginated({ limit: 100, offset: 0 });
+      const activeListings = listings.filter(l => {
+        const remaining = (l.quantityAvailable || 1) - (l.quantitySold || 0);
+        return remaining > 0 && l.isActive !== false;
+      });
+      
+      const categories = new Set<string>();
+      const titles: { title: string; category: string }[] = [];
+      
+      activeListings.forEach(listing => {
+        if (listing.category) {
+          categories.add(listing.category);
+        }
+        titles.push({ title: listing.title, category: listing.category || "" });
+      });
+      
+      let suggestions: { term: string; category: string; type: "category" | "product" }[] = [];
+      
+      Array.from(categories).forEach(cat => {
+        if (!query || cat.toLowerCase().includes(query)) {
+          suggestions.push({ term: cat, category: cat, type: "category" });
+        }
+      });
+      
+      titles.forEach(({ title, category }) => {
+        if (!query || title.toLowerCase().includes(query)) {
+          suggestions.push({ term: title, category, type: "product" });
+        }
+      });
+      
+      suggestions = suggestions.slice(0, 10);
+      
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Error fetching search suggestions:", error);
+      res.status(500).json({ error: "Failed to fetch suggestions" });
+    }
+  });
+
   app.post("/api/categories", async (req, res) => {
     try {
       const validatedData = insertCategorySchema.parse(req.body);
