@@ -197,11 +197,13 @@ export default function SellerDashboard() {
     activeListings: number;
     totalSales: number;
     totalRevenue: number;
+    pendingShipments: number;
     averageRating: number;
     ratingCount: number;
   }>({
     queryKey: ["/api/account/seller-summary"],
     enabled: !!user?.id && user?.accountType === "seller",
+    staleTime: 0,
   });
 
   const { data: sellerOrders = [], isLoading: ordersLoading } = useQuery<SellerOrder[]>({
@@ -411,14 +413,15 @@ export default function SellerDashboard() {
   };
 
   const activeProducts = sellerProducts.filter(p => p.status === "active");
-  const soldProducts = sellerProducts.filter(p => ["sold", "pending_shipment", "shipped"].includes(p.status));
-  const pendingShipments = sellerProducts.filter(p => p.status === "pending_shipment" || p.status === "sold");
+
+  const pendingOrders = sellerOrders.filter(o => o.status === "pending" || o.status === "processing");
 
   const SELLER_STATS = {
     totalProducts: sellerSummary?.totalListings ?? sellerProducts.length,
     activeListings: sellerSummary?.activeListings ?? activeProducts.length,
     soldItems: sellerSummary?.totalSales ?? 0,
     totalRevenue: sellerSummary?.totalRevenue ?? 0,
+    pendingShipments: sellerSummary?.pendingShipments ?? pendingOrders.length,
     pendingOffers: receivedOffers.filter(o => o.status === "pending").length,
     averageRating: sellerSummary?.averageRating ?? 0,
     totalReviews: sellerSummary?.ratingCount ?? 0,
@@ -473,7 +476,10 @@ export default function SellerDashboard() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <Card 
+            className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setActiveTab("products")}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -485,7 +491,10 @@ export default function SellerDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <Card 
+            className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setActiveTab("orders")}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -502,7 +511,7 @@ export default function SellerDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-purple-600 font-medium">الإيرادات</p>
-                  <p className="text-2xl font-bold text-purple-800">{(SELLER_STATS.totalRevenue / 1000).toFixed(0)}K</p>
+                  <p className="text-2xl font-bold text-purple-800">{SELLER_STATS.totalRevenue.toLocaleString()}</p>
                   <p className="text-xs text-purple-600">د.ع</p>
                 </div>
                 <TrendingUp className="h-10 w-10 text-purple-500" />
@@ -510,12 +519,15 @@ export default function SellerDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+          <Card 
+            className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setActiveTab("orders")}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-yellow-700 font-medium">بانتظار الشحن</p>
-                  <p className="text-3xl font-bold text-yellow-800">{pendingShipments.length}</p>
+                  <p className="text-3xl font-bold text-yellow-800">{SELLER_STATS.pendingShipments}</p>
                 </div>
                 <Clock className="h-10 w-10 text-yellow-600" />
               </div>
@@ -523,36 +535,44 @@ export default function SellerDashboard() {
           </Card>
         </div>
 
-        {pendingShipments.length > 0 && (
+        {pendingOrders.length > 0 && (
           <Card className="mb-8 border-2 border-yellow-300 bg-yellow-50">
             <CardHeader className="pb-2">
               <CardTitle className="text-yellow-800 flex items-center gap-2">
                 <AlertCircle className="h-5 w-5" />
-                تحتاج إلى اهتمامك ({pendingShipments.length})
+                تحتاج إلى اهتمامك ({pendingOrders.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {pendingShipments.map(product => (
-                  <div key={product.id} className="flex items-center justify-between bg-white p-3 rounded-lg border">
+                {pendingOrders.slice(0, 5).map(order => (
+                  <div key={order.id} className="flex items-center justify-between bg-white p-3 rounded-lg border">
                     <div className="flex items-center gap-3">
-                      <img src={product.image} alt={product.title} className="w-12 h-12 object-cover rounded" />
+                      <img 
+                        src={order.listing?.images?.[0] || "https://via.placeholder.com/48"} 
+                        alt={order.listing?.title || "منتج"} 
+                        className="w-12 h-12 object-cover rounded" 
+                      />
                       <div>
-                        <p className="font-semibold text-sm">{product.title}</p>
-                        <p className="text-xs text-gray-500">المشتري: {product.buyer?.name}</p>
+                        <p className="font-semibold text-sm">{order.listing?.title || "منتج"}</p>
+                        <p className="text-xs text-gray-500">المشتري: {order.buyer?.name || "مشتري"}</p>
                       </div>
                     </div>
                     <Button 
                       size="sm" 
-                      onClick={() => handlePrintLabel(product)}
+                      onClick={() => setActiveTab("orders")}
                       className="gap-1"
-                      data-testid={`button-print-label-${product.id}`}
                     >
-                      <Printer className="h-4 w-4" />
-                      طباعة بطاقة الشحن
+                      <Truck className="h-4 w-4" />
+                      إدارة الشحن
                     </Button>
                   </div>
                 ))}
+                {pendingOrders.length > 5 && (
+                  <Button variant="outline" className="w-full" onClick={() => setActiveTab("orders")}>
+                    عرض الكل ({pendingOrders.length})
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

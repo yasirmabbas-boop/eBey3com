@@ -84,6 +84,7 @@ export interface IStorage {
     activeListings: number;
     totalSales: number;
     totalRevenue: number;
+    pendingShipments: number;
     averageRating: number;
     ratingCount: number;
   }>;
@@ -596,22 +597,30 @@ export class DatabaseStorage implements IStorage {
     activeListings: number;
     totalSales: number;
     totalRevenue: number;
+    pendingShipments: number;
     averageRating: number;
     ratingCount: number;
   }> {
     const allListings = await db.select().from(listings).where(eq(listings.sellerId, sellerId));
     const activeListings = allListings.filter(l => l.isActive);
     const sellerTransactions = await db.select().from(transactions)
-      .where(and(eq(transactions.sellerId, sellerId), eq(transactions.status, "completed")));
-    const totalRevenue = sellerTransactions.reduce((sum, t) => sum + t.amount, 0);
+      .where(eq(transactions.sellerId, sellerId));
+    const completedTransactions = sellerTransactions.filter(t => 
+      t.status === "completed" || t.status === "delivered"
+    );
+    const pendingTransactions = sellerTransactions.filter(t => 
+      t.status === "pending" || t.status === "processing"
+    );
+    const totalRevenue = completedTransactions.reduce((sum, t) => sum + t.amount, 0);
     
     const user = await this.getUser(sellerId);
     
     return {
       totalListings: allListings.length,
       activeListings: activeListings.length,
-      totalSales: user?.totalSales || 0,
+      totalSales: sellerTransactions.length,
       totalRevenue,
+      pendingShipments: pendingTransactions.length,
       averageRating: user?.rating || 0,
       ratingCount: user?.ratingCount || 0,
     };
