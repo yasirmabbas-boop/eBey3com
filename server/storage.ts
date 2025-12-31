@@ -126,6 +126,13 @@ export interface IStorage {
   createReport(report: InsertReport): Promise<Report>;
   getReportsByUser(userId: string): Promise<Report[]>;
   getReportById(id: string): Promise<Report | undefined>;
+  
+  // Admin functions
+  getAllReports(): Promise<Report[]>;
+  updateReportStatus(id: string, status: string, adminNotes?: string, resolvedBy?: string): Promise<Report | undefined>;
+  getAllUsers(): Promise<User[]>;
+  updateUserStatus(id: string, updates: { accountType?: string; isVerified?: boolean; isBanned?: boolean }): Promise<User | undefined>;
+  getAdminStats(): Promise<{ totalUsers: number; totalListings: number; activeListings: number; totalTransactions: number; pendingReports: number; totalRevenue: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -816,6 +823,64 @@ export class DatabaseStorage implements IStorage {
   async getReportById(id: string): Promise<Report | undefined> {
     const [report] = await db.select().from(reports).where(eq(reports.id, id));
     return report;
+  }
+
+  // Admin functions
+  async getAllReports(): Promise<Report[]> {
+    return db.select().from(reports).orderBy(desc(reports.createdAt));
+  }
+
+  async updateReportStatus(id: string, status: string, adminNotes?: string, resolvedBy?: string): Promise<Report | undefined> {
+    const updateData: Record<string, unknown> = { status };
+    if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+    if (resolvedBy !== undefined) updateData.resolvedBy = resolvedBy;
+    if (status === "resolved" || status === "rejected") {
+      updateData.resolvedAt = new Date();
+    }
+    const [updated] = await db.update(reports)
+      .set(updateData)
+      .where(eq(reports.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async updateUserStatus(id: string, updates: { accountType?: string; isVerified?: boolean; isBanned?: boolean }): Promise<User | undefined> {
+    const updateData: Record<string, unknown> = {};
+    if (updates.accountType !== undefined) updateData.accountType = updates.accountType;
+    if (updates.isVerified !== undefined) updateData.isVerified = updates.isVerified;
+    if (updates.isBanned !== undefined) {
+      updateData.isBanned = updates.isBanned;
+      if (updates.isBanned) {
+        updateData.bannedAt = new Date();
+      }
+    }
+    const [updated] = await db.update(users)
+      .set(updateData)
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getAdminStats(): Promise<{ totalUsers: number; totalListings: number; activeListings: number; totalTransactions: number; pendingReports: number; totalRevenue: number }> {
+    const [usersCount] = await db.select({ count: sql<number>`count(*)::int` }).from(users);
+    const [listingsCount] = await db.select({ count: sql<number>`count(*)::int` }).from(listings);
+    const [activeListingsCount] = await db.select({ count: sql<number>`count(*)::int` }).from(listings).where(eq(listings.isActive, true));
+    const [transactionsCount] = await db.select({ count: sql<number>`count(*)::int` }).from(transactions);
+    const [pendingReportsCount] = await db.select({ count: sql<number>`count(*)::int` }).from(reports).where(eq(reports.status, "pending"));
+    const [revenueResult] = await db.select({ total: sql<number>`COALESCE(SUM(amount), 0)::int` }).from(transactions).where(sql`${transactions.status} IN ('completed', 'delivered')`);
+    
+    return {
+      totalUsers: usersCount?.count || 0,
+      totalListings: listingsCount?.count || 0,
+      activeListings: activeListingsCount?.count || 0,
+      totalTransactions: transactionsCount?.count || 0,
+      pendingReports: pendingReportsCount?.count || 0,
+      totalRevenue: revenueResult?.total || 0,
+    };
   }
 }
 

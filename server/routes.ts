@@ -1893,5 +1893,107 @@ export async function registerRoutes(
     }
   });
 
+  // Admin endpoints
+  app.get("/api/admin/stats", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || user.accountType !== "admin") {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const stats = await storage.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
+
+  app.get("/api/admin/reports", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || user.accountType !== "admin") {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const allReports = await storage.getAllReports();
+      res.json(allReports);
+    } catch (error) {
+      console.error("Error fetching admin reports:", error);
+      res.status(500).json({ error: "Failed to fetch reports" });
+    }
+  });
+
+  app.put("/api/admin/reports/:id", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || user.accountType !== "admin") {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const { status, adminNotes } = req.body;
+      if (!status) {
+        return res.status(400).json({ error: "Status is required" });
+      }
+      const updated = await storage.updateReportStatus(req.params.id, status, adminNotes, userId);
+      if (!updated) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating report:", error);
+      res.status(500).json({ error: "Failed to update report" });
+    }
+  });
+
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || user.accountType !== "admin") {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const allUsers = await storage.getAllUsers();
+      res.json(allUsers);
+    } catch (error) {
+      console.error("Error fetching admin users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.put("/api/admin/users/:id", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || user.accountType !== "admin") {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const { accountType, isVerified, isBanned } = req.body;
+      const updated = await storage.updateUserStatus(req.params.id, { accountType, isVerified, isBanned });
+      if (!updated) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
   return httpServer;
 }
