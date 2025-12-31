@@ -138,6 +138,21 @@ const getStatusBadge = (status: string) => {
   }
 };
 
+const getDeliveryBadge = (status: string) => {
+  switch (status) {
+    case "pending":
+    case "processing":
+      return <Badge className="bg-yellow-100 text-yellow-800 border-0">بانتظار الشحن</Badge>;
+    case "shipped":
+      return <Badge className="bg-blue-100 text-blue-800 border-0">تم الشحن</Badge>;
+    case "delivered":
+    case "completed":
+      return <Badge className="bg-green-100 text-green-800 border-0">تم التسليم</Badge>;
+    default:
+      return <Badge className="bg-gray-100 text-gray-800 border-0">{status}</Badge>;
+  }
+};
+
 const getTypeBadge = (type: string) => {
   return type === "auction" ? (
     <Badge variant="outline" className="border-primary text-primary">
@@ -667,7 +682,7 @@ export default function SellerDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {soldProducts.length === 0 ? (
+                  {sellerOrders.length === 0 ? (
                     <div className="text-center py-6">
                       <ShoppingBag className="h-10 w-10 text-gray-300 mx-auto mb-2" />
                       <p className="text-gray-500 text-sm">لا توجد مبيعات حتى الآن</p>
@@ -675,21 +690,22 @@ export default function SellerDashboard() {
                   ) : (
                     <>
                       <div className="space-y-3">
-                        {soldProducts.slice(0, 3).map(product => (
-                          <div key={product.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg">
-                            <img src={product.image} alt={product.title} className="w-12 h-12 object-cover rounded" />
+                        {sellerOrders.slice(0, 3).map((order: SellerOrder) => (
+                          <div key={order.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg">
+                            <img src={order.listing?.images?.[0] || ""} alt={order.listing?.title || "منتج"} className="w-12 h-12 object-cover rounded" />
                             <div className="flex-1">
-                              <p className="font-semibold text-sm line-clamp-1">{product.title}</p>
+                              <p className="font-semibold text-sm line-clamp-1">{order.listing?.title || "منتج"}</p>
+                              <p className="text-xs text-gray-500">{order.amount.toLocaleString()} د.ع</p>
                             </div>
                             <div className="text-left">
-                              {getStatusBadge(product.status)}
+                              {getDeliveryBadge(order.status)}
                             </div>
                           </div>
                         ))}
                       </div>
-                      {soldProducts.length > 3 && (
-                        <Button variant="ghost" className="w-full mt-2" onClick={() => setActiveTab("sales")}>
-                          عرض الكل ({soldProducts.length})
+                      {sellerOrders.length > 3 && (
+                        <Button variant="ghost" className="w-full mt-2" onClick={() => setActiveTab("orders")}>
+                          عرض الكل ({sellerOrders.length})
                         </Button>
                       )}
                     </>
