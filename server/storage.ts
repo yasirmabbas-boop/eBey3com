@@ -126,6 +126,9 @@ export interface IStorage {
   createReport(report: InsertReport): Promise<Report>;
   getReportsByUser(userId: string): Promise<Report[]>;
   getReportById(id: string): Promise<Report | undefined>;
+  hasUserReportedListing(userId: string, listingId: string): Promise<boolean>;
+  getReportCountForListing(listingId: string): Promise<number>;
+  getReportsForListing(listingId: string): Promise<Report[]>;
   
   // Admin functions
   getAllReports(): Promise<Report[]>;
@@ -821,6 +824,35 @@ export class DatabaseStorage implements IStorage {
   async getReportById(id: string): Promise<Report | undefined> {
     const [report] = await db.select().from(reports).where(eq(reports.id, id));
     return report;
+  }
+
+  async hasUserReportedListing(userId: string, listingId: string): Promise<boolean> {
+    const [report] = await db.select().from(reports)
+      .where(and(
+        eq(reports.reporterId, userId),
+        eq(reports.targetId, listingId),
+        eq(reports.targetType, "listing")
+      ));
+    return !!report;
+  }
+
+  async getReportCountForListing(listingId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(DISTINCT reporter_id)::int` })
+      .from(reports)
+      .where(and(
+        eq(reports.targetId, listingId),
+        eq(reports.targetType, "listing")
+      ));
+    return result[0]?.count || 0;
+  }
+
+  async getReportsForListing(listingId: string): Promise<Report[]> {
+    return db.select().from(reports)
+      .where(and(
+        eq(reports.targetId, listingId),
+        eq(reports.targetType, "listing")
+      ))
+      .orderBy(desc(reports.createdAt));
   }
 
   // Admin functions

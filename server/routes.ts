@@ -1906,13 +1906,20 @@ export async function registerRoutes(
     try {
       const userId = await getUserIdFromRequest(req);
       if (!userId) {
-        return res.status(401).json({ error: "Not authenticated" });
+        return res.status(401).json({ error: "يجب تسجيل الدخول للإبلاغ" });
       }
       
       const { reportType, targetId, targetType, reason, details } = req.body;
       
       if (!reportType || !targetId || !targetType || !reason) {
         return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      if (targetType === "listing") {
+        const alreadyReported = await storage.hasUserReportedListing(userId, targetId);
+        if (alreadyReported) {
+          return res.status(400).json({ error: "لقد قمت بالإبلاغ عن هذا المنتج مسبقاً" });
+        }
       }
       
       const report = await storage.createReport({
@@ -1924,10 +1931,51 @@ export async function registerRoutes(
         details: details || null,
       });
       
-      res.status(201).json(report);
+      if (targetType === "listing") {
+        const reportCount = await storage.getReportCountForListing(targetId);
+        
+        if (reportCount >= 10) {
+          const listing = await storage.getListing(targetId);
+          if (listing && listing.isActive) {
+            await storage.updateListing(targetId, { isActive: false });
+            
+            if (listing.sellerId) {
+              await storage.updateUserStatus(listing.sellerId, {
+                sellerApproved: false,
+              });
+              
+              await storage.createNotification({
+                userId: listing.sellerId,
+                type: "warning",
+                title: "تم إيقاف منتجك",
+                message: `تم إيقاف منتجك "${listing.title}" بسبب تلقيه عدد كبير من البلاغات. تم تعليق صلاحيات البيع الخاصة بك.`,
+                linkUrl: `/product/${targetId}`,
+              });
+            }
+          }
+        }
+      }
+      
+      res.status(201).json({ success: true, message: "تم إرسال البلاغ بنجاح" });
     } catch (error) {
       console.error("Error creating report:", error);
       res.status(500).json({ error: "Failed to create report" });
+    }
+  });
+
+  // Check if user has reported a listing
+  app.get("/api/reports/check/:listingId", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.json({ hasReported: false });
+      }
+      
+      const hasReported = await storage.hasUserReportedListing(userId, req.params.listingId);
+      res.json({ hasReported });
+    } catch (error) {
+      console.error("Error checking report status:", error);
+      res.json({ hasReported: false });
     }
   });
 
@@ -1968,9 +2016,8 @@ export async function registerRoutes(
         return res.status(400).json({ error: "لديك طلب قيد المراجعة بالفعل" });
       }
       
-      const updated = await storage.updateUser(userId, {
+      const updated = await storage.updateUserStatus(userId, {
         sellerRequestStatus: "pending",
-        sellerRequestDate: new Date(),
       });
       
       res.json({ success: true, message: "تم تقديم طلب البيع بنجاح" });

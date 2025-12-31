@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send, Trophy, AlertCircle, Eye } from "lucide-react";
+import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send, Trophy, AlertCircle, Eye, Flag } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
@@ -57,6 +58,11 @@ export default function ProductPage() {
   const [guestPhone, setGuestPhone] = useState("");
   const [guestAddress, setGuestAddress] = useState("");
   const [guestCity, setGuestCity] = useState("");
+
+  // Report dialog state
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
 
   // Image gallery state
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -138,6 +144,39 @@ export default function ProductPage() {
       setGuestAddress("");
       setGuestCity("");
       queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Report listing mutation
+  const reportMutation = useMutation({
+    mutationFn: async (data: { targetId: string; targetType: string; reason: string; details?: string }) => {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "فشل في إرسال البلاغ");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم إرسال البلاغ",
+        description: "شكراً لمساعدتنا في الحفاظ على أمان المنصة",
+      });
+      setReportDialogOpen(false);
+      setReportReason("");
+      setReportDetails("");
     },
     onError: (error: Error) => {
       toast({
@@ -740,6 +779,20 @@ export default function ProductPage() {
                   productTitle={product.title}
                   productCode={product.productCode}
                 />
+
+                {/* Report Button */}
+                {isAuthenticated && user?.id !== listing?.sellerId && (
+                  <Button 
+                    variant="ghost"
+                    size="sm" 
+                    className="w-full text-gray-500 hover:text-red-600 hover:bg-red-50"
+                    onClick={() => setReportDialogOpen(true)}
+                    data-testid="button-report-listing"
+                  >
+                    <Flag className="h-4 w-4 ml-2" />
+                    الإبلاغ عن هذا المنتج
+                  </Button>
+                )}
               </>
             );
           })()}
@@ -916,6 +969,83 @@ export default function ProductPage() {
                 <>
                   <Send className="h-4 w-4 ml-2" />
                   إرسال العرض
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Report Dialog */}
+      <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">الإبلاغ عن المنتج</DialogTitle>
+            <DialogDescription className="text-right">
+              ساعدنا في الحفاظ على أمان المنصة بالإبلاغ عن المحتوى المخالف
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="report-reason">سبب البلاغ</Label>
+              <Select value={reportReason} onValueChange={setReportReason}>
+                <SelectTrigger data-testid="select-report-reason">
+                  <SelectValue placeholder="اختر سبب البلاغ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fake">منتج مزيف أو مقلد</SelectItem>
+                  <SelectItem value="scam">احتيال أو نصب</SelectItem>
+                  <SelectItem value="inappropriate">محتوى غير لائق</SelectItem>
+                  <SelectItem value="stolen">منتج مسروق</SelectItem>
+                  <SelectItem value="misleading">وصف مضلل</SelectItem>
+                  <SelectItem value="prohibited">منتج محظور</SelectItem>
+                  <SelectItem value="other">سبب آخر</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="report-details">تفاصيل إضافية (اختياري)</Label>
+              <Textarea
+                id="report-details"
+                placeholder="أضف تفاصيل تساعدنا في فهم المشكلة..."
+                value={reportDetails}
+                onChange={(e) => setReportDetails(e.target.value)}
+                rows={3}
+                data-testid="input-report-details"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setReportDialogOpen(false)}
+              data-testid="button-cancel-report"
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (!listing?.id || !reportReason) return;
+                reportMutation.mutate({
+                  targetId: listing.id,
+                  targetType: "listing",
+                  reason: reportReason,
+                  details: reportDetails || undefined,
+                });
+              }}
+              disabled={!reportReason || reportMutation.isPending}
+              data-testid="button-submit-report"
+            >
+              {reportMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  جاري الإرسال...
+                </>
+              ) : (
+                <>
+                  <Flag className="h-4 w-4 ml-2" />
+                  إرسال البلاغ
                 </>
               )}
             </Button>
