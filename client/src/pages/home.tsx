@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, Sparkles, Loader2, Clock, Camera, ShoppingBag } from "lucide-react";
+import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, Sparkles, Loader2, Clock, Camera, ShoppingBag, Eye } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 import type { Listing } from "@shared/schema";
@@ -123,6 +123,7 @@ export default function Home() {
       city: l.city,
       quantityAvailable: l.quantityAvailable || 1,
       quantitySold: l.quantitySold || 0,
+      views: (l as any).views || 0,
     }));
 
   const recommendedProducts = displayProducts.slice(0, 6);
@@ -289,9 +290,15 @@ export default function Home() {
                       <h3 className="font-bold text-sm mb-1 line-clamp-1 group-hover:text-primary transition-colors">
                         {product.title}
                       </h3>
-                      <p className="font-bold text-primary text-sm">
-                        {(product.currentBid || product.price).toLocaleString()} د.ع
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-primary text-sm">
+                          {(product.currentBid || product.price).toLocaleString()} د.ع
+                        </p>
+                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {product.views}
+                        </span>
+                      </div>
                     </CardContent>
                   </Card>
                 </Link>
@@ -369,7 +376,13 @@ export default function Home() {
                       )}
                     </div>
                     <CardContent className="p-4">
-                      <div className="text-xs text-muted-foreground mb-1">{product.category}</div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                        <span>{product.category}</span>
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {(product as any).views || 0}
+                        </span>
+                      </div>
                       <h3 className="font-bold text-lg mb-2 line-clamp-1 group-hover:text-primary transition-colors">
                         {product.title}
                       </h3>

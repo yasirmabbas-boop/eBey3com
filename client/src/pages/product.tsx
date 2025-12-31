@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send, Trophy, AlertCircle } from "lucide-react";
+import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send, Trophy, AlertCircle, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
@@ -585,6 +585,13 @@ export default function ProductPage() {
               <span className="text-sm font-medium">{product.city}</span>
             </div>
           )}
+          <div className="flex items-center justify-between">
+            <span className="text-gray-500 text-sm">المشاهدات</span>
+            <span className="text-sm font-medium flex items-center gap-1">
+              <Eye className="h-4 w-4" />
+              {(listing as any)?.views || 0}
+            </span>
+          </div>
         </div>
 
         {/* Show notice if this is the user's own product */}

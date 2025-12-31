@@ -29,7 +29,8 @@ import {
   MapPin,
   X,
   ArrowUpDown,
-  Check
+  Check,
+  Eye
 } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import type { Listing } from "@shared/schema";
@@ -796,13 +797,19 @@ export default function SearchPage() {
                         {(product.currentBid || product.price).toLocaleString()} <span className="text-xs font-normal text-gray-600">د.ع</span>
                       </p>
                       
-                      {/* Location */}
-                      {product.city && (
-                        <p className="text-xs text-gray-500 flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {product.city}
-                        </p>
-                      )}
+                      {/* Location and Views */}
+                      <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+                        {product.city && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {product.city}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {(product as any).views || 0}
+                        </span>
+                      </div>
 
                       {/* Tags Preview */}
                       {product.tags && product.tags.length > 0 && (
