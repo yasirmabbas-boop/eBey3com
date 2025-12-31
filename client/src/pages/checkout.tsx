@@ -64,14 +64,13 @@ export default function CheckoutPage() {
   });
 
   const { data: userData, isLoading: isUserLoading } = useQuery({
-    queryKey: ["/api/users", user?.id],
+    queryKey: ["/api/account/profile"],
     queryFn: async () => {
-      if (!user?.id) return null;
-      const res = await fetch(`/api/users/${user.id}`, { credentials: "include" });
+      const res = await fetch("/api/account/profile", { credentials: "include" });
       if (!res.ok) return null;
       return res.json();
     },
-    enabled: !!user?.id,
+    enabled: isAuthenticated,
   });
 
   useEffect(() => {
@@ -101,11 +100,19 @@ export default function CheckoutPage() {
   const handleAddressChange = (addressId: string) => {
     setSelectedAddressId(addressId);
     if (addressId === "new") {
-      setFullName("");
-      setPhone("");
-      setCity("");
-      setAddressLine1("");
-      setAddressLine2("");
+      if (userData) {
+        setFullName(userData.displayName || "");
+        setPhone(userData.phone || "");
+        setCity(userData.city || "");
+        setAddressLine1(userData.addressLine1 || "");
+        setAddressLine2(userData.addressLine2 || "");
+      } else {
+        setFullName("");
+        setPhone("");
+        setCity("");
+        setAddressLine1("");
+        setAddressLine2("");
+      }
     } else {
       const address = savedAddresses.find(a => a.id === addressId);
       if (address) {
