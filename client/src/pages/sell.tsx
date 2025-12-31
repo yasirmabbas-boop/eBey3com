@@ -105,7 +105,7 @@ export default function SellPage() {
     deliveryWindow: "",
     returnPolicy: "",
     returnDetails: "",
-    sellerName: user?.username || "",
+    sellerName: user?.displayName || "",
     city: "",
     startDate: "",
     startHour: "",
@@ -114,22 +114,10 @@ export default function SellPage() {
   });
 
   useEffect(() => {
-    if (user?.username && !formData.sellerName) {
-      setFormData(prev => ({ ...prev, sellerName: user.username || "" }));
+    if (user?.displayName && !formData.sellerName) {
+      setFormData(prev => ({ ...prev, sellerName: user.displayName || "" }));
     }
   }, [user]);
-
-  // Redirect non-sellers away from the sell page
-  useEffect(() => {
-    if (!authLoading && user && user.accountType !== "seller") {
-      toast({
-        title: "غير مصرح",
-        description: "فقط البائعون يمكنهم إضافة منتجات",
-        variant: "destructive",
-      });
-      setLocation("/");
-    }
-  }, [user, authLoading, setLocation, toast]);
 
   // Auto-save draft to localStorage (only for brand new listings - not edit/relist/template)
   const DRAFT_KEY = "listing_draft";
@@ -215,7 +203,7 @@ export default function SellPage() {
         deliveryWindow: sourceListing.deliveryWindow || "",
         returnPolicy: sourceListing.returnPolicy || "",
         returnDetails: sourceListing.returnDetails || "",
-        sellerName: sourceListing.sellerName || user?.username || "",
+        sellerName: sourceListing.sellerName || user?.displayName || "",
         city: sourceListing.city || "",
         startDate: "",
         startHour: "",
@@ -500,6 +488,152 @@ export default function SellPage() {
       setIsSubmitting(false);
     }
   };
+
+  const [isRequestingSellerAccess, setIsRequestingSellerAccess] = useState(false);
+  
+  const handleRequestSellerAccess = async () => {
+    setIsRequestingSellerAccess(true);
+    try {
+      const response = await fetch("/api/seller-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "فشل في تقديم الطلب");
+      }
+      
+      toast({
+        title: "تم تقديم الطلب بنجاح!",
+        description: "سيتم مراجعة طلبك من قبل الإدارة",
+      });
+      
+      // Reload the page to show the updated status
+      window.location.reload();
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsRequestingSellerAccess(false);
+    }
+  };
+
+  // If user is not logged in, show login prompt
+  if (!authLoading && !user) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 max-w-md text-center">
+          <Card>
+            <CardHeader>
+              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center">
+                <Lock className="h-8 w-8 text-amber-600" />
+              </div>
+              <CardTitle className="text-2xl">تسجيل الدخول مطلوب</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                يجب تسجيل الدخول لتتمكن من بيع المنتجات
+              </p>
+              <div className="flex flex-col gap-2">
+                <Link href="/signin">
+                  <Button className="w-full">تسجيل الدخول</Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="outline" className="w-full">إنشاء حساب جديد</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
+  // If user is not an approved seller, show seller request option
+  if (!authLoading && user && !user.sellerApproved) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 max-w-md text-center">
+          <Card>
+            <CardHeader>
+              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">
+                <Package className="h-8 w-8 text-blue-600" />
+              </div>
+              <CardTitle className="text-2xl">طلب التسجيل كبائع</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {user.sellerRequestStatus === "pending" ? (
+                <>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-amber-700 mb-2">
+                      <Clock className="h-5 w-5" />
+                      <span className="font-medium">طلبك قيد المراجعة</span>
+                    </div>
+                    <p className="text-sm text-amber-600">
+                      تم تقديم طلبك للتسجيل كبائع. سيتم إعلامك عند الموافقة على طلبك.
+                    </p>
+                  </div>
+                  <Link href="/">
+                    <Button variant="outline" className="w-full">العودة للصفحة الرئيسية</Button>
+                  </Link>
+                </>
+              ) : user.sellerRequestStatus === "rejected" ? (
+                <>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-red-700 mb-2">
+                      <AlertTriangle className="h-5 w-5" />
+                      <span className="font-medium">تم رفض الطلب</span>
+                    </div>
+                    <p className="text-sm text-red-600">
+                      للأسف تم رفض طلبك للتسجيل كبائع. يمكنك التواصل مع الدعم لمزيد من المعلومات.
+                    </p>
+                  </div>
+                  <Link href="/">
+                    <Button variant="outline" className="w-full">العودة للصفحة الرئيسية</Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-muted-foreground">
+                    للبدء في بيع المنتجات على منصة اي-بيع، يجب أن يتم اعتمادك كبائع من قبل الإدارة.
+                  </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-right">
+                    <h4 className="font-medium text-blue-800 mb-2">مميزات البائع:</h4>
+                    <ul className="text-sm text-blue-700 space-y-1">
+                      <li>• إضافة منتجات للبيع المباشر أو المزاد</li>
+                      <li>• لوحة تحكم متقدمة للبائع</li>
+                      <li>• التواصل المباشر مع المشترين</li>
+                      <li>• إحصائيات وتقارير المبيعات</li>
+                    </ul>
+                  </div>
+                  <Button 
+                    className="w-full" 
+                    onClick={handleRequestSellerAccess}
+                    disabled={isRequestingSellerAccess}
+                  >
+                    {isRequestingSellerAccess ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                        جاري إرسال الطلب...
+                      </>
+                    ) : (
+                      "تقديم طلب التسجيل كبائع"
+                    )}
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

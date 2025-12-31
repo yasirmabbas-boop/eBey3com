@@ -3,11 +3,13 @@ import type { User } from "@shared/models/auth";
 
 interface AuthUser {
   id: string;
-  username?: string | null;
+  phone?: string | null;
   email?: string | null;
   displayName: string;
   avatar?: string | null;
-  accountType?: string;
+  sellerApproved?: boolean;
+  sellerRequestStatus?: string | null;
+  isAdmin?: boolean;
   accountCode?: string | null;
   isVerified?: boolean;
 }
