@@ -172,7 +172,7 @@ export default function SellerDashboard() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("products");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showShippingLabel, setShowShippingLabel] = useState(false);
@@ -594,11 +594,7 @@ export default function SellerDashboard() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-6 w-full max-w-3xl">
-            <TabsTrigger value="overview" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              نظرة عامة
-            </TabsTrigger>
+          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
             <TabsTrigger value="products" className="gap-2">
               <Package className="h-4 w-4" />
               المنتجات
@@ -625,132 +621,7 @@ export default function SellerDashboard() {
               <ShoppingBag className="h-4 w-4" />
               المبيعات
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
-              <TrendingUp className="h-4 w-4" />
-              الإحصائيات
-            </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-primary" />
-                    المنتجات النشطة
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {activeProducts.slice(0, 3).map(product => (
-                      <div key={product.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg">
-                        <img src={product.image} alt={product.title} className="w-12 h-12 object-cover rounded" />
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm line-clamp-1">{product.title}</p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <Eye className="h-3 w-3" />
-                            {product.views} مشاهدة
-                            {product.type === "auction" && (
-                              <>
-                                <span>•</span>
-                                <Gavel className="h-3 w-3" />
-                                {product.bids} مزايدة
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-left">
-                          <p className="font-bold text-primary">{(product.currentBid || product.price).toLocaleString()}</p>
-                          <p className="text-xs text-gray-500">د.ع</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {activeProducts.length > 3 && (
-                    <Button variant="ghost" className="w-full mt-2" onClick={() => setActiveTab("products")}>
-                      عرض الكل ({activeProducts.length})
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    آخر المبيعات
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {sellerOrders.length === 0 ? (
-                    <div className="text-center py-6">
-                      <ShoppingBag className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                      <p className="text-gray-500 text-sm">لا توجد مبيعات حتى الآن</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="space-y-3">
-                        {sellerOrders.slice(0, 3).map((order: SellerOrder) => (
-                          <div key={order.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg">
-                            <img src={order.listing?.images?.[0] || ""} alt={order.listing?.title || "منتج"} className="w-12 h-12 object-cover rounded" />
-                            <div className="flex-1">
-                              <p className="font-semibold text-sm line-clamp-1">{order.listing?.title || "منتج"}</p>
-                              <p className="text-xs text-gray-500">{order.amount.toLocaleString()} د.ع</p>
-                            </div>
-                            <div className="text-left">
-                              {getDeliveryBadge(order.status)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {sellerOrders.length > 3 && (
-                        <Button variant="ghost" className="w-full mt-2" onClick={() => setActiveTab("orders")}>
-                          عرض الكل ({sellerOrders.length})
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="h-5 w-5 text-yellow-500" />
-                  تقييمك كبائع
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-6">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-yellow-600">{SELLER_STATS.averageRating}</p>
-                    <div className="flex items-center justify-center gap-1 mt-1">
-                      {[1, 2, 3, 4, 5].map(i => (
-                        <Star key={i} className={`h-4 w-4 ${i <= Math.floor(SELLER_STATS.averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
-                      ))}
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1">{SELLER_STATS.totalReviews} تقييم</p>
-                  </div>
-                  <Separator orientation="vertical" className="h-16" />
-                  <div className="flex-1 grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-2xl font-bold text-blue-600">{SELLER_STATS.pendingOffers}</p>
-                      <p className="text-sm text-gray-500">عروض معلقة</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-green-600">{SELLER_STATS.soldItems}</p>
-                      <p className="text-sm text-gray-500">مبيعة</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-purple-600">{SELLER_STATS.activeListings}</p>
-                      <p className="text-sm text-gray-500">نشطة</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="products" className="space-y-4">
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -1300,84 +1171,6 @@ export default function SellerDashboard() {
                 ))}
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-gray-500">إجمالي المنتجات</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-4xl font-bold text-blue-600">{SELLER_STATS.totalProducts}</p>
-                  <p className="text-sm text-gray-500 mt-1">منتج في متجرك</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-gray-500">العروض المعلقة</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-4xl font-bold text-purple-600">{SELLER_STATS.pendingOffers}</p>
-                  <p className="text-sm text-gray-500 mt-1">تحتاج ردك</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-gray-500">متوسط سعر البيع</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-4xl font-bold text-green-600">
-                    {SELLER_STATS.soldItems > 0 ? Math.round(SELLER_STATS.totalRevenue / SELLER_STATS.soldItems / 1000) : 0}K
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">د.ع</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>توزيع منتجاتك حسب الفئة</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {sellerProducts.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">أضف منتجات لعرض التوزيع حسب الفئات</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(() => {
-                      const categoryCount: Record<string, number> = {};
-                      sellerProducts.forEach(p => {
-                        categoryCount[p.category] = (categoryCount[p.category] || 0) + 1;
-                      });
-                      const total = sellerProducts.length;
-                      const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-yellow-500", "bg-red-500"];
-                      return Object.entries(categoryCount)
-                        .sort(([,a], [,b]) => b - a)
-                        .slice(0, 5)
-                        .map(([category, count], index) => {
-                          const percentage = Math.round((count / total) * 100);
-                          return (
-                            <div key={category} className="flex items-center justify-between">
-                              <span className="min-w-[100px]">{category}</span>
-                              <div className="flex-1 mx-4">
-                                <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                                  <div className={`h-full ${colors[index % colors.length]} rounded-full`} style={{ width: `${percentage}%` }}></div>
-                                </div>
-                              </div>
-                              <span className="font-bold">{percentage}%</span>
-                            </div>
-                          );
-                        });
-                    })()}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
