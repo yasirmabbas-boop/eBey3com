@@ -55,7 +55,7 @@ export function AccountDropdown() {
               {user.displayName?.charAt(0) || "م"}
             </div>
           )}
-          {user.displayName || user.username}
+          {user.displayName || (user as any).phone}
           <ChevronDown className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
@@ -89,7 +89,7 @@ export function AccountDropdown() {
           </DropdownMenuItem>
         </Link>
 
-        {user.accountType === "seller" && (
+        {(user as any).sellerApproved && (
           <Link href="/my-sales">
             <DropdownMenuItem className="cursor-pointer" data-testid="menu-my-sales">
               <Store className="h-4 w-4 ml-2" />

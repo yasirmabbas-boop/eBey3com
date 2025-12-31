@@ -205,7 +205,7 @@ export default function SellerDashboard() {
       if (!res.ok) throw new Error("Failed to fetch offers");
       return res.json();
     },
-    enabled: !!user?.id && user?.accountType === "seller",
+    enabled: !!user?.id && (user as any)?.sellerApproved,
   });
 
   const { data: sellerSummary } = useQuery<{
@@ -218,7 +218,7 @@ export default function SellerDashboard() {
     ratingCount: number;
   }>({
     queryKey: ["/api/account/seller-summary"],
-    enabled: !!user?.id && user?.accountType === "seller",
+    enabled: !!user?.id && (user as any)?.sellerApproved,
     staleTime: 0,
   });
 
@@ -229,7 +229,7 @@ export default function SellerDashboard() {
       if (!res.ok) throw new Error("Failed to fetch orders");
       return res.json();
     },
-    enabled: !!user?.id && user?.accountType === "seller",
+    enabled: !!user?.id && (user as any)?.sellerApproved,
     staleTime: 0,
   });
 
@@ -240,7 +240,7 @@ export default function SellerDashboard() {
       if (!res.ok) throw new Error("Failed to fetch messages");
       return res.json();
     },
-    enabled: !!user?.id && user?.accountType === "seller",
+    enabled: !!user?.id && (user as any)?.sellerApproved,
   });
 
   const sellerProducts: SellerProduct[] = listings.map(l => {
@@ -421,13 +421,13 @@ export default function SellerDashboard() {
         variant: "destructive",
       });
       navigate("/signin?redirect=/seller-dashboard");
-    } else if (!authLoading && isAuthenticated && user?.accountType !== "seller") {
+    } else if (!authLoading && isAuthenticated && !(user as any)?.sellerApproved) {
       toast({
         title: "غير مصرح",
-        description: "هذه الصفحة مخصصة للبائعين فقط",
+        description: "يجب الحصول على موافقة المشرف للبيع",
         variant: "destructive",
       });
-      navigate("/buyer-dashboard");
+      navigate("/sell");
     }
   }, [authLoading, isAuthenticated, user, navigate, toast]);
 
@@ -479,17 +479,17 @@ export default function SellerDashboard() {
     );
   }
 
-  if (!isAuthenticated || user?.accountType !== "seller") {
+  if (!isAuthenticated || !(user as any)?.sellerApproved) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 max-w-md text-center">
           <Card className="border-amber-200 bg-amber-50">
             <CardContent className="pt-6">
               <Lock className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">للبائعين فقط</h2>
-              <p className="text-muted-foreground mb-6">هذه الصفحة مخصصة للبائعين المسجلين فقط</p>
-              <Link href="/signin">
-                <Button className="w-full">تسجيل الدخول كبائع</Button>
+              <h2 className="text-2xl font-bold mb-2">للبائعين المعتمدين فقط</h2>
+              <p className="text-muted-foreground mb-6">يجب الحصول على موافقة المشرف للوصول لهذه الصفحة</p>
+              <Link href="/sell">
+                <Button className="w-full">تقديم طلب للبيع</Button>
               </Link>
             </CardContent>
           </Card>

@@ -521,7 +521,7 @@ export default function Settings() {
                 </div>
               </div>
 
-              {profile?.accountType === "seller" && (
+              {profile && (profile as any).sellerApproved && (
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
@@ -534,14 +534,14 @@ export default function Settings() {
                         {profile.isVerified ? "بائع موثق" : "بائع غير موثق"}
                       </span>
                     </div>
-                    {profile.rating !== undefined && profile.rating > 0 && (
+                    {profile?.rating !== undefined && profile.rating > 0 && (
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 text-yellow-500 fill-current" />
                         <span>{profile.rating.toFixed(1)}</span>
-                        <span className="text-gray-500">({profile.ratingCount} تقييم)</span>
+                        <span className="text-gray-500">({profile?.ratingCount} تقييم)</span>
                       </div>
                     )}
-                    {profile.totalSales !== undefined && profile.totalSales > 0 && (
+                    {profile?.totalSales !== undefined && profile.totalSales > 0 && (
                       <span className="text-gray-600">{profile.totalSales} عملية بيع</span>
                     )}
                   </div>

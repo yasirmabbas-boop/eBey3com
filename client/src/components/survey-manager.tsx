@@ -4,7 +4,7 @@ import { PostRegistrationSurvey } from "./post-registration-survey";
 
 interface UserProfile {
   id: string;
-  accountType: string;
+  sellerApproved?: boolean;
   surveyCompleted?: boolean;
   ageBracket?: string;
   interests?: string[];
@@ -20,10 +20,9 @@ export function SurveyManager() {
 
   useEffect(() => {
     if (profile && !isLoading) {
-      const isBuyer = profile.accountType === "buyer";
       const surveyNotCompleted = !profile.surveyCompleted;
       
-      if (isBuyer && surveyNotCompleted) {
+      if (surveyNotCompleted) {
         const timer = setTimeout(() => {
           setShowSurvey(true);
         }, 1000);

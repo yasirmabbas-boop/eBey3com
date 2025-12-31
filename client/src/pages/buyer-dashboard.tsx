@@ -102,17 +102,17 @@ export default function BuyerDashboard() {
 
   const { data: summary, isLoading: summaryLoading } = useQuery<BuyerSummary>({
     queryKey: ["/api/account/buyer-summary"],
-    enabled: !!user?.id && user?.accountType === "buyer",
+    enabled: !!user?.id,
   });
 
   const { data: purchases = [], isLoading: purchasesLoading } = useQuery<Purchase[]>({
     queryKey: ["/api/account/purchases"],
-    enabled: !!user?.id && user?.accountType === "buyer",
+    enabled: !!user?.id,
   });
 
   const { data: myOffers = [], isLoading: offersLoading } = useQuery<BuyerOffer[]>({
     queryKey: ["/api/my-offers"],
-    enabled: !!user?.id && user?.accountType === "buyer",
+    enabled: !!user?.id,
   });
 
   useEffect(() => {
@@ -123,15 +123,8 @@ export default function BuyerDashboard() {
         variant: "destructive",
       });
       navigate("/signin?redirect=/buyer-dashboard");
-    } else if (!isLoading && isAuthenticated && user?.accountType === "seller") {
-      toast({
-        title: "غير مصرح",
-        description: "هذه الصفحة مخصصة للمشترين فقط",
-        variant: "destructive",
-      });
-      navigate("/seller-dashboard");
     }
-  }, [isLoading, isAuthenticated, user, navigate, toast]);
+  }, [isLoading, isAuthenticated, navigate, toast]);
 
   if (isLoading) {
     return (
@@ -144,17 +137,17 @@ export default function BuyerDashboard() {
     );
   }
 
-  if (!isAuthenticated || user?.accountType === "seller") {
+  if (!isAuthenticated) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 max-w-md text-center">
           <Card className="border-amber-200 bg-amber-50">
             <CardContent className="pt-6">
               <Lock className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">{user?.accountType === "seller" ? "للمشترين فقط" : "يجب تسجيل الدخول"}</h2>
-              <p className="text-muted-foreground mb-6">{user?.accountType === "seller" ? "هذه الصفحة مخصصة للمشترين فقط" : "يرجى تسجيل الدخول للوصول إلى لوحة التحكم"}</p>
-              <Link href={user?.accountType === "seller" ? "/seller-dashboard" : "/signin"}>
-                <Button className="w-full">{user?.accountType === "seller" ? "الذهاب للوحة البائع" : "تسجيل الدخول"}</Button>
+              <h2 className="text-2xl font-bold mb-2">يجب تسجيل الدخول</h2>
+              <p className="text-muted-foreground mb-6">يرجى تسجيل الدخول للوصول إلى لوحة التحكم</p>
+              <Link href="/signin">
+                <Button className="w-full">تسجيل الدخول</Button>
               </Link>
             </CardContent>
           </Card>

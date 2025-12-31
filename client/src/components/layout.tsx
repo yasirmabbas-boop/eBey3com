@@ -28,14 +28,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 
-      {/* Seller Account Ribbon - Only show for sellers or when not logged in */}
-      {(!isAuthenticated || (user as any)?.accountType === "seller") && (
+      {/* Seller Account Ribbon - Only show for approved sellers */}
+      {isAuthenticated && (user as any)?.sellerApproved && (
         <div className="bg-gradient-to-l from-amber-500 via-yellow-500 to-amber-500 text-black py-1.5 text-xs px-4">
           <div className="container mx-auto flex justify-between items-center">
             {/* Seller Info */}
             <div className="flex items-center gap-3">
               <Store className="h-4 w-4" />
-              <span className="font-bold">{user?.displayName || user?.username}</span>
+              <span className="font-bold">{user?.displayName || (user as any)?.phone}</span>
               <span className="hidden sm:inline">|</span>
               <Link href="/my-account" className="hidden sm:inline hover:underline font-medium">
                 حسابي
@@ -67,13 +67,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Buyer Ribbon - Only show for buyers */}
-      {isAuthenticated && (user as any)?.accountType === "buyer" && (
+      {/* Buyer Ribbon - Only show for non-sellers */}
+      {isAuthenticated && !(user as any)?.sellerApproved && (
         <div className="bg-gradient-to-l from-blue-500 via-blue-600 to-blue-500 text-white py-1.5 text-xs px-4">
           <div className="container mx-auto flex justify-between items-center">
             <div className="flex items-center gap-3">
               <User className="h-4 w-4" />
-              <span className="font-bold">{user?.displayName || user?.username}</span>
+              <span className="font-bold">{user?.displayName || (user as any)?.phone}</span>
               <span className="hidden sm:inline">|</span>
               <Link href="/my-account" className="hidden sm:inline hover:underline font-medium">
                 حسابي
@@ -148,7 +148,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {isAuthenticated && (
                     <>
                       <Link href="/my-account" className="text-lg text-primary font-semibold">حسابي</Link>
-                      {user?.accountType === "seller" && (
+                      {(user as any)?.sellerApproved && (
                         <>
                           <Link href="/seller-dashboard" className="text-lg">لوحة البائع</Link>
                           <Link href="/sell" className="text-lg">إضافة منتج</Link>
