@@ -319,32 +319,101 @@ export default function SearchPage() {
     return "جميع المنتجات";
   };
 
+  const quickToggleSaleType = (saleType: string) => {
+    setAppliedFilters(prev => ({
+      ...prev,
+      saleTypes: prev.saleTypes.includes(saleType)
+        ? prev.saleTypes.filter(t => t !== saleType)
+        : [saleType]
+    }));
+  };
+
+  const quickToggleCategory = (category: string | null) => {
+    setAppliedFilters(prev => ({
+      ...prev,
+      category: prev.category === category ? null : category
+    }));
+  };
+
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6">
+        {/* Quick Filters Bar */}
+        <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b">
+          <span className="text-sm font-medium text-muted-foreground ml-2">تصفية سريعة:</span>
+          <Button
+            variant={appliedFilters.saleTypes.includes("auction") ? "default" : "outline"}
+            size="sm"
+            className="gap-1.5 rounded-full"
+            onClick={() => quickToggleSaleType("auction")}
+            data-testid="quick-filter-auction"
+          >
+            <Gavel className="h-3.5 w-3.5" />
+            مزادات
+          </Button>
+          <Button
+            variant={appliedFilters.saleTypes.includes("fixed") ? "default" : "outline"}
+            size="sm"
+            className="gap-1.5 rounded-full"
+            onClick={() => quickToggleSaleType("fixed")}
+            data-testid="quick-filter-fixed"
+          >
+            <ShoppingBag className="h-3.5 w-3.5" />
+            شراء فوري
+          </Button>
+          <div className="h-4 w-px bg-border mx-1" />
+          {CATEGORIES.slice(0, 4).map((cat) => (
+            <Button
+              key={cat.id}
+              variant={appliedFilters.category === cat.id ? "default" : "outline"}
+              size="sm"
+              className="gap-1.5 rounded-full"
+              onClick={() => quickToggleCategory(cat.id)}
+              data-testid={`quick-filter-${cat.id}`}
+            >
+              <cat.icon className="h-3.5 w-3.5" />
+              {cat.name}
+            </Button>
+          ))}
+        </div>
+
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-primary" data-testid="search-title">
+            <h1 className="text-2xl font-bold text-gray-900" data-testid="search-title">
               {getPageTitle()}
             </h1>
-            <p className="text-muted-foreground mt-1">
-              {filteredProducts.length} منتج
+            <p className="text-muted-foreground text-sm">
+              {filteredProducts.length} منتج متاح
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-44 text-sm" data-testid="select-sort">
+                <ArrowUpDown className="h-3.5 w-3.5 ml-1" />
+                <SelectValue placeholder="ترتيب" />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
                 <Button 
                   variant="outline" 
                   onClick={openFilters}
-                  className="gap-2"
+                  className="gap-1.5"
                   data-testid="open-filters"
                 >
-                  <Filter className="h-4 w-4" />
-                  الفلاتر
+                  <SlidersHorizontal className="h-4 w-4" />
+                  المزيد
                   {activeFiltersCount > 0 && (
-                    <Badge className="bg-primary text-white">{activeFiltersCount}</Badge>
+                    <Badge className="bg-primary text-white text-xs px-1.5">{activeFiltersCount}</Badge>
                   )}
                 </Button>
               </SheetTrigger>
@@ -539,22 +608,6 @@ export default function SearchPage() {
                 </SheetFooter>
               </SheetContent>
             </Sheet>
-
-            <div className="flex items-center gap-2">
-              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-48" data-testid="select-sort">
-                  <SelectValue placeholder="ترتيب حسب" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SORT_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </div>
 
