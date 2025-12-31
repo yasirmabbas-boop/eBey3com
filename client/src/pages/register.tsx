@@ -4,12 +4,11 @@ import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check, X, Eye, EyeOff, User, Lock, UserPlus, Phone, Calendar } from "lucide-react";
+import { Loader2, Check, X, Eye, EyeOff, Lock, UserPlus, Phone } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 const passwordRequirements = [
@@ -104,20 +103,17 @@ export default function Register() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
-  const initialTab = urlParams.get("type") === "seller" ? "seller" : (urlParams.get("tab") as "buyer" | "seller" | null);
   const redirectUrl = urlParams.get("redirect");
   
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"buyer" | "seller">(initialTab || "buyer");
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   const [formData, setFormData] = useState({
-    username: "",
+    phone: "",
     password: "",
     displayName: "",
     district: "",
-    phone: "",
     ageBracket: "",
     interests: [] as string[],
   });
@@ -132,10 +128,10 @@ export default function Register() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.username.trim()) {
-      newErrors.username = "اسم المستخدم مطلوب";
-    } else if (formData.username.length < 3) {
-      newErrors.username = "اسم المستخدم يجب أن يكون 3 أحرف على الأقل";
+    if (!formData.phone.trim()) {
+      newErrors.phone = "رقم الهاتف مطلوب";
+    } else if (!validatePhone(formData.phone)) {
+      newErrors.phone = "رقم هاتف عراقي غير صالح (مثال: 07xxxxxxxxx)";
     }
     
     if (!formData.displayName.trim()) {
@@ -151,22 +147,16 @@ export default function Register() {
       }
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = "رقم الهاتف مطلوب";
-    } else if (!validatePhone(formData.phone)) {
-      newErrors.phone = "رقم هاتف عراقي غير صالح (مثال: 07xxxxxxxxx)";
-    }
-
     if (!formData.ageBracket) {
       newErrors.ageBracket = "الفئة العمرية مطلوبة";
+    }
+
+    if (!formData.district) {
+      newErrors.district = "المحافظة مطلوبة";
     }
     
     if (!agreeTerms) {
       newErrors.terms = "يجب الموافقة على الشروط والأحكام";
-    }
-
-    if (activeTab === "buyer" && !formData.district) {
-      newErrors.district = "المحافظة مطلوبة";
     }
     
     setErrors(newErrors);
@@ -193,11 +183,9 @@ export default function Register() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          username: formData.username,
+          phone: formData.phone,
           password: formData.password,
           displayName: formData.displayName,
-          accountType: activeTab,
-          phone: formData.phone,
           ageBracket: formData.ageBracket,
           interests: formData.interests,
           city: formData.district,
@@ -220,8 +208,6 @@ export default function Register() {
 
       if (redirectUrl) {
         navigate(redirectUrl);
-      } else if (activeTab === "seller") {
-        navigate("/seller-dashboard");
       } else {
         navigate("/");
       }
@@ -250,182 +236,157 @@ export default function Register() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "buyer" | "seller")} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="buyer" data-testid="tab-buyer">مشتري</TabsTrigger>
-                <TabsTrigger value="seller" data-testid="tab-seller">بائع</TabsTrigger>
-              </TabsList>
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">اسم المستخدم</Label>
-                  <div className="relative">
-                    <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="username"
-                      type="text"
-                      placeholder="أدخل اسم المستخدم"
-                      value={formData.username}
-                      onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                      className="pr-10"
-                      data-testid="input-username"
-                    />
-                  </div>
-                  {errors.username && <p className="text-red-500 text-xs">{errors.username}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">الاسم الكامل</Label>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">رقم الهاتف</Label>
+                <div className="relative">
+                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="displayName"
-                    type="text"
-                    placeholder="مثال: علي محمد"
-                    value={formData.displayName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
-                    data-testid="input-displayName"
+                    id="phone"
+                    type="tel"
+                    placeholder="07xxxxxxxxx"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    className="pr-10"
+                    dir="ltr"
+                    data-testid="input-phone"
                   />
-                  {errors.displayName && <p className="text-red-500 text-xs">{errors.displayName}</p>}
                 </div>
+                <p className="text-xs text-muted-foreground">سيتم استخدام رقم الهاتف لتسجيل الدخول</p>
+                {errors.phone && <p className="text-red-500 text-xs">{errors.phone}</p>}
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">كلمة المرور</Label>
-                  <div className="relative">
-                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="أدخل كلمة مرور قوية"
-                      value={formData.password}
-                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                      className="pr-10 pl-10"
-                      data-testid="input-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
-                  <PasswordStrengthIndicator password={formData.password} />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="displayName">الاسم الكامل</Label>
+                <Input
+                  id="displayName"
+                  type="text"
+                  placeholder="مثال: علي محمد"
+                  value={formData.displayName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
+                  data-testid="input-displayName"
+                />
+                {errors.displayName && <p className="text-red-500 text-xs">{errors.displayName}</p>}
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">رقم الهاتف</Label>
-                  <div className="relative">
-                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="07xxxxxxxxx"
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                      className="pr-10"
-                      dir="ltr"
-                      data-testid="input-phone"
-                    />
-                  </div>
-                  {errors.phone && <p className="text-red-500 text-xs">{errors.phone}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>الفئة العمرية</Label>
-                  <Select
-                    value={formData.ageBracket}
-                    onValueChange={(v) => setFormData(prev => ({ ...prev, ageBracket: v }))}
+              <div className="space-y-2">
+                <Label htmlFor="password">كلمة المرور</Label>
+                <div className="relative">
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="أدخل كلمة مرور قوية"
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    className="pr-10 pl-10"
+                    data-testid="input-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    <SelectTrigger data-testid="select-age-bracket">
-                      <SelectValue placeholder="اختر الفئة العمرية" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AGE_BRACKETS.map((bracket) => (
-                        <SelectItem key={bracket.value} value={bracket.value}>{bracket.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.ageBracket && <p className="text-red-500 text-xs">{errors.ageBracket}</p>}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
+                {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
+                <PasswordStrengthIndicator password={formData.password} />
+              </div>
 
-                <div className="space-y-2">
-                  <Label>الاهتمامات (اختياري)</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {INTEREST_OPTIONS.map((interest) => (
-                      <div key={interest.value} className="flex items-center gap-2">
-                        <Checkbox
-                          id={`interest-${interest.value}`}
-                          checked={formData.interests.includes(interest.value)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setFormData(prev => ({ ...prev, interests: [...prev.interests, interest.value] }));
-                            } else {
-                              setFormData(prev => ({ ...prev, interests: prev.interests.filter(i => i !== interest.value) }));
-                            }
-                          }}
-                          data-testid={`checkbox-interest-${interest.value}`}
-                        />
-                        <label htmlFor={`interest-${interest.value}`} className="text-sm cursor-pointer">
-                          {interest.label}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {activeTab === "buyer" && (
-                  <div className="space-y-2">
-                    <Label>المحافظة</Label>
-                    <Select
-                      value={formData.district}
-                      onValueChange={(v) => setFormData(prev => ({ ...prev, district: v }))}
-                    >
-                      <SelectTrigger data-testid="select-district">
-                        <SelectValue placeholder="اختر المحافظة" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {IRAQI_DISTRICTS.map((d) => (
-                          <SelectItem key={d} value={d}>{d}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.district && <p className="text-red-500 text-xs">{errors.district}</p>}
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="terms"
-                    checked={agreeTerms}
-                    onCheckedChange={(checked) => setAgreeTerms(checked === true)}
-                    data-testid="checkbox-terms"
-                  />
-                  <label htmlFor="terms" className="text-sm text-muted-foreground">
-                    أوافق على{" "}
-                    <Link href="/terms" className="text-primary hover:underline">الشروط والأحكام</Link>
-                    {" "}و{" "}
-                    <Link href="/privacy" className="text-primary hover:underline">سياسة الخصوصية</Link>
-                  </label>
-                </div>
-                {errors.terms && <p className="text-red-500 text-xs">{errors.terms}</p>}
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isLoading}
-                  data-testid="button-register"
+              <div className="space-y-2">
+                <Label>الفئة العمرية</Label>
+                <Select
+                  value={formData.ageBracket}
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, ageBracket: v }))}
                 >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                      جاري إنشاء الحساب...
-                    </>
-                  ) : (
-                    `إنشاء حساب ${activeTab === "buyer" ? "مشتري" : "بائع"}`
-                  )}
-                </Button>
-              </form>
-            </Tabs>
+                  <SelectTrigger data-testid="select-age-bracket">
+                    <SelectValue placeholder="اختر الفئة العمرية" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AGE_BRACKETS.map((bracket) => (
+                      <SelectItem key={bracket.value} value={bracket.value}>{bracket.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.ageBracket && <p className="text-red-500 text-xs">{errors.ageBracket}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label>المحافظة</Label>
+                <Select
+                  value={formData.district}
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, district: v }))}
+                >
+                  <SelectTrigger data-testid="select-district">
+                    <SelectValue placeholder="اختر المحافظة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {IRAQI_DISTRICTS.map((d) => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.district && <p className="text-red-500 text-xs">{errors.district}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label>الاهتمامات (اختياري)</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {INTEREST_OPTIONS.map((interest) => (
+                    <div key={interest.value} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`interest-${interest.value}`}
+                        checked={formData.interests.includes(interest.value)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData(prev => ({ ...prev, interests: [...prev.interests, interest.value] }));
+                          } else {
+                            setFormData(prev => ({ ...prev, interests: prev.interests.filter(i => i !== interest.value) }));
+                          }
+                        }}
+                        data-testid={`checkbox-interest-${interest.value}`}
+                      />
+                      <label htmlFor={`interest-${interest.value}`} className="text-sm cursor-pointer">
+                        {interest.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="terms"
+                  checked={agreeTerms}
+                  onCheckedChange={(checked) => setAgreeTerms(checked === true)}
+                  data-testid="checkbox-terms"
+                />
+                <label htmlFor="terms" className="text-sm text-muted-foreground">
+                  أوافق على{" "}
+                  <Link href="/terms" className="text-primary hover:underline">الشروط والأحكام</Link>
+                  {" "}و{" "}
+                  <Link href="/privacy" className="text-primary hover:underline">سياسة الخصوصية</Link>
+                </label>
+              </div>
+              {errors.terms && <p className="text-red-500 text-xs">{errors.terms}</p>}
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+                data-testid="button-register"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                    جاري إنشاء الحساب...
+                  </>
+                ) : (
+                  "إنشاء حساب"
+                )}
+              </Button>
+            </form>
 
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">لديك حساب بالفعل؟ </span>

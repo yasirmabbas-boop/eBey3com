@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { User, Lock, LogIn, UserPlus, Loader2 } from "lucide-react";
+import { Phone, Lock, LogIn, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function SignIn() {
@@ -15,17 +15,17 @@ export default function SignIn() {
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    username: "",
+    phone: "",
     password: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.username || !formData.password) {
+    if (!formData.phone || !formData.password) {
       toast({
         title: "خطأ",
-        description: "يرجى إدخال اسم المستخدم وكلمة المرور",
+        description: "يرجى إدخال رقم الهاتف وكلمة المرور",
         variant: "destructive",
       });
       return;
@@ -47,7 +47,6 @@ export default function SignIn() {
         throw new Error(data.error || "فشل تسجيل الدخول");
       }
 
-      // Store auth token in localStorage for Safari/ITP compatibility
       if (data.authToken) {
         localStorage.setItem("authToken", data.authToken);
       }
@@ -82,23 +81,24 @@ export default function SignIn() {
             </div>
             <CardTitle className="text-2xl">تسجيل الدخول</CardTitle>
             <CardDescription>
-              أدخل بيانات حسابك للمتابعة
+              أدخل رقم هاتفك وكلمة المرور للمتابعة
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">اسم المستخدم</Label>
+                <Label htmlFor="phone">رقم الهاتف</Label>
                 <div className="relative">
-                  <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="username"
-                    type="text"
-                    placeholder="أدخل اسم المستخدم"
-                    value={formData.username}
-                    onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                    id="phone"
+                    type="tel"
+                    placeholder="07xxxxxxxxx"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     className="pr-10"
-                    data-testid="input-username"
+                    dir="ltr"
+                    data-testid="input-phone"
                   />
                 </div>
               </div>
@@ -138,7 +138,7 @@ export default function SignIn() {
 
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">ليس لديك حساب؟ </span>
-              <Link href="/register?type=seller" className="text-primary hover:underline font-medium">
+              <Link href="/register" className="text-primary hover:underline font-medium">
                 إنشاء حساب جديد
               </Link>
             </div>

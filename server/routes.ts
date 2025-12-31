@@ -1903,6 +1903,94 @@ export async function registerRoutes(
     }
   });
 
+  // Seller approval request endpoint
+  app.post("/api/seller-request", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+      
+      if (user.sellerApproved) {
+        return res.status(400).json({ error: "أنت بائع معتمد بالفعل" });
+      }
+      
+      if (user.sellerRequestStatus === "pending") {
+        return res.status(400).json({ error: "لديك طلب قيد المراجعة بالفعل" });
+      }
+      
+      const updated = await storage.updateUser(userId, {
+        sellerRequestStatus: "pending",
+        sellerRequestDate: new Date(),
+      });
+      
+      res.json({ success: true, message: "تم تقديم طلب البيع بنجاح" });
+    } catch (error) {
+      console.error("Error submitting seller request:", error);
+      res.status(500).json({ error: "فشل في تقديم الطلب" });
+    }
+  });
+
+  // Admin: Get pending seller requests
+  app.get("/api/admin/seller-requests", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const allUsers = await storage.getAllUsers();
+      const pendingRequests = allUsers.filter(u => u.sellerRequestStatus === "pending");
+      res.json(pendingRequests);
+    } catch (error) {
+      console.error("Error fetching seller requests:", error);
+      res.status(500).json({ error: "Failed to fetch seller requests" });
+    }
+  });
+
+  // Admin: Approve or reject seller request
+  app.put("/api/admin/seller-requests/:userId", async (req, res) => {
+    try {
+      const adminUserId = await getUserIdFromRequest(req);
+      if (!adminUserId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const admin = await storage.getUser(adminUserId);
+      if (!admin || !admin.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const { action } = req.body;
+      if (!["approve", "reject"].includes(action)) {
+        return res.status(400).json({ error: "Invalid action" });
+      }
+      
+      const targetUserId = req.params.userId;
+      const updated = await storage.updateUserStatus(targetUserId, {
+        sellerApproved: action === "approve",
+        sellerRequestStatus: action === "approve" ? "approved" : "rejected",
+      });
+      
+      if (!updated) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json({ success: true, user: updated });
+    } catch (error) {
+      console.error("Error processing seller request:", error);
+      res.status(500).json({ error: "Failed to process request" });
+    }
+  });
+
   // Admin endpoints
   app.get("/api/admin/stats", async (req, res) => {
     try {
