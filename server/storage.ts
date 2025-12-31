@@ -206,6 +206,12 @@ export class DatabaseStorage implements IStorage {
       sellerId: listings.sellerId,
       isActive: listings.isActive,
       createdAt: listings.createdAt,
+      views: listings.views,
+      sellerName: listings.sellerName,
+      description: listings.description,
+      productCode: listings.productCode,
+      quantityAvailable: listings.quantityAvailable,
+      quantitySold: listings.quantitySold,
     })
       .from(listings)
       .where(whereClause)
