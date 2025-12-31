@@ -179,10 +179,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Logo className="h-12 md:h-14" />
           </Link>
 
-          {/* Smart Search Bar - Left side in RTL */}
+          {/* Smart Search Bar - Always visible */}
           <SmartSearch 
             onImageSearchClick={() => setImageSearchOpen(true)}
-            className="hidden md:flex flex-1 max-w-2xl gap-2 items-center ml-auto"
+            className="flex flex-1 max-w-2xl gap-2 items-center ml-auto"
           />
         </div>
       </header>

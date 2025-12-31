@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useRoute, useLocation } from "wouter";
+import { useRoute, useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -512,17 +512,22 @@ export default function ProductPage() {
           {product.title}
         </h1>
 
-        {/* Seller Info Row */}
-        <div className="flex items-center gap-3 py-3 border-b">
-          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-sm">
+        {/* Seller Info Row - Clickable to seller store */}
+        <Link 
+          href={`/search?sellerId=${listing?.sellerId}`}
+          className="flex items-center gap-3 py-3 border-b hover:bg-gray-50 transition-colors cursor-pointer group"
+          data-testid="link-seller-store"
+        >
+          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-sm group-hover:bg-primary group-hover:text-white transition-colors">
             {product.seller?.name?.charAt(0) || "ب"}
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm">{product.seller?.name || product.sellerName || "بائع"}</span>
+              <span className="font-semibold text-sm group-hover:text-primary transition-colors">{product.seller?.name || product.sellerName || "بائع"}</span>
               {(product.seller?.salesCount || 0) > 0 && (
                 <span className="text-xs text-gray-500">({product.seller?.salesCount})</span>
               )}
+              <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">عرض المتجر ←</span>
             </div>
             <div className="flex items-center gap-1 text-xs text-gray-500">
               {(product.seller?.ratingCount || 0) > 0 ? (
@@ -537,11 +542,11 @@ export default function ProductPage() {
             </div>
           </div>
           {!isOwnProduct && (
-            <Button variant="ghost" size="icon" className="text-gray-400">
+            <Button variant="ghost" size="icon" className="text-gray-400" onClick={(e) => e.stopPropagation()}>
               <Send className="h-5 w-5" />
             </Button>
           )}
-        </div>
+        </Link>
 
         {/* Price Section */}
         <div className="py-4 border-b">

@@ -75,12 +75,36 @@ const CITIES = [
 ];
 
 const SORT_OPTIONS = [
+  { value: "relevance", label: "الأكثر صلة" },
   { value: "newest", label: "الأحدث" },
   { value: "price_low", label: "السعر: من الأقل للأعلى" },
   { value: "price_high", label: "السعر: من الأعلى للأقل" },
   { value: "ending_soon", label: "ينتهي قريباً" },
   { value: "most_bids", label: "الأكثر مزايدة" },
 ];
+
+function calculateRelevanceScore(product: Listing, query: string): number {
+  if (!query) return 0;
+  const q = query.toLowerCase();
+  let score = 0;
+  
+  const title = (product.title || "").toLowerCase();
+  if (title === q) score += 100;
+  else if (title.startsWith(q)) score += 80;
+  else if (title.includes(q)) score += 60;
+  
+  const tags = product.tags || [];
+  if (tags.some((tag: string) => tag.toLowerCase() === q)) score += 50;
+  else if (tags.some((tag: string) => tag.toLowerCase().includes(q))) score += 30;
+  
+  if ((product.category || "").toLowerCase().includes(q)) score += 20;
+  if ((product.description || "").toLowerCase().includes(q)) score += 10;
+  
+  score += ((product as any).viewCount || 0) * 0.01;
+  score += ((product as any).totalBids || 0) * 0.5;
+  
+  return score;
+}
 
 interface FilterState {
   category: string | null;
@@ -107,16 +131,32 @@ export default function SearchPage() {
   });
   
   const [draftFilters, setDraftFilters] = useState<FilterState>(appliedFilters);
-  const [sortBy, setSortBy] = useState("newest");
+  const [sortBy, setSortBy] = useState(searchQuery ? "relevance" : "newest");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  const sellerIdParam = params.get("sellerId");
+  
   const { data: listingsData, isLoading } = useQuery({
-    queryKey: ["/api/listings"],
+    queryKey: ["/api/listings", sellerIdParam],
     queryFn: async () => {
-      const res = await fetch("/api/listings?limit=100");
+      const url = sellerIdParam 
+        ? `/api/listings?limit=100&sellerId=${sellerIdParam}`
+        : "/api/listings?limit=100";
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch listings");
       return res.json();
     },
+  });
+  
+  const { data: sellerInfo } = useQuery({
+    queryKey: ["/api/users", sellerIdParam],
+    queryFn: async () => {
+      if (!sellerIdParam) return null;
+      const res = await fetch(`/api/users/${sellerIdParam}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!sellerIdParam,
   });
   
   const listings: Listing[] = Array.isArray(listingsData) 
@@ -199,6 +239,19 @@ export default function SearchPage() {
 
     const sortedProducts = [...products];
     switch (sortBy) {
+      case "relevance":
+        if (searchQuery) {
+          sortedProducts.sort((a, b) => 
+            calculateRelevanceScore(b, searchQuery) - calculateRelevanceScore(a, searchQuery)
+          );
+        } else {
+          sortedProducts.sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+          });
+        }
+        break;
       case "price_low":
         sortedProducts.sort((a, b) => (a.currentBid || a.price) - (b.currentBid || b.price));
         break;
@@ -338,6 +391,29 @@ export default function SearchPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6">
+        {/* Seller Store Header */}
+        {sellerIdParam && sellerInfo && (
+          <div className="bg-gradient-to-l from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-6 shadow-md">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+                {sellerInfo.displayName?.charAt(0) || sellerInfo.username?.charAt(0) || "م"}
+              </div>
+              <div className="flex-1">
+                <h2 className="text-xl font-bold">متجر {sellerInfo.displayName || sellerInfo.username}</h2>
+                <div className="flex items-center gap-4 mt-1 text-blue-100 text-sm">
+                  {sellerInfo.totalSales > 0 && (
+                    <span>{sellerInfo.totalSales} عملية بيع</span>
+                  )}
+                  {sellerInfo.ratingCount > 0 && (
+                    <span>{Math.round(sellerInfo.rating || 0)}% تقييم إيجابي</span>
+                  )}
+                  <span>{filteredProducts.length} منتج</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Quick Filters Bar */}
         <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b">
           <span className="text-sm font-medium text-muted-foreground ml-2">تصفية سريعة:</span>
