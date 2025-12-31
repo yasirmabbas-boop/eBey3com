@@ -129,7 +129,7 @@ export default function Home() {
   const recommendedProducts = displayProducts.slice(0, 6);
   
   const productsByCategory = CATEGORIES.reduce((acc, cat) => {
-    acc[cat.id] = displayProducts.filter(p => p.category === cat.id).slice(0, 4);
+    acc[cat.id] = displayProducts.filter(p => p.category === cat.id).slice(0, 12);
     return acc;
   }, {} as Record<string, typeof displayProducts>);
 
@@ -208,54 +208,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Main Search Section */}
-      <section className="bg-gradient-to-b from-blue-600 to-blue-700 py-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-              ابحث عن ما تريد
-            </h2>
-            <p className="text-blue-100 mb-6">
-              اكتشف آلاف المنتجات من الساعات والإلكترونيات والتحف والمزيد
-            </p>
-            <form onSubmit={handleSearch} className="flex gap-2 bg-white p-2 rounded-xl shadow-xl">
-              <div className="relative flex-1">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <Input 
-                  type="search"
-                  placeholder="ابحث عن ساعات، هواتف، سيارات..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pr-10 pl-4 h-12 text-lg border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                  data-testid="input-home-search"
-                />
-              </div>
-              <Button 
-                type="submit"
-                size="lg"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 h-12"
-                data-testid="button-home-search"
-              >
-                <Search className="h-5 w-5 ml-2" />
-                بحث
-              </Button>
-            </form>
-            <div className="flex flex-wrap justify-center gap-2 mt-4">
-              <span className="text-blue-200 text-sm">بحث سريع:</span>
-              {["ساعات رولكس", "آيفون", "سجاد فارسي", "سيارات", "ذهب"].map((term) => (
-                <Link key={term} href={`/search?q=${encodeURIComponent(term)}`}>
-                  <Badge 
-                    variant="secondary" 
-                    className="bg-white/20 hover:bg-white/30 text-white border-0 cursor-pointer"
-                  >
-                    {term}
-                  </Badge>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Recommended Items Section */}
       {recommendedProducts.length > 0 && (
@@ -408,44 +360,47 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Category-Based Recommendations */}
+      {/* Category-Based Recommendations - Horizontal Scroll */}
       {categoriesWithProducts.length > 0 && (
-        <section className="py-12 bg-white border-t">
+        <section className="py-8 bg-white border-t">
           <div className="container mx-auto px-4">
-            <div className="flex items-center gap-2 mb-8">
+            <div className="flex items-center gap-2 mb-6">
               <LayoutGrid className="h-6 w-6 text-primary" />
               <h2 className="text-2xl font-bold text-primary">تصفح حسب القسم</h2>
             </div>
             
-            <div className="space-y-12">
-              {categoriesWithProducts.slice(0, 3).map((cat) => (
-                <div key={cat.id} className="bg-gray-50 rounded-2xl p-6">
-                  <div className="flex justify-between items-center mb-6">
+            <div className="space-y-8">
+              {categoriesWithProducts.map((cat) => (
+                <div key={cat.id} className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-3">
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                      <div className={`h-9 w-9 rounded-lg flex items-center justify-center ${
                         cat.nameEn === "watches" ? "bg-blue-100" :
                         cat.nameEn === "electronics" ? "bg-amber-100" :
                         cat.nameEn === "antiques" ? "bg-rose-100" :
+                        cat.nameEn === "clothing" ? "bg-purple-100" :
+                        cat.nameEn === "jewelry" ? "bg-pink-100" :
                         "bg-gray-100"
                       }`}>
-                        {cat.nameEn === "watches" ? <Clock className="h-5 w-5 text-blue-600" /> :
-                         cat.nameEn === "electronics" ? <Zap className="h-5 w-5 text-amber-600" /> :
-                         cat.nameEn === "antiques" ? <Search className="h-5 w-5 text-rose-600" /> :
-                         <Tag className="h-5 w-5 text-gray-600" />}
+                        {cat.nameEn === "watches" ? <Clock className="h-4 w-4 text-blue-600" /> :
+                         cat.nameEn === "electronics" ? <Zap className="h-4 w-4 text-amber-600" /> :
+                         cat.nameEn === "antiques" ? <Search className="h-4 w-4 text-rose-600" /> :
+                         <Tag className="h-4 w-4 text-gray-600" />}
                       </div>
-                      <h3 className="text-xl font-bold text-primary">{cat.name}</h3>
+                      <h3 className="text-lg font-bold text-primary">{cat.name}</h3>
                     </div>
                     <Link href={`/search?category=${encodeURIComponent(cat.id)}`}>
-                      <Button variant="outline" size="sm">
+                      <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
                         عرض الكل
+                        <ChevronLeft className="h-4 w-4 mr-1" />
                       </Button>
                     </Link>
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     {productsByCategory[cat.id].map((product) => (
                       <Link key={product.id} href={`/product/${product.id}`}>
-                        <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200" data-testid={`card-category-${cat.id}-${product.id}`}>
+                        <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 flex-shrink-0 w-40 sm:w-48" data-testid={`card-category-${cat.id}-${product.id}`}>
                           <div className="relative aspect-square overflow-hidden bg-gray-100">
                             <img 
                               src={product.image} 

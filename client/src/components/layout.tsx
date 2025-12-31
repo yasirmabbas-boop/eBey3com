@@ -128,61 +128,63 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main Header */}
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50 shadow-sm">
-        <div className="container mx-auto px-4 py-3 flex items-center gap-4 md:gap-6">
-          
-          {/* Back Button - Mobile */}
-          <BackButton className="md:hidden" />
+        <div className="container mx-auto px-4 py-3">
+          {/* Top Row: Logo, Menu, Account */}
+          <div className="flex items-center gap-4 md:gap-6 mb-3">
+            {/* Back Button - Mobile */}
+            <BackButton className="md:hidden" />
 
-          {/* Mobile Menu */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <nav className="flex flex-col gap-4 mt-8">
-                <Link href="/" className="text-lg font-semibold">الرئيسية</Link>
-                <Link href="/search" className="text-lg">البحث</Link>
-                {isAuthenticated && (
-                  <>
-                    <Link href="/my-account" className="text-lg text-primary font-semibold">حسابي</Link>
-                    {user?.accountType === "seller" && (
-                      <>
-                        <Link href="/seller-dashboard" className="text-lg">لوحة البائع</Link>
-                        <Link href="/sell" className="text-lg">إضافة منتج</Link>
-                      </>
-                    )}
-                    <Link href="/my-purchases" className="text-lg">مشترياتي</Link>
-                    <Link href="/messages" className="text-lg">الرسائل</Link>
-                    <Link href="/settings" className="text-lg">الإعدادات</Link>
-                  </>
-                )}
-                {!isAuthenticated && (
-                  <Link href="/signin" className="text-lg text-primary font-semibold">تسجيل الدخول</Link>
-                )}
-              </nav>
-            </SheetContent>
-          </Sheet>
+            {/* Mobile Menu */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right">
+                <nav className="flex flex-col gap-4 mt-8">
+                  <Link href="/" className="text-lg font-semibold">الرئيسية</Link>
+                  <Link href="/search" className="text-lg">البحث</Link>
+                  {isAuthenticated && (
+                    <>
+                      <Link href="/my-account" className="text-lg text-primary font-semibold">حسابي</Link>
+                      {user?.accountType === "seller" && (
+                        <>
+                          <Link href="/seller-dashboard" className="text-lg">لوحة البائع</Link>
+                          <Link href="/sell" className="text-lg">إضافة منتج</Link>
+                        </>
+                      )}
+                      <Link href="/my-purchases" className="text-lg">مشترياتي</Link>
+                      <Link href="/messages" className="text-lg">الرسائل</Link>
+                      <Link href="/settings" className="text-lg">الإعدادات</Link>
+                    </>
+                  )}
+                  {!isAuthenticated && (
+                    <Link href="/signin" className="text-lg text-primary font-semibold">تسجيل الدخول</Link>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
 
-          {/* Account Dropdown - Far Right in RTL */}
-          <div className="hidden md:flex items-center gap-2">
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-            ) : (
-              <AccountDropdown />
-            )}
+            {/* Account Dropdown - Far Right in RTL */}
+            <div className="hidden md:flex items-center gap-2">
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+              ) : (
+                <AccountDropdown />
+              )}
+            </div>
+
+            {/* Logo - Center area */}
+            <Link href="/" className="flex-shrink-0 flex items-center mx-auto md:mx-0">
+              <Logo className="h-12 md:h-14" />
+            </Link>
           </div>
-
-          {/* Logo - Center area */}
-          <Link href="/" className="flex-shrink-0 flex items-center">
-            <Logo className="h-12 md:h-14" />
-          </Link>
-
-          {/* Smart Search Bar - Always visible */}
+          
+          {/* Search Bar - Full Width */}
           <SmartSearch 
             onImageSearchClick={() => setImageSearchOpen(true)}
-            className="flex flex-1 max-w-2xl gap-2 items-center ml-auto"
+            className="flex w-full gap-2 items-center"
           />
         </div>
       </header>
