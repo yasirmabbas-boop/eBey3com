@@ -567,11 +567,21 @@ export async function registerRoutes(
   app.post("/api/reviews", async (req, res) => {
     try {
       const validatedData = insertReviewSchema.parse(req.body);
+      
+      // Check if user already reviewed this listing
+      const alreadyReviewed = await storage.hasReviewForListing(
+        validatedData.reviewerId, 
+        validatedData.listingId
+      );
+      if (alreadyReviewed) {
+        return res.status(400).json({ error: "لقد قمت بتقييم هذا المنتج مسبقاً" });
+      }
+      
       const review = await storage.createReview(validatedData);
       res.status(201).json(review);
     } catch (error) {
       console.error("Error creating review:", error);
-      res.status(400).json({ error: "Failed to create review", details: String(error) });
+      res.status(400).json({ error: "فشل في إرسال التقييم", details: String(error) });
     }
   });
 
@@ -1197,7 +1207,18 @@ export async function registerRoutes(
     try {
       // Use optimized method with JOINs to avoid N+1 queries
       const purchases = await storage.getPurchasesWithDetails(userId);
-      res.json(purchases);
+      
+      // Get all reviews by this buyer to mark which purchases have reviews
+      const buyerReviews = await storage.getReviewsByBuyer(userId);
+      const reviewedListingIds = new Set(buyerReviews.map(r => r.listingId));
+      
+      // Add hasReview flag to each purchase
+      const purchasesWithReviewStatus = purchases.map(purchase => ({
+        ...purchase,
+        hasReview: reviewedListingIds.has(purchase.listingId),
+      }));
+      
+      res.json(purchasesWithReviewStatus);
     } catch (error) {
       console.error("Error fetching purchases:", error);
       res.status(500).json({ error: "فشل في جلب المشتريات" });

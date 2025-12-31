@@ -57,6 +57,8 @@ export interface IStorage {
   markMessageAsRead(id: string): Promise<boolean>;
   
   getReviewsForSeller(sellerId: string): Promise<Review[]>;
+  hasReviewForListing(reviewerId: string, listingId: string): Promise<boolean>;
+  getReviewsByBuyer(buyerId: string): Promise<Review[]>;
   createReview(review: InsertReview): Promise<Review>;
   
   getTransactionsForUser(userId: string): Promise<Transaction[]>;
@@ -454,6 +456,18 @@ export class DatabaseStorage implements IStorage {
 
   async getReviewsForSeller(sellerId: string): Promise<Review[]> {
     return db.select().from(reviews).where(eq(reviews.sellerId, sellerId)).orderBy(desc(reviews.createdAt));
+  }
+
+  async hasReviewForListing(reviewerId: string, listingId: string): Promise<boolean> {
+    const [existing] = await db.select({ id: reviews.id })
+      .from(reviews)
+      .where(and(eq(reviews.reviewerId, reviewerId), eq(reviews.listingId, listingId)))
+      .limit(1);
+    return !!existing;
+  }
+
+  async getReviewsByBuyer(buyerId: string): Promise<Review[]> {
+    return db.select().from(reviews).where(eq(reviews.reviewerId, buyerId));
   }
 
   async createReview(review: InsertReview): Promise<Review> {
