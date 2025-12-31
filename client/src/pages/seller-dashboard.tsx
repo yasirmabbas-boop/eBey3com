@@ -175,6 +175,7 @@ export default function SellerDashboard() {
   const [activeTab, setActiveTab] = useState("products");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [salesFilter, setSalesFilter] = useState("all");
   const [showShippingLabel, setShowShippingLabel] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<SellerProduct | null>(null);
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
@@ -668,8 +669,6 @@ export default function SellerDashboard() {
                     <SelectItem value="all">الكل</SelectItem>
                     <SelectItem value="active">نشط</SelectItem>
                     <SelectItem value="sold">مباع</SelectItem>
-                    <SelectItem value="pending_shipment">بانتظار الشحن</SelectItem>
-                    <SelectItem value="shipped">تم الشحن</SelectItem>
                     <SelectItem value="draft">مسودة</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1073,6 +1072,21 @@ export default function SellerDashboard() {
           </TabsContent>
 
           <TabsContent value="sales" className="space-y-4">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">إدارة الطلبات والشحن</h3>
+              <Select value={salesFilter} onValueChange={setSalesFilter}>
+                <SelectTrigger className="w-48" data-testid="select-sales-filter">
+                  <Filter className="h-4 w-4 ml-2" />
+                  <SelectValue placeholder="حالة الشحن" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="pending">بانتظار الشحن</SelectItem>
+                  <SelectItem value="shipped">تم الشحن</SelectItem>
+                  <SelectItem value="delivered">تم التسليم</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {ordersLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -1083,9 +1097,30 @@ export default function SellerDashboard() {
                 <p className="text-gray-500">لا توجد طلبات حتى الآن</p>
                 <p className="text-sm text-gray-400 mt-2">عندما يقبل المشترون عروضك أو يشترون منتجاتك، ستظهر الطلبات هنا</p>
               </Card>
-            ) : (
+            ) : (() => {
+              const filteredOrders = sellerOrders.filter(order => {
+                if (salesFilter === "all") return true;
+                if (salesFilter === "pending") return order.status === "pending" || order.status === "processing";
+                if (salesFilter === "shipped") return order.status === "shipped";
+                if (salesFilter === "delivered") return order.status === "delivered" || order.status === "completed";
+                return true;
+              });
+              
+              if (filteredOrders.length === 0) {
+                return (
+                  <Card className="p-8 text-center">
+                    <Filter className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">لا توجد طلبات تطابق الفلتر المحدد</p>
+                    <Button variant="outline" className="mt-4" onClick={() => setSalesFilter("all")}>
+                      عرض جميع الطلبات
+                    </Button>
+                  </Card>
+                );
+              }
+              
+              return (
               <div className="grid gap-4">
-                {sellerOrders.map(order => (
+                {filteredOrders.map(order => (
                   <Card key={order.id} className="overflow-hidden hover:shadow-lg transition-shadow" data-testid={`order-card-${order.id}`}>
                     <div className="flex flex-col md:flex-row">
                       <Link href={`/product/${order.listingId}`} className="relative cursor-pointer group">
@@ -1193,7 +1228,8 @@ export default function SellerDashboard() {
                   </Card>
                 ))}
               </div>
-            )}
+              );
+            })()}
           </TabsContent>
         </Tabs>
       </div>
