@@ -24,6 +24,7 @@ import {
   Check,
   MessageSquare,
   ShoppingBag,
+  Eye,
 } from "lucide-react";
 import type { Transaction, Listing, Offer } from "@shared/schema";
 
@@ -342,7 +343,13 @@ export default function MySales() {
                                 <p className="text-xs text-gray-600 mt-1">
                                   {sale.amount.toLocaleString()} د.ع
                                 </p>
-                                <div className="mt-2">{getStatusBadge(sale.status)}</div>
+                                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                  {getStatusBadge(sale.status)}
+                                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                                    <Eye className="h-3 w-3" />
+                                    {(sale.listing as any)?.views || 0}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </Card>
@@ -382,7 +389,13 @@ export default function MySales() {
                                 <p className="text-xs text-gray-600 mt-1">
                                   {sale.amount.toLocaleString()} د.ع
                                 </p>
-                                <div className="mt-2">{getStatusBadge(sale.status)}</div>
+                                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                  {getStatusBadge(sale.status)}
+                                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                                    <Eye className="h-3 w-3" />
+                                    {(sale.listing as any)?.views || 0}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </Card>
@@ -429,7 +442,7 @@ export default function MySales() {
 
                         <Separator className="my-4" />
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                           <div>
                             <p className="text-xs text-gray-600 mb-1">السعر</p>
                             <p className="font-bold text-lg text-green-600">
@@ -446,6 +459,13 @@ export default function MySales() {
                           <div>
                             <p className="text-xs text-gray-600 mb-1">طريقة الدفع</p>
                             <p className="font-semibold text-sm">{selectedSale.paymentMethod || "نقداً"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 mb-1">المشاهدات</p>
+                            <p className="font-semibold text-sm flex items-center gap-1">
+                              <Eye className="h-4 w-4" />
+                              {(selectedSale.listing as any)?.views || 0}
+                            </p>
                           </div>
                           <div>
                             <Link href={`/product/${selectedSale.listingId}`}>
