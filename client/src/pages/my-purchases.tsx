@@ -11,6 +11,22 @@ import { useAuth } from "@/hooks/use-auth";
 import { StarRating } from "@/components/star-rating";
 import { useToast } from "@/hooks/use-toast";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import {
   Package,
   Truck,
   CheckCircle,
@@ -28,6 +44,7 @@ import {
   Star,
   Calendar,
   Send,
+  AlertTriangle,
 } from "lucide-react";
 
 interface Purchase {
@@ -297,12 +314,59 @@ function DeliveryTimeline({ purchase }: { purchase: Purchase }) {
 export default function MyPurchases() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<Purchase | null>(null);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: purchases = [], isLoading: purchasesLoading } = useQuery<Purchase[]>({
     queryKey: ["/api/account/purchases"],
     enabled: !!user?.id,
   });
+
+  const reportMutation = useMutation({
+    mutationFn: async (data: { reportType: string; targetId: string; targetType: string; reason: string; details?: string }) => {
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to create report");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم إرسال البلاغ",
+        description: "سيتم مراجعة بلاغك من قبل فريق الدعم",
+      });
+      setIsReportDialogOpen(false);
+      setReportReason("");
+      setReportDetails("");
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "فشل في إرسال البلاغ. يرجى المحاولة مرة أخرى",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmitReport = () => {
+    const currentOrder = selectedOrder || purchases[0];
+    if (!currentOrder || !reportReason) return;
+    
+    reportMutation.mutate({
+      reportType: "order_issue",
+      targetId: currentOrder.id,
+      targetType: "transaction",
+      reason: reportReason,
+      details: reportDetails || undefined,
+    });
+  };
 
   const handleReviewSubmitted = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/account/purchases"] });
@@ -626,8 +690,13 @@ export default function MyPurchases() {
                         </Button>
                       </Link>
                     )}
-                    <Button variant="ghost" className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                      <ChevronLeft className="h-4 w-4 ml-2" />
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => setIsReportDialogOpen(true)}
+                      data-testid="button-report-issue"
+                    >
+                      <AlertTriangle className="h-4 w-4 ml-2" />
                       الإبلاغ عن مشكلة
                     </Button>
                   </div>
@@ -698,6 +767,82 @@ export default function MyPurchases() {
           </div>
         </div>
       </div>
+
+      {/* Report Issue Dialog */}
+      <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              الإبلاغ عن مشكلة
+            </DialogTitle>
+            <DialogDescription>
+              أخبرنا عن المشكلة التي تواجهها مع هذا الطلب وسنساعدك في حلها
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="report-reason">سبب البلاغ</Label>
+              <Select value={reportReason} onValueChange={setReportReason}>
+                <SelectTrigger id="report-reason" data-testid="select-report-reason">
+                  <SelectValue placeholder="اختر سبب البلاغ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="not_received">لم أستلم المنتج</SelectItem>
+                  <SelectItem value="wrong_item">استلمت منتجاً مختلفاً</SelectItem>
+                  <SelectItem value="damaged">المنتج تالف أو مكسور</SelectItem>
+                  <SelectItem value="not_as_described">المنتج مختلف عن الوصف</SelectItem>
+                  <SelectItem value="fake_product">منتج مقلد أو غير أصلي</SelectItem>
+                  <SelectItem value="seller_issue">مشكلة مع البائع</SelectItem>
+                  <SelectItem value="shipping_issue">مشكلة في الشحن</SelectItem>
+                  <SelectItem value="other">أخرى</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="report-details">تفاصيل إضافية (اختياري)</Label>
+              <Textarea
+                id="report-details"
+                placeholder="اشرح المشكلة بالتفصيل..."
+                value={reportDetails}
+                onChange={(e) => setReportDetails(e.target.value)}
+                rows={4}
+                className="resize-none"
+                data-testid="input-report-details"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsReportDialogOpen(false);
+                setReportReason("");
+                setReportDetails("");
+              }}
+              data-testid="button-cancel-report"
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleSubmitReport}
+              disabled={!reportReason || reportMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="button-submit-report"
+            >
+              {reportMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+              ) : (
+                <Send className="h-4 w-4 ml-2" />
+              )}
+              إرسال البلاغ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

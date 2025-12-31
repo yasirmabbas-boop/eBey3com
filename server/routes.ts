@@ -1847,5 +1847,51 @@ export async function registerRoutes(
     }
   });
 
+  // Reports - Create new report
+  app.post("/api/reports", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { reportType, targetId, targetType, reason, details } = req.body;
+      
+      if (!reportType || !targetId || !targetType || !reason) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      const report = await storage.createReport({
+        reporterId: userId,
+        reportType,
+        targetId,
+        targetType,
+        reason,
+        details: details || null,
+      });
+      
+      res.status(201).json(report);
+    } catch (error) {
+      console.error("Error creating report:", error);
+      res.status(500).json({ error: "Failed to create report" });
+    }
+  });
+
+  // Get user's reports
+  app.get("/api/reports/my-reports", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const reports = await storage.getReportsByUser(userId);
+      res.json(reports);
+    } catch (error) {
+      console.error("Error fetching reports:", error);
+      res.status(500).json({ error: "Failed to fetch reports" });
+    }
+  });
+
   return httpServer;
 }
