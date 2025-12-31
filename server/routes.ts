@@ -120,8 +120,8 @@ export async function registerRoutes(
       }
       
       const user = await storage.getUser(sessionUserId);
-      if (!user || user.accountType !== "seller") {
-        return res.status(403).json({ error: "فقط البائعون يمكنهم إضافة منتجات" });
+      if (!user || !user.sellerApproved) {
+        return res.status(403).json({ error: "يجب أن يكون حسابك معتمداً كبائع لإضافة منتجات" });
       }
       
       const listingData = {
@@ -379,7 +379,7 @@ export async function registerRoutes(
         listingId: validatedData.listingId,
         currentBid,
         totalBids,
-        bidderName: bidder?.displayName || bidder?.username || "مستخدم مجهول",
+        bidderName: bidder?.displayName || "مستخدم مجهول",
         bidderId: validatedData.userId,
         timestamp: new Date().toISOString(),
         auctionEndTime: newEndTime?.toISOString() || listing.auctionEndTime?.toISOString(),
@@ -405,9 +405,9 @@ export async function registerRoutes(
       res.json({
         id: user.id,
         displayName: user.displayName,
-        username: user.username,
+        phone: user.phone,
         avatar: user.avatar,
-        accountType: user.accountType,
+        sellerApproved: user.sellerApproved,
         isVerified: user.isVerified,
         totalSales: user.totalSales,
         rating: user.rating,
@@ -555,7 +555,7 @@ export async function registerRoutes(
         const listing = msg.listingId ? await storage.getListing(msg.listingId) : null;
         return {
           ...msg,
-          senderName: sender?.displayName || sender?.username || "مستخدم",
+          senderName: sender?.displayName || "مستخدم",
           listingTitle: listing?.title || null,
           listingImage: listing?.images?.[0] || null,
         };
@@ -836,19 +836,27 @@ export async function registerRoutes(
     }
   });
 
-  // Custom username/password authentication routes
+  // Phone/password authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { username, password, displayName, accountType, phone, ageBracket, interests, city } = req.body;
+      const { phone, password, displayName, ageBracket, interests, city, email } = req.body;
       
-      if (!username || !password) {
-        return res.status(400).json({ error: "اسم المستخدم وكلمة المرور مطلوبان" });
+      if (!phone || !password) {
+        return res.status(400).json({ error: "رقم الهاتف وكلمة المرور مطلوبان" });
       }
 
-      // Check if username already exists
-      const existingUser = await storage.getUserByUsername(username);
+      // Check if phone already exists
+      const existingUser = await storage.getUserByPhone(phone);
       if (existingUser) {
-        return res.status(400).json({ error: "اسم المستخدم مستخدم بالفعل" });
+        return res.status(400).json({ error: "رقم الهاتف مستخدم بالفعل" });
+      }
+
+      // Check if email already exists (if provided)
+      if (email) {
+        const existingEmail = await storage.getUserByEmail(email);
+        if (existingEmail) {
+          return res.status(400).json({ error: "البريد الإلكتروني مستخدم بالفعل" });
+        }
       }
 
       // Hash password
@@ -856,12 +864,11 @@ export async function registerRoutes(
 
       // Create user
       const user = await storage.createUser({
-        username,
+        phone,
         password: hashedPassword,
-        displayName: displayName || username,
-        accountType: accountType || "seller",
-        authProvider: "local",
-        phone: phone || null,
+        displayName: displayName || phone,
+        email: email || null,
+        authProvider: "phone",
         ageBracket: ageBracket || null,
         interests: interests || [],
         city: city || null,
@@ -872,9 +879,9 @@ export async function registerRoutes(
 
       res.status(201).json({ 
         id: user.id,
-        username: user.username,
+        phone: user.phone,
         displayName: user.displayName,
-        accountType: user.accountType,
+        sellerApproved: user.sellerApproved,
         accountCode: user.accountCode,
       });
     } catch (error) {
@@ -885,16 +892,16 @@ export async function registerRoutes(
 
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { phone, password } = req.body;
 
-      if (!username || !password) {
-        return res.status(400).json({ error: "اسم المستخدم وكلمة المرور مطلوبان" });
+      if (!phone || !password) {
+        return res.status(400).json({ error: "رقم الهاتف وكلمة المرور مطلوبان" });
       }
 
-      // Find user by username
-      const user = await storage.getUserByUsername(username);
+      // Find user by phone
+      const user = await storage.getUserByPhone(phone);
       if (!user) {
-        return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+        return res.status(401).json({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" });
       }
 
       // Check password
@@ -904,7 +911,7 @@ export async function registerRoutes(
 
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
-        return res.status(401).json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+        return res.status(401).json({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" });
       }
 
       // Generate auth token for Safari/ITP compatibility
@@ -922,9 +929,10 @@ export async function registerRoutes(
 
       res.json({ 
         id: user.id,
-        username: user.username,
+        phone: user.phone,
         displayName: user.displayName,
-        accountType: user.accountType,
+        sellerApproved: user.sellerApproved,
+        isAdmin: user.isAdmin,
         accountCode: user.accountCode,
         avatar: user.avatar,
         authToken: authToken,
@@ -970,9 +978,11 @@ export async function registerRoutes(
 
     res.json({
       id: user.id,
-      username: user.username,
+      phone: user.phone,
       displayName: user.displayName,
-      accountType: user.accountType,
+      sellerApproved: user.sellerApproved,
+      sellerRequestStatus: user.sellerRequestStatus,
+      isAdmin: user.isAdmin,
       accountCode: user.accountCode,
       avatar: user.avatar,
       isVerified: user.isVerified,
@@ -995,16 +1005,17 @@ export async function registerRoutes(
 
     res.json({
       id: user.id,
-      username: user.username,
+      phone: user.phone,
       email: user.email,
       displayName: user.displayName,
-      phone: user.phone,
       avatar: user.avatar,
       city: user.city,
       district: user.district,
       addressLine1: user.addressLine1,
       addressLine2: user.addressLine2,
-      accountType: user.accountType,
+      sellerApproved: user.sellerApproved,
+      sellerRequestStatus: user.sellerRequestStatus,
+      isAdmin: user.isAdmin,
       accountCode: user.accountCode,
       isVerified: user.isVerified,
       verificationStatus: user.verificationStatus,
@@ -1046,9 +1057,8 @@ export async function registerRoutes(
 
       res.json({
         id: user.id,
-        username: user.username,
-        displayName: user.displayName,
         phone: user.phone,
+        displayName: user.displayName,
         city: user.city,
         district: user.district,
         addressLine1: user.addressLine1,
@@ -1247,8 +1257,8 @@ export async function registerRoutes(
 
     try {
       const user = await storage.getUser(userId);
-      if (!user || user.accountType !== "seller") {
-        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين فقط" });
+      if (!user || !user.sellerApproved) {
+        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين المعتمدين فقط" });
       }
 
       // Use dedicated method that queries ONLY sales where user is seller
@@ -1293,8 +1303,8 @@ export async function registerRoutes(
 
     try {
       const user = await storage.getUser(userId);
-      if (!user || user.accountType !== "seller") {
-        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين فقط" });
+      if (!user || !user.sellerApproved) {
+        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين المعتمدين فقط" });
       }
 
       const summary = await storage.getSellerSummary(userId);
@@ -1901,7 +1911,7 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Not authenticated" });
       }
       const user = await storage.getUser(userId);
-      if (!user || user.accountType !== "admin") {
+      if (!user || !user.isAdmin) {
         return res.status(403).json({ error: "Access denied" });
       }
       const stats = await storage.getAdminStats();
@@ -1919,7 +1929,7 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Not authenticated" });
       }
       const user = await storage.getUser(userId);
-      if (!user || user.accountType !== "admin") {
+      if (!user || !user.isAdmin) {
         return res.status(403).json({ error: "Access denied" });
       }
       const allReports = await storage.getAllReports();
@@ -1937,7 +1947,7 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Not authenticated" });
       }
       const user = await storage.getUser(userId);
-      if (!user || user.accountType !== "admin") {
+      if (!user || !user.isAdmin) {
         return res.status(403).json({ error: "Access denied" });
       }
       const { status, adminNotes } = req.body;
@@ -1962,7 +1972,7 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Not authenticated" });
       }
       const user = await storage.getUser(userId);
-      if (!user || user.accountType !== "admin") {
+      if (!user || !user.isAdmin) {
         return res.status(403).json({ error: "Access denied" });
       }
       const allUsers = await storage.getAllUsers();
@@ -1980,11 +1990,11 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Not authenticated" });
       }
       const user = await storage.getUser(userId);
-      if (!user || user.accountType !== "admin") {
+      if (!user || !user.isAdmin) {
         return res.status(403).json({ error: "Access denied" });
       }
-      const { accountType, isVerified, isBanned } = req.body;
-      const updated = await storage.updateUserStatus(req.params.id, { accountType, isVerified, isBanned });
+      const { sellerApproved, isVerified, isBanned, sellerRequestStatus } = req.body;
+      const updated = await storage.updateUserStatus(req.params.id, { sellerApproved, isVerified, isBanned, sellerRequestStatus });
       if (!updated) {
         return res.status(404).json({ error: "User not found" });
       }

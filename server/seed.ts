@@ -6,11 +6,11 @@ import bcrypt from "bcryptjs";
 async function seed() {
   console.log("🌱 Starting database seed...");
 
-  const adminUsername = "yabbas25";
+  const adminPhone = "07700000000";
   const adminPassword = "Ss120$JyA";
   const adminEmail = "yabbas25@admin.ebay-iraq.com";
 
-  const existingAdmin = await db.select().from(users).where(eq(users.username, adminUsername));
+  const existingAdmin = await db.select().from(users).where(eq(users.phone, adminPhone));
   
   if (existingAdmin.length > 0) {
     console.log("✅ Admin account already exists, skipping...");
@@ -19,17 +19,18 @@ async function seed() {
     const accountCode = "A-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
     
     await db.insert(users).values({
-      username: adminUsername,
+      phone: adminPhone,
       email: adminEmail,
       password: hashedPassword,
       displayName: "مدير النظام",
-      accountType: "admin",
+      isAdmin: true,
       isVerified: true,
+      sellerApproved: true,
       accountCode: accountCode,
     });
     
     console.log("✅ Admin account created successfully!");
-    console.log(`   Username: ${adminUsername}`);
+    console.log(`   Phone: ${adminPhone}`);
     console.log(`   Email: ${adminEmail}`);
   }
 

@@ -21,10 +21,10 @@ import { eq, desc, and, sql } from "drizzle-orm";
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByPhone(phone: string): Promise<User | undefined>;
   getUserByAccountCode(accountCode: string): Promise<User | undefined>;
   getUserByAuthToken(token: string): Promise<User | undefined>;
-  createUser(user: InsertUser & { accountType?: string }): Promise<User>;
+  createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   
   getListings(): Promise<Listing[]>;
@@ -131,7 +131,7 @@ export interface IStorage {
   getAllReports(): Promise<Report[]>;
   updateReportStatus(id: string, status: string, adminNotes?: string, resolvedBy?: string): Promise<Report | undefined>;
   getAllUsers(): Promise<User[]>;
-  updateUserStatus(id: string, updates: { accountType?: string; isVerified?: boolean; isBanned?: boolean }): Promise<User | undefined>;
+  updateUserStatus(id: string, updates: { sellerApproved?: boolean; isVerified?: boolean; isBanned?: boolean; sellerRequestStatus?: string }): Promise<User | undefined>;
   getAdminStats(): Promise<{ totalUsers: number; totalListings: number; activeListings: number; totalTransactions: number; pendingReports: number; totalRevenue: number }>;
 }
 
@@ -146,8 +146,8 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.phone, phone));
     return user;
   }
 
@@ -161,20 +161,18 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  private generateAccountCode(type: string): string {
-    const prefix = type === 'seller' ? 'S' : 'B';
+  private generateAccountCode(): string {
+    const prefix = 'U';
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     return `${prefix}-${timestamp}${random}`;
   }
 
-  async createUser(insertUser: InsertUser & { accountType?: string }): Promise<User> {
-    const accountType = insertUser.accountType || 'buyer';
-    const accountCode = this.generateAccountCode(accountType);
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const accountCode = this.generateAccountCode();
     const userWithCode = {
       ...insertUser,
       accountCode,
-      accountType,
     };
     const [user] = await db.insert(users).values(userWithCode).returning();
     return user;
@@ -255,7 +253,7 @@ export class DatabaseStorage implements IStorage {
       listingImages: listings.images,
       listingCity: listings.city,
       sellerName: users.displayName,
-      sellerUsername: users.username,
+      sellerPhone: users.phone,
     })
       .from(transactions)
       .leftJoin(listings, eq(transactions.listingId, listings.id))
@@ -284,7 +282,7 @@ export class DatabaseStorage implements IStorage {
         images: r.listingImages,
         city: r.listingCity || "العراق",
         sellerId: r.sellerId,
-        sellerName: r.sellerName || r.sellerUsername || "بائع",
+        sellerName: r.sellerName || "بائع",
       },
     }));
   }
@@ -848,9 +846,15 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(users).orderBy(desc(users.createdAt));
   }
 
-  async updateUserStatus(id: string, updates: { accountType?: string; isVerified?: boolean; isBanned?: boolean }): Promise<User | undefined> {
+  async updateUserStatus(id: string, updates: { sellerApproved?: boolean; isVerified?: boolean; isBanned?: boolean; sellerRequestStatus?: string }): Promise<User | undefined> {
     const updateData: Record<string, unknown> = {};
-    if (updates.accountType !== undefined) updateData.accountType = updates.accountType;
+    if (updates.sellerApproved !== undefined) {
+      updateData.sellerApproved = updates.sellerApproved;
+      if (updates.sellerApproved) {
+        updateData.sellerApprovalDate = new Date();
+      }
+    }
+    if (updates.sellerRequestStatus !== undefined) updateData.sellerRequestStatus = updates.sellerRequestStatus;
     if (updates.isVerified !== undefined) updateData.isVerified = updates.isVerified;
     if (updates.isBanned !== undefined) {
       updateData.isBanned = updates.isBanned;
