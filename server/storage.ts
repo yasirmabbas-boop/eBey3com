@@ -27,9 +27,12 @@ export interface IStorage {
   updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   
   getListings(): Promise<Listing[]>;
+  getListingsPaginated(options: { limit: number; offset: number; category?: string; saleType?: string; sellerId?: string }): Promise<{ listings: Listing[]; total: number }>;
   getListingsByCategory(category: string): Promise<Listing[]>;
   getListingsBySeller(sellerId: string): Promise<Listing[]>;
   getListing(id: string): Promise<Listing | undefined>;
+  getPurchasesWithDetails(buyerId: string): Promise<any[]>;
+  getUserBidsWithDetails(userId: string): Promise<any[]>;
   createListing(listing: InsertListing): Promise<Listing>;
   updateListing(id: string, listing: Partial<InsertListing> & { auctionEndTime?: Date | string | null; isActive?: boolean }): Promise<Listing | undefined>;
   deleteListing(id: string): Promise<boolean>;
@@ -168,6 +171,139 @@ export class DatabaseStorage implements IStorage {
 
   async getListings(): Promise<Listing[]> {
     return db.select().from(listings).where(eq(listings.isActive, true)).orderBy(desc(listings.createdAt));
+  }
+
+  async getListingsPaginated(options: { limit: number; offset: number; category?: string; saleType?: string; sellerId?: string }): Promise<{ listings: Listing[]; total: number }> {
+    const { limit, offset, category, saleType, sellerId } = options;
+    
+    const conditions = [eq(listings.isActive, true)];
+    if (category) conditions.push(eq(listings.category, category));
+    if (saleType) conditions.push(eq(listings.saleType, saleType));
+    if (sellerId) conditions.push(eq(listings.sellerId, sellerId));
+    
+    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+    
+    const [countResult] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(listings)
+      .where(whereClause);
+    
+    const results = await db.select({
+      id: listings.id,
+      title: listings.title,
+      price: listings.price,
+      currentBid: listings.currentBid,
+      images: listings.images,
+      category: listings.category,
+      saleType: listings.saleType,
+      auctionEndTime: listings.auctionEndTime,
+      city: listings.city,
+      condition: listings.condition,
+      totalBids: listings.totalBids,
+      tags: listings.tags,
+      sellerId: listings.sellerId,
+      isActive: listings.isActive,
+      createdAt: listings.createdAt,
+    })
+      .from(listings)
+      .where(whereClause)
+      .orderBy(desc(listings.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return { listings: results as Listing[], total: countResult?.count || 0 };
+  }
+
+  async getPurchasesWithDetails(buyerId: string): Promise<any[]> {
+    const results = await db.select({
+      id: transactions.id,
+      listingId: transactions.listingId,
+      buyerId: transactions.buyerId,
+      sellerId: transactions.sellerId,
+      amount: transactions.amount,
+      status: transactions.status,
+      deliveryAddress: transactions.deliveryAddress,
+      deliveryPhone: transactions.deliveryPhone,
+      deliveryCity: transactions.deliveryCity,
+      deliveryStatus: transactions.deliveryStatus,
+      trackingNumber: transactions.trackingNumber,
+      createdAt: transactions.createdAt,
+      completedAt: transactions.completedAt,
+      listingTitle: listings.title,
+      listingPrice: listings.price,
+      listingImages: listings.images,
+      listingCity: listings.city,
+      sellerName: users.displayName,
+      sellerUsername: users.username,
+    })
+      .from(transactions)
+      .leftJoin(listings, eq(transactions.listingId, listings.id))
+      .leftJoin(users, eq(transactions.sellerId, users.id))
+      .where(sql`${transactions.buyerId} = ${buyerId} AND ${transactions.sellerId} != ${buyerId}`)
+      .orderBy(desc(transactions.createdAt));
+    
+    return results.map(r => ({
+      id: r.id,
+      listingId: r.listingId,
+      buyerId: r.buyerId,
+      sellerId: r.sellerId,
+      amount: r.amount,
+      status: r.status,
+      deliveryAddress: r.deliveryAddress,
+      deliveryPhone: r.deliveryPhone,
+      deliveryCity: r.deliveryCity,
+      deliveryStatus: r.deliveryStatus,
+      trackingNumber: r.trackingNumber,
+      createdAt: r.createdAt,
+      completedAt: r.completedAt,
+      listing: {
+        id: r.listingId,
+        title: r.listingTitle,
+        price: r.listingPrice,
+        images: r.listingImages,
+        city: r.listingCity || "العراق",
+        sellerId: r.sellerId,
+        sellerName: r.sellerName || r.sellerUsername || "بائع",
+      },
+    }));
+  }
+
+  async getUserBidsWithDetails(userId: string): Promise<any[]> {
+    const results = await db.select({
+      id: bids.id,
+      listingId: bids.listingId,
+      userId: bids.userId,
+      amount: bids.amount,
+      createdAt: bids.createdAt,
+      listingTitle: listings.title,
+      listingPrice: listings.price,
+      listingCurrentBid: listings.currentBid,
+      listingImages: listings.images,
+      listingAuctionEndTime: listings.auctionEndTime,
+      listingIsActive: listings.isActive,
+      listingSaleType: listings.saleType,
+    })
+      .from(bids)
+      .leftJoin(listings, eq(bids.listingId, listings.id))
+      .where(eq(bids.userId, userId))
+      .orderBy(desc(bids.createdAt));
+    
+    return results.map(r => ({
+      id: r.id,
+      listingId: r.listingId,
+      userId: r.userId,
+      amount: r.amount,
+      createdAt: r.createdAt,
+      listing: {
+        id: r.listingId,
+        title: r.listingTitle,
+        price: r.listingPrice,
+        currentBid: r.listingCurrentBid,
+        images: r.listingImages,
+        auctionEndTime: r.listingAuctionEndTime,
+        isActive: r.listingIsActive,
+        saleType: r.listingSaleType,
+      },
+    }));
   }
 
   async getListingsByCategory(category: string): Promise<Listing[]> {
@@ -594,16 +730,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserBidsWithListings(userId: string): Promise<Array<Bid & { listing?: Listing }>> {
-    const userBids = await db.select().from(bids)
-      .where(eq(bids.userId, userId))
-      .orderBy(desc(bids.createdAt));
-    
-    const enrichedBids = await Promise.all(userBids.map(async (bid) => {
-      const [listing] = await db.select().from(listings).where(eq(listings.id, bid.listingId));
-      return { ...bid, listing };
-    }));
-    
-    return enrichedBids;
+    // Use optimized JOIN query instead of N+1
+    return this.getUserBidsWithDetails(userId);
   }
 
   async getNotifications(userId: string): Promise<Notification[]> {

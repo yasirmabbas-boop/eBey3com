@@ -43,36 +43,19 @@ export async function registerRoutes(
 
   app.get("/api/listings", async (req, res) => {
     try {
-      const { category, sellerId, page, limit: limitParam, saleType, exchange } = req.query;
+      const { category, sellerId, page, limit: limitParam, saleType } = req.query;
       const pageNum = parseInt(page as string) || 1;
       const limit = Math.min(parseInt(limitParam as string) || 20, 100);
       const offset = (pageNum - 1) * limit;
       
-      let listings;
-      if (sellerId && typeof sellerId === "string") {
-        listings = await storage.getListingsBySeller(sellerId);
-        if (category && typeof category === "string") {
-          listings = listings.filter(l => l.category === category);
-        }
-      } else if (category && typeof category === "string") {
-        listings = await storage.getListingsByCategory(category);
-      } else {
-        listings = await storage.getListings();
-      }
-      
-      // Filter by saleType if provided
-      if (saleType && typeof saleType === "string") {
-        listings = listings.filter(l => l.saleType === saleType);
-      }
-      
-      // Filter by exchange if requested
-      if (exchange === "true") {
-        listings = listings.filter(l => (l as any).isExchangeable === true);
-      }
-      
-      // Apply pagination
-      const total = listings.length;
-      const paginatedListings = listings.slice(offset, offset + limit);
+      // Use optimized paginated query with SQL-level filtering
+      const { listings: paginatedListings, total } = await storage.getListingsPaginated({
+        limit,
+        offset,
+        category: typeof category === "string" ? category : undefined,
+        saleType: typeof saleType === "string" ? saleType : undefined,
+        sellerId: typeof sellerId === "string" ? sellerId : undefined,
+      });
       
       res.json({
         listings: paginatedListings,
@@ -1212,30 +1195,9 @@ export async function registerRoutes(
     }
 
     try {
-      // Use dedicated method that queries ONLY purchases where user is buyer
-      const buyerPurchases = await storage.getPurchasesForBuyer(userId);
-      
-      // Enrich with listing and seller details
-      const enrichedPurchases = await Promise.all(
-        buyerPurchases.map(async (purchase) => {
-          const listing = await storage.getListing(purchase.listingId);
-          const seller = listing?.sellerId ? await storage.getUser(listing.sellerId) : null;
-          return {
-            ...purchase,
-            listing: listing ? {
-              id: listing.id,
-              title: listing.title,
-              price: listing.price,
-              images: listing.images,
-              sellerId: listing.sellerId,
-              sellerName: seller?.displayName || "بائع",
-              city: listing.city || "العراق",
-            } : undefined,
-          };
-        })
-      );
-      
-      res.json(enrichedPurchases);
+      // Use optimized method with JOINs to avoid N+1 queries
+      const purchases = await storage.getPurchasesWithDetails(userId);
+      res.json(purchases);
     } catch (error) {
       console.error("Error fetching purchases:", error);
       res.status(500).json({ error: "فشل في جلب المشتريات" });
