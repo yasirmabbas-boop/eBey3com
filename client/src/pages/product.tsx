@@ -533,7 +533,7 @@ export default function ProductPage() {
               {(product.seller?.ratingCount || 0) > 0 ? (
                 <>
                   <span className="text-green-600 font-medium">
-                    {Math.round(product.seller?.rating || 0)}% تقييم إيجابي
+                    {Math.round((product.seller?.rating || 0) * 20)}% تقييم إيجابي
                   </span>
                 </>
               ) : (

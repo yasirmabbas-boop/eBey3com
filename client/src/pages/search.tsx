@@ -406,7 +406,7 @@ export default function SearchPage() {
                     <span>{sellerInfo.totalSales} عملية بيع</span>
                   )}
                   {sellerInfo.ratingCount > 0 && (
-                    <span>{Math.round(sellerInfo.rating || 0)}% تقييم إيجابي</span>
+                    <span>{Math.round((sellerInfo.rating || 0) * 20)}% تقييم إيجابي</span>
                   )}
                   <span>{filteredProducts.length} منتج</span>
                 </div>

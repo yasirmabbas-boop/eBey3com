@@ -243,7 +243,7 @@ export default function MyAccount() {
                 <div className="flex items-center gap-1 mt-1">
                   <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                   <span className="text-sm text-gray-600">
-                    {(user as any).rating ? `${((user as any).rating / 20).toFixed(1)}` : "جديد"} 
+                    {(user as any).rating ? `${Math.round((user as any).rating * 20)}% تقييم إيجابي` : "جديد"} 
                     {(user as any).totalSales ? ` • ${(user as any).totalSales} عملية بيع` : ""}
                   </span>
                 </div>

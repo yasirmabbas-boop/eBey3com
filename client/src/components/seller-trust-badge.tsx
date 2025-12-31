@@ -72,7 +72,7 @@ export function SellerTrustBadge({
 
       <div className="flex items-center gap-1 text-sm" data-testid="seller-rating">
         <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-        <span className="font-medium">{rating}%</span>
+        <span className="font-medium">{Math.round(rating * 20)}%</span>
         {ratingCount > 0 && (
           <span className="text-xs text-gray-500">({ratingCount} تقييم)</span>
         )}

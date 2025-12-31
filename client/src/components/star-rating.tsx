@@ -90,9 +90,19 @@ export function RatingDisplay({
   showCount?: boolean;
   className?: string;
 }) {
+  const percentage = Math.round(rating * 20);
+  
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <StarRating value={Math.round(rating)} readonly size={size} />
+      <span className={cn(
+        "font-bold",
+        percentage >= 80 ? "text-green-600" : 
+        percentage >= 60 ? "text-yellow-600" : 
+        "text-red-600"
+      )}>
+        {percentage}%
+      </span>
+      <span className="text-sm text-muted-foreground">تقييم إيجابي</span>
       {showCount && count !== undefined && (
         <span className="text-sm text-muted-foreground">
           ({count} {count === 1 ? "تقييم" : "تقييمات"})
