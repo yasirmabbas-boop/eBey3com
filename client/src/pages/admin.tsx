@@ -43,10 +43,12 @@ interface Report {
 
 interface User {
   id: string;
-  username?: string;
+  phone?: string;
   email?: string;
   displayName: string;
-  accountType: string;
+  sellerApproved: boolean;
+  sellerRequestStatus?: string;
+  isAdmin: boolean;
   isVerified: boolean;
   isBanned: boolean;
   createdAt: string;
@@ -70,10 +72,10 @@ export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests">("stats");
 
   useEffect(() => {
-    if (!authLoading && (!user || (user as any).accountType !== "admin")) {
+    if (!authLoading && (!user || !(user as any).isAdmin)) {
       setLocation("/");
     }
   }, [user, authLoading, setLocation]);
@@ -85,7 +87,7 @@ export default function AdminPage() {
       if (!res.ok) throw new Error("Failed to fetch stats");
       return res.json();
     },
-    enabled: !authLoading && (user as any)?.accountType === "admin",
+    enabled: !authLoading && (user as any)?.isAdmin,
   });
 
   const { data: reports, isLoading: reportsLoading } = useQuery<Report[]>({
@@ -95,7 +97,7 @@ export default function AdminPage() {
       if (!res.ok) throw new Error("Failed to fetch reports");
       return res.json();
     },
-    enabled: !authLoading && (user as any)?.accountType === "admin" && activeTab === "reports",
+    enabled: !authLoading && (user as any)?.isAdmin && activeTab === "reports",
   });
 
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
@@ -105,7 +107,7 @@ export default function AdminPage() {
       if (!res.ok) throw new Error("Failed to fetch users");
       return res.json();
     },
-    enabled: !authLoading && (user as any)?.accountType === "admin" && activeTab === "users",
+    enabled: !authLoading && (user as any)?.isAdmin && (activeTab === "users" || activeTab === "seller-requests"),
   });
 
   const updateReportMutation = useMutation({
@@ -129,7 +131,7 @@ export default function AdminPage() {
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: { isVerified?: boolean; isBanned?: boolean } }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: { isVerified?: boolean; isBanned?: boolean; sellerApproved?: boolean; sellerRequestStatus?: string } }) => {
       const res = await fetchWithAuth(`/api/admin/users/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -147,6 +149,16 @@ export default function AdminPage() {
     },
   });
 
+  const handleSellerRequest = (userId: string, action: "approve" | "reject") => {
+    updateUserMutation.mutate({
+      id: userId,
+      updates: {
+        sellerApproved: action === "approve",
+        sellerRequestStatus: action === "approve" ? "approved" : "rejected",
+      },
+    });
+  };
+
   if (authLoading) {
     return (
       <Layout>
@@ -157,7 +169,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!user || (user as any).accountType !== "admin") {
+  if (!user || !(user as any).isAdmin) {
     return null;
   }
 
@@ -181,15 +193,6 @@ export default function AdminPage() {
       inappropriate: "محتوى غير لائق",
       fake: "منتج مزيف",
       other: "أخرى",
-    };
-    return labels[type] || type;
-  };
-
-  const getAccountTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      buyer: "مشتري",
-      seller: "بائع",
-      admin: "مدير",
     };
     return labels[type] || type;
   };
@@ -234,6 +237,19 @@ export default function AdminPage() {
                   >
                     <Users className="h-5 w-5" />
                     المستخدمين
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("seller-requests")}
+                    className={`flex items-center gap-3 px-4 py-3 text-right hover:bg-muted transition-colors ${activeTab === "seller-requests" ? "bg-muted font-semibold border-r-4 border-primary" : ""}`}
+                    data-testid="button-tab-seller-requests"
+                  >
+                    <UserCheck className="h-5 w-5" />
+                    طلبات البائعين
+                    {users?.filter(u => u.sellerRequestStatus === "pending").length ? (
+                      <Badge variant="secondary" className="mr-auto bg-amber-100 text-amber-800">
+                        {users.filter(u => u.sellerRequestStatus === "pending").length}
+                      </Badge>
+                    ) : null}
                   </button>
                 </nav>
               </CardContent>
@@ -397,7 +413,7 @@ export default function AdminPage() {
                           <TableRow>
                             <TableHead className="text-right">الاسم</TableHead>
                             <TableHead className="text-right">البريد</TableHead>
-                            <TableHead className="text-right">نوع الحساب</TableHead>
+                            <TableHead className="text-right">صلاحيات البيع</TableHead>
                             <TableHead className="text-right">الحالة</TableHead>
                             <TableHead className="text-right">الإجراءات</TableHead>
                           </TableRow>
@@ -406,8 +422,16 @@ export default function AdminPage() {
                           {users.map((u) => (
                             <TableRow key={u.id} data-testid={`row-user-${u.id}`}>
                               <TableCell className="font-medium">{u.displayName}</TableCell>
-                              <TableCell>{u.email || "-"}</TableCell>
-                              <TableCell>{getAccountTypeLabel(u.accountType)}</TableCell>
+                              <TableCell>{u.phone || u.email || "-"}</TableCell>
+                              <TableCell>
+                                {u.isAdmin ? (
+                                  <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">مدير</Badge>
+                                ) : u.sellerApproved ? (
+                                  <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">بائع معتمد</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">مشتري</Badge>
+                                )}
+                              </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
                                   {u.isVerified && (
@@ -423,7 +447,7 @@ export default function AdminPage() {
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-2">
-                                  {!u.isVerified && u.accountType !== "admin" && (
+                                  {!u.isVerified && !u.isAdmin && (
                                     <Button
                                       size="sm"
                                       variant="outline"
@@ -436,7 +460,7 @@ export default function AdminPage() {
                                       توثيق
                                     </Button>
                                   )}
-                                  {!u.isBanned && u.accountType !== "admin" && (
+                                  {!u.isBanned && !u.isAdmin && (
                                     <Button
                                       size="sm"
                                       variant="outline"
@@ -449,7 +473,7 @@ export default function AdminPage() {
                                       حظر
                                     </Button>
                                   )}
-                                  {u.isBanned && u.accountType !== "admin" && (
+                                  {u.isBanned && !u.isAdmin && (
                                     <Button
                                       size="sm"
                                       variant="outline"
@@ -475,6 +499,73 @@ export default function AdminPage() {
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>لا يوجد مستخدمين</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeTab === "seller-requests" && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold">طلبات التسجيل كبائع</h2>
+                {usersLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : users && users.filter(u => u.sellerRequestStatus === "pending").length > 0 ? (
+                  <Card>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">الاسم</TableHead>
+                            <TableHead className="text-right">رقم الهاتف</TableHead>
+                            <TableHead className="text-right">تاريخ الطلب</TableHead>
+                            <TableHead className="text-right">الإجراءات</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {users.filter(u => u.sellerRequestStatus === "pending").map((u) => (
+                            <TableRow key={u.id} data-testid={`row-seller-request-${u.id}`}>
+                              <TableCell className="font-medium">{u.displayName}</TableCell>
+                              <TableCell dir="ltr">{u.phone || "-"}</TableCell>
+                              <TableCell>{new Date(u.createdAt).toLocaleDateString("ar-IQ")}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700"
+                                    onClick={() => handleSellerRequest(u.id, "approve")}
+                                    disabled={updateUserMutation.isPending}
+                                    data-testid={`button-approve-seller-${u.id}`}
+                                  >
+                                    <CheckCircle className="h-4 w-4 ml-1" />
+                                    موافقة
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 border-red-600 hover:bg-red-50"
+                                    onClick={() => handleSellerRequest(u.id, "reject")}
+                                    disabled={updateUserMutation.isPending}
+                                    data-testid={`button-reject-seller-${u.id}`}
+                                  >
+                                    <XCircle className="h-4 w-4 ml-1" />
+                                    رفض
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="py-12 text-center text-muted-foreground">
+                      <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>لا توجد طلبات جديدة للتسجيل كبائع</p>
                     </CardContent>
                   </Card>
                 )}
