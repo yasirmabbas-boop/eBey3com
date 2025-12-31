@@ -826,8 +826,8 @@ export default function SearchPage() {
                       )}
                       
                       {/* Auction Timer */}
-                      {product.saleType === "auction" && product.auctionEndTime && (
-                        <div className="mt-2 pt-2 border-t">
+                      {product.saleType === "auction" && (
+                        <div className="mt-2 pt-2 border-t bg-orange-50 -mx-3 -mb-3 px-3 py-2 rounded-b-lg">
                           <AuctionCountdown endTime={product.auctionEndTime} />
                         </div>
                       )}

@@ -395,7 +395,7 @@ export default function Home() {
                         </div>
                       </div>
                     </CardContent>
-                    {product.saleType === "auction" && product.auctionEndTime && (
+                    {product.saleType === "auction" && (
                       <CardFooter className="px-4 py-2 bg-orange-50">
                         <AuctionCountdown endTime={product.auctionEndTime} />
                       </CardFooter>
