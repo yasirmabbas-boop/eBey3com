@@ -125,10 +125,13 @@ function RateSellerCard({
 
   return (
     <Card className="p-5 bg-yellow-50 border-yellow-200">
-      <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+      <h3 className="font-bold text-base mb-2 flex items-center gap-2">
         <Star className="h-5 w-5 text-yellow-500" />
-        قيّم البائع
+        قيّم البائع لهذا المنتج
       </h3>
+      <p className="text-xs text-gray-500 mb-4 bg-yellow-100 px-2 py-1 rounded">
+        المنتج: {purchase.listing?.title || "منتج"}
+      </p>
       <p className="text-sm text-gray-600 mb-4">
         كيف كانت تجربتك مع {purchase.listing?.sellerName || "البائع"}؟
       </p>
@@ -636,45 +639,62 @@ export default function MyPurchases() {
           {/* Orders List (Right side for RTL) */}
           <div className="lg:col-span-1 space-y-4 order-1 lg:order-2">
             <h3 className="font-bold text-lg">طلباتي ({purchases.length})</h3>
-            {purchases.map((purchase) => (
-              <Card
-                key={purchase.id}
-                className={`p-4 cursor-pointer transition-all hover:shadow-lg ${
-                  currentOrder?.id === purchase.id
-                    ? "ring-2 ring-primary border-primary"
-                    : ""
-                }`}
-                onClick={() => setSelectedOrder(purchase)}
-                data-testid={`card-purchase-${purchase.id}`}
-              >
-                <div className="flex gap-3">
-                  {purchase.listing?.images?.[0] ? (
-                    <img
-                      src={purchase.listing.images[0]}
-                      alt={purchase.listing?.title || "منتج"}
-                      className="w-20 h-20 object-cover rounded-lg"
-                      loading="lazy"
-                      style={{ imageRendering: "auto" }}
-                    />
-                  ) : (
-                    <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <Package className="h-8 w-8 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm line-clamp-2">
-                      {purchase.listing?.title || "منتج"}
-                    </h4>
-                    <p className="text-sm font-bold text-primary mt-1">
-                      {purchase.amount?.toLocaleString() || 0} د.ع
-                    </p>
-                    <div className="mt-2">
-                      {getStatusBadge(purchase.status || purchase.deliveryStatus || "pending")}
+            {purchases.map((purchase) => {
+              const isDelivered = purchase.status === "delivered" || purchase.status === "completed" || 
+                                  purchase.deliveryStatus === "delivered" || purchase.deliveryStatus === "completed";
+              return (
+                <Card
+                  key={purchase.id}
+                  className={`p-4 cursor-pointer transition-all hover:shadow-lg ${
+                    currentOrder?.id === purchase.id
+                      ? "ring-2 ring-primary border-primary"
+                      : ""
+                  }`}
+                  onClick={() => setSelectedOrder(purchase)}
+                  data-testid={`card-purchase-${purchase.id}`}
+                >
+                  <div className="flex gap-3">
+                    {purchase.listing?.images?.[0] ? (
+                      <img
+                        src={purchase.listing.images[0]}
+                        alt={purchase.listing?.title || "منتج"}
+                        className="w-20 h-20 object-cover rounded-lg"
+                        loading="lazy"
+                        style={{ imageRendering: "auto" }}
+                      />
+                    ) : (
+                      <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <Package className="h-8 w-8 text-gray-400" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm line-clamp-2">
+                        {purchase.listing?.title || "منتج"}
+                      </h4>
+                      <p className="text-sm font-bold text-primary mt-1">
+                        {purchase.amount?.toLocaleString() || 0} د.ع
+                      </p>
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                        {getStatusBadge(purchase.status || purchase.deliveryStatus || "pending")}
+                        {isDelivered && (
+                          purchase.hasReview ? (
+                            <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">
+                              <Star className="h-3 w-3 ml-1 fill-current" />
+                              تم التقييم
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-xs">
+                              <Star className="h-3 w-3 ml-1" />
+                              بانتظار التقييم
+                            </Badge>
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         </div>
       </div>
