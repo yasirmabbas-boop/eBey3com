@@ -211,19 +211,19 @@ export default function Home() {
 
       {/* Recommended Items Section */}
       {recommendedProducts.length > 0 && (
-        <section className="py-8 bg-white border-b">
-          <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-6">
+        <section className="py-4 sm:py-8 bg-white border-b">
+          <div className="container mx-auto px-3 sm:px-4">
+            <div className="flex justify-between items-center mb-3 sm:mb-6">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-500" />
-                <h2 className="text-xl font-bold text-primary">منتجات مقترحة</h2>
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+                <h2 className="text-base sm:text-xl font-bold text-primary">منتجات مقترحة</h2>
               </div>
-              <Link href="/search" className="text-accent hover:underline font-medium text-sm">عرض المزيد</Link>
+              <Link href="/search" className="text-accent hover:underline font-medium text-xs sm:text-sm">عرض المزيد</Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {recommendedProducts.map((product) => (
                 <Link key={product.id} href={`/product/${product.id}`}>
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200" data-testid={`card-recommended-${product.id}`}>
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 active:scale-[0.98]" data-testid={`card-recommended-${product.id}`}>
                     <div className="relative aspect-square overflow-hidden bg-gray-100">
                       <img 
                         src={product.image} 
@@ -233,21 +233,21 @@ export default function Home() {
                         style={{ imageRendering: "auto" }}
                       />
                       {product.currentBid && (
-                        <Badge className="absolute top-2 right-2 bg-primary text-white text-xs">
+                        <Badge className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-primary text-white text-[9px] sm:text-xs px-1 sm:px-1.5">
                           مزاد
                         </Badge>
                       )}
                     </div>
-                    <CardContent className="p-3">
-                      <h3 className="font-bold text-sm mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                    <CardContent className="p-1.5 sm:p-3">
+                      <h3 className="font-bold text-[10px] sm:text-sm mb-0.5 sm:mb-1 line-clamp-1 group-hover:text-primary transition-colors">
                         {product.title}
                       </h3>
                       <div className="flex items-center justify-between">
-                        <p className="font-bold text-primary text-sm">
-                          {(product.currentBid || product.price).toLocaleString()} د.ع
+                        <p className="font-bold text-primary text-[10px] sm:text-sm">
+                          {(product.currentBid || product.price).toLocaleString()} <span className="hidden sm:inline">د.ع</span>
                         </p>
-                        <span className="text-xs text-gray-400 flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
+                        <span className="text-[9px] sm:text-xs text-gray-400 items-center gap-0.5 hidden sm:flex">
+                          <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           {product.views}
                         </span>
                       </div>
@@ -261,17 +261,17 @@ export default function Home() {
       )}
 
       {/* Categories - Quick Access */}
-      <section className="py-6 bg-gray-100">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center gap-2 mb-4">
-            <LayoutGrid className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-bold text-primary">تصفح الأقسام</h2>
+      <section className="py-4 sm:py-6 bg-gray-100">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            <h2 className="text-base sm:text-lg font-bold text-primary">تصفح الأقسام</h2>
           </div>
-          <div className="grid grid-cols-4 md:grid-cols-7 gap-3">
+          <div className="grid grid-cols-4 gap-2 sm:gap-3 md:grid-cols-8">
             {CATEGORIES.map((cat, i) => (
               <Link key={i} href={`/search?category=${encodeURIComponent(cat.id)}`}>
-                <div className="group cursor-pointer bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-primary text-center" data-testid={`category-${cat.id}`}>
-                  <div className={`h-10 w-10 ${
+                <div className="group cursor-pointer bg-white p-2 sm:p-3 rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-primary text-center active:scale-95" data-testid={`category-${cat.id}`}>
+                  <div className={`h-8 w-8 sm:h-10 sm:w-10 ${
                     cat.nameEn === "watches" ? "bg-blue-50" :
                     cat.nameEn === "electronics" ? "bg-amber-50" :
                     cat.nameEn === "clothing" ? "bg-purple-50" :
@@ -279,16 +279,16 @@ export default function Home() {
                     cat.nameEn === "cars" ? "bg-red-50" :
                     cat.nameEn === "realestate" ? "bg-green-50" :
                     "bg-gray-50"
-                  } rounded-full mx-auto mb-2 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                    {cat.nameEn === "watches" ? <Clock className="h-5 w-5 text-blue-600" /> :
-                     cat.nameEn === "electronics" ? <Zap className="h-5 w-5 text-amber-600" /> :
-                     cat.nameEn === "clothing" ? <Tag className="h-5 w-5 text-purple-600" /> :
-                     cat.nameEn === "antiques" ? <Search className="h-5 w-5 text-rose-600" /> :
-                     cat.nameEn === "cars" ? <Zap className="h-5 w-5 text-red-600" /> :
-                     cat.nameEn === "realestate" ? <LayoutGrid className="h-5 w-5 text-green-600" /> :
-                     <Tag className="h-5 w-5 text-gray-600" />}
+                  } rounded-full mx-auto mb-1 sm:mb-2 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    {cat.nameEn === "watches" ? <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" /> :
+                     cat.nameEn === "electronics" ? <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" /> :
+                     cat.nameEn === "clothing" ? <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" /> :
+                     cat.nameEn === "antiques" ? <Search className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600" /> :
+                     cat.nameEn === "cars" ? <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" /> :
+                     cat.nameEn === "realestate" ? <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" /> :
+                     <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />}
                   </div>
-                  <h3 className="font-medium text-sm text-gray-800">{cat.name}</h3>
+                  <h3 className="font-medium text-[10px] sm:text-sm text-gray-800 leading-tight">{cat.name}</h3>
                 </div>
               </Link>
             ))}
@@ -297,11 +297,11 @@ export default function Home() {
       </section>
 
       {/* Featured Items - New Arrivals */}
-      <section className="py-12 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-end mb-8">
-            <h2 className="text-2xl font-bold text-primary">وصل حديثاً</h2>
-            <Link href="/search" className="text-accent hover:underline font-medium">عرض الكل</Link>
+      <section className="py-6 sm:py-12 bg-gray-50">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="flex justify-between items-center mb-4 sm:mb-8">
+            <h2 className="text-lg sm:text-2xl font-bold text-primary">وصل حديثاً</h2>
+            <Link href="/search" className="text-accent hover:underline font-medium text-sm">عرض الكل</Link>
           </div>
           
           {isLoading ? (
@@ -309,10 +309,10 @@ export default function Home() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {displayProducts.map((product) => (
                 <Link key={product.id} href={`/product/${product.id}`}>
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200" data-testid={`card-product-${product.id}`}>
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 active:scale-[0.98]" data-testid={`card-product-${product.id}`}>
                     <div className="relative aspect-square overflow-hidden bg-gray-100">
                       <img 
                         src={product.image} 
@@ -322,33 +322,31 @@ export default function Home() {
                         style={{ imageRendering: "auto" }}
                       />
                       {product.currentBid && (
-                        <Badge className="absolute top-2 right-2 bg-primary text-white">
+                        <Badge className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-primary text-white text-[10px] sm:text-xs px-1.5 py-0.5">
                           مزاد
                         </Badge>
                       )}
                     </div>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                        <span>{product.category}</span>
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
+                    <CardContent className="p-2 sm:p-4">
+                      <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">
+                        <span className="truncate">{product.category}</span>
+                        <span className="flex items-center gap-0.5 sm:gap-1">
+                          <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           {(product as any).views || 0}
                         </span>
                       </div>
-                      <h3 className="font-bold text-lg mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+                      <h3 className="font-bold text-xs sm:text-lg mb-1 sm:mb-2 line-clamp-2 sm:line-clamp-1 group-hover:text-primary transition-colors leading-tight">
                         {product.title}
                       </h3>
-                      <div className="flex justify-between items-center mt-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">السعر الحالي</p>
-                          <p className="font-bold text-xl text-primary">
-                            {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} د.ع
-                          </p>
-                        </div>
+                      <div className="mt-1 sm:mt-4">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">السعر الحالي</p>
+                        <p className="font-bold text-sm sm:text-xl text-primary">
+                          {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} <span className="text-[10px] sm:text-sm">د.ع</span>
+                        </p>
                       </div>
                     </CardContent>
                     {product.saleType === "auction" && (
-                      <CardFooter className="px-4 py-2 bg-orange-50">
+                      <CardFooter className="px-2 sm:px-4 py-1.5 sm:py-2 bg-orange-50">
                         <AuctionCountdown endTime={product.auctionEndTime} />
                       </CardFooter>
                     )}
@@ -362,19 +360,19 @@ export default function Home() {
 
       {/* Category-Based Recommendations - Horizontal Scroll */}
       {categoriesWithProducts.length > 0 && (
-        <section className="py-8 bg-white border-t">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center gap-2 mb-6">
-              <LayoutGrid className="h-6 w-6 text-primary" />
-              <h2 className="text-2xl font-bold text-primary">تصفح حسب القسم</h2>
+        <section className="py-4 sm:py-8 bg-white border-t">
+          <div className="container mx-auto px-3 sm:px-4">
+            <div className="flex items-center gap-2 mb-4 sm:mb-6">
+              <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              <h2 className="text-lg sm:text-2xl font-bold text-primary">تصفح حسب القسم</h2>
             </div>
             
-            <div className="space-y-8">
+            <div className="space-y-4 sm:space-y-8">
               {categoriesWithProducts.map((cat) => (
-                <div key={cat.id} className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`h-9 w-9 rounded-lg flex items-center justify-center ${
+                <div key={cat.id} className="bg-gray-50 rounded-xl p-3 sm:p-4">
+                  <div className="flex justify-between items-center mb-3 sm:mb-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className={`h-7 w-7 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center ${
                         cat.nameEn === "watches" ? "bg-blue-100" :
                         cat.nameEn === "electronics" ? "bg-amber-100" :
                         cat.nameEn === "antiques" ? "bg-rose-100" :
@@ -382,25 +380,25 @@ export default function Home() {
                         cat.nameEn === "jewelry" ? "bg-pink-100" :
                         "bg-gray-100"
                       }`}>
-                        {cat.nameEn === "watches" ? <Clock className="h-4 w-4 text-blue-600" /> :
-                         cat.nameEn === "electronics" ? <Zap className="h-4 w-4 text-amber-600" /> :
-                         cat.nameEn === "antiques" ? <Search className="h-4 w-4 text-rose-600" /> :
-                         <Tag className="h-4 w-4 text-gray-600" />}
+                        {cat.nameEn === "watches" ? <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" /> :
+                         cat.nameEn === "electronics" ? <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600" /> :
+                         cat.nameEn === "antiques" ? <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-600" /> :
+                         <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-600" />}
                       </div>
-                      <h3 className="text-lg font-bold text-primary">{cat.name}</h3>
+                      <h3 className="text-sm sm:text-lg font-bold text-primary">{cat.name}</h3>
                     </div>
                     <Link href={`/search?category=${encodeURIComponent(cat.id)}`}>
-                      <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
+                      <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 text-xs sm:text-sm h-8 px-2 sm:px-3">
                         عرض الكل
-                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                       </Button>
                     </Link>
                   </div>
                   
-                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <div className="flex gap-2 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     {productsByCategory[cat.id].map((product) => (
                       <Link key={product.id} href={`/product/${product.id}`}>
-                        <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 flex-shrink-0 w-40 sm:w-48" data-testid={`card-category-${cat.id}-${product.id}`}>
+                        <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 flex-shrink-0 w-28 sm:w-48 active:scale-[0.98]" data-testid={`card-category-${cat.id}-${product.id}`}>
                           <div className="relative aspect-square overflow-hidden bg-gray-100">
                             <img 
                               src={product.image} 
@@ -408,17 +406,17 @@ export default function Home() {
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                             {product.currentBid && (
-                              <Badge className="absolute top-2 right-2 bg-primary text-white text-xs">
+                              <Badge className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-primary text-white text-[9px] sm:text-xs px-1 sm:px-1.5">
                                 مزاد
                               </Badge>
                             )}
                           </div>
-                          <CardContent className="p-3">
-                            <h3 className="font-bold text-sm mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                          <CardContent className="p-1.5 sm:p-3">
+                            <h3 className="font-bold text-[10px] sm:text-sm mb-0.5 sm:mb-1 line-clamp-1 group-hover:text-primary transition-colors">
                               {product.title}
                             </h3>
-                            <p className="font-bold text-primary text-sm">
-                              {(product.currentBid || product.price).toLocaleString()} د.ع
+                            <p className="font-bold text-primary text-[10px] sm:text-sm">
+                              {(product.currentBid || product.price).toLocaleString()} <span className="hidden sm:inline">د.ع</span>
                             </p>
                           </CardContent>
                         </Card>
@@ -433,24 +431,24 @@ export default function Home() {
       )}
 
       {/* Browse Products CTA */}
-      <section className="relative py-16 w-full overflow-hidden bg-primary">
+      <section className="relative py-10 sm:py-16 w-full overflow-hidden bg-primary">
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-20"
           style={{ backgroundImage: `url(${heroBg})` }}
         />
         <div className="container mx-auto px-4 relative text-center text-white">
-          <Badge className="mb-4 bg-accent text-white hover:bg-accent/90 border-none px-4 py-1 text-md">
+          <Badge className="mb-3 sm:mb-4 bg-accent text-white hover:bg-accent/90 border-none px-3 sm:px-4 py-0.5 sm:py-1 text-xs sm:text-md">
             سوق العراق الأول
           </Badge>
-          <h2 className="text-2xl md:text-4xl font-bold mb-4 leading-tight">
+          <h2 className="text-xl sm:text-2xl md:text-4xl font-bold mb-3 sm:mb-4 leading-tight px-4">
             اكتشف <span className="text-accent">آلاف المنتجات المميزة</span>
           </h2>
-          <p className="text-lg opacity-90 mb-6 max-w-xl mx-auto">
+          <p className="text-sm sm:text-lg opacity-90 mb-4 sm:mb-6 max-w-xl mx-auto px-4">
             سجل الآن وابدأ التسوق من أفضل البائعين في العراق
           </p>
           <Link href="/search">
-            <Button size="lg" className="bg-accent text-white hover:bg-accent/90 font-bold px-8 h-12 text-lg flex items-center gap-2 mx-auto">
-              <ShoppingBag className="h-5 w-5" />
+            <Button size="default" className="bg-accent text-white hover:bg-accent/90 font-bold px-6 sm:px-8 h-10 sm:h-12 text-sm sm:text-lg flex items-center gap-2 mx-auto">
+              <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
               تصفح المنتجات
             </Button>
           </Link>
@@ -458,21 +456,21 @@ export default function Home() {
       </section>
 
       {/* Trust Banner */}
-      <section className="py-12 bg-white border-t">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-8 text-primary">لماذا تختار E-بيع؟</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-6 bg-gray-50 rounded-xl">
-              <h3 className="text-xl font-bold mb-2">موثوق وآمن</h3>
-              <p className="opacity-80 text-gray-600">جميع البائعين يتم التحقق من هوياتهم لضمان تجربة شراء آمنة.</p>
+      <section className="py-8 sm:py-12 bg-white border-t">
+        <div className="container mx-auto px-3 sm:px-4 text-center">
+          <h2 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-8 text-primary">لماذا تختار E-بيع؟</h2>
+          <div className="grid grid-cols-1 gap-3 sm:gap-8 md:grid-cols-3">
+            <div className="p-4 sm:p-6 bg-gray-50 rounded-xl">
+              <h3 className="text-base sm:text-xl font-bold mb-1 sm:mb-2">موثوق وآمن</h3>
+              <p className="opacity-80 text-gray-600 text-sm sm:text-base">جميع البائعين يتم التحقق من هوياتهم لضمان تجربة شراء آمنة.</p>
             </div>
-            <div className="p-6 bg-gray-50 rounded-xl">
-              <h3 className="text-xl font-bold mb-2">خصوصية تامة</h3>
-              <p className="opacity-80 text-gray-600">بياناتك الشخصية وأرقام هواتفك محمية ومشفرة.</p>
+            <div className="p-4 sm:p-6 bg-gray-50 rounded-xl">
+              <h3 className="text-base sm:text-xl font-bold mb-1 sm:mb-2">خصوصية تامة</h3>
+              <p className="opacity-80 text-gray-600 text-sm sm:text-base">بياناتك الشخصية وأرقام هواتفك محمية ومشفرة.</p>
             </div>
-            <div className="p-6 bg-gray-50 rounded-xl">
-              <h3 className="text-xl font-bold mb-2">دعم محلي</h3>
-              <p className="opacity-80 text-gray-600">فريق دعم عراقي جاهز لمساعدتك في أي وقت.</p>
+            <div className="p-4 sm:p-6 bg-gray-50 rounded-xl">
+              <h3 className="text-base sm:text-xl font-bold mb-1 sm:mb-2">دعم محلي</h3>
+              <p className="opacity-80 text-gray-600 text-sm sm:text-base">فريق دعم عراقي جاهز لمساعدتك في أي وقت.</p>
             </div>
           </div>
         </div>
