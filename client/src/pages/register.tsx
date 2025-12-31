@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, X, Eye, EyeOff, Lock, UserPlus, Phone } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 
 const passwordRequirements = [
   { id: "length", label: "٨ أحرف على الأقل", test: (p: string) => p.length >= 8 },
@@ -102,10 +103,17 @@ export default function Register() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const { user, isLoading: authLoading } = useAuth();
   const urlParams = new URLSearchParams(window.location.search);
   const redirectUrl = urlParams.get("redirect");
   
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate("/");
+    }
+  }, [user, authLoading, navigate]);
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
 
