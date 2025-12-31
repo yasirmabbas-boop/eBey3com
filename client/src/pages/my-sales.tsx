@@ -132,6 +132,7 @@ export default function MySales() {
       return enriched;
     },
     enabled: !!user?.id,
+    staleTime: 0,
   });
 
   const { data: offers = [], isLoading: offersLoading } = useQuery<EnrichedOffer[]>({

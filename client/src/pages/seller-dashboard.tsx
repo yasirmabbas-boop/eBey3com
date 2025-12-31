@@ -175,6 +175,7 @@ export default function SellerDashboard() {
       return res.json();
     },
     enabled: !!user?.id,
+    staleTime: 0,
   });
   
   const listings: Listing[] = Array.isArray(listingsData) 
