@@ -66,6 +66,27 @@ The PostgreSQL database includes tables for:
 - Development: Vite dev server with HMR, served through Express middleware
 - Production: Static build served from `dist/public`, server bundled with esbuild
 
+### Production Setup
+After publishing, the production database is empty. To set up the admin account:
+
+1. Run the seed script in the Shell:
+   ```bash
+   npx tsx server/seed.ts
+   ```
+
+2. This creates the admin account:
+   - Username: yabbas25
+   - Password: Ss120$JyA
+   - Access: /admin dashboard
+
+**Note**: Development and production databases are separate. Data created in development won't appear in production.
+
+### Admin Dashboard
+Access the admin panel at `/admin` (admin accounts only):
+- **إحصائيات** - Site statistics
+- **البلاغات** - Report management
+- **المستخدمين** - User management
+
 ## External Dependencies
 
 ### Database
