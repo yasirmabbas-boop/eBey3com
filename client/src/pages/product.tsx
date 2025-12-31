@@ -17,6 +17,7 @@ import { useCart } from "@/hooks/use-cart";
 import { BiddingWindow } from "@/components/bidding-window";
 import { SellerTrustBadge } from "@/components/seller-trust-badge";
 import { ContactSeller } from "@/components/contact-seller";
+import { AuctionCountdown } from "@/components/auction-countdown";
 import type { Listing } from "@shared/schema";
 
 import {
@@ -558,6 +559,15 @@ export default function ProductPage() {
                   ? `${product.totalBids} مزايدة` 
                   : "سعر المزايدة الابتدائي"}
               </p>
+              {/* Auction Countdown Timer */}
+              {(liveBidData?.auctionEndTime || product.auctionEndTime) && (
+                <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <p className="text-xs text-orange-700 mb-1 font-medium">ينتهي المزاد خلال:</p>
+                  <AuctionCountdown 
+                    endTime={liveBidData?.auctionEndTime || product.auctionEndTime} 
+                  />
+                </div>
+              )}
             </>
           ) : (
             <>
