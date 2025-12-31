@@ -242,12 +242,27 @@ export default function SellerDashboard() {
   });
 
   const sellerProducts: SellerProduct[] = listings.map(l => {
+    const quantityAvailable = l.quantityAvailable || 1;
+    const quantitySold = l.quantitySold || 0;
+    const remainingStock = quantityAvailable - quantitySold;
+    
+    const productOrders = sellerOrders.filter(o => o.listingId === l.id);
+    const hasPendingShipment = productOrders.some(o => 
+      o.status === "pending" || o.status === "processing"
+    );
+    const hasShipped = productOrders.some(o => o.status === "shipped");
+    
     let status = "draft";
-    if (l.isActive) {
-      status = "active";
-    }
-    if ((l.quantitySold || 0) > 0) {
+    if (!l.isActive) {
+      status = "draft";
+    } else if (hasPendingShipment) {
+      status = "pending_shipment";
+    } else if (hasShipped && remainingStock <= 0) {
+      status = "shipped";
+    } else if (remainingStock <= 0) {
       status = "sold";
+    } else {
+      status = "active";
     }
     
     return {
@@ -263,8 +278,8 @@ export default function SellerDashboard() {
       endDate: l.auctionEndTime ? new Date(l.auctionEndTime).toLocaleDateString("ar-IQ") : undefined,
       category: l.category,
       productCode: l.productCode || `P-${l.id.slice(0, 6)}`,
-      quantityAvailable: l.quantityAvailable || 1,
-      quantitySold: l.quantitySold || 0,
+      quantityAvailable,
+      quantitySold,
     };
   });
 
