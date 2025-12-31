@@ -12,7 +12,8 @@ import {
   type CartItem, type InsertCartItem,
   type Offer, type InsertOffer,
   type Notification, type InsertNotification,
-  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications 
+  type Report, type InsertReport,
+  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports 
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -120,6 +121,11 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationAsRead(id: string): Promise<boolean>;
   markAllNotificationsAsRead(userId: string): Promise<boolean>;
+  
+  // Reports
+  createReport(report: InsertReport): Promise<Report>;
+  getReportsByUser(userId: string): Promise<Report[]>;
+  getReportById(id: string): Promise<Report | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -794,6 +800,22 @@ export class DatabaseStorage implements IStorage {
       .set({ isRead: true })
       .where(eq(notifications.userId, userId));
     return true;
+  }
+
+  async createReport(report: InsertReport): Promise<Report> {
+    const [newReport] = await db.insert(reports).values(report).returning();
+    return newReport;
+  }
+
+  async getReportsByUser(userId: string): Promise<Report[]> {
+    return db.select().from(reports)
+      .where(eq(reports.reporterId, userId))
+      .orderBy(desc(reports.createdAt));
+  }
+
+  async getReportById(id: string): Promise<Report | undefined> {
+    const [report] = await db.select().from(reports).where(eq(reports.id, id));
+    return report;
   }
 }
 
