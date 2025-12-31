@@ -229,6 +229,7 @@ export default function SellerDashboard() {
       return res.json();
     },
     enabled: !!user?.id && user?.accountType === "seller",
+    staleTime: 0,
   });
 
   const { data: sellerMessages = [], isLoading: messagesLoading } = useQuery<SellerMessage[]>({
@@ -250,19 +251,26 @@ export default function SellerDashboard() {
     const hasPendingShipment = productOrders.some(o => 
       o.status === "pending" || o.status === "processing"
     );
-    const hasShipped = productOrders.some(o => o.status === "shipped");
+    const hasShippedInTransit = productOrders.some(o => o.status === "shipped");
+    const hasDeliveredOrCompleted = productOrders.some(o => 
+      o.status === "delivered" || o.status === "completed"
+    );
     
     let status = "draft";
     if (!l.isActive) {
       status = "draft";
     } else if (hasPendingShipment) {
       status = "pending_shipment";
-    } else if (hasShipped && remainingStock <= 0) {
+    } else if (hasShippedInTransit) {
       status = "shipped";
-    } else if (remainingStock <= 0) {
+    } else if (quantitySold > 0 && remainingStock <= 0) {
       status = "sold";
-    } else {
+    } else if (quantitySold > 0 && hasDeliveredOrCompleted && remainingStock > 0) {
       status = "active";
+    } else if (remainingStock > 0) {
+      status = "active";
+    } else {
+      status = "sold";
     }
     
     return {
