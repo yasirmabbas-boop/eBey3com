@@ -256,9 +256,22 @@ export async function registerRoutes(
     }
   });
 
-  // Track listing view
+  // Track listing view (excludes seller's own views)
   app.post("/api/listings/:id/view", async (req, res) => {
     try {
+      const listing = await storage.getListing(req.params.id);
+      if (!listing) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+      
+      // Get viewer ID from request body or session
+      const viewerId = req.body?.viewerId || (req.session as any)?.userId;
+      
+      // Don't count views from the seller themselves
+      if (viewerId && viewerId === listing.sellerId) {
+        return res.json({ views: listing.views || 0, skipped: true });
+      }
+      
       const views = await storage.incrementListingViews(req.params.id);
       res.json({ views });
     } catch (error) {

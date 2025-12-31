@@ -234,9 +234,16 @@ export default function ProductPage() {
   useEffect(() => {
     if (listing?.id && !viewTracked.current) {
       viewTracked.current = true;
-      fetch(`/api/listings/${listing.id}/view`, { method: "POST" }).catch(() => {});
+      // Only track view if viewer is not the seller
+      if (!user?.id || user.id !== listing.sellerId) {
+        fetch(`/api/listings/${listing.id}/view`, { 
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ viewerId: user?.id || null })
+        }).catch(() => {});
+      }
     }
-  }, [listing?.id]);
+  }, [listing?.id, listing?.sellerId, user?.id]);
 
   // WebSocket connection for live bidding
   useEffect(() => {
