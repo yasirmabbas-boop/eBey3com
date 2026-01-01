@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, Loader2, Phone, Plus, Store, LogOut } from "lucide-react";
+import { ShoppingCart, User, Menu, Loader2, Phone, Plus, Store, LogOut, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { AccountDropdown } from "@/components/account-dropdown";
@@ -16,6 +16,7 @@ import { NotificationsButton } from "@/components/notifications";
 import { SmartSearch } from "@/components/smart-search";
 import { MobileNavBar } from "@/components/mobile-nav-bar";
 import { BackButton } from "@/components/back-button";
+import { TutorialTrigger } from "@/components/onboarding-tutorial";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
@@ -234,6 +235,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Link href="/contact" className="hover:text-blue-300">
                   اتصل بنا
                 </Link>
+              </li>
+              <li className="flex items-center gap-1">
+                <HelpCircle className="h-3 w-3" />
+                <TutorialTrigger />
               </li>
             </ul>
           </div>

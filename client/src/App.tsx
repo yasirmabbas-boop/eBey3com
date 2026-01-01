@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SurveyManager } from "@/components/survey-manager";
 import { SwipeBackNavigation } from "@/components/swipe-back-navigation";
+import { OnboardingTutorial } from "@/components/onboarding-tutorial";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
@@ -82,6 +83,7 @@ function App() {
         <ScrollToTop />
         <Toaster />
         <SurveyManager />
+        <OnboardingTutorial />
         <SwipeBackNavigation>
           <Router />
         </SwipeBackNavigation>
