@@ -206,7 +206,11 @@ export default function SellerDashboard() {
   const { data: receivedOffers = [], isLoading: offersLoading } = useQuery<(Offer & { listing?: Listing; buyerName?: string })[]>({
     queryKey: ["/api/received-offers"],
     queryFn: async () => {
-      const res = await fetch("/api/received-offers");
+      const token = localStorage.getItem("authToken");
+      const res = await fetch("/api/received-offers", {
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!res.ok) throw new Error("Failed to fetch offers");
       return res.json();
     },
@@ -230,7 +234,11 @@ export default function SellerDashboard() {
   const { data: sellerOrders = [], isLoading: ordersLoading } = useQuery<SellerOrder[]>({
     queryKey: ["/api/account/seller-orders"],
     queryFn: async () => {
-      const res = await fetch("/api/account/seller-orders");
+      const token = localStorage.getItem("authToken");
+      const res = await fetch("/api/account/seller-orders", {
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!res.ok) throw new Error("Failed to fetch orders");
       return res.json();
     },
@@ -241,7 +249,11 @@ export default function SellerDashboard() {
   const { data: sellerMessages = [], isLoading: messagesLoading } = useQuery<SellerMessage[]>({
     queryKey: ["/api/seller-messages"],
     queryFn: async () => {
-      const res = await fetch("/api/seller-messages");
+      const token = localStorage.getItem("authToken");
+      const res = await fetch("/api/seller-messages", {
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!res.ok) throw new Error("Failed to fetch messages");
       return res.json();
     },
