@@ -1708,30 +1708,107 @@ export default function SellPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <Label>خيارات الشحن والتوصيل</Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-3 p-3 border rounded-lg">
-                    <input type="checkbox" id="localPickup" className="h-4 w-4" defaultChecked data-testid="checkbox-local-pickup" />
+                    <Checkbox id="localPickup" defaultChecked data-testid="checkbox-local-pickup" />
                     <Label htmlFor="localPickup" className="cursor-pointer">
                       <span className="font-medium">استلام شخصي</span>
                       <p className="text-xs text-muted-foreground">المشتري يستلم من موقعك</p>
                     </Label>
                   </div>
                   <div className="flex items-center gap-3 p-3 border rounded-lg">
-                    <input type="checkbox" id="delivery" className="h-4 w-4" data-testid="checkbox-delivery" />
+                    <Checkbox id="delivery" data-testid="checkbox-delivery" />
                     <Label htmlFor="delivery" className="cursor-pointer">
                       <span className="font-medium">توصيل داخل المدينة</span>
                       <p className="text-xs text-muted-foreground">أنت توصل للمشتري</p>
                     </Label>
                   </div>
                   <div className="flex items-center gap-3 p-3 border rounded-lg">
-                    <input type="checkbox" id="shipping" className="h-4 w-4" data-testid="checkbox-shipping" />
+                    <Checkbox id="shipping" data-testid="checkbox-shipping" />
                     <Label htmlFor="shipping" className="cursor-pointer">
                       <span className="font-medium">شحن لجميع المحافظات</span>
                       <p className="text-xs text-muted-foreground">عبر شركات الشحن</p>
                     </Label>
                   </div>
+                  <div className="flex items-center gap-3 p-3 border rounded-lg border-blue-200 bg-blue-50">
+                    <Checkbox id="internationalShipping" data-testid="checkbox-international-shipping" />
+                    <Label htmlFor="internationalShipping" className="cursor-pointer">
+                      <span className="font-medium">🌍 شحن دولي</span>
+                      <p className="text-xs text-muted-foreground">الشحن لدول محددة</p>
+                    </Label>
+                  </div>
+                </div>
+
+                {/* International Shipping Countries */}
+                <div className="p-4 border border-blue-200 bg-blue-50/50 rounded-lg space-y-3">
+                  <Label className="font-medium">الدول المتاحة للشحن الدولي</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-jordan" data-testid="checkbox-ship-jordan" />
+                      <Label htmlFor="ship-jordan" className="cursor-pointer text-sm">🇯🇴 الأردن</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-uae" data-testid="checkbox-ship-uae" />
+                      <Label htmlFor="ship-uae" className="cursor-pointer text-sm">🇦🇪 الإمارات</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-saudi" data-testid="checkbox-ship-saudi" />
+                      <Label htmlFor="ship-saudi" className="cursor-pointer text-sm">🇸🇦 السعودية</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-kuwait" data-testid="checkbox-ship-kuwait" />
+                      <Label htmlFor="ship-kuwait" className="cursor-pointer text-sm">🇰🇼 الكويت</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-qatar" data-testid="checkbox-ship-qatar" />
+                      <Label htmlFor="ship-qatar" className="cursor-pointer text-sm">🇶🇦 قطر</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-bahrain" data-testid="checkbox-ship-bahrain" />
+                      <Label htmlFor="ship-bahrain" className="cursor-pointer text-sm">🇧🇭 البحرين</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-oman" data-testid="checkbox-ship-oman" />
+                      <Label htmlFor="ship-oman" className="cursor-pointer text-sm">🇴🇲 عمان</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-lebanon" data-testid="checkbox-ship-lebanon" />
+                      <Label htmlFor="ship-lebanon" className="cursor-pointer text-sm">🇱🇧 لبنان</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-egypt" data-testid="checkbox-ship-egypt" />
+                      <Label htmlFor="ship-egypt" className="cursor-pointer text-sm">🇪🇬 مصر</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-turkey" data-testid="checkbox-ship-turkey" />
+                      <Label htmlFor="ship-turkey" className="cursor-pointer text-sm">🇹🇷 تركيا</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-usa" data-testid="checkbox-ship-usa" />
+                      <Label htmlFor="ship-usa" className="cursor-pointer text-sm">🇺🇸 أمريكا</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-uk" data-testid="checkbox-ship-uk" />
+                      <Label htmlFor="ship-uk" className="cursor-pointer text-sm">🇬🇧 بريطانيا</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-germany" data-testid="checkbox-ship-germany" />
+                      <Label htmlFor="ship-germany" className="cursor-pointer text-sm">🇩🇪 ألمانيا</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-sweden" data-testid="checkbox-ship-sweden" />
+                      <Label htmlFor="ship-sweden" className="cursor-pointer text-sm">🇸🇪 السويد</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="ship-australia" data-testid="checkbox-ship-australia" />
+                      <Label htmlFor="ship-australia" className="cursor-pointer text-sm">🇦🇺 أستراليا</Label>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    * تكاليف الشحن الدولي يتم الاتفاق عليها مع المشتري
+                  </p>
                 </div>
               </div>
 
