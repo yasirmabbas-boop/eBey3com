@@ -37,6 +37,10 @@ import {
   MessageSquare,
   Truck,
   ExternalLink,
+  ArrowRight,
+  Menu,
+  LogOut,
+  Bell,
 } from "lucide-react";
 import {
   Select,
@@ -499,19 +503,68 @@ export default function SellerDashboard() {
   }
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-primary mb-2">📊 لوحة تحكم البائع</h1>
-            <p className="text-gray-600">إدارة منتجاتك ومبيعاتك وتتبع أدائك</p>
+    <Layout hideHeader>
+      {/* Black Top Bar */}
+      <div className="bg-black text-white sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/">
+              <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" data-testid="button-back">
+                <ArrowRight className="h-6 w-6" />
+              </button>
+            </Link>
+            <Link href="/" className="flex items-center gap-1">
+              <span className="text-2xl font-bold">
+                <span className="text-blue-400">E</span>
+                <span className="text-yellow-400">-</span>
+                <span className="text-red-400">ب</span>
+                <span className="text-green-400">ي</span>
+                <span className="text-blue-400">ع</span>
+              </span>
+            </Link>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                localStorage.removeItem("authToken");
+                window.location.href = "/";
+              }}
+              className="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded-lg transition-colors text-sm"
+              data-testid="button-logout"
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="hidden sm:inline">تسجيل الخروج</span>
+            </button>
+            <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" data-testid="button-menu">
+              <Menu className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Bar with Notifications */}
+      <div className="bg-gray-100 border-b sticky top-[52px] z-40">
+        <div className="container mx-auto px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bell className="h-5 w-5 text-gray-600" />
+            <span className="text-sm text-gray-600">الإشعارات</span>
+            {pendingOrders.length > 0 && (
+              <Badge className="bg-red-500 text-white text-xs">{pendingOrders.length} طلب جديد</Badge>
+            )}
           </div>
           <Link href="/sell">
-            <Button size="lg" className="gap-2 bg-primary hover:bg-primary/90" data-testid="button-add-product">
-              <Plus className="h-5 w-5" />
+            <Button size="lg" className="gap-3 bg-primary hover:bg-primary/90 text-lg font-bold px-8 py-6 shadow-lg" data-testid="button-add-product">
+              <Plus className="h-6 w-6" />
               إضافة منتج جديد
             </Button>
           </Link>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-primary mb-2">📊 لوحة تحكم البائع</h1>
+          <p className="text-gray-600">إدارة منتجاتك ومبيعاتك وتتبع أدائك</p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

@@ -17,7 +17,12 @@ import { SmartSearch } from "@/components/smart-search";
 import { BackButton } from "@/components/back-button";
 import { TutorialTrigger } from "@/components/onboarding-tutorial";
 
-export function Layout({ children }: { children: React.ReactNode }) {
+interface LayoutProps {
+  children: React.ReactNode;
+  hideHeader?: boolean;
+}
+
+export function Layout({ children, hideHeader = false }: LayoutProps) {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const { totalItems } = useCart();
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
@@ -29,6 +34,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 
       {/* Combined Top Bar */}
+      {!hideHeader && (
       <div className={`${isAuthenticated && (user as any)?.sellerApproved ? 'bg-gradient-to-l from-amber-500 via-yellow-500 to-amber-500 text-black' : 'bg-blue-600 text-white'} py-1.5 text-xs px-4`}>
         <div className="container mx-auto flex justify-between items-center">
           {/* Navigation Links - Desktop only */}
@@ -91,8 +97,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </div>
+      )}
 
       {/* Main Header */}
+      {!hideHeader && (
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50 shadow-sm">
         <div className="container mx-auto px-4 py-3">
           {/* Top Row: Menu/Back on right, Logo, Search on left */}
@@ -156,6 +164,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 pb-20 md:pb-0">
