@@ -1,49 +1,53 @@
+import { useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, X, Package, MapPin, User, Calendar } from "lucide-react";
-import { useRef } from "react";
-
-interface OrderDetails {
-  orderId: string;
-  buyerName: string;
-  deliveryAddress: string;
-  district?: string;
-  city: string;
-  sellerName: string;
-  sellerCity: string;
-  productCode: string;
-  productTitle: string;
-  paymentMethod: string;
-  price: number;
-  saleDate: Date;
-}
+import { Printer, X, Package, User, MapPin, Calendar } from "lucide-react";
 
 interface ShippingLabelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  orderDetails: OrderDetails;
+  orderDetails: {
+    orderId: string;
+    buyerName: string;
+    deliveryAddress: string;
+    city: string;
+    district?: string;
+    sellerName: string;
+    sellerCity: string;
+    productTitle: string;
+    productCode: string;
+    price: number;
+    paymentMethod: string;
+    saleDate: Date;
+  };
 }
 
 export function ShippingLabel({ open, onOpenChange, orderDetails }: ShippingLabelProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
-    if (!printRef.current) return;
-    
     const printContent = printRef.current;
-    const printWindow = window.open("", "_blank");
+    if (!printContent) return;
+
+    const printWindow = window.open("", "_blank", "width=400,height=600");
     if (!printWindow) return;
 
     printWindow.document.write(`
       <!DOCTYPE html>
-      <html dir="rtl">
+      <html dir="rtl" lang="ar">
       <head>
+        <meta charset="UTF-8">
         <title>بطاقة الشحن - ${orderDetails.orderId}</title>
         <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: 'Segoe UI', Tahoma, sans-serif;
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
+            background: #fff;
             direction: rtl;
           }
           .label {
@@ -51,7 +55,7 @@ export function ShippingLabel({ open, onOpenChange, orderDetails }: ShippingLabe
             padding: 20px;
             max-width: 400px;
             margin: 0 auto;
-            border-radius: 10px;
+            background: #fff;
           }
           .header {
             text-align: center;
@@ -62,6 +66,7 @@ export function ShippingLabel({ open, onOpenChange, orderDetails }: ShippingLabe
           .logo {
             font-size: 28px;
             font-weight: bold;
+            margin-bottom: 5px;
           }
           .logo .e { color: #2563EB; }
           .logo .dash { color: #EAB308; }
@@ -69,14 +74,13 @@ export function ShippingLabel({ open, onOpenChange, orderDetails }: ShippingLabe
           .logo .y { color: #16A34A; }
           .logo .a { color: #2563EB; }
           .order-id {
-            font-size: 14px;
+            font-size: 12px;
             color: #666;
-            margin-top: 5px;
           }
           .section {
             margin-bottom: 15px;
             padding-bottom: 15px;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #eee;
           }
           .section-title {
             font-size: 11px;
