@@ -23,14 +23,16 @@ export function MobileNavBar() {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 lg:hidden"
+      className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]"
       dir="rtl"
       style={{ 
-        zIndex: 9999,
-        paddingBottom: "env(safe-area-inset-bottom, 0px)" 
+        zIndex: 99999,
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        position: "fixed",
+        display: "flex"
       }}
     >
-      <div className="flex items-center justify-around h-16 px-2">
+      <div className="flex items-center justify-around w-full h-16 px-2 bg-white">
         {navItems.map((item) => {
           const active = isActive(item.href);
           return (
@@ -38,7 +40,7 @@ export function MobileNavBar() {
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center justify-center flex-1 py-2 relative transition-colors active:scale-95 ${
-                active ? "text-blue-600" : "text-gray-500"
+                active ? "text-blue-600" : "text-gray-600"
               }`}
               data-testid={item.testId}
             >
