@@ -195,10 +195,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-slate-300 py-12 mt-20">
-        <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
-            <div className="mb-4">
+      <footer className="bg-slate-900 text-slate-300 py-8 mt-20">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            <div className="flex items-center gap-3 md:flex-col md:items-start">
               <div className="text-xl font-bold leading-tight tracking-wider">
                 <span className="text-blue-400">E</span>
                 <span className="text-yellow-400">-</span>
@@ -206,48 +206,46 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <span className="text-green-400">ي</span>
                 <span className="text-blue-400">ع</span>
               </div>
+              <p className="text-xs md:text-sm leading-relaxed md:mt-2">
+                منصتك الأولى للبيع والشراء في العراق
+              </p>
             </div>
-            <p className="text-sm leading-relaxed">
-              منصتك الأولى للبيع والشراء في العراق.
-              ساعات، ملابس، وكل ما هو مميز.
-            </p>
-          </div>
-          <div>
-            <h3 className="font-bold text-white mb-4">روابط سريعة</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/">الرئيسية</Link></li>
-              <li><Link href="/terms">الشروط والأحكام</Link></li>
-              <li><Link href="/privacy">سياسة الخصوصية</Link></li>
-              <li><Link href="/security">الأمان والحماية</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="font-bold text-white mb-4">المساعدة</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/register">ابدأ كبائع</Link></li>
-              <li><Link href="/register">ابدأ كمشتري</Link></li>
-              <li><Link href="/security-guide">دليل الأمان</Link></li>
-              <li>
-                <Link href="/contact" className="hover:text-blue-300">
-                  اتصل بنا
-                </Link>
-              </li>
-              <li className="flex items-center gap-1">
-                <HelpCircle className="h-3 w-3" />
-                <TutorialTrigger />
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="font-bold text-white mb-4">تواصل معنا</h3>
-            <div className="flex items-center gap-2 mb-2 text-sm">
-              <Phone className="h-4 w-4" />
-              <span>٠٧٧٠٠٠٠٠٠٠٠</span>
+            
+            <div className="grid grid-cols-2 gap-x-8 gap-y-4 md:flex md:gap-12">
+              <div>
+                <h3 className="font-bold text-white text-sm mb-2">روابط</h3>
+                <ul className="space-y-1 text-xs">
+                  <li><Link href="/" className="hover:text-white">الرئيسية</Link></li>
+                  <li><Link href="/terms" className="hover:text-white">الشروط</Link></li>
+                  <li><Link href="/privacy" className="hover:text-white">الخصوصية</Link></li>
+                  <li><Link href="/security" className="hover:text-white">الأمان</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-sm mb-2">المساعدة</h3>
+                <ul className="space-y-1 text-xs">
+                  <li><Link href="/register" className="hover:text-white">ابدأ كبائع</Link></li>
+                  <li><Link href="/security-guide" className="hover:text-white">دليل الأمان</Link></li>
+                  <li><Link href="/contact" className="hover:text-white">اتصل بنا</Link></li>
+                  <li className="flex items-center gap-1">
+                    <HelpCircle className="h-3 w-3" />
+                    <TutorialTrigger />
+                  </li>
+                </ul>
+              </div>
+              <div className="col-span-2 md:col-span-1">
+                <h3 className="font-bold text-white text-sm mb-2">تواصل</h3>
+                <div className="flex items-center gap-2 text-xs">
+                  <Phone className="h-3 w-3" />
+                  <span>٠٧٧٠٠٠٠٠٠٠٠</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="container mx-auto px-4 mt-8 pt-8 border-t border-slate-800 text-center text-xs">
-          © 2024 اي بيع. جميع الحقوق محفوظة.
+          
+          <div className="mt-6 pt-4 border-t border-slate-800 text-center text-xs">
+            © 2024 اي بيع. جميع الحقوق محفوظة.
+          </div>
         </div>
       </footer>
     </div>
