@@ -176,13 +176,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div className="flex items-center gap-3 md:flex-col md:items-start">
-              <div className="text-xl font-bold leading-tight tracking-wider">
-                <span className="text-blue-400">E</span>
-                <span className="text-yellow-400">-</span>
-                <span className="text-red-400">ب</span>
-                <span className="text-green-400">ي</span>
-                <span className="text-blue-400">ع</span>
-              </div>
+              <Logo variant="light" />
               <p className="text-xs md:text-sm leading-relaxed md:mt-2">
                 منصتك الأولى للبيع والشراء في العراق
               </p>

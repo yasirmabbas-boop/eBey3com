@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { ShippingLabel } from "@/components/shipping-label";
+import { Logo } from "@/components/logo";
 import {
   Package,
   Plus,
@@ -514,13 +515,7 @@ export default function SellerDashboard() {
               </button>
             </Link>
             <Link href="/">
-              <span className="text-2xl font-bold whitespace-nowrap">
-                <span className="text-blue-300">E</span>
-                <span className="text-blue-400">-</span>
-                <span className="text-blue-500">ب</span>
-                <span className="text-blue-400">ي</span>
-                <span className="text-blue-300">ع</span>
-              </span>
+              <Logo variant="light" />
             </Link>
           </div>
           <div className="flex items-center gap-2">
