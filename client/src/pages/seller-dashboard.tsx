@@ -198,11 +198,19 @@ export default function SellerDashboard() {
   const [stockProductId, setStockProductId] = useState<string | null>(null);
   const [newStockQuantity, setNewStockQuantity] = useState("");
 
+  const getAuthHeaders = (): Record<string, string> => {
+    const authToken = localStorage.getItem("authToken");
+    return authToken ? { "Authorization": `Bearer ${authToken}` } : {};
+  };
+
   const { data: listingsData, isLoading: listingsLoading } = useQuery({
     queryKey: ["/api/listings", user?.id],
     queryFn: async () => {
       if (!user?.id) return { listings: [], pagination: null };
-      const res = await fetch(`/api/listings?sellerId=${encodeURIComponent(user.id)}&limit=100`);
+      const res = await fetch(`/api/listings?sellerId=${encodeURIComponent(user.id)}&limit=100`, {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) throw new Error("Failed to fetch listings");
       return res.json();
     },
@@ -217,7 +225,10 @@ export default function SellerDashboard() {
   const { data: receivedOffers = [], isLoading: offersLoading } = useQuery<(Offer & { listing?: Listing; buyerName?: string })[]>({
     queryKey: ["/api/received-offers"],
     queryFn: async () => {
-      const res = await fetch("/api/received-offers");
+      const res = await fetch("/api/received-offers", {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) throw new Error("Failed to fetch offers");
       return res.json();
     },
@@ -234,6 +245,14 @@ export default function SellerDashboard() {
     ratingCount: number;
   }>({
     queryKey: ["/api/account/seller-summary"],
+    queryFn: async () => {
+      const res = await fetch("/api/account/seller-summary", {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to fetch seller summary");
+      return res.json();
+    },
     enabled: !!user?.id && (user as any)?.sellerApproved,
     staleTime: 0,
   });
@@ -241,7 +260,10 @@ export default function SellerDashboard() {
   const { data: sellerOrders = [], isLoading: ordersLoading } = useQuery<SellerOrder[]>({
     queryKey: ["/api/account/seller-orders"],
     queryFn: async () => {
-      const res = await fetch("/api/account/seller-orders");
+      const res = await fetch("/api/account/seller-orders", {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) throw new Error("Failed to fetch orders");
       return res.json();
     },
@@ -252,7 +274,10 @@ export default function SellerDashboard() {
   const { data: sellerMessages = [], isLoading: messagesLoading } = useQuery<SellerMessage[]>({
     queryKey: ["/api/seller-messages"],
     queryFn: async () => {
-      const res = await fetch("/api/seller-messages");
+      const res = await fetch("/api/seller-messages", {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) throw new Error("Failed to fetch messages");
       return res.json();
     },
@@ -310,7 +335,11 @@ export default function SellerDashboard() {
 
   const deleteMutation = useMutation({
     mutationFn: async (productId: string) => {
-      const res = await fetch(`/api/listings/${productId}`, { method: "DELETE" });
+      const res = await fetch(`/api/listings/${productId}`, { 
+        method: "DELETE",
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) throw new Error("Failed to delete listing");
       return res.json();
     },
@@ -327,7 +356,8 @@ export default function SellerDashboard() {
     mutationFn: async ({ offerId, status, counterAmount }: { offerId: string; status: string; counterAmount?: number }) => {
       const res = await fetch(`/api/offers/${offerId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        credentials: "include",
         body: JSON.stringify({ status, counterAmount }),
       });
       if (!res.ok) throw new Error("Failed to respond to offer");
@@ -355,7 +385,8 @@ export default function SellerDashboard() {
     mutationFn: async ({ productId, quantityAvailable }: { productId: string; quantityAvailable: number }) => {
       const res = await fetch(`/api/listings/${productId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        credentials: "include",
         body: JSON.stringify({ quantityAvailable }),
       });
       if (!res.ok) {
@@ -380,7 +411,7 @@ export default function SellerDashboard() {
     mutationFn: async (orderId: string) => {
       const res = await fetch(`/api/transactions/${orderId}/ship`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         credentials: "include",
       });
       if (!res.ok) throw new Error("فشل في تحديث حالة الشحن");
@@ -399,7 +430,7 @@ export default function SellerDashboard() {
     mutationFn: async (orderId: string) => {
       const res = await fetch(`/api/transactions/${orderId}/deliver`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         credentials: "include",
       });
       if (!res.ok) throw new Error("فشل في تحديث حالة التسليم");
@@ -1243,7 +1274,6 @@ export default function SellerDashboard() {
             sellerName: user?.displayName || "البائع",
             sellerCity: "العراق",
             buyerName: selectedProduct.buyer.name,
-            buyerPhone: selectedProduct.buyer.phone,
             deliveryAddress: selectedProduct.buyer.address || "",
             city: selectedProduct.buyer.city || "",
             district: selectedProduct.buyer.district || "",
