@@ -66,8 +66,12 @@ export async function registerRoutes(
         sellerId: typeof sellerId === "string" ? sellerId : undefined,
       });
       
-      // Cache listing responses for 30 seconds to reduce repeat requests
-      res.set("Cache-Control", setCacheHeaders(30));
+      // Only cache public listing requests, not seller-specific ones
+      if (!sellerId) {
+        res.set("Cache-Control", setCacheHeaders(30));
+      } else {
+        res.set("Cache-Control", "no-store");
+      }
       
       res.json({
         listings: paginatedListings,
