@@ -2,11 +2,37 @@ import { Link, useLocation } from "wouter";
 import { Home, Search, MessageCircle, User, ShoppingCart } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
+import { useState, useEffect, useRef } from "react";
 
 export function MobileNavBar() {
   const [location] = useLocation();
   const { isAuthenticated } = useAuth();
   const { totalItems } = useCart();
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const scrollThreshold = 10;
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollDiff = currentScrollY - lastScrollY.current;
+      
+      if (Math.abs(scrollDiff) < scrollThreshold) return;
+      
+      if (currentScrollY < 50) {
+        setIsVisible(true);
+      } else if (scrollDiff > 0) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const navItems = [
     { href: "/", icon: Home, label: "الرئيسية", testId: "nav-home" },
@@ -22,15 +48,21 @@ export function MobileNavBar() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden safe-area-pb" dir="rtl">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav 
+      className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden transition-transform duration-300 ${
+        isVisible ? "translate-y-0" : "translate-y-full"
+      }`} 
+      dir="rtl"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="flex items-center justify-around h-14 px-2">
         {navItems.map((item) => {
           const active = isActive(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center flex-1 py-2 relative transition-colors ${
+              className={`flex flex-col items-center justify-center flex-1 py-1.5 relative transition-colors active:scale-95 ${
                 active ? "text-blue-600" : "text-gray-500"
               }`}
               data-testid={item.testId}
@@ -43,7 +75,7 @@ export function MobileNavBar() {
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] mt-1 ${active ? "font-bold" : ""}`}>{item.label}</span>
+              <span className={`text-[10px] mt-0.5 ${active ? "font-bold" : ""}`}>{item.label}</span>
               {active && (
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-blue-600 rounded-full" />
               )}
