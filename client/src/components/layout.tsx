@@ -95,28 +95,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Header */}
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50 shadow-sm">
         <div className="container mx-auto px-4 py-3">
-          {/* Top Row: Logo on right, Search, Menu on left */}
+          {/* Top Row: Menu/Back on right, Logo, Search on left */}
           <div className="flex items-center gap-3 md:gap-4">
-            {/* Logo - Right side in RTL */}
-            <Link href="/" className="flex-shrink-0 flex items-center">
-              <Logo className="h-10 md:h-12" />
-            </Link>
-
-            {/* Search Bar - Flexible width */}
-            <div className="flex-1">
-              <SmartSearch 
-                onImageSearchClick={() => setImageSearchOpen(true)}
-                className="flex w-full gap-2 items-center"
-              />
-            </div>
-
-            {/* Back Button - Mobile */}
+            {/* Back Button - Mobile, Right side */}
             <BackButton className="md:hidden" />
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu - Right side */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button variant="ghost" size="icon" className="md:hidden -mr-2">
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
@@ -144,6 +131,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </nav>
               </SheetContent>
             </Sheet>
+
+            {/* Logo */}
+            <Link href="/" className="flex-shrink-0 flex items-center">
+              <Logo className="h-10 md:h-12" />
+            </Link>
+
+            {/* Search Bar - Flexible width */}
+            <div className="flex-1">
+              <SmartSearch 
+                onImageSearchClick={() => setImageSearchOpen(true)}
+                className="flex w-full gap-2 items-center"
+              />
+            </div>
 
             {/* Account Dropdown - Desktop only */}
             <div className="hidden md:flex items-center gap-2">
