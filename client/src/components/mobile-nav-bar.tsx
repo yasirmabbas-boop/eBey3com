@@ -23,7 +23,7 @@ export function MobileNavBar() {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]"
+      className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] md:hidden"
       dir="rtl"
       style={{ 
         zIndex: 99999,
