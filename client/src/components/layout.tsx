@@ -31,7 +31,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Combined Top Bar */}
       <div className={`${isAuthenticated && (user as any)?.sellerApproved ? 'bg-gradient-to-l from-amber-500 via-yellow-500 to-amber-500 text-black' : 'bg-blue-600 text-white'} py-1.5 text-xs px-4`}>
         <div className="container mx-auto flex justify-between items-center">
-          {/* Navigation Links */}
+          {/* Navigation Links - Desktop only */}
           <div className="hidden md:flex items-center gap-5">
             <Link href="/" className="hover:opacity-80 transition-colors font-medium">الرئيسية</Link>
             <Link href="/search?saleType=auction" className="hover:opacity-80 transition-colors font-medium">المزادات</Link>

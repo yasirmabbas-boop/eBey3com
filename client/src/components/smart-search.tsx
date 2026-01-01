@@ -182,10 +182,6 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
         </div>
       )}
 
-      <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700 px-6 h-11 rounded-md font-bold">
-        <Search className="h-4 w-4 ml-2" />
-        بحث
-      </Button>
-    </form>
+      </form>
   );
 }
