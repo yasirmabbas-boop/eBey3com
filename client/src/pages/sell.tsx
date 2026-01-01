@@ -539,9 +539,16 @@ export default function SellPage() {
       const url = isEditMode ? `/api/listings/${editListingId}` : "/api/listings";
       const method = isEditMode ? "PATCH" : "POST";
       
+      // Include auth token for Safari compatibility
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const authToken = localStorage.getItem("authToken");
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
+      
       const response = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers,
         credentials: "include",
         body: JSON.stringify(listingData),
       });
