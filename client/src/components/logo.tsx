@@ -7,14 +7,14 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
   const colors =
     variant === "light"
       ? {
-          e: "Blue",
-          dash: "blue",
-          arabic: "blue",
+          e: "#60A5FA",
+          dash: "#FF8C00",
+          arabic: "#93C5FD",
         }
       : {
-          e: "Blue",
-          dash: "#yellow",
-          arabic: "Blue",
+          e: "#2563EB",
+          dash: "#FF8C00",
+          arabic: "#1D4ED8",
         };
 
   return (
