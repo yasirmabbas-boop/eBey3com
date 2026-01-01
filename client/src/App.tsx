@@ -8,6 +8,7 @@ import { SurveyManager } from "@/components/survey-manager";
 import { SwipeBackNavigation } from "@/components/swipe-back-navigation";
 import { OnboardingTutorial } from "@/components/onboarding-tutorial";
 import { MobileNavBar } from "@/components/mobile-nav-bar";
+import { InstallPWAPrompt } from "@/components/install-pwa-prompt";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
@@ -89,6 +90,7 @@ function App() {
           <Router />
         </SwipeBackNavigation>
         <MobileNavBar />
+        <InstallPWAPrompt />
       </TooltipProvider>
     </QueryClientProvider>
   );
