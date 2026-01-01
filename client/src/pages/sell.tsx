@@ -1351,20 +1351,21 @@ export default function SellPage() {
                     </div>
                   </div>
 
-                  {/* Reserve Price Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="space-y-1">
-                      <Label htmlFor="reserveToggle" className="font-bold">سعر احتياطي</Label>
+                  {/* Reserve Price Checkbox */}
+                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                    <Checkbox 
+                      id="reserveToggle" 
+                      checked={hasReservePrice}
+                      onCheckedChange={(checked) => setHasReservePrice(checked === true)}
+                      className="h-5 w-5 border-2 data-[state=checked]:bg-gray-600 data-[state=checked]:border-gray-600"
+                      data-testid="checkbox-reserve-price"
+                    />
+                    <div className="space-y-1 flex-1">
+                      <Label htmlFor="reserveToggle" className="font-bold cursor-pointer">سعر احتياطي</Label>
                       <p className="text-xs text-muted-foreground">
                         حدد سعراً أدنى يجب الوصول إليه لإتمام البيع
                       </p>
                     </div>
-                    <Switch 
-                      id="reserveToggle" 
-                      checked={hasReservePrice}
-                      onCheckedChange={setHasReservePrice}
-                      data-testid="switch-reserve-price"
-                    />
                   </div>
 
                   {hasReservePrice && (
@@ -1388,10 +1389,17 @@ export default function SellPage() {
                     </div>
                   )}
 
-                  {/* Buy Now Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                    <div className="space-y-1">
-                      <Label htmlFor="buyNowToggle" className="font-bold flex items-center gap-2">
+                  {/* Buy Now Checkbox */}
+                  <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
+                    <Checkbox 
+                      id="buyNowToggle" 
+                      checked={hasBuyNow}
+                      onCheckedChange={(checked) => setHasBuyNow(checked === true)}
+                      className="h-5 w-5 border-2 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                      data-testid="checkbox-buy-now"
+                    />
+                    <div className="space-y-1 flex-1">
+                      <Label htmlFor="buyNowToggle" className="font-bold cursor-pointer flex items-center gap-2">
                         <ShoppingBag className="h-4 w-4 text-green-600" />
                         خيار الشراء الفوري
                       </Label>
@@ -1399,12 +1407,6 @@ export default function SellPage() {
                         السماح للمشتري بشراء المنتج فوراً بسعر محدد
                       </p>
                     </div>
-                    <Switch 
-                      id="buyNowToggle" 
-                      checked={hasBuyNow}
-                      onCheckedChange={setHasBuyNow}
-                      data-testid="switch-buy-now"
-                    />
                   </div>
 
                   {hasBuyNow && (
