@@ -14,7 +14,6 @@ import { useCart } from "@/hooks/use-cart";
 import { ImageSearchModal } from "@/components/image-search-modal";
 import { NotificationsButton } from "@/components/notifications";
 import { SmartSearch } from "@/components/smart-search";
-import { MobileNavBar } from "@/components/mobile-nav-bar";
 import { BackButton } from "@/components/back-button";
 import { TutorialTrigger } from "@/components/onboarding-tutorial";
 
@@ -194,9 +193,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 pb-20 lg:pb-0">
         {children}
       </main>
-
-      {/* Mobile Bottom Navigation */}
-      <MobileNavBar />
 
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-300 py-12 mt-20">
