@@ -23,33 +23,36 @@ export function MobileNavBar() {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-50 md:hidden shadow-lg"
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 lg:hidden"
       dir="rtl"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{ 
+        zIndex: 9999,
+        paddingBottom: "env(safe-area-inset-bottom, 0px)" 
+      }}
     >
-      <div className="flex items-center justify-around h-14 px-2">
+      <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
           const active = isActive(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center flex-1 py-1.5 relative transition-colors active:scale-95 ${
+              className={`flex flex-col items-center justify-center flex-1 py-2 relative transition-colors active:scale-95 ${
                 active ? "text-blue-600" : "text-gray-500"
               }`}
               data-testid={item.testId}
             >
               <div className="relative">
-                <item.icon className={`h-5 w-5 ${active ? "stroke-[2.5]" : ""}`} />
+                <item.icon className={`h-6 w-6 ${active ? "stroke-[2.5]" : ""}`} />
                 {item.badge && item.badge > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] rounded-full min-w-[16px] h-4 flex items-center justify-center font-bold px-1">
+                  <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold px-1">
                     {item.badge > 99 ? "99+" : item.badge}
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] mt-0.5 ${active ? "font-bold" : ""}`}>{item.label}</span>
+              <span className={`text-[11px] mt-1 ${active ? "font-bold" : ""}`}>{item.label}</span>
               {active && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-blue-600 rounded-full" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-full" />
               )}
             </Link>
           );
