@@ -2,37 +2,11 @@ import { Link, useLocation } from "wouter";
 import { Home, Search, MessageCircle, User, ShoppingCart } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
-import { useState, useEffect, useRef } from "react";
 
 export function MobileNavBar() {
   const [location] = useLocation();
   const { isAuthenticated } = useAuth();
   const { totalItems } = useCart();
-  const [isVisible, setIsVisible] = useState(true);
-  const lastScrollY = useRef(0);
-  const scrollThreshold = 10;
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const scrollDiff = currentScrollY - lastScrollY.current;
-      
-      if (Math.abs(scrollDiff) < scrollThreshold) return;
-      
-      if (currentScrollY < 50) {
-        setIsVisible(true);
-      } else if (scrollDiff > 0) {
-        setIsVisible(false);
-      } else {
-        setIsVisible(true);
-      }
-      
-      lastScrollY.current = currentScrollY;
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const navItems = [
     { href: "/", icon: Home, label: "الرئيسية", testId: "nav-home" },
@@ -49,9 +23,7 @@ export function MobileNavBar() {
 
   return (
     <nav 
-      className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden transition-transform duration-300 ${
-        isVisible ? "translate-y-0" : "translate-y-full"
-      }`} 
+      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-50 md:hidden shadow-lg"
       dir="rtl"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
