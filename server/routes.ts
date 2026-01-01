@@ -45,6 +45,11 @@ export async function registerRoutes(
   // Register object storage routes for image uploads
   registerObjectStorageRoutes(app);
 
+  // Caching middleware for public GET endpoints to reduce data transfer costs
+  const setCacheHeaders = (seconds: number) => {
+    return `public, max-age=${seconds}, stale-while-revalidate=${seconds * 2}`;
+  };
+
   app.get("/api/listings", async (req, res) => {
     try {
       const { category, sellerId, page, limit: limitParam, saleType } = req.query;
@@ -60,6 +65,9 @@ export async function registerRoutes(
         saleType: typeof saleType === "string" ? saleType : undefined,
         sellerId: typeof sellerId === "string" ? sellerId : undefined,
       });
+      
+      // Cache listing responses for 30 seconds to reduce repeat requests
+      res.set("Cache-Control", setCacheHeaders(30));
       
       res.json({
         listings: paginatedListings,
@@ -83,6 +91,8 @@ export async function registerRoutes(
       if (!listing) {
         return res.status(404).json({ error: "Listing not found" });
       }
+      // Cache individual listing for 60 seconds
+      res.set("Cache-Control", setCacheHeaders(60));
       res.json(listing);
     } catch (error) {
       console.error("Error fetching listing:", error);
@@ -822,6 +832,8 @@ export async function registerRoutes(
   app.get("/api/categories", async (req, res) => {
     try {
       const categories = await storage.getCategories();
+      // Categories rarely change - cache for 5 minutes
+      res.set("Cache-Control", setCacheHeaders(300));
       res.json(categories);
     } catch (error) {
       console.error("Error fetching categories:", error);

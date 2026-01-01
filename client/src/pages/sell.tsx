@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, Link, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -89,8 +89,10 @@ export default function SellPage() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [startTimeOption, setStartTimeOption] = useState("now");
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -325,16 +327,79 @@ export default function SellPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          setImages(prev => [...prev, event.target?.result as string]);
-        };
-        reader.readAsDataURL(file);
+    if (!files || files.length === 0) return;
+
+    const maxFiles = 8 - images.length;
+    const filesToUpload = Array.from(files).slice(0, maxFiles);
+    
+    if (filesToUpload.length === 0) {
+      toast({
+        title: "الحد الأقصى للصور",
+        description: "يمكنك رفع 8 صور كحد أقصى",
+        variant: "destructive",
       });
+      return;
+    }
+
+    setIsUploadingImages(true);
+
+    try {
+      const uploadedPaths: string[] = [];
+
+      for (const file of filesToUpload) {
+        // Step 1: Request presigned URL from backend
+        const urlResponse = await fetch("/api/uploads/request-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: file.name,
+            size: file.size,
+            contentType: file.type || "image/jpeg",
+          }),
+        });
+
+        if (!urlResponse.ok) {
+          throw new Error("فشل في الحصول على رابط الرفع");
+        }
+
+        const { uploadURL, objectPath } = await urlResponse.json();
+
+        // Step 2: Upload file directly to object storage
+        const uploadResponse = await fetch(uploadURL, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type || "image/jpeg" },
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("فشل في رفع الصورة");
+        }
+
+        // Store the object path (served via /objects/...)
+        uploadedPaths.push(objectPath);
+      }
+
+      setImages(prev => [...prev, ...uploadedPaths]);
+      
+      toast({
+        title: "تم رفع الصور بنجاح",
+        description: `تم رفع ${uploadedPaths.length} صورة`,
+      });
+    } catch (error) {
+      console.error("Image upload error:", error);
+      toast({
+        title: "خطأ في رفع الصور",
+        description: error instanceof Error ? error.message : "حدث خطأ أثناء رفع الصور",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingImages(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -711,17 +776,28 @@ export default function SellPage() {
                 ))}
                 
                 {images.length < 8 && (
-                  <label className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-colors">
+                  <label className={`aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center transition-colors ${isUploadingImages ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:border-primary hover:bg-blue-50'}`}>
                     <input
+                      ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       multiple
                       onChange={handleImageUpload}
                       className="hidden"
                       data-testid="input-images"
+                      disabled={isUploadingImages}
                     />
-                    <Plus className="h-8 w-8 text-gray-400 mb-2" />
-                    <span className="text-sm text-gray-500">إضافة صورة</span>
+                    {isUploadingImages ? (
+                      <>
+                        <Loader2 className="h-8 w-8 text-primary mb-2 animate-spin" />
+                        <span className="text-sm text-primary">جاري الرفع...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-8 w-8 text-gray-400 mb-2" />
+                        <span className="text-sm text-gray-500">إضافة صورة</span>
+                      </>
+                    )}
                   </label>
                 )}
               </div>
