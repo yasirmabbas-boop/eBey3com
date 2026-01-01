@@ -196,18 +196,21 @@ export function BiddingWindow({
         <div>
           <p className="text-xs font-semibold text-gray-600 mb-2">مزايدات مقترحة:</p>
           <div className="flex gap-2 flex-wrap">
-            {[suggestedBid, suggestedBid + 5000, suggestedBid + 10000].map((amount) => (
-              <Button
-                key={amount}
-                variant="outline"
-                size="sm"
-                onClick={() => handleQuickBid(amount)}
-                className="text-xs border-blue-200 hover:bg-blue-50"
-                data-testid={`button-quick-bid-${amount}`}
-              >
-                {amount.toLocaleString()}
-              </Button>
-            ))}
+            {[suggestedBid, suggestedBid + 5000, suggestedBid + 10000].map((amount) => {
+              const isSelected = bidAmount === amount.toString();
+              return (
+                <Button
+                  key={amount}
+                  variant={isSelected ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleQuickBid(amount)}
+                  className={`text-xs ${isSelected ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600" : "border-blue-200 hover:bg-blue-50"}`}
+                  data-testid={`button-quick-bid-${amount}`}
+                >
+                  {amount.toLocaleString()}
+                </Button>
+              );
+            })}
           </div>
         </div>
       </div>

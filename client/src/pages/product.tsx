@@ -677,25 +677,30 @@ export default function ProductPage() {
 
             return (
               <>
-                {/* Winning bidder status */}
-                {product.saleType === "auction" && isWinning && (
-                  <div className="bg-green-50 border border-green-200 p-4 rounded-xl flex items-center gap-3 mb-3" data-testid="winning-banner">
-                    <Trophy className="h-6 w-6 text-green-600" />
-                    <div>
-                      <p className="text-green-700 font-bold">أنت صاحب أعلى مزايدة! 🎉</p>
-                      <p className="text-green-600 text-sm">مزايدتك الحالية: {(liveBidData?.currentBid || product.currentBid || product.price).toLocaleString()} د.ع</p>
-                    </div>
-                  </div>
-                )}
+                {/* Bidder status notifications - Sticky to stay visible */}
+                {product.saleType === "auction" && (isWinning || (wasOutbid && !isWinning)) && (
+                  <div className="sticky top-0 z-20 -mx-4 px-4 py-2 bg-white/95 backdrop-blur-sm">
+                    {/* Winning bidder status */}
+                    {isWinning && (
+                      <div className="bg-green-50 border-2 border-green-400 p-4 rounded-xl flex items-center gap-3 shadow-md" data-testid="winning-banner">
+                        <Trophy className="h-6 w-6 text-green-600" />
+                        <div>
+                          <p className="text-green-700 font-bold">أنت صاحب أعلى مزايدة! 🎉</p>
+                          <p className="text-green-600 text-sm">مزايدتك الحالية: {(liveBidData?.currentBid || product.currentBid || product.price).toLocaleString()} د.ع</p>
+                        </div>
+                      </div>
+                    )}
 
-                {/* Outbid notification - RED alert */}
-                {product.saleType === "auction" && wasOutbid && !isWinning && (
-                  <div className="bg-red-50 border-2 border-red-500 p-4 rounded-xl flex items-center gap-3 mb-3 animate-pulse" data-testid="outbid-banner">
-                    <AlertCircle className="h-6 w-6 text-red-600" />
-                    <div>
-                      <p className="text-red-700 font-bold text-lg">⚠️ تم تجاوز مزايدتك!</p>
-                      <p className="text-red-600 text-sm">قم بزيادة مزايدتك الآن للفوز بالمزاد</p>
-                    </div>
+                    {/* Outbid notification - RED alert */}
+                    {wasOutbid && !isWinning && (
+                      <div className="bg-red-50 border-2 border-red-500 p-4 rounded-xl flex items-center gap-3 shadow-lg animate-pulse" data-testid="outbid-banner">
+                        <AlertCircle className="h-6 w-6 text-red-600" />
+                        <div>
+                          <p className="text-red-700 font-bold text-lg">⚠️ تم تجاوز مزايدتك!</p>
+                          <p className="text-red-600 text-sm">قم بزيادة مزايدتك الآن للفوز بالمزاد</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
