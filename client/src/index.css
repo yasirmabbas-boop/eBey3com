@@ -58,101 +58,104 @@
   --radius: 0.5rem;
 }
 
-/* Light Mode (Default) */
+/* Light Mode (Default) - Seiko Panda/Pepsi Inspired */
 :root {
-  --background: 0 0% 100%;       /* White */
-  --foreground: 200 50% 10%;     /* Dark Blue-Grey */
+  --background: 0 0% 100%;       /* Pure White - Panda Dial */
+  --foreground: 0 0% 8%;         /* Deep Black - Panda Subdials */
   
   --card: 0 0% 100%;
-  --card-foreground: 200 50% 10%;
+  --card-foreground: 0 0% 8%;
   
   --popover: 0 0% 100%;
-  --popover-foreground: 200 50% 10%;
+  --popover-foreground: 0 0% 8%;
   
-  /* Primary: Royal Blue */
-  --primary: 221 83% 53%;        /* #2563EB */
+  /* Primary: Pepsi Blue - Deep blue from bezel */
+  --primary: 224 76% 33%;        /* #1E3A8A */
   --primary-foreground: 0 0% 100%;
   
-  /* Secondary: Soft Blue-Gray */
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
+  /* Secondary: Silver/Metallic - Watch case */
+  --secondary: 215 20% 95%;
+  --secondary-foreground: 0 0% 8%;
   
-  /* Muted */
-  --muted: 200 10% 94%;
-  --muted-foreground: 200 10% 40%;
+  /* Muted: Soft silver gray */
+  --muted: 210 15% 93%;
+  --muted-foreground: 215 16% 47%;
   
-  /* Accent: Amber/Gold for Actions */
-  --accent: 38 92% 50%;          /* #F59E0B */
+  /* Accent: Pepsi Red - Red from bezel */
+  --accent: 0 84% 50%;           /* #DC2626 */
   --accent-foreground: 0 0% 100%;
   
-  --destructive: 0 84% 60%;
+  --destructive: 0 84% 50%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 200 10% 90%;
-  --input: 200 10% 90%;
-  --ring: 180 70% 30%;
+  --border: 215 20% 88%;
+  --input: 215 20% 88%;
+  --ring: 224 76% 33%;
   
   --radius: 0.5rem;
   
-  --chart-1: 180 70% 30%;
-  --chart-2: 38 92% 50%;
-  --chart-3: 200 50% 10%;
-  --chart-4: 200 20% 60%;
-  --chart-5: 0 84% 60%;
+  --chart-1: 224 76% 33%;
+  --chart-2: 0 84% 50%;
+  --chart-3: 0 0% 8%;
+  --chart-4: 215 16% 47%;
+  --chart-5: 38 92% 50%;
   
   --sidebar: 0 0% 98%;
-  --sidebar-foreground: 240 5.3% 26.1%;
-  --sidebar-primary: 240 5.9% 10%;
+  --sidebar-foreground: 0 0% 8%;
+  --sidebar-primary: 224 76% 33%;
   --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 240 4.8% 95.9%;
-  --sidebar-accent-foreground: 240 5.9% 10%;
-  --sidebar-border: 220 13% 91%;
-  --sidebar-ring: 217.2 91.2% 59.8%;
+  --sidebar-accent: 215 20% 95%;
+  --sidebar-accent-foreground: 0 0% 8%;
+  --sidebar-border: 215 20% 88%;
+  --sidebar-ring: 224 76% 33%;
 }
 
+/* Dark Mode - Seiko Panda/Pepsi Inspired */
 .dark {
-  --background: 200 50% 5%;
-  --foreground: 0 0% 98%;
+  --background: 0 0% 8%;         /* Deep Black - Panda */
+  --foreground: 0 0% 98%;        /* Off-white */
   
-  --card: 200 50% 7%;
+  --card: 0 0% 12%;
   --card-foreground: 0 0% 98%;
   
-  --popover: 200 50% 7%;
+  --popover: 0 0% 12%;
   --popover-foreground: 0 0% 98%;
   
-  --primary: 180 60% 45%;
+  /* Primary: Lighter Pepsi Blue for dark mode */
+  --primary: 224 76% 50%;
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 200 30% 15%;
+  --secondary: 0 0% 18%;
   --secondary-foreground: 0 0% 98%;
   
-  --muted: 200 30% 15%;
-  --muted-foreground: 200 20% 65%;
+  --muted: 0 0% 18%;
+  --muted-foreground: 0 0% 65%;
   
-  --accent: 38 92% 50%;
+  /* Accent: Pepsi Red */
+  --accent: 0 84% 55%;
   --accent-foreground: 0 0% 100%;
   
-  --destructive: 0 62% 30%;
+  --destructive: 0 62% 40%;
   --destructive-foreground: 0 0% 98%;
   
-  --border: 200 30% 15%;
-  --input: 200 30% 15%;
-  --ring: 180 60% 45%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 224 76% 50%;
   
-  --chart-1: 220 70% 50%;
-  --chart-2: 160 60% 45%;
-  --chart-3: 30 80% 55%;
-  --chart-4: 280 65% 60%;
-  --chart-5: 340 75% 55%;
+  --chart-1: 224 76% 50%;
+  --chart-2: 0 84% 55%;
+  --chart-3: 0 0% 90%;
+  --chart-4: 0 0% 50%;
+  --chart-5: 38 92% 50%;
   
-  --sidebar: 240 5.9% 10%;
-  --sidebar-foreground: 240 4.8% 95.9%;
-  --sidebar-primary: 224.3 76.3% 48%;
+  --sidebar: 0 0% 10%;
+  --sidebar-foreground: 0 0% 95%;
+  --sidebar-primary: 224 76% 50%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 240 3.7% 15.9%;
-  --sidebar-accent-foreground: 240 4.8% 95.9%;
-  --sidebar-border: 240 3.7% 15.9%;
-  --sidebar-ring: 217.2 91.2% 59.8%;
+  --sidebar-accent: 0 0% 18%;
+  --sidebar-accent-foreground: 0 0% 95%;
+  --sidebar-border: 0 0% 20%;
+  --sidebar-ring: 224 76% 50%;
 }
 
 @layer base {

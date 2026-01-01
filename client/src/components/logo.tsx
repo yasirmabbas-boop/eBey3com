@@ -9,13 +9,13 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
     variant === "light"
       ? {
           e: "#60A5FA",
-          dash: "#FF8C00",
+          dash: "#DC2626",
           arabic: "#93C5FD",
         }
       : {
-          e: "#2563EB",
-          dash: "#FF8C00",
-          arabic: "#1D4ED8",
+          e: "#1E3A8A",
+          dash: "#DC2626",
+          arabic: "#1E3A8A",
         };
 
   return (
