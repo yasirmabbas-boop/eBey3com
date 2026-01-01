@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1446,36 +1447,38 @@ export default function SellPage() {
                     </div>
                   </div>
 
-                  {/* Allow Offers Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                    <div className="space-y-1">
-                      <Label htmlFor="offersToggle" className="font-bold">السماح بالعروض</Label>
+                  {/* Allow Offers Checkbox */}
+                  <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
+                    <Checkbox 
+                      id="offersToggle" 
+                      checked={allowOffers}
+                      onCheckedChange={(checked) => setAllowOffers(checked === true)}
+                      className="h-5 w-5 border-2 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      data-testid="checkbox-allow-offers"
+                    />
+                    <div className="space-y-1 flex-1">
+                      <Label htmlFor="offersToggle" className="font-bold cursor-pointer">السماح بالعروض</Label>
                       <p className="text-xs text-muted-foreground">
                         السماح للمشترين بتقديم عروض أقل من السعر المحدد
                       </p>
                     </div>
-                    <Switch 
-                      id="offersToggle" 
-                      checked={allowOffers}
-                      onCheckedChange={setAllowOffers}
-                      data-testid="switch-allow-offers"
-                    />
                   </div>
 
-                  {/* Allow Exchange Toggle (مراوس) */}
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                    <div className="space-y-1">
-                      <Label htmlFor="exchangeToggle" className="font-bold">قابل للمراوس</Label>
+                  {/* Allow Exchange Checkbox (مراوس) */}
+                  <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
+                    <Checkbox 
+                      id="exchangeToggle" 
+                      checked={allowExchange}
+                      onCheckedChange={(checked) => setAllowExchange(checked === true)}
+                      className="h-5 w-5 border-2 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                      data-testid="checkbox-allow-exchange"
+                    />
+                    <div className="space-y-1 flex-1">
+                      <Label htmlFor="exchangeToggle" className="font-bold cursor-pointer">قابل للمراوس</Label>
                       <p className="text-xs text-muted-foreground">
                         السماح للمشترين بتقديم عروض تبادل مع منتجاتهم المعروضة
                       </p>
                     </div>
-                    <Switch 
-                      id="exchangeToggle" 
-                      checked={allowExchange}
-                      onCheckedChange={setAllowExchange}
-                      data-testid="switch-allow-exchange"
-                    />
                   </div>
                 </div>
               )}
@@ -1799,30 +1802,36 @@ export default function SellPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                <div className="space-y-1">
-                  <Label className="font-bold">قابل للتفاوض</Label>
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
+                <Checkbox 
+                  id="negotiableToggle"
+                  checked={allowOffers}
+                  onCheckedChange={(checked) => setAllowOffers(checked === true)}
+                  className="h-5 w-5 border-2 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  data-testid="checkbox-negotiable" 
+                />
+                <div className="space-y-1 flex-1">
+                  <Label htmlFor="negotiableToggle" className="font-bold cursor-pointer">قابل للتفاوض</Label>
                   <p className="text-xs text-muted-foreground">
                     السماح للمشترين بتقديم عروض سعر مختلفة
                   </p>
                 </div>
-                <Switch 
-                  checked={allowOffers}
-                  onCheckedChange={setAllowOffers}
-                  data-testid="switch-negotiable" 
-                />
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
-                <div className="space-y-1">
-                  <Label className="font-bold flex items-center gap-2">
+              <div className="flex items-center gap-3 p-4 bg-yellow-50 rounded-lg">
+                <Checkbox 
+                  id="featuredToggle"
+                  className="h-5 w-5 border-2 data-[state=checked]:bg-yellow-600 data-[state=checked]:border-yellow-600"
+                  data-testid="checkbox-featured" 
+                />
+                <div className="space-y-1 flex-1">
+                  <Label htmlFor="featuredToggle" className="font-bold cursor-pointer flex items-center gap-2">
                     ⭐ تمييز الإعلان
                   </Label>
                   <p className="text-xs text-muted-foreground">
                     اجعل إعلانك يظهر في المقدمة (رسوم إضافية)
                   </p>
                 </div>
-                <Switch data-testid="switch-featured" />
               </div>
             </CardContent>
           </Card>
