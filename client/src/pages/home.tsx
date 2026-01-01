@@ -33,7 +33,7 @@ const ADS = [
     badgeText: "E-بيع",
     buttonText: "ابدأ الآن",
     link: "/search",
-    color: "bg-blue-900"
+    color: "bg-[#1E3A8A]"
   },
   {
     id: 2,
@@ -43,7 +43,7 @@ const ADS = [
     badgeText: "عروض محدودة",
     buttonText: "تسوق الآن",
     link: "/search",
-    color: "bg-red-800"
+    color: "bg-[#DC2626]"
   },
   {
     id: 3,
@@ -53,7 +53,7 @@ const ADS = [
     badgeText: "جديد",
     buttonText: "اكتشف الجديد",
     link: "/search",
-    color: "bg-purple-800"
+    color: "bg-[#141414]"
   },
 ];
 

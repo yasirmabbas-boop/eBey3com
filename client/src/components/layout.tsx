@@ -35,7 +35,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
 
       {/* Combined Top Bar */}
       {!hideHeader && (
-      <div className={`${isAuthenticated && (user as any)?.sellerApproved ? 'bg-gradient-to-l from-amber-500 via-yellow-500 to-amber-500 text-black' : 'bg-blue-600 text-white'} py-1.5 text-xs px-4`}>
+      <div className={`${isAuthenticated && (user as any)?.sellerApproved ? 'bg-gradient-to-l from-red-600 via-red-500 to-red-600 text-white' : 'bg-[#1E3A8A] text-white'} py-1.5 text-xs px-4`}>
         <div className="container mx-auto flex justify-between items-center">
           {/* Navigation Links - Desktop only */}
           <div className="hidden md:flex items-center gap-5">
@@ -71,7 +71,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                 {(user as any)?.sellerApproved && (
                   <Link 
                     href="/sell" 
-                    className="bg-black text-yellow-400 hover:bg-gray-900 px-3 py-0.5 rounded-full font-bold flex items-center gap-1 transition-colors text-[10px]"
+                    className="bg-white text-[#1E3A8A] hover:bg-gray-100 px-3 py-0.5 rounded-full font-bold flex items-center gap-1 transition-colors text-[10px]"
                     data-testid="button-sell-item"
                   >
                     <Plus className="h-3 w-3" />
@@ -171,8 +171,8 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
         {children}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-slate-900 text-slate-300 py-8 mt-20">
+      {/* Footer - Panda Black */}
+      <footer className="bg-[#141414] text-gray-300 py-8 mt-20">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div className="flex items-center gap-3 md:flex-col md:items-start">
@@ -214,7 +214,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
             </div>
           </div>
           
-          <div className="mt-6 pt-4 border-t border-slate-800 text-center text-xs">
+          <div className="mt-6 pt-4 border-t border-gray-800 text-center text-xs">
             © 2024 اي بيع. جميع الحقوق محفوظة.
           </div>
         </div>
