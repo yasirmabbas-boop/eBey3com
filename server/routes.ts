@@ -5,6 +5,7 @@ import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatc
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { broadcastBidUpdate } from "./websocket";
+import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 
 // Helper to get user ID from session or auth token (Safari/ITP fallback)
 async function getUserIdFromRequest(req: Request): Promise<string | null> {
@@ -40,6 +41,9 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // Register object storage routes for image uploads
+  registerObjectStorageRoutes(app);
 
   app.get("/api/listings", async (req, res) => {
     try {
