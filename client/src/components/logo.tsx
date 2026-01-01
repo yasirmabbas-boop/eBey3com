@@ -7,26 +7,27 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
   const colors =
     variant === "light"
       ? {
-          e: "text-orange-300",
-          dash: "text-orange-400",
-          arabic: "text-orange-200",
+          e: "#FF8C00",
+          dash: "#FF8C00",
+          arabic: "#FFFFFF",
         }
       : {
-          e: "text-orange-600",
-          dash: "text-orange-500",
-          arabic: "text-orange-700",
+          e: "#FF8C00",
+          dash: "#FF8C00",
+          arabic: "#333333",
         };
 
   return (
     <div
       className={`flex items-center justify-center whitespace-nowrap ${className}`}
+      style={{ fontFamily: "'Cairo', sans-serif" }}
     >
       <span className="text-2xl md:text-3xl font-bold tracking-wide flex items-center gap-0">
-        <span className={`${colors.e} inline-block transform scale-x-[-1]`}>
+        <span style={{ color: colors.e }} className="inline-block transform scale-x-[-1]">
           E
         </span>
-        <span className={colors.dash}>-</span>
-        <span className={colors.arabic}>بيع</span>
+        <span style={{ color: colors.dash }}>-</span>
+        <span style={{ color: colors.arabic }}>بيع</span>
       </span>
     </div>
   );
