@@ -513,8 +513,8 @@ export default function SellerDashboard() {
                 <ArrowRight className="h-6 w-6" />
               </button>
             </Link>
-            <Link href="/" className="flex items-center gap-1">
-              <span className="text-2xl font-bold">
+            <Link href="/">
+              <span className="text-2xl font-bold whitespace-nowrap">
                 <span className="text-blue-300">E</span>
                 <span className="text-blue-400">-</span>
                 <span className="text-blue-500">ب</span>
