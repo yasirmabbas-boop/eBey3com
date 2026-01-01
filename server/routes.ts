@@ -1349,7 +1349,7 @@ export async function registerRoutes(
     try {
       const user = await storage.getUser(userId);
       if (!user || !user.sellerApproved) {
-        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين المعتمدين فقط" });
+        return res.json([]);
       }
 
       // Use dedicated method that queries ONLY sales where user is seller
@@ -1395,7 +1395,15 @@ export async function registerRoutes(
     try {
       const user = await storage.getUser(userId);
       if (!user || !user.sellerApproved) {
-        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين المعتمدين فقط" });
+        return res.json({
+          totalListings: 0,
+          activeListings: 0,
+          totalSales: 0,
+          totalRevenue: 0,
+          pendingShipments: 0,
+          averageRating: 0,
+          ratingCount: 0
+        });
       }
 
       const summary = await storage.getSellerSummary(userId);
