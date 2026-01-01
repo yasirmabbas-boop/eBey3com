@@ -25,7 +25,16 @@ import {
   MessageSquare,
   ShoppingBag,
   Eye,
+  Filter,
+  Calendar,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Transaction, Listing, Offer } from "@shared/schema";
 
 interface EnrichedTransaction extends Transaction {
@@ -106,12 +115,44 @@ const getOfferStatusBadge = (status: string) => {
   }
 };
 
+type SalesStatusFilter = "all" | "pending" | "shipped" | "delivered" | "completed";
+type OffersStatusFilter = "all" | "pending" | "accepted" | "rejected" | "countered";
+type TimelineFilter = "all" | "today" | "week" | "month";
+
+const filterByTimeline = <T extends { createdAt: Date | string }>(items: T[], timeline: TimelineFilter): T[] => {
+  if (timeline === "all") return items;
+  
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(startOfDay);
+  startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  
+  return items.filter(item => {
+    const itemDate = new Date(item.createdAt);
+    switch (timeline) {
+      case "today":
+        return itemDate >= startOfDay;
+      case "week":
+        return itemDate >= startOfWeek;
+      case "month":
+        return itemDate >= startOfMonth;
+      default:
+        return true;
+    }
+  });
+};
+
 export default function MySales() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedSale, setSelectedSale] = useState<EnrichedTransaction | null>(null);
   const [showShippingLabel, setShowShippingLabel] = useState(false);
+  const [salesStatusFilter, setSalesStatusFilter] = useState<SalesStatusFilter>("all");
+  const [salesTimelineFilter, setSalesTimelineFilter] = useState<TimelineFilter>("all");
+  const [offersStatusFilter, setOffersStatusFilter] = useState<OffersStatusFilter>("all");
+  const [offersTimelineFilter, setOffersTimelineFilter] = useState<TimelineFilter>("all");
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery<EnrichedTransaction[]>({
     queryKey: ["/api/seller-transactions", user?.id],
@@ -243,9 +284,21 @@ export default function MySales() {
     },
   });
 
+  const filteredSales = filterByTimeline(
+    salesStatusFilter === "all" 
+      ? transactions 
+      : transactions.filter(t => t.status === salesStatusFilter || (salesStatusFilter === "completed" && t.status === "delivered")),
+    salesTimelineFilter
+  );
+
+  const filteredOffers = filterByTimeline(
+    offersStatusFilter === "all" 
+      ? offers 
+      : offers.filter(o => o.status === offersStatusFilter),
+    offersTimelineFilter
+  );
+
   const pendingOffers = offers.filter(o => o.status === "pending");
-  const completedSales = transactions.filter(t => t.status === "completed" || t.status === "delivered");
-  const pendingSales = transactions.filter(t => t.status === "pending" || t.status === "shipped");
 
   if (authLoading) {
     return (
@@ -311,99 +364,91 @@ export default function MySales() {
                 </Link>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-1 space-y-6">
-                  {pendingSales.length > 0 && (
-                    <div>
-                      <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                        <Clock className="h-5 w-5 text-yellow-600" />
-                        بانتظار الشحن ({pendingSales.length})
-                      </h3>
-                      <div className="space-y-3">
-                        {pendingSales.map((sale) => (
-                          <Card
-                            key={sale.id}
-                            className={`p-4 cursor-pointer transition-all hover:shadow-lg ${
-                              selectedSale?.id === sale.id ? "ring-2 ring-primary border-primary" : ""
-                            }`}
-                            onClick={() => setSelectedSale(sale)}
-                            data-testid={`sale-card-${sale.id}`}
-                          >
-                            <div className="flex gap-3">
-                              <img
-                                src={sale.listing?.images?.[0] || "https://via.placeholder.com/100"}
-                                alt={sale.listing?.title || "منتج"}
-                                className="w-20 h-20 object-cover rounded-lg"
-                                loading="lazy"
-                                style={{ imageRendering: "auto" }}
-                              />
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-sm line-clamp-2">
-                                  {sale.listing?.title || "منتج"}
-                                </h4>
-                                <p className="text-xs text-gray-600 mt-1">
-                                  {sale.amount.toLocaleString()} د.ع
-                                </p>
-                                <div className="mt-2 flex items-center gap-2 flex-wrap">
-                                  {getStatusBadge(sale.status)}
-                                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                                    <Eye className="h-3 w-3" />
-                                    {(sale.listing as any)?.views || 0}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+              <>
+                {/* Filters */}
+                <div className="flex flex-wrap gap-3 mb-6">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <Select value={salesStatusFilter} onValueChange={(v) => setSalesStatusFilter(v as SalesStatusFilter)}>
+                      <SelectTrigger className="w-36" data-testid="select-sales-status">
+                        <SelectValue placeholder="الحالة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">الكل</SelectItem>
+                        <SelectItem value="pending">بانتظار الشحن</SelectItem>
+                        <SelectItem value="shipped">تم الشحن</SelectItem>
+                        <SelectItem value="delivered">تم التسليم</SelectItem>
+                        <SelectItem value="completed">مكتملة</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <Select value={salesTimelineFilter} onValueChange={(v) => setSalesTimelineFilter(v as TimelineFilter)}>
+                      <SelectTrigger className="w-32" data-testid="select-sales-timeline">
+                        <SelectValue placeholder="الفترة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">الكل</SelectItem>
+                        <SelectItem value="today">اليوم</SelectItem>
+                        <SelectItem value="week">هذا الأسبوع</SelectItem>
+                        <SelectItem value="month">هذا الشهر</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <span className="text-sm text-gray-500 self-center">
+                    ({filteredSales.length} نتيجة)
+                  </span>
+                </div>
 
-                  {completedSales.length > 0 && (
-                    <div>
-                      <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        المبيعات المكتملة ({completedSales.length})
-                      </h3>
-                      <div className="space-y-3">
-                        {completedSales.map((sale) => (
-                          <Card
-                            key={sale.id}
-                            className={`p-4 cursor-pointer transition-all hover:shadow-lg ${
-                              selectedSale?.id === sale.id ? "ring-2 ring-primary border-primary" : ""
-                            }`}
-                            onClick={() => setSelectedSale(sale)}
-                            data-testid={`sale-card-${sale.id}`}
-                          >
-                            <div className="flex gap-3">
-                              <img
-                                src={sale.listing?.images?.[0] || "https://via.placeholder.com/100"}
-                                alt={sale.listing?.title || "منتج"}
-                                className="w-20 h-20 object-cover rounded-lg"
-                                loading="lazy"
-                                style={{ imageRendering: "auto" }}
-                              />
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-sm line-clamp-2">
-                                  {sale.listing?.title || "منتج"}
-                                </h4>
-                                <p className="text-xs text-gray-600 mt-1">
-                                  {sale.amount.toLocaleString()} د.ع
-                                </p>
-                                <div className="mt-2 flex items-center gap-2 flex-wrap">
-                                  {getStatusBadge(sale.status)}
-                                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                                    <Eye className="h-3 w-3" />
-                                    {(sale.listing as any)?.views || 0}
-                                  </span>
-                                </div>
-                              </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-1 space-y-6">
+                  <div className="space-y-3">
+                    {filteredSales.map((sale) => (
+                      <Card
+                        key={sale.id}
+                        className={`p-4 cursor-pointer transition-all hover:shadow-lg ${
+                          selectedSale?.id === sale.id ? "ring-2 ring-primary border-primary" : ""
+                        }`}
+                        onClick={() => setSelectedSale(sale)}
+                        data-testid={`sale-card-${sale.id}`}
+                      >
+                        <div className="flex gap-3">
+                          <img
+                            src={sale.listing?.images?.[0] || "https://via.placeholder.com/100"}
+                            alt={sale.listing?.title || "منتج"}
+                            className="w-20 h-20 object-cover rounded-lg"
+                            loading="lazy"
+                            style={{ imageRendering: "auto" }}
+                          />
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-sm line-clamp-2">
+                              {sale.listing?.title || "منتج"}
+                            </h4>
+                            <p className="text-xs text-gray-600 mt-1">
+                              {sale.amount.toLocaleString()} د.ع
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {new Date(sale.createdAt).toLocaleDateString("ar-IQ")}
+                            </p>
+                            <div className="mt-2 flex items-center gap-2 flex-wrap">
+                              {getStatusBadge(sale.status)}
+                              <span className="text-xs text-gray-500 flex items-center gap-1">
+                                <Eye className="h-3 w-3" />
+                                {(sale.listing as any)?.views || 0}
+                              </span>
                             </div>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                    {filteredSales.length === 0 && (
+                      <Card className="p-6 text-center">
+                        <Package className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                        <p className="text-gray-500">لا توجد نتائج للفلتر المحدد</p>
+                      </Card>
+                    )}
+                  </div>
                 </div>
 
                 <div className="lg:col-span-2 space-y-6">
@@ -593,6 +638,7 @@ export default function MySales() {
                   )}
                 </div>
               </div>
+              </>
             )}
           </TabsContent>
 
@@ -609,8 +655,50 @@ export default function MySales() {
                 <p className="text-gray-500">عندما يقدم مشتري عرضاً على منتجاتك، سيظهر هنا</p>
               </Card>
             ) : (
-              <div className="space-y-4">
-                {offers.map((offer) => (
+              <>
+                {/* Offers Filters */}
+                <div className="flex flex-wrap gap-3 mb-6">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <Select value={offersStatusFilter} onValueChange={(v) => setOffersStatusFilter(v as OffersStatusFilter)}>
+                      <SelectTrigger className="w-36" data-testid="select-offers-status">
+                        <SelectValue placeholder="الحالة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">الكل</SelectItem>
+                        <SelectItem value="pending">بانتظار الرد</SelectItem>
+                        <SelectItem value="accepted">مقبول</SelectItem>
+                        <SelectItem value="rejected">مرفوض</SelectItem>
+                        <SelectItem value="countered">عرض مضاد</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <Select value={offersTimelineFilter} onValueChange={(v) => setOffersTimelineFilter(v as TimelineFilter)}>
+                      <SelectTrigger className="w-32" data-testid="select-offers-timeline">
+                        <SelectValue placeholder="الفترة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">الكل</SelectItem>
+                        <SelectItem value="today">اليوم</SelectItem>
+                        <SelectItem value="week">هذا الأسبوع</SelectItem>
+                        <SelectItem value="month">هذا الشهر</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <span className="text-sm text-gray-500 self-center">
+                    ({filteredOffers.length} نتيجة)
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                {filteredOffers.length === 0 ? (
+                  <Card className="p-6 text-center">
+                    <Tag className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500">لا توجد نتائج للفلتر المحدد</p>
+                  </Card>
+                ) : filteredOffers.map((offer) => (
                   <Card key={offer.id} className="p-4" data-testid={`offer-card-${offer.id}`}>
                     <div className="flex gap-4">
                       <img
@@ -676,6 +764,7 @@ export default function MySales() {
                   </Card>
                 ))}
               </div>
+              </>
             )}
           </TabsContent>
         </Tabs>
@@ -689,7 +778,7 @@ export default function MySales() {
             orderId: selectedSale.id.slice(0, 8).toUpperCase(),
             productTitle: selectedSale.listing?.title || "منتج",
             productCode: (selectedSale.listing as any)?.productCode || "",
-            sellerName: user?.displayName || user?.username || "",
+            sellerName: user?.displayName || (user as any)?.username || "",
             sellerCity: (user as any)?.city || "",
             buyerName: selectedSale.buyerInfo.displayName || selectedSale.buyerInfo.username || "مشتري",
             buyerPhone: "",
