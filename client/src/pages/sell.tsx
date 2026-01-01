@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
@@ -90,6 +91,7 @@ export default function SellPage() {
   const [tagInput, setTagInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [startTimeOption, setStartTimeOption] = useState("now");
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -439,7 +441,7 @@ export default function SellPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleShowSummary = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -451,6 +453,11 @@ export default function SellPage() {
       return;
     }
     
+    setShowSummary(true);
+  };
+
+  const handleSubmit = async () => {
+    setShowSummary(false);
     setIsSubmitting(true);
     
     try {
@@ -505,6 +512,7 @@ export default function SellPage() {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(listingData),
       });
 
@@ -747,7 +755,7 @@ export default function SellPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleShowSummary} className="space-y-8">
           
           {/* Image Upload Section */}
           <Card>
@@ -1826,6 +1834,152 @@ export default function SellPage() {
             </div>
           </div>
         </form>
+
+        {/* Summary Preview Dialog */}
+        <Dialog open={showSummary} onOpenChange={setShowSummary}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
+                مراجعة الإعلان قبل النشر
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              {/* Images Preview */}
+              {images.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {images.slice(0, 4).map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img}
+                      alt={`صورة ${idx + 1}`}
+                      className="w-20 h-20 object-cover rounded-lg border"
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Title & Price */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs text-gray-500">عنوان الإعلان</p>
+                    <p className="font-bold text-lg">{formData.title || "—"}</p>
+                  </div>
+                  <Badge variant={saleType === "auction" ? "default" : "secondary"}>
+                    {saleType === "auction" ? "مزاد" : "سعر ثابت"}
+                  </Badge>
+                </div>
+                
+                <Separator />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500">السعر</p>
+                    <p className="font-bold text-primary text-lg">
+                      {parseInt(formData.price || "0").toLocaleString()} د.ع
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">الفئة</p>
+                    <p className="font-medium">{formData.category || "—"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-2">
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-gray-600">الحالة</span>
+                  <span className="font-medium">{formData.condition || "—"}</span>
+                </div>
+                {formData.brand && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600">الماركة</span>
+                    <span className="font-medium">{formData.brand === "أخرى" ? formData.customBrand : formData.brand}</span>
+                  </div>
+                )}
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-gray-600">الموقع</span>
+                  <span className="font-medium">{formData.city || "—"}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b">
+                  <span className="text-gray-600">الكمية</span>
+                  <span className="font-medium">{formData.quantityAvailable || "1"}</span>
+                </div>
+                {formData.deliveryWindow && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600">مدة التوصيل</span>
+                    <span className="font-medium">{formData.deliveryWindow}</span>
+                  </div>
+                )}
+                {formData.returnPolicy && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600">سياسة الإرجاع</span>
+                    <span className="font-medium">{formData.returnPolicy}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Options */}
+              <div className="flex flex-wrap gap-2">
+                {allowOffers && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    قابل للتفاوض
+                  </Badge>
+                )}
+                {allowExchange && (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    قابل للمراوس
+                  </Badge>
+                )}
+                {saleType === "auction" && formData.endDate && (
+                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                    ينتهي: {formData.endDate} {formData.endHour}:00
+                  </Badge>
+                )}
+              </div>
+
+              {/* Description Preview */}
+              {formData.description && (
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 mb-1">الوصف</p>
+                  <p className="text-sm text-gray-700 line-clamp-3">{formData.description}</p>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="flex gap-3 sm:gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowSummary(false)}
+                className="flex-1"
+                data-testid="button-edit-listing"
+              >
+                تعديل
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+                data-testid="button-confirm-publish"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                    جاري النشر...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 ml-2" />
+                    تأكيد ونشر
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
