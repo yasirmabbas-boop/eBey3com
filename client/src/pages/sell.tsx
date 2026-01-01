@@ -115,7 +115,13 @@ export default function SellPage() {
     startHour: "",
     endDate: "",
     endHour: "",
+    reservePrice: "",
+    buyNowPrice: "",
+    bidIncrement: "",
   });
+  
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.displayName && !formData.sellerName) {
@@ -162,6 +168,8 @@ export default function SellPage() {
         if (draft.saleType) setSaleType(draft.saleType);
         if (draft.allowOffers !== undefined) setAllowOffers(draft.allowOffers);
         if (draft.allowExchange !== undefined) setAllowExchange(draft.allowExchange);
+        if (draft.hasBuyNow !== undefined) setHasBuyNow(draft.hasBuyNow);
+        if (draft.hasReservePrice !== undefined) setHasReservePrice(draft.hasReservePrice);
         if (draft.tags) setTags(draft.tags);
         toast({ title: "تم استرجاع المسودة", description: "تم تحميل البيانات المحفوظة مسبقاً" });
       } catch (e) {
@@ -182,14 +190,14 @@ export default function SellPage() {
       const hasContent = formData.title || formData.description || formData.price || images.length > 0;
       if (hasContent) {
         try {
-          const draft = { formData, images: images.slice(0, 4), saleType, allowOffers, allowExchange, tags, savedAt: new Date().toISOString() };
+          const draft = { formData, images: images.slice(0, 4), saleType, allowOffers, allowExchange, hasBuyNow, hasReservePrice, tags, savedAt: new Date().toISOString() };
           localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
         } catch (e) {
           console.warn("Failed to save draft to localStorage:", e);
         }
       }
     }
-  }, [formData, images, saleType, allowOffers, allowExchange, tags, isNewListing, draftLoaded, showDraftBanner]);
+  }, [formData, images, saleType, allowOffers, allowExchange, hasBuyNow, hasReservePrice, tags, isNewListing, draftLoaded, showDraftBanner]);
 
   // Populate form when editing, relisting, or using as template
   useEffect(() => {
@@ -213,6 +221,9 @@ export default function SellPage() {
         startHour: "",
         endDate: "",
         endHour: "",
+        reservePrice: "",
+        buyNowPrice: "",
+        bidIncrement: "",
       });
       setImages(sourceListing.images || []);
       setSaleType((sourceListing.saleType as "auction" | "fixed") || "fixed");
@@ -221,6 +232,24 @@ export default function SellPage() {
       setTags((sourceListing as any).tags || []);
     }
   }, [sourceListing, sourceListingId, isTemplateMode, isRelistMode]);
+
+  // Check if form has unsaved content
+  const hasUnsavedContent = () => {
+    return formData.title || formData.description || formData.price || images.length > 0;
+  };
+
+  // Warn before leaving page with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedContent() && isNewListing) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [formData, images, isNewListing]);
 
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [watchSpecs, setWatchSpecs] = useState({
@@ -1311,6 +1340,8 @@ export default function SellPage() {
                           type="number" 
                           placeholder="5000"
                           className="pl-16"
+                          value={formData.bidIncrement}
+                          onChange={(e) => handleInputChange("bidIncrement", e.target.value)}
                           data-testid="input-bid-increment"
                         />
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">د.ع</span>
@@ -1344,6 +1375,8 @@ export default function SellPage() {
                           type="number" 
                           placeholder="0"
                           className="pl-16"
+                          value={formData.reservePrice}
+                          onChange={(e) => handleInputChange("reservePrice", e.target.value)}
                           data-testid="input-reserve-price"
                         />
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">د.ع</span>
@@ -1382,6 +1415,8 @@ export default function SellPage() {
                           type="number" 
                           placeholder="0"
                           className="pl-16"
+                          value={formData.buyNowPrice}
+                          onChange={(e) => handleInputChange("buyNowPrice", e.target.value)}
                           data-testid="input-buy-now-price"
                         />
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">د.ع</span>
@@ -1876,7 +1911,7 @@ export default function SellPage() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-gray-500">السعر</p>
+                    <p className="text-xs text-gray-500">{saleType === "auction" ? "سعر البداية" : "السعر"}</p>
                     <p className="font-bold text-primary text-lg">
                       {parseInt(formData.price || "0").toLocaleString()} د.ع
                     </p>
@@ -1886,6 +1921,36 @@ export default function SellPage() {
                     <p className="font-medium">{formData.category || "—"}</p>
                   </div>
                 </div>
+
+                {/* Auction-specific pricing details */}
+                {saleType === "auction" && (
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                    {hasReservePrice && formData.reservePrice && (
+                      <div>
+                        <p className="text-xs text-gray-500">السعر الاحتياطي</p>
+                        <p className="font-medium text-orange-600">
+                          {parseInt(formData.reservePrice).toLocaleString()} د.ع
+                        </p>
+                      </div>
+                    )}
+                    {hasBuyNow && formData.buyNowPrice && (
+                      <div>
+                        <p className="text-xs text-gray-500">سعر الشراء الفوري</p>
+                        <p className="font-medium text-green-600">
+                          {parseInt(formData.buyNowPrice).toLocaleString()} د.ع
+                        </p>
+                      </div>
+                    )}
+                    {formData.bidIncrement && (
+                      <div>
+                        <p className="text-xs text-gray-500">الحد الأدنى للزيادة</p>
+                        <p className="font-medium">
+                          {parseInt(formData.bidIncrement).toLocaleString()} د.ع
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Details */}
@@ -1898,6 +1963,12 @@ export default function SellPage() {
                   <div className="flex justify-between py-2 border-b">
                     <span className="text-gray-600">الماركة</span>
                     <span className="font-medium">{formData.brand === "أخرى" ? formData.customBrand : formData.brand}</span>
+                  </div>
+                )}
+                {formData.serialNumber && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600">الرقم التسلسلي</span>
+                    <span className="font-medium text-xs">{formData.serialNumber}</span>
                   </div>
                 )}
                 <div className="flex justify-between py-2 border-b">
@@ -1918,6 +1989,12 @@ export default function SellPage() {
                   <div className="flex justify-between py-2 border-b">
                     <span className="text-gray-600">سياسة الإرجاع</span>
                     <span className="font-medium">{formData.returnPolicy}</span>
+                  </div>
+                )}
+                {formData.sellerName && (
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-gray-600">اسم البائع</span>
+                    <span className="font-medium">{formData.sellerName}</span>
                   </div>
                 )}
               </div>
@@ -1976,6 +2053,66 @@ export default function SellPage() {
                     تأكيد ونشر
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Exit Confirmation Dialog */}
+        <Dialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                حفظ التغييرات؟
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-gray-600 text-sm py-2">
+              لديك تغييرات غير محفوظة. هل تريد حفظها كمسودة قبل المغادرة؟
+            </p>
+            <DialogFooter className="flex gap-2 sm:gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowExitConfirm(false);
+                  if (pendingNavigation) {
+                    window.location.href = pendingNavigation;
+                  }
+                }}
+                className="flex-1"
+                data-testid="button-exit-without-saving"
+              >
+                تجاهل
+              </Button>
+              <Button
+                onClick={() => {
+                  // Save draft before leaving
+                  try {
+                    const draft = { 
+                      formData, 
+                      images: images.slice(0, 4), 
+                      saleType, 
+                      allowOffers, 
+                      allowExchange, 
+                      hasBuyNow, 
+                      hasReservePrice, 
+                      tags, 
+                      savedAt: new Date().toISOString() 
+                    };
+                    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+                    toast({ title: "تم حفظ المسودة", description: "يمكنك إكمال الإعلان لاحقاً" });
+                  } catch (e) {
+                    console.warn("Failed to save draft:", e);
+                  }
+                  setShowExitConfirm(false);
+                  if (pendingNavigation) {
+                    window.location.href = pendingNavigation;
+                  }
+                }}
+                className="flex-1 bg-primary"
+                data-testid="button-save-and-exit"
+              >
+                حفظ ومغادرة
               </Button>
             </DialogFooter>
           </DialogContent>
