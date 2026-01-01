@@ -373,8 +373,8 @@ export async function registerRoutes(
         const twoMinutes = 2 * 60 * 1000;
         
         if (timeRemaining > 0 && timeRemaining <= twoMinutes) {
-          // Bid in last 2 minutes - extend by 45 seconds
-          newEndTime = new Date(currentEndTime.getTime() + 45 * 1000);
+          // Bid in last 2 minutes - extend by 2 minutes (Extended Bidding)
+          newEndTime = new Date(currentEndTime.getTime() + 2 * 60 * 1000);
           await storage.updateListing(validatedData.listingId, { 
             auctionEndTime: newEndTime 
           });

@@ -321,8 +321,8 @@ export default function ProductPage() {
           // Notify about time extension
           if (data.timeExtended) {
             toast({
-              title: "تم تمديد الوقت ⏰",
-              description: "تم إضافة 45 ثانية للمزاد بسبب مزايدة في اللحظة الأخيرة",
+              title: "تم تمديد المزاد! ⏰",
+              description: "تم إضافة دقيقتين للمزاد بسبب مزايدة في اللحظات الأخيرة",
             });
           }
 
