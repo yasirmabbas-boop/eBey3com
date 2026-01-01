@@ -7,14 +7,14 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
   const colors =
     variant === "light"
       ? {
-          e: "#FF8C00",
-          dash: "#FF8C00",
-          arabic: "#FFFFFF",
+          e: "Blue",
+          dash: "blue",
+          arabic: "blue",
         }
       : {
-          e: "#FF8C00",
-          dash: "#FF8C00",
-          arabic: "#333333",
+          e: "Blue",
+          dash: "#yellow",
+          arabic: "Blue",
         };
 
   return (
@@ -23,7 +23,10 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
       style={{ fontFamily: "'Cairo', sans-serif" }}
     >
       <span className="text-2xl md:text-3xl font-bold tracking-wide flex items-center gap-0">
-        <span style={{ color: colors.e }} className="inline-block transform scale-x-[-1]">
+        <span
+          style={{ color: colors.e }}
+          className="inline-block transform scale-x-[-1]"
+        >
           E
         </span>
         <span style={{ color: colors.dash }}>-</span>
