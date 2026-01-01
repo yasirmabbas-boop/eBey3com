@@ -73,29 +73,33 @@ export function AuctionCountdown({ endTime, onExpired }: AuctionCountdownProps) 
     );
   }
 
+  const totalHoursRemaining = timeLeft.days * 24 + timeLeft.hours + (timeLeft.minutes / 60);
+  const isOverFiveHours = totalHoursRemaining >= 5;
   const isUrgent = timeLeft.days === 0 && timeLeft.hours === 0 && timeLeft.minutes < 5;
-  const isLastHour = timeLeft.days === 0 && timeLeft.hours === 0;
 
   const formatNumber = (n: number) => n.toString().padStart(2, '0');
 
+  const textColor = isOverFiveHours ? "text-green-600" : "text-red-600";
+  const bgColor = isOverFiveHours ? "bg-green-100" : "bg-red-100";
+
   return (
     <div 
-      className={`flex items-center gap-2 text-sm font-medium ${isUrgent ? "text-red-600" : "text-orange-600"}`}
+      className={`flex items-center gap-2 text-sm font-medium ${textColor}`}
       data-testid="auction-countdown"
     >
       <Clock className={`h-4 w-4 ${isUrgent ? "animate-pulse" : ""}`} />
       <div className="flex items-center gap-1 font-mono">
         {timeLeft.days > 0 && (
           <>
-            <span className="bg-orange-100 px-1.5 py-0.5 rounded">{timeLeft.days}</span>
+            <span className={`${bgColor} px-1.5 py-0.5 rounded`}>{timeLeft.days}</span>
             <span className="text-xs">يوم</span>
           </>
         )}
-        <span className="bg-orange-100 px-1.5 py-0.5 rounded">{formatNumber(timeLeft.hours)}</span>
+        <span className={`${bgColor} px-1.5 py-0.5 rounded`}>{formatNumber(timeLeft.hours)}</span>
         <span className="text-xs">:</span>
-        <span className="bg-orange-100 px-1.5 py-0.5 rounded">{formatNumber(timeLeft.minutes)}</span>
+        <span className={`${bgColor} px-1.5 py-0.5 rounded`}>{formatNumber(timeLeft.minutes)}</span>
         <span className="text-xs">:</span>
-        <span className={`px-1.5 py-0.5 rounded ${isLastHour ? "bg-red-100" : "bg-orange-100"}`}>{formatNumber(timeLeft.seconds)}</span>
+        <span className={`${bgColor} px-1.5 py-0.5 rounded`}>{formatNumber(timeLeft.seconds)}</span>
       </div>
     </div>
   );
