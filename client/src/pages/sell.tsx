@@ -459,12 +459,23 @@ export default function SellPage() {
     }
     
     if (saleType === "auction") {
-      if (startTimeOption === "schedule") {
-        if (!formData.startDate) errors.startDate = "تاريخ البدء مطلوب";
-        if (!formData.startHour) errors.startHour = "وقت البدء مطلوب";
-      }
+      if (!formData.startDate) errors.startDate = "تاريخ البدء مطلوب";
+      if (!formData.startHour) errors.startHour = "وقت البدء مطلوب";
       if (!formData.endDate) errors.endDate = "تاريخ الانتهاء مطلوب";
       if (!formData.endHour) errors.endHour = "وقت الانتهاء مطلوب";
+      
+      if (formData.startDate && formData.startHour && formData.endDate && formData.endHour) {
+        const startTime = new Date(`${formData.startDate}T${formData.startHour}:00`);
+        const endTime = new Date(`${formData.endDate}T${formData.endHour}:00`);
+        const hoursDiff = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursDiff < 24) {
+          errors.endDate = "يجب أن تكون مدة المزاد 24 ساعة على الأقل";
+        }
+        if (endTime <= startTime) {
+          errors.endDate = "تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء";
+        }
+      }
     }
     
     setValidationErrors(errors);
