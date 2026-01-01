@@ -28,95 +28,61 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 
-      {/* Seller Account Ribbon - Only show for approved sellers */}
-      {isAuthenticated && (user as any)?.sellerApproved && (
-        <div className="bg-gradient-to-l from-amber-500 via-yellow-500 to-amber-500 text-black py-1.5 text-xs px-4">
-          <div className="container mx-auto flex justify-between items-center">
-            {/* Seller Info */}
-            <div className="flex items-center gap-3">
-              <Store className="h-4 w-4" />
-              <span className="font-bold">{user?.displayName || (user as any)?.phone}</span>
-              <span className="hidden sm:inline">|</span>
-              <Link href="/my-account" className="hidden sm:inline hover:underline font-medium">
-                حسابي
-              </Link>
-              <Link href="/my-sales" className="hidden sm:inline hover:underline font-medium">
-                مبيعاتي
-              </Link>
-              <span className="hidden sm:inline">|</span>
-              <button 
-                onClick={() => logout()}
-                className="hover:underline font-medium flex items-center gap-1"
-                data-testid="button-seller-logout"
-              >
-                <LogOut className="h-3 w-3" />
-                خروج
-              </button>
-            </div>
-            
-            {/* List Item Button - Top Right */}
-            <Link 
-              href="/sell" 
-              className="bg-black text-yellow-400 hover:bg-gray-900 px-4 py-1 rounded-full font-bold flex items-center gap-1.5 transition-colors shadow-md"
-              data-testid="button-sell-item"
-            >
-              <Plus className="h-4 w-4" />
-              أضف منتج للبيع
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* Buyer Ribbon - Only show for non-sellers */}
-      {isAuthenticated && !(user as any)?.sellerApproved && (
-        <div className="bg-gradient-to-l from-blue-500 via-blue-600 to-blue-500 text-white py-1.5 text-xs px-4">
-          <div className="container mx-auto flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <User className="h-4 w-4" />
-              <span className="font-bold">{user?.displayName || (user as any)?.phone}</span>
-              <span className="hidden sm:inline">|</span>
-              <Link href="/my-account" className="hidden sm:inline hover:underline font-medium">
-                حسابي
-              </Link>
-              <Link href="/my-purchases" className="hidden sm:inline hover:underline font-medium">
-                مشترياتي
-              </Link>
-              <span className="hidden sm:inline">|</span>
-              <button 
-                onClick={() => logout()}
-                className="hover:underline font-medium flex items-center gap-1"
-                data-testid="button-buyer-logout"
-              >
-                <LogOut className="h-3 w-3" />
-                خروج
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Top Navigation Bar */}
-      <div className="bg-blue-600 text-white py-1.5 text-xs px-4">
+      {/* Combined Top Bar */}
+      <div className={`${isAuthenticated && (user as any)?.sellerApproved ? 'bg-gradient-to-l from-amber-500 via-yellow-500 to-amber-500 text-black' : 'bg-blue-600 text-white'} py-1.5 text-xs px-4`}>
         <div className="container mx-auto flex justify-between items-center">
           {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-5">
-            <Link href="/" className="hover:text-blue-200 transition-colors font-medium">الرئيسية</Link>
-            <Link href="/search?saleType=auction" className="hover:text-blue-200 transition-colors font-medium">المزادات</Link>
-            <Link href="/search?saleType=fixed" className="hover:text-blue-200 transition-colors font-medium">شراء الآن</Link>
-            <Link href="/search?exchange=true" className="hover:text-blue-200 transition-colors font-medium">مراوس</Link>
-            <Link href="/search" className="hover:text-blue-200 transition-colors font-medium">عرض الكل</Link>
+            <Link href="/" className="hover:opacity-80 transition-colors font-medium">الرئيسية</Link>
+            <Link href="/search?saleType=auction" className="hover:opacity-80 transition-colors font-medium">المزادات</Link>
+            <Link href="/search?saleType=fixed" className="hover:opacity-80 transition-colors font-medium">شراء الآن</Link>
+            <Link href="/search?exchange=true" className="hover:opacity-80 transition-colors font-medium">مراوس</Link>
+            <Link href="/search" className="hover:opacity-80 transition-colors font-medium">عرض الكل</Link>
           </div>
           
           {/* User Actions */}
           <div className="flex items-center gap-3 mr-auto">
-            {!isLoading && !isAuthenticated && (
-              <Link href="/signin" className="hover:text-blue-200 transition-colors flex items-center gap-1" data-testid="button-login">
-                <User className="h-3 w-3" />
-                تسجيل الدخول
-              </Link>
+            {isAuthenticated ? (
+              <>
+                <span className="hidden sm:flex items-center gap-1 font-bold">
+                  {(user as any)?.sellerApproved ? <Store className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                  {user?.displayName || (user as any)?.phone}
+                </span>
+                <Link href="/my-account" className="hidden sm:inline hover:opacity-80 font-medium">حسابي</Link>
+                {(user as any)?.sellerApproved ? (
+                  <Link href="/my-sales" className="hidden sm:inline hover:opacity-80 font-medium">مبيعاتي</Link>
+                ) : (
+                  <Link href="/my-purchases" className="hidden sm:inline hover:opacity-80 font-medium">مشترياتي</Link>
+                )}
+                <button 
+                  onClick={() => logout()}
+                  className="hover:opacity-80 font-medium flex items-center gap-1"
+                  data-testid="button-logout"
+                >
+                  <LogOut className="h-3 w-3" />
+                  <span className="hidden sm:inline">خروج</span>
+                </button>
+                {(user as any)?.sellerApproved && (
+                  <Link 
+                    href="/sell" 
+                    className="bg-black text-yellow-400 hover:bg-gray-900 px-3 py-0.5 rounded-full font-bold flex items-center gap-1 transition-colors text-[10px]"
+                    data-testid="button-sell-item"
+                  >
+                    <Plus className="h-3 w-3" />
+                    أضف منتج
+                  </Link>
+                )}
+              </>
+            ) : (
+              !isLoading && (
+                <Link href="/signin" className="hover:opacity-80 transition-colors flex items-center gap-1" data-testid="button-login">
+                  <User className="h-3 w-3" />
+                  تسجيل الدخول
+                </Link>
+              )
             )}
             <NotificationsButton />
-            <Link href="/cart" className="flex items-center gap-1 cursor-pointer hover:text-blue-200 transition-colors" data-testid="link-cart">
+            <Link href="/cart" className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-colors" data-testid="link-cart">
               <ShoppingCart className="h-3 w-3" />
               {totalItems > 0 && (
                 <span className="bg-red-500 text-white text-[9px] rounded-full px-1 h-3 flex items-center justify-center font-bold">{totalItems > 99 ? '99+' : totalItems}</span>
@@ -129,8 +95,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Header */}
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50 shadow-sm">
         <div className="container mx-auto px-4 py-3">
-          {/* Top Row: Logo, Menu, Account */}
-          <div className="flex items-center gap-4 md:gap-6 mb-3">
+          {/* Top Row: Logo on right, Search, Menu on left */}
+          <div className="flex items-center gap-3 md:gap-4">
+            {/* Logo - Right side in RTL */}
+            <Link href="/" className="flex-shrink-0 flex items-center">
+              <Logo className="h-10 md:h-12" />
+            </Link>
+
+            {/* Search Bar - Flexible width */}
+            <div className="flex-1">
+              <SmartSearch 
+                onImageSearchClick={() => setImageSearchOpen(true)}
+                className="flex w-full gap-2 items-center"
+              />
+            </div>
+
             {/* Back Button - Mobile */}
             <BackButton className="md:hidden" />
 
@@ -166,7 +145,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
 
-            {/* Account Dropdown - Far Right in RTL */}
+            {/* Account Dropdown - Desktop only */}
             <div className="hidden md:flex items-center gap-2">
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
@@ -174,18 +153,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <AccountDropdown />
               )}
             </div>
-
-            {/* Logo - Center area */}
-            <Link href="/" className="flex-shrink-0 flex items-center mx-auto md:mx-0">
-              <Logo className="h-12 md:h-14" />
-            </Link>
           </div>
-          
-          {/* Search Bar - Full Width */}
-          <SmartSearch 
-            onImageSearchClick={() => setImageSearchOpen(true)}
-            className="flex w-full gap-2 items-center"
-          />
         </div>
       </header>
 
