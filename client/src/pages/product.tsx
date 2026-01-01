@@ -66,6 +66,7 @@ export default function ProductPage() {
 
   // Image gallery state
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [fullscreenOpen, setFullscreenOpen] = useState(false);
 
   // Live bidding state
   const [liveBidData, setLiveBidData] = useState<{
@@ -495,9 +496,15 @@ export default function ProductPage() {
                 <img 
                   src={images[selectedImageIndex] || product.image} 
                   alt={product.title} 
-                  className="w-full h-full object-contain bg-white"
+                  className="w-full h-full object-contain bg-white cursor-zoom-in"
+                  onClick={() => setFullscreenOpen(true)}
                   data-testid="img-main-product"
                 />
+                
+                {/* Zoom hint */}
+                <div className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  🔍 اضغط للتكبير
+                </div>
                 
                 {/* Navigation Arrows - Only show if multiple images */}
                 {images.length > 1 && (
@@ -1145,6 +1152,88 @@ export default function ProductPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Fullscreen Image Viewer */}
+      {fullscreenOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+          onClick={() => setFullscreenOpen(false)}
+        >
+          {/* Close button */}
+          <button 
+            className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 rounded-full w-12 h-12 flex items-center justify-center text-2xl z-10"
+            onClick={() => setFullscreenOpen(false)}
+            data-testid="button-close-fullscreen"
+          >
+            ✕
+          </button>
+          
+          {/* Image counter */}
+          {product.images && product.images.length > 1 && (
+            <div className="absolute top-4 left-4 text-white bg-black/50 px-4 py-2 rounded-full text-sm">
+              {selectedImageIndex + 1} / {product.images.length}
+            </div>
+          )}
+          
+          {/* Main fullscreen image */}
+          <img 
+            src={(product.images && product.images.length > 0 ? product.images[selectedImageIndex] : product.image) || product.image}
+            alt={product.title}
+            className="max-w-full max-h-full object-contain p-4"
+            onClick={(e) => e.stopPropagation()}
+            data-testid="img-fullscreen"
+          />
+          
+          {/* Navigation arrows */}
+          {product.images && product.images.length > 1 && (
+            <>
+              <button 
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 rounded-full w-14 h-14 flex items-center justify-center text-3xl"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedImageIndex(prev => prev === 0 ? product.images!.length - 1 : prev - 1);
+                }}
+                data-testid="button-fullscreen-prev"
+              >
+                ›
+              </button>
+              <button 
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 rounded-full w-14 h-14 flex items-center justify-center text-3xl"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedImageIndex(prev => prev === product.images!.length - 1 ? 0 : prev + 1);
+                }}
+                data-testid="button-fullscreen-next"
+              >
+                ‹
+              </button>
+            </>
+          )}
+          
+          {/* Thumbnail strip at bottom */}
+          {product.images && product.images.length > 1 && (
+            <div 
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/50 p-2 rounded-lg max-w-[90vw] overflow-x-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {product.images.map((img, i) => (
+                <div 
+                  key={i}
+                  onClick={() => setSelectedImageIndex(i)}
+                  className={`w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+                    selectedImageIndex === i 
+                      ? 'border-white ring-2 ring-white/50' 
+                      : 'border-transparent opacity-60 hover:opacity-100'
+                  }`}
+                  data-testid={`fullscreen-thumbnail-${i}`}
+                >
+                  <img src={img} alt={`صورة ${i + 1}`} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       </Layout>
   );
