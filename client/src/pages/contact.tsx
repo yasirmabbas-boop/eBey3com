@@ -156,8 +156,8 @@ export default function ContactUs() {
               </div>
             </Card>
 
-            {/* Live Chat Widget */}
-            <Card className="p-6 border-2 border-primary/20">
+            {/* Live Chat Widget - Hidden for now, activate later by setting SHOW_LIVE_CHAT to true */}
+            {false && <Card className="p-6 border-2 border-primary/20">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <MessageSquare className="h-8 w-8 text-green-600" />
@@ -199,7 +199,7 @@ export default function ContactUs() {
                   </div>
                 </div>
               )}
-            </Card>
+            </Card>}
           </div>
         </div>
       </div>
