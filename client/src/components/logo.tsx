@@ -3,6 +3,7 @@ interface LogoProps {
   variant?: "default" | "light";
 }
 
+
 export function Logo({ className = "", variant = "default" }: LogoProps) {
   const colors =
     variant === "light"
