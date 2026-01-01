@@ -515,11 +515,11 @@ export default function SellerDashboard() {
             </Link>
             <Link href="/" className="flex items-center gap-1">
               <span className="text-2xl font-bold">
-                <span className="text-blue-400">E</span>
-                <span className="text-yellow-400">-</span>
-                <span className="text-red-400">ب</span>
-                <span className="text-green-400">ي</span>
-                <span className="text-blue-400">ع</span>
+                <span className="text-blue-300">E</span>
+                <span className="text-blue-400">-</span>
+                <span className="text-blue-500">ب</span>
+                <span className="text-blue-400">ي</span>
+                <span className="text-blue-300">ع</span>
               </span>
             </Link>
           </div>
