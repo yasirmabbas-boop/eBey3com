@@ -1357,7 +1357,7 @@ export default function SellPage() {
                       id="reserveToggle" 
                       checked={hasReservePrice}
                       onCheckedChange={(checked) => setHasReservePrice(checked === true)}
-                      className="h-5 w-5 border-2 data-[state=checked]:bg-gray-600 data-[state=checked]:border-gray-600"
+                      className="h-5 w-5 border-2"
                       data-testid="checkbox-reserve-price"
                     />
                     <div className="space-y-1 flex-1">
@@ -1395,7 +1395,7 @@ export default function SellPage() {
                       id="buyNowToggle" 
                       checked={hasBuyNow}
                       onCheckedChange={(checked) => setHasBuyNow(checked === true)}
-                      className="h-5 w-5 border-2 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                      className="h-5 w-5 border-2"
                       data-testid="checkbox-buy-now"
                     />
                     <div className="space-y-1 flex-1">
@@ -1455,7 +1455,7 @@ export default function SellPage() {
                       id="offersToggle" 
                       checked={allowOffers}
                       onCheckedChange={(checked) => setAllowOffers(checked === true)}
-                      className="h-5 w-5 border-2 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      className="h-5 w-5 border-2"
                       data-testid="checkbox-allow-offers"
                     />
                     <div className="space-y-1 flex-1">
@@ -1472,7 +1472,7 @@ export default function SellPage() {
                       id="exchangeToggle" 
                       checked={allowExchange}
                       onCheckedChange={(checked) => setAllowExchange(checked === true)}
-                      className="h-5 w-5 border-2 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                      className="h-5 w-5 border-2"
                       data-testid="checkbox-allow-exchange"
                     />
                     <div className="space-y-1 flex-1">
@@ -1809,7 +1809,7 @@ export default function SellPage() {
                   id="negotiableToggle"
                   checked={allowOffers}
                   onCheckedChange={(checked) => setAllowOffers(checked === true)}
-                  className="h-5 w-5 border-2 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  className="h-5 w-5 border-2"
                   data-testid="checkbox-negotiable" 
                 />
                 <div className="space-y-1 flex-1">
@@ -1823,7 +1823,7 @@ export default function SellPage() {
               <div className="flex items-center gap-3 p-4 bg-yellow-50 rounded-lg">
                 <Checkbox 
                   id="featuredToggle"
-                  className="h-5 w-5 border-2 data-[state=checked]:bg-yellow-600 data-[state=checked]:border-yellow-600"
+                  className="h-5 w-5 border-2"
                   data-testid="checkbox-featured" 
                 />
                 <div className="space-y-1 flex-1">
