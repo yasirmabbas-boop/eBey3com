@@ -1156,12 +1156,12 @@ export default function ProductPage() {
       {/* Fullscreen Image Viewer */}
       {fullscreenOpen && (
         <div 
-          className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-black/95"
           onClick={() => setFullscreenOpen(false)}
         >
           {/* Close button */}
           <button 
-            className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 rounded-full w-12 h-12 flex items-center justify-center text-2xl z-10"
+            className="absolute top-3 right-3 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full w-10 h-10 flex items-center justify-center text-xl z-20 backdrop-blur-sm"
             onClick={() => setFullscreenOpen(false)}
             data-testid="button-close-fullscreen"
           >
@@ -1170,25 +1170,28 @@ export default function ProductPage() {
           
           {/* Image counter */}
           {product.images && product.images.length > 1 && (
-            <div className="absolute top-4 left-4 text-white bg-black/50 px-4 py-2 rounded-full text-sm">
+            <div className="absolute top-3 left-3 text-white/80 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm z-20">
               {selectedImageIndex + 1} / {product.images.length}
             </div>
           )}
           
-          {/* Main fullscreen image */}
-          <img 
-            src={(product.images && product.images.length > 0 ? product.images[selectedImageIndex] : product.image) || product.image}
-            alt={product.title}
-            className="max-w-full max-h-full object-contain p-4"
-            onClick={(e) => e.stopPropagation()}
-            data-testid="img-fullscreen"
-          />
+          {/* Centered image container */}
+          <div className="absolute inset-0 flex items-center justify-center px-16 py-20">
+            <img 
+              src={(product.images && product.images.length > 0 ? product.images[selectedImageIndex] : product.image) || product.image}
+              alt={product.title}
+              className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-2xl"
+              style={{ maxHeight: 'calc(100vh - 160px)', maxWidth: 'calc(100vw - 128px)' }}
+              onClick={(e) => e.stopPropagation()}
+              data-testid="img-fullscreen"
+            />
+          </div>
           
           {/* Navigation arrows */}
           {product.images && product.images.length > 1 && (
             <>
               <button 
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 rounded-full w-14 h-14 flex items-center justify-center text-3xl"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full w-12 h-12 flex items-center justify-center text-2xl z-20"
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedImageIndex(prev => prev === 0 ? product.images!.length - 1 : prev - 1);
@@ -1198,7 +1201,7 @@ export default function ProductPage() {
                 ›
               </button>
               <button 
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 rounded-full w-14 h-14 flex items-center justify-center text-3xl"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full w-12 h-12 flex items-center justify-center text-2xl z-20"
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedImageIndex(prev => prev === product.images!.length - 1 ? 0 : prev + 1);
@@ -1213,17 +1216,17 @@ export default function ProductPage() {
           {/* Thumbnail strip at bottom */}
           {product.images && product.images.length > 1 && (
             <div 
-              className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/50 p-2 rounded-lg max-w-[90vw] overflow-x-auto"
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 bg-white/10 backdrop-blur-sm p-2 rounded-xl max-w-[90vw] overflow-x-auto z-20"
               onClick={(e) => e.stopPropagation()}
             >
               {product.images.map((img, i) => (
                 <div 
                   key={i}
                   onClick={() => setSelectedImageIndex(i)}
-                  className={`w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+                  className={`w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
                     selectedImageIndex === i 
-                      ? 'border-white ring-2 ring-white/50' 
-                      : 'border-transparent opacity-60 hover:opacity-100'
+                      ? 'border-white scale-110 shadow-lg' 
+                      : 'border-transparent opacity-50 hover:opacity-100'
                   }`}
                   data-testid={`fullscreen-thumbnail-${i}`}
                 >
