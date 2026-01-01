@@ -1,23 +1,20 @@
-export function Logo({ className = "" }: { className?: string }) {
+interface LogoProps {
+  className?: string;
+  variant?: "default" | "light";
+}
+
+export function Logo({ className = "", variant = "default" }: LogoProps) {
+  const colors = variant === "light" 
+    ? { e: "text-blue-300", dash: "text-blue-400", arabic: "text-blue-200" }
+    : { e: "text-blue-600", dash: "text-blue-500", arabic: "text-blue-700" };
+
   return (
-    <div className={`flex flex-col items-center justify-center ${className}`}>
-      <div className="text-2xl md:text-4xl font-bold leading-tight tracking-wider flex items-center gap-1">
-        <div className="flex items-center" dir="ltr">
-          <span className="text-blue-300">-</span>
-          <span className="text-blue-600 inline-block transform -scale-x-100 relative top-[2px]">E</span>
-        </div>
-        <div className="flex" dir="rtl">
-          <span 
-            className="bg-gradient-to-l from-blue-800 via-blue-500 to-blue-300 bg-clip-text text-transparent"
-            style={{ 
-              WebkitBackgroundClip: "text", 
-              WebkitTextFillColor: "transparent" 
-            }}
-          >
-            بيع
-          </span>
-        </div>
-      </div>
+    <div className={`flex items-center justify-center whitespace-nowrap ${className}`}>
+      <span className="text-2xl md:text-3xl font-bold tracking-wide" dir="ltr">
+        <span className={colors.e}>E</span>
+        <span className={colors.dash}>-</span>
+        <span className={colors.arabic}>بيع</span>
+      </span>
     </div>
   );
 }
