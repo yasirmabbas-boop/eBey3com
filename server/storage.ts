@@ -193,14 +193,10 @@ export class DatabaseStorage implements IStorage {
   async getListingsPaginated(options: { limit: number; offset: number; category?: string; saleType?: string; sellerId?: string }): Promise<{ listings: Listing[]; total: number }> {
     const { limit, offset, category, saleType, sellerId } = options;
     
-    const conditions: ReturnType<typeof eq>[] = [];
-    if (sellerId) {
-      conditions.push(eq(listings.sellerId, sellerId));
-    } else {
-      conditions.push(eq(listings.isActive, true));
-    }
+    const conditions = [eq(listings.isActive, true)];
     if (category) conditions.push(eq(listings.category, category));
     if (saleType) conditions.push(eq(listings.saleType, saleType));
+    if (sellerId) conditions.push(eq(listings.sellerId, sellerId));
     
     const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
     

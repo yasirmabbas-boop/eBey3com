@@ -66,12 +66,8 @@ export async function registerRoutes(
         sellerId: typeof sellerId === "string" ? sellerId : undefined,
       });
       
-      // Only cache public listing requests, not seller-specific ones
-      if (!sellerId) {
-        res.set("Cache-Control", setCacheHeaders(30));
-      } else {
-        res.set("Cache-Control", "no-store");
-      }
+      // Cache listing responses for 30 seconds to reduce repeat requests
+      res.set("Cache-Control", setCacheHeaders(30));
       
       res.json({
         listings: paginatedListings,
@@ -1349,7 +1345,7 @@ export async function registerRoutes(
     try {
       const user = await storage.getUser(userId);
       if (!user || !user.sellerApproved) {
-        return res.json([]);
+        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين المعتمدين فقط" });
       }
 
       // Use dedicated method that queries ONLY sales where user is seller
@@ -1395,15 +1391,7 @@ export async function registerRoutes(
     try {
       const user = await storage.getUser(userId);
       if (!user || !user.sellerApproved) {
-        return res.json({
-          totalListings: 0,
-          activeListings: 0,
-          totalSales: 0,
-          totalRevenue: 0,
-          pendingShipments: 0,
-          averageRating: 0,
-          ratingCount: 0
-        });
+        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين المعتمدين فقط" });
       }
 
       const summary = await storage.getSellerSummary(userId);
