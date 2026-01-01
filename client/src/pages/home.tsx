@@ -85,8 +85,8 @@ export default function Home() {
     queryKey: ["/api/listings", sellerId],
     queryFn: async () => {
       const url = sellerId 
-        ? `/api/listings?sellerId=${encodeURIComponent(sellerId)}&limit=50` 
-        : "/api/listings?limit=50";
+        ? `/api/listings?sellerId=${encodeURIComponent(sellerId)}&limit=24` 
+        : "/api/listings?limit=24";
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch listings");
       return res.json();

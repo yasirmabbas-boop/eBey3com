@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -137,6 +137,9 @@ export default function SearchPage() {
 
   const sellerIdParam = params.get("sellerId");
   
+  const [displayLimit, setDisplayLimit] = useState(20);
+  const ITEMS_PER_PAGE = 20;
+
   const { data: listingsData, isLoading } = useQuery({
     queryKey: ["/api/listings", sellerIdParam],
     queryFn: async () => {
@@ -148,6 +151,10 @@ export default function SearchPage() {
       return res.json();
     },
   });
+
+  const handleLoadMore = useCallback(() => {
+    setDisplayLimit(prev => prev + ITEMS_PER_PAGE);
+  }, []);
   
   const { data: sellerInfo } = useQuery({
     queryKey: ["/api/users", sellerIdParam],
@@ -282,6 +289,12 @@ export default function SearchPage() {
     return sortedProducts;
   }, [allProducts, appliedFilters, searchQuery, sortBy]);
 
+  const displayedProducts = useMemo(() => {
+    return filteredProducts.slice(0, displayLimit);
+  }, [filteredProducts, displayLimit]);
+
+  const hasMoreProducts = displayLimit < filteredProducts.length;
+
   const draftFilteredProducts = useMemo(() => {
     return applyFiltersToProducts(allProducts, draftFilters);
   }, [allProducts, draftFilters, searchQuery]);
@@ -339,8 +352,13 @@ export default function SearchPage() {
 
   const applyFilters = () => {
     setAppliedFilters(draftFilters);
+    setDisplayLimit(ITEMS_PER_PAGE);
     setIsFilterOpen(false);
   };
+
+  useEffect(() => {
+    setDisplayLimit(ITEMS_PER_PAGE);
+  }, [searchQuery, sortBy]);
 
   const clearAllFilters = () => {
     const cleared: FilterState = {
@@ -759,7 +777,7 @@ export default function SearchPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {filteredProducts.map((product) => (
+              {displayedProducts.map((product) => (
                 <Link key={product.id} href={`/product/${product.id}`}>
                   <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 bg-white h-full" data-testid={`search-result-${product.id}`}>
                     {/* Product Image */}
@@ -835,6 +853,21 @@ export default function SearchPage() {
                   </Card>
                 </Link>
               ))}
+            </div>
+          )}
+
+          {/* Load More Button */}
+          {!isLoading && hasMoreProducts && (
+            <div className="flex justify-center mt-8">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleLoadMore}
+                className="px-8"
+                data-testid="button-load-more"
+              >
+                عرض المزيد ({filteredProducts.length - displayLimit} منتج آخر)
+              </Button>
             </div>
           )}
         </div>
