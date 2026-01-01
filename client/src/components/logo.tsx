@@ -10,10 +10,10 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
 
   return (
     <div className={`flex items-center justify-center whitespace-nowrap ${className}`}>
-      <span className="text-2xl md:text-3xl font-bold tracking-wide flex items-center" dir="rtl">
-        <span className={colors.arabic}>بيع</span>
-        <span className={colors.dash}>-</span>
+      <span className="text-2xl md:text-3xl font-bold tracking-wide flex items-center gap-0">
         <span className={`${colors.e} inline-block transform scale-x-[-1]`}>E</span>
+        <span className={colors.dash}>-</span>
+        <span className={colors.arabic}>بيع</span>
       </span>
     </div>
   );
