@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRoute, useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -67,6 +68,31 @@ export default function ProductPage() {
   // Image gallery state
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
+
+  // Lock body scroll when fullscreen is open
+  useEffect(() => {
+    if (fullscreenOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = `-${window.scrollY}px`;
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+    };
+  }, [fullscreenOpen]);
 
   // Live bidding state
   const [liveBidData, setLiveBidData] = useState<{
@@ -1153,16 +1179,46 @@ export default function ProductPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Fullscreen Image Viewer */}
-      {fullscreenOpen && (
+      {/* Fullscreen Image Viewer - Using Portal */}
+      {fullscreenOpen && createPortal(
         <div 
-          className="fixed top-0 left-0 right-0 bottom-0 z-[9999] bg-black overflow-hidden"
-          style={{ width: '100vw', height: '100vh', position: 'fixed' }}
+          className="fullscreen-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100dvh',
+            backgroundColor: '#000',
+            zIndex: 99999,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            touchAction: 'none',
+          }}
           onClick={() => setFullscreenOpen(false)}
         >
           {/* Close button */}
           <button 
-            className="absolute top-4 right-4 text-white bg-black/60 hover:bg-black/80 rounded-full w-11 h-11 flex items-center justify-center text-2xl z-[10000]"
+            style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              width: '44px',
+              height: '44px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(0,0,0,0.7)',
+              color: '#fff',
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 100000,
+            }}
             onClick={() => setFullscreenOpen(false)}
             data-testid="button-close-fullscreen"
           >
@@ -1171,30 +1227,57 @@ export default function ProductPage() {
           
           {/* Image counter */}
           {product.images && product.images.length > 1 && (
-            <div className="absolute top-4 left-4 text-white bg-black/60 px-3 py-1.5 rounded-full text-sm z-[10000]">
+            <div style={{
+              position: 'absolute',
+              top: '16px',
+              left: '16px',
+              backgroundColor: 'rgba(0,0,0,0.7)',
+              color: '#fff',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              fontSize: '14px',
+              zIndex: 100000,
+            }}>
               {selectedImageIndex + 1} / {product.images.length}
             </div>
           )}
           
-          {/* Centered image container - using grid for perfect centering */}
-          <div 
-            className="w-full h-full grid place-items-center"
-            style={{ padding: '60px 50px 100px 50px' }}
-          >
-            <img 
-              src={(product.images && product.images.length > 0 ? product.images[selectedImageIndex] : product.image) || product.image}
-              alt={product.title}
-              className="max-w-full max-h-full object-contain"
-              onClick={(e) => e.stopPropagation()}
-              data-testid="img-fullscreen"
-            />
-          </div>
+          {/* Main image - centered */}
+          <img 
+            src={(product.images && product.images.length > 0 ? product.images[selectedImageIndex] : product.image) || product.image}
+            alt={product.title}
+            style={{
+              maxWidth: 'calc(100vw - 80px)',
+              maxHeight: 'calc(100dvh - 140px)',
+              objectFit: 'contain',
+              margin: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+            data-testid="img-fullscreen"
+          />
           
           {/* Navigation arrows */}
           {product.images && product.images.length > 1 && (
             <>
               <button 
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-black/60 hover:bg-black/80 rounded-full w-12 h-12 flex items-center justify-center text-3xl z-[10000]"
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(0,0,0,0.7)',
+                  color: '#fff',
+                  border: 'none',
+                  fontSize: '28px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 100000,
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedImageIndex(prev => prev === 0 ? product.images!.length - 1 : prev - 1);
@@ -1204,7 +1287,24 @@ export default function ProductPage() {
                 ›
               </button>
               <button 
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-black/60 hover:bg-black/80 rounded-full w-12 h-12 flex items-center justify-center text-3xl z-[10000]"
+                style={{
+                  position: 'absolute',
+                  left: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(0,0,0,0.7)',
+                  color: '#fff',
+                  border: 'none',
+                  fontSize: '28px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 100000,
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedImageIndex(prev => prev === product.images!.length - 1 ? 0 : prev + 1);
@@ -1219,26 +1319,45 @@ export default function ProductPage() {
           {/* Thumbnail strip at bottom */}
           {product.images && product.images.length > 1 && (
             <div 
-              className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/60 p-2 rounded-xl max-w-[90vw] overflow-x-auto z-[10000]"
+              style={{
+                position: 'absolute',
+                bottom: '16px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                gap: '8px',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                padding: '8px',
+                borderRadius: '12px',
+                maxWidth: '90vw',
+                overflowX: 'auto',
+                zIndex: 100000,
+              }}
               onClick={(e) => e.stopPropagation()}
             >
               {product.images.map((img, i) => (
                 <div 
                   key={i}
                   onClick={() => setSelectedImageIndex(i)}
-                  className={`w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
-                    selectedImageIndex === i 
-                      ? 'border-white' 
-                      : 'border-transparent opacity-60 hover:opacity-100'
-                  }`}
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    flexShrink: 0,
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    border: selectedImageIndex === i ? '2px solid #fff' : '2px solid transparent',
+                    opacity: selectedImageIndex === i ? 1 : 0.6,
+                  }}
                   data-testid={`fullscreen-thumbnail-${i}`}
                 >
-                  <img src={img} alt={`صورة ${i + 1}`} className="w-full h-full object-cover" />
+                  <img src={img} alt={`صورة ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
 
       </Layout>
