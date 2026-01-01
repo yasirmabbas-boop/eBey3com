@@ -506,14 +506,12 @@ export default function SellPage() {
       let auctionEndTime = null;
       
       if (saleType === "auction") {
-        // Set start time
-        if (startTimeOption === "schedule" && formData.startDate && formData.startHour) {
+        // Set start time - always required
+        if (formData.startDate && formData.startHour) {
           auctionStartTime = new Date(`${formData.startDate}T${formData.startHour}:00`).toISOString();
-        } else {
-          auctionStartTime = new Date().toISOString();
         }
         
-        // Set end time
+        // Set end time - always required
         if (formData.endDate && formData.endHour) {
           auctionEndTime = new Date(`${formData.endDate}T${formData.endHour}:00`).toISOString();
         }
@@ -1515,57 +1513,45 @@ export default function SellPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Start Time Option */}
-                <div className="space-y-2">
-                  <Label htmlFor="startTime">موعد بدء المزاد</Label>
-                  <Select value={startTimeOption} onValueChange={setStartTimeOption}>
-                    <SelectTrigger data-testid="select-start-time">
-                      <SelectValue placeholder="ابدأ فوراً" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="now">ابدأ فوراً</SelectItem>
-                      <SelectItem value="schedule">جدولة موعد محدد</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Scheduled Start Date/Time */}
-                {startTimeOption === "schedule" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-blue-50 rounded-lg">
-                    <div className="space-y-2">
-                      <Label htmlFor="startDate">تاريخ البدء *</Label>
-                      <Input 
-                        id="startDate" 
-                        type="date"
-                        value={formData.startDate}
-                        onChange={(e) => handleInputChange("startDate", e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className={validationErrors.startDate ? "border-red-500" : ""}
-                        data-testid="input-start-date"
-                      />
-                      {validationErrors.startDate && (
-                        <p className="text-xs text-red-500">{validationErrors.startDate}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="startHour">وقت البدء *</Label>
-                      <Select value={formData.startHour} onValueChange={(v) => handleInputChange("startHour", v)}>
-                        <SelectTrigger data-testid="select-start-hour" className={validationErrors.startHour ? "border-red-500" : ""}>
-                          <SelectValue placeholder="اختر الساعة" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {HOURS.map(({ value, label }) => (
-                            <SelectItem key={value} value={value}>{label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {validationErrors.startHour && (
-                        <p className="text-xs text-red-500">{validationErrors.startHour}</p>
-                      )}
-                    </div>
+                {/* Start Date/Time - Always Required */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-blue-50 rounded-lg">
+                  <div className="space-y-2">
+                    <Label htmlFor="startDate">تاريخ البدء *</Label>
+                    <Input 
+                      id="startDate" 
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => handleInputChange("startDate", e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className={validationErrors.startDate ? "border-red-500" : ""}
+                      data-testid="input-start-date"
+                    />
+                    {validationErrors.startDate && (
+                      <p className="text-xs text-red-500">{validationErrors.startDate}</p>
+                    )}
                   </div>
-                )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="startHour">وقت البدء *</Label>
+                    <Select value={formData.startHour} onValueChange={(v) => handleInputChange("startHour", v)}>
+                      <SelectTrigger data-testid="select-start-hour" className={validationErrors.startHour ? "border-red-500" : ""}>
+                        <SelectValue placeholder="اختر الساعة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {HOURS.map(({ value, label }) => (
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {validationErrors.startHour && (
+                      <p className="text-xs text-red-500">{validationErrors.startHour}</p>
+                    )}
+                  </div>
+                </div>
+                
+                <p className="text-xs text-muted-foreground">
+                  ⏰ يجب أن تكون مدة المزاد 24 ساعة على الأقل
+                </p>
 
                 {/* End Date/Time */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-orange-50 rounded-lg">
