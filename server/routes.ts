@@ -138,6 +138,31 @@ export async function registerRoutes(
         return res.status(403).json({ error: "يجب أن يكون حسابك معتمداً كبائع لإضافة منتجات" });
       }
       
+      // Validate auction times - auctions must have start and end times
+      if (req.body.saleType === "auction") {
+        if (!req.body.auctionStartTime || !req.body.auctionEndTime) {
+          return res.status(400).json({ 
+            error: "المزادات تتطلب تحديد تاريخ ووقت البدء والانتهاء" 
+          });
+        }
+        
+        const startTime = new Date(req.body.auctionStartTime);
+        const endTime = new Date(req.body.auctionEndTime);
+        const hoursDiff = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursDiff < 24) {
+          return res.status(400).json({ 
+            error: "يجب أن تكون مدة المزاد 24 ساعة على الأقل" 
+          });
+        }
+        
+        if (endTime <= startTime) {
+          return res.status(400).json({ 
+            error: "تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء" 
+          });
+        }
+      }
+      
       const listingData = {
         title: req.body.title,
         description: req.body.description,
@@ -147,6 +172,8 @@ export async function registerRoutes(
         images: req.body.images || [],
         saleType: req.body.saleType || "fixed",
         timeLeft: req.body.timeLeft || null,
+        auctionStartTime: req.body.auctionStartTime ? new Date(req.body.auctionStartTime) : null,
+        auctionEndTime: req.body.auctionEndTime ? new Date(req.body.auctionEndTime) : null,
         deliveryWindow: req.body.deliveryWindow,
         returnPolicy: req.body.returnPolicy,
         returnDetails: req.body.returnDetails || null,
