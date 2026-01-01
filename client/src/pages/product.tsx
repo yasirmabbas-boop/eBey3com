@@ -1284,7 +1284,7 @@ export default function ProductPage() {
                 }}
                 data-testid="button-fullscreen-prev"
               >
-                ›
+                ‹
               </button>
               <button 
                 style={{
@@ -1311,7 +1311,7 @@ export default function ProductPage() {
                 }}
                 data-testid="button-fullscreen-next"
               >
-                ‹
+                ›
               </button>
             </>
           )}
