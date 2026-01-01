@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, Sparkles, Loader2, Clock, Camera, ShoppingBag, Eye } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
+import { OptimizedImage, ProductGridSkeleton } from "@/components/optimized-image";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 import type { Listing } from "@shared/schema";
 
@@ -305,24 +306,20 @@ export default function Home() {
           </div>
           
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <ProductGridSkeleton count={10} />
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {displayProducts.map((product) => (
                 <Link key={product.id} href={`/product/${product.id}`}>
                   <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 active:scale-[0.98]" data-testid={`card-product-${product.id}`}>
                     <div className="relative aspect-square overflow-hidden bg-gray-100">
-                      <img 
+                      <OptimizedImage 
                         src={product.image} 
                         alt={product.title} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        style={{ imageRendering: "auto" }}
+                        className="w-full h-full group-hover:scale-105 transition-transform duration-500"
                       />
                       {product.currentBid && (
-                        <Badge className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-primary text-white text-[10px] sm:text-xs px-1.5 py-0.5">
+                        <Badge className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-primary text-white text-[10px] sm:text-xs px-1.5 py-0.5 z-10">
                           مزاد
                         </Badge>
                       )}
