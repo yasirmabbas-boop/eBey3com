@@ -52,7 +52,7 @@ export async function registerRoutes(
 
   app.get("/api/listings", async (req, res) => {
     try {
-      const { category, sellerId, page, limit: limitParam, saleType } = req.query;
+      const { category, sellerId, page, limit: limitParam, saleType, includeSold } = req.query;
       const pageNum = parseInt(page as string) || 1;
       const limit = Math.min(parseInt(limitParam as string) || 20, 100);
       const offset = (pageNum - 1) * limit;
@@ -64,6 +64,7 @@ export async function registerRoutes(
         category: typeof category === "string" ? category : undefined,
         saleType: typeof saleType === "string" ? saleType : undefined,
         sellerId: typeof sellerId === "string" ? sellerId : undefined,
+        includeSold: includeSold === "true",
       });
       
       // Cache listing responses for 30 seconds to reduce repeat requests

@@ -193,13 +193,13 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(listings).where(eq(listings.isActive, true)).orderBy(desc(listings.createdAt));
   }
 
-  async getListingsPaginated(options: { limit: number; offset: number; category?: string; saleType?: string; sellerId?: string }): Promise<{ listings: Listing[]; total: number }> {
-    const { limit, offset, category, saleType, sellerId } = options;
+  async getListingsPaginated(options: { limit: number; offset: number; category?: string; saleType?: string; sellerId?: string; includeSold?: boolean }): Promise<{ listings: Listing[]; total: number }> {
+    const { limit, offset, category, saleType, sellerId, includeSold } = options;
     
     // When fetching for a specific seller, show ALL their products (including ended auctions)
-    // For public listing pages, only show active listings
+    // For public listing pages, only show active listings unless includeSold is true
     const conditions: any[] = [];
-    if (!sellerId) {
+    if (!sellerId && !includeSold) {
       conditions.push(eq(listings.isActive, true));
     }
     if (category) conditions.push(eq(listings.category, category));
