@@ -205,6 +205,23 @@ export default function SellPage() {
   // Populate form when editing, relisting, or using as template
   useEffect(() => {
     if (sourceListing && sourceListingId) {
+      // Parse auction times if they exist
+      let startDate = "";
+      let startHour = "";
+      let endDate = "";
+      let endHour = "";
+      
+      if (sourceListing.auctionStartTime && !isRelistMode) {
+        const start = new Date(sourceListing.auctionStartTime);
+        startDate = start.toISOString().split('T')[0];
+        startHour = start.getHours().toString().padStart(2, '0');
+      }
+      if (sourceListing.auctionEndTime && !isRelistMode) {
+        const end = new Date(sourceListing.auctionEndTime);
+        endDate = end.toISOString().split('T')[0];
+        endHour = end.getHours().toString().padStart(2, '0');
+      }
+      
       setFormData({
         title: isTemplateMode ? "" : sourceListing.title || "",
         description: sourceListing.description || "",
@@ -222,10 +239,10 @@ export default function SellPage() {
         returnDetails: sourceListing.returnDetails || "",
         sellerName: sourceListing.sellerName || user?.displayName || "",
         city: sourceListing.city || "",
-        startDate: "",
-        startHour: "",
-        endDate: "",
-        endHour: "",
+        startDate,
+        startHour,
+        endDate,
+        endHour,
         reservePrice: "",
         buyNowPrice: "",
         bidIncrement: "",
@@ -235,8 +252,17 @@ export default function SellPage() {
       setAllowOffers(sourceListing.isNegotiable || false);
       setAllowExchange(sourceListing.isExchangeable || false);
       setTags((sourceListing as any).tags || []);
+      
+      // Set start time option based on whether auction has started
+      if (sourceListing.auctionStartTime) {
+        const now = new Date();
+        const start = new Date(sourceListing.auctionStartTime);
+        if (start > now) {
+          setStartTimeOption("schedule");
+        }
+      }
     }
-  }, [sourceListing, sourceListingId, isTemplateMode, isRelistMode]);
+  }, [sourceListing, sourceListingId, isTemplateMode, isRelistMode, user?.displayName]);
 
   // Check if form has unsaved content
   const hasUnsavedContent = () => {
@@ -361,6 +387,14 @@ export default function SellPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear validation error for this field when user types
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const updated = { ...prev };
+        delete updated[field];
+        return updated;
+      });
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -418,6 +452,15 @@ export default function SellPage() {
       }
 
       setImages(prev => [...prev, ...uploadedPaths]);
+      
+      // Clear image validation error when images are added
+      if (validationErrors.images) {
+        setValidationErrors(prev => {
+          const updated = { ...prev };
+          delete updated.images;
+          return updated;
+        });
+      }
       
       toast({
         title: "تم رفع الصور بنجاح",
@@ -773,15 +816,28 @@ export default function SellPage() {
           <h1 className="text-3xl font-bold text-primary mb-2">
             {isEditMode ? "تعديل المنتج" : isRelistMode ? "إعادة عرض المنتج" : isTemplateMode ? "منتج جديد (من قالب)" : "بيع منتج جديد"}
           </h1>
-          <p className="text-muted-foreground">
-            {isEditMode 
-              ? "قم بتعديل تفاصيل منتجك" 
-              : isRelistMode 
-                ? "أنشئ عرض جديد لنفس المنتج" 
-                : isTemplateMode 
-                  ? "استخدم هذا المنتج كقالب لمنتج جديد"
-                  : "أضف منتجك للبيع على منصة اي-بيع"}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-muted-foreground">
+              {isEditMode 
+                ? "قم بتعديل تفاصيل منتجك" 
+                : isRelistMode 
+                  ? "أنشئ عرض جديد لنفس المنتج" 
+                  : isTemplateMode 
+                    ? "استخدم هذا المنتج كقالب لمنتج جديد"
+                    : "أضف منتجك للبيع على منصة اي-بيع"}
+            </p>
+            {(isEditMode || isRelistMode || isTemplateMode) && (
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/seller")}
+                className="gap-2"
+                data-testid="button-cancel-edit"
+              >
+                <X className="h-4 w-4" />
+                إلغاء
+              </Button>
+            )}
+          </div>
           {sourceListingId && sourceListingLoading && (
             <div className="flex items-center gap-2 mt-2 text-gray-500">
               <Loader2 className="h-4 w-4 animate-spin" />
