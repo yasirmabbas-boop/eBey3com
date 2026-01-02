@@ -6,6 +6,7 @@ import { Gavel, TrendingUp, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useBidWebSocket } from "@/hooks/use-bid-websocket";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { AddressSelectionModal } from "./address-selection-modal";
 
 type BidUpdateEvent = {
   currentBid: number;
@@ -46,6 +47,11 @@ function parseBidAmount(value: string): number {
   return isNaN(parsed) ? 0 : parsed;
 }
 
+interface BidMutationParams {
+  amount: number;
+  shippingAddressId: string;
+}
+
 function useBidMutation(
   listingId: string,
   userId: string | undefined,
@@ -55,7 +61,7 @@ function useBidMutation(
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (amount: number) => {
+    mutationFn: async ({ amount, shippingAddressId }: BidMutationParams) => {
       const authToken = localStorage.getItem("authToken");
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (authToken) {
@@ -70,6 +76,7 @@ function useBidMutation(
           listingId,
           userId: userId || "guest",
           amount,
+          shippingAddressId,
         }),
       });
       if (!res.ok) {
@@ -78,7 +85,7 @@ function useBidMutation(
       }
       return res.json();
     },
-    onSuccess: (_, amount) => {
+    onSuccess: (_, { amount }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/listings", listingId] });
       onSuccess(amount);
     },
@@ -103,6 +110,8 @@ export function BiddingWindow({
   const [bidAmount, setBidAmount] = useState("");
   const [lastBidder, setLastBidder] = useState<string | null>(null);
   const [priceHighlight, setPriceHighlight] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [pendingBidAmount, setPendingBidAmount] = useState<number | null>(null);
   const isTypingRef = useRef(false);
   const { toast } = useToast();
 
@@ -212,8 +221,16 @@ export function BiddingWindow({
       return;
     }
 
-    bidMutation.mutate(bid);
+    setPendingBidAmount(bid);
+    setShowAddressModal(true);
   }, [bidAmount, bidMutation, onRequireAuth, toast, validateBid]);
+
+  const handleAddressSelected = useCallback((addressId: string) => {
+    if (pendingBidAmount === null) return;
+    
+    bidMutation.mutate({ amount: pendingBidAmount, shippingAddressId: addressId });
+    setPendingBidAmount(null);
+  }, [pendingBidAmount, bidMutation]);
 
   const handleQuickBid = useCallback((amount: number) => {
     isTypingRef.current = false;
@@ -362,6 +379,15 @@ export function BiddingWindow({
       <p className="text-center text-xs text-muted-foreground mt-4">
         بوضع مزايدة، فإنك توافق على شراء المنتج إذا فزت بالمزاد.
       </p>
+
+      <AddressSelectionModal
+        open={showAddressModal}
+        onOpenChange={(open) => {
+          setShowAddressModal(open);
+          if (!open) setPendingBidAmount(null);
+        }}
+        onSelect={handleAddressSelected}
+      />
     </Card>
   );
 }
