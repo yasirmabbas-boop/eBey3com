@@ -78,6 +78,12 @@ export default function ProductPage() {
     auctionEndTime?: string;
   } | null>(null);
   const [wasOutbid, setWasOutbid] = useState(false);
+  const [auctionEnded, setAuctionEnded] = useState<{
+    status: "sold" | "no_bids";
+    winnerId: string | null;
+    winnerName: string | null;
+    winningBid: number | null;
+  } | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const viewTracked = useRef(false);
 
@@ -329,6 +335,39 @@ export default function ProductPage() {
           }
 
           // Invalidate listing query to refresh data
+          queryClient.invalidateQueries({ queryKey: ["/api/listings", listing.id] });
+        }
+        
+        // Handle auction end event
+        if (data.type === "auction_end" && data.listingId === listing.id) {
+          setAuctionEnded({
+            status: data.status,
+            winnerId: data.winnerId,
+            winnerName: data.winnerName,
+            winningBid: data.winningBid,
+          });
+          
+          // Show appropriate toast
+          if (data.status === "sold") {
+            if (data.winnerId === user?.id) {
+              toast({
+                title: "مبروك! 🎉",
+                description: `فزت بالمزاد بمبلغ ${data.winningBid?.toLocaleString()} د.ع`,
+              });
+            } else if (user?.id) {
+              toast({
+                title: "انتهى المزاد",
+                description: `فاز ${data.winnerName} بالمزاد بمبلغ ${data.winningBid?.toLocaleString()} د.ع`,
+              });
+            }
+          } else {
+            toast({
+              title: "انتهى المزاد",
+              description: "انتهى المزاد بدون مزايدات",
+            });
+          }
+          
+          // Refresh listing data
           queryClient.invalidateQueries({ queryKey: ["/api/listings", listing.id] });
         }
       } catch (e) {
@@ -685,8 +724,8 @@ export default function ProductPage() {
 
             return (
               <>
-                {/* Bidder status notifications - Sticky to stay visible */}
-                {product.saleType === "auction" && (isWinning || (wasOutbid && !isWinning)) && (
+                {/* Bidder status notifications - Sticky to stay visible (only for active auctions) */}
+                {product.saleType === "auction" && listing?.isActive && !auctionEnded && (isWinning || (wasOutbid && !isWinning)) && (
                   <div className="sticky top-0 z-20 -mx-4 px-4 py-2 bg-white/95 backdrop-blur-sm">
                     {/* Winning bidder status */}
                     {isWinning && (
@@ -712,8 +751,48 @@ export default function ProductPage() {
                   </div>
                 )}
 
-                {/* Auction Bidding - Show for all auction items */}
-                {product.saleType === "auction" && (
+                {/* Auction Ended Banner */}
+                {product.saleType === "auction" && (auctionEnded || !listing?.isActive) && (
+                  <div className="bg-gray-100 border-2 border-gray-300 rounded-xl p-6 text-center" data-testid="auction-ended-banner">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+                        <Clock className="h-8 w-8 text-gray-500" />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-700">انتهى المزاد</h3>
+                      
+                      {auctionEnded?.status === "sold" || (listing && !listing.isActive && product.totalBids > 0) ? (
+                        <div className="space-y-2">
+                          <p className="text-gray-600">
+                            {auctionEnded?.winnerId === user?.id ? (
+                              <span className="text-green-600 font-bold">🎉 مبروك! لقد فزت بهذا المزاد</span>
+                            ) : (
+                              <span>الفائز: {auctionEnded?.winnerName || "مشتري"}</span>
+                            )}
+                          </p>
+                          <p className="text-2xl font-bold text-primary">
+                            {(auctionEnded?.winningBid || product.currentBid || product.price).toLocaleString()} د.ع
+                          </p>
+                          {auctionEnded?.winnerId === user?.id && (
+                            <Button 
+                              className="mt-4"
+                              onClick={() => navigate("/checkout")}
+                              data-testid="button-proceed-payment"
+                            >
+                              إتمام عملية الدفع
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-gray-600">
+                          انتهى هذا المزاد بدون مزايدات
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Auction Bidding - Show for active auction items */}
+                {product.saleType === "auction" && listing?.isActive && !auctionEnded && (
                   <BiddingWindow
                     listingId={params?.id || ""}
                     userId={user?.id}
