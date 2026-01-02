@@ -117,6 +117,9 @@ interface SellerOrder {
     id: string;
     name: string;
     phone?: string;
+    city?: string;
+    district?: string;
+    address?: string;
   };
 }
 
