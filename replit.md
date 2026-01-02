@@ -62,6 +62,16 @@ The PostgreSQL database includes tables for:
 - **API Validation**: Zod schemas validate all API inputs
 - **Component Composition**: shadcn/ui components built on Radix primitives
 
+### Auction Processing System
+The platform includes an automated auction processing system (`server/auction-processor.ts`):
+- **Background Job**: Runs every 30 seconds to check for ended auctions
+- **Grace Period**: 5-second buffer after auction end to handle network latency
+- **Winner Detection**: Determines highest bidder and creates pending transaction
+- **Notifications**: Sends notifications to winner, seller, and outbid users
+- **WebSocket Broadcast**: Real-time UI updates via `auction_end` events
+- **No Bids Handling**: Notifies seller if auction ends without bids
+- **Error Logging**: Comprehensive logging with timestamps for debugging
+
 ### Development vs Production
 - Development: Vite dev server with HMR, served through Express middleware
 - Production: Static build served from `dist/public`, server bundled with esbuild
