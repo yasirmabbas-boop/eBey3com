@@ -173,6 +173,10 @@ export const transactions = pgTable("transactions", {
   trackingAvailableAt: timestamp("tracking_available_at"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   completedAt: timestamp("completed_at"),
+  buyerRating: integer("buyer_rating"),
+  buyerFeedback: text("buyer_feedback"),
+  issueType: text("issue_type"),
+  issueNote: text("issue_note"),
 });
 
 export const insertTransactionSchema = createInsertSchema(transactions).omit({

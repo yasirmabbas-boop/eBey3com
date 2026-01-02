@@ -863,6 +863,96 @@ export async function registerRoutes(
     }
   });
 
+  // Report order issue (returned, unreachable, cancelled)
+  app.patch("/api/transactions/:id/issue", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      const transactionId = req.params.id;
+      const { issueType, issueNote, status } = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+      
+      const transaction = await storage.getTransactionById(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+      
+      if (transaction.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بتحديث هذا الطلب" });
+      }
+      
+      // Update transaction with issue info
+      const updated = await storage.updateTransactionWithIssue(transactionId, {
+        status: status || "issue",
+        issueType,
+        issueNote,
+      });
+      
+      if (!updated) {
+        return res.status(500).json({ error: "فشل في تحديث الطلب" });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "تم تسجيل المشكلة بنجاح",
+        transaction: updated,
+      });
+    } catch (error) {
+      console.error("Error reporting issue:", error);
+      res.status(500).json({ error: "فشل في تسجيل المشكلة" });
+    }
+  });
+
+  // Rate buyer (seller rating for buyer)
+  app.patch("/api/transactions/:id/rate-buyer", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      const transactionId = req.params.id;
+      const { rating, feedback } = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+      
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "التقييم يجب أن يكون بين 1 و 5" });
+      }
+      
+      const transaction = await storage.getTransactionById(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+      
+      if (transaction.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بتقييم هذا المشتري" });
+      }
+      
+      if (transaction.buyerRating) {
+        return res.status(400).json({ error: "تم تقييم هذا المشتري مسبقاً" });
+      }
+      
+      // Update transaction with buyer rating and update buyer's overall rating
+      const updated = await storage.rateBuyer(transactionId, rating, feedback);
+      
+      if (!updated) {
+        return res.status(500).json({ error: "فشل في تقييم المشتري" });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "تم تقييم المشتري بنجاح",
+        transaction: updated,
+      });
+    } catch (error) {
+      console.error("Error rating buyer:", error);
+      res.status(500).json({ error: "فشل في تقييم المشتري" });
+    }
+  });
+
   app.get("/api/categories", async (req, res) => {
     try {
       const categories = await storage.getCategories();

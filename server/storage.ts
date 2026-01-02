@@ -68,6 +68,8 @@ export interface IStorage {
   getTransactionById(id: string): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransactionStatus(id: string, status: string): Promise<Transaction | undefined>;
+  updateTransactionWithIssue(id: string, data: { status: string; issueType: string; issueNote?: string }): Promise<Transaction | undefined>;
+  rateBuyer(transactionId: string, rating: number, feedback?: string): Promise<Transaction | undefined>;
   
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
@@ -554,6 +556,42 @@ export class DatabaseStorage implements IStorage {
       }
     }
     return txn;
+  }
+
+  async updateTransactionWithIssue(id: string, data: { status: string; issueType: string; issueNote?: string }): Promise<Transaction | undefined> {
+    const [txn] = await db.update(transactions).set({ 
+      status: data.status,
+      issueType: data.issueType,
+      issueNote: data.issueNote,
+      completedAt: new Date(),
+    }).where(eq(transactions.id, id)).returning();
+    return txn;
+  }
+
+  async rateBuyer(transactionId: string, rating: number, feedback?: string): Promise<Transaction | undefined> {
+    const transaction = await this.getTransactionById(transactionId);
+    if (!transaction) return undefined;
+    
+    const [updated] = await db.update(transactions).set({ 
+      buyerRating: rating,
+      buyerFeedback: feedback,
+    }).where(eq(transactions.id, transactionId)).returning();
+    
+    if (transaction.buyerId && transaction.buyerId !== "guest") {
+      const buyer = await this.getUser(transaction.buyerId);
+      if (buyer) {
+        const newCount = (buyer.buyerRatingCount || 0) + 1;
+        const currentTotal = (buyer.buyerRating || 0) * (buyer.buyerRatingCount || 0);
+        const newRating = (currentTotal + rating) / newCount;
+        
+        await db.update(users).set({
+          buyerRating: newRating,
+          buyerRatingCount: newCount,
+        }).where(eq(users.id, transaction.buyerId));
+      }
+    }
+    
+    return updated;
   }
 
   async getCategories(): Promise<Category[]> {

@@ -106,6 +106,8 @@ interface SellerOrder {
   deliveryStatus: string;
   createdAt: string;
   completedAt?: string;
+  buyerRating?: number;
+  issueType?: string;
   listing?: {
     id: string;
     title: string;
@@ -120,6 +122,8 @@ interface SellerOrder {
     city?: string;
     district?: string;
     address?: string;
+    latitude?: number;
+    longitude?: number;
   };
 }
 
@@ -421,6 +425,70 @@ export default function SellerDashboard() {
     },
     onError: () => {
       toast({ title: "خطأ", description: "فشل في تحديث حالة التسليم", variant: "destructive" });
+    },
+  });
+
+  const [issueDialogOpen, setIssueDialogOpen] = useState(false);
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [selectedOrderForAction, setSelectedOrderForAction] = useState<SellerOrder | null>(null);
+  const [selectedIssueType, setSelectedIssueType] = useState<string>("");
+  const [issueNote, setIssueNote] = useState("");
+  const [buyerRating, setBuyerRating] = useState(5);
+  const [buyerFeedback, setBuyerFeedback] = useState("");
+
+  const reportIssueMutation = useMutation({
+    mutationFn: async ({ orderId, issueType, issueNote, status }: { orderId: string; issueType: string; issueNote?: string; status: string }) => {
+      const authToken = localStorage.getItem("authToken");
+      const res = await fetch(`/api/transactions/${orderId}/issue`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({ issueType, issueNote, status }),
+      });
+      if (!res.ok) throw new Error("فشل في تسجيل المشكلة");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم التسجيل", description: "تم تسجيل المشكلة بنجاح" });
+      setIssueDialogOpen(false);
+      setSelectedOrderForAction(null);
+      setSelectedIssueType("");
+      setIssueNote("");
+      queryClient.invalidateQueries({ queryKey: ["/api/account/seller-orders"] });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في تسجيل المشكلة", variant: "destructive" });
+    },
+  });
+
+  const rateBuyerMutation = useMutation({
+    mutationFn: async ({ orderId, rating, feedback }: { orderId: string; rating: number; feedback?: string }) => {
+      const authToken = localStorage.getItem("authToken");
+      const res = await fetch(`/api/transactions/${orderId}/rate-buyer`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({ rating, feedback }),
+      });
+      if (!res.ok) throw new Error("فشل في تقييم المشتري");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم التقييم", description: "تم تقييم المشتري بنجاح" });
+      setRatingDialogOpen(false);
+      setSelectedOrderForAction(null);
+      setBuyerRating(5);
+      setBuyerFeedback("");
+      queryClient.invalidateQueries({ queryKey: ["/api/account/seller-orders"] });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في تقييم المشتري", variant: "destructive" });
     },
   });
 
@@ -1226,12 +1294,18 @@ export default function SellerDashboard() {
                               order.status === "completed" || order.status === "delivered" ? "bg-green-100 text-green-800 border-0" :
                               order.status === "shipped" ? "bg-blue-100 text-blue-800 border-0" :
                               (order.status === "pending" || order.status === "processing") ? "bg-yellow-100 text-yellow-800 border-0" :
+                              order.status === "returned" ? "bg-orange-100 text-orange-800 border-0" :
+                              order.status === "unreachable" ? "bg-red-100 text-red-800 border-0" :
+                              order.status === "cancelled" ? "bg-gray-100 text-gray-800 border-0" :
                               "bg-gray-100 text-gray-800 border-0"
                             }
                           >
                             {(order.status === "pending" || order.status === "processing") ? "بانتظار الشحن" :
                              order.status === "shipped" ? "تم الشحن" :
                              order.status === "completed" || order.status === "delivered" ? "تم التسليم" :
+                             order.status === "returned" ? "مُرجع" :
+                             order.status === "unreachable" ? "متعذر الوصول" :
+                             order.status === "cancelled" ? "ملغي" :
                              order.status}
                           </Badge>
                         </div>
@@ -1279,16 +1353,52 @@ export default function SellerDashboard() {
                               </Button>
                             )}
                             {order.status === "shipped" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => markAsDeliveredMutation.mutate(order.id)}
+                                  disabled={markAsDeliveredMutation.isPending}
+                                  className="bg-green-600 hover:bg-green-700 gap-1"
+                                  data-testid={`button-deliver-${order.id}`}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                  تم التسليم
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedOrderForAction(order);
+                                    setIssueDialogOpen(true);
+                                  }}
+                                  className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                                  data-testid={`button-issue-${order.id}`}
+                                >
+                                  <AlertCircle className="h-4 w-4" />
+                                  مشكلة
+                                </Button>
+                              </>
+                            )}
+                            {(order.status === "delivered" || order.status === "completed") && !order.buyerRating && (
                               <Button
                                 size="sm"
-                                onClick={() => markAsDeliveredMutation.mutate(order.id)}
-                                disabled={markAsDeliveredMutation.isPending}
-                                className="bg-green-600 hover:bg-green-700 gap-1"
-                                data-testid={`button-deliver-${order.id}`}
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedOrderForAction(order);
+                                  setRatingDialogOpen(true);
+                                }}
+                                className="text-yellow-600 border-yellow-300 hover:bg-yellow-50 gap-1"
+                                data-testid={`button-rate-${order.id}`}
                               >
-                                <CheckCircle className="h-4 w-4" />
-                                تأكيد التسليم
+                                <Star className="h-4 w-4" />
+                                تقييم المشتري
                               </Button>
+                            )}
+                            {order.buyerRating && (
+                              <div className="flex items-center gap-1 text-sm text-yellow-600">
+                                <Star className="h-4 w-4 fill-yellow-400" />
+                                <span>{order.buyerRating}/5</span>
+                              </div>
                             )}
                             <Button
                               size="sm"
@@ -1395,6 +1505,160 @@ export default function SellerDashboard() {
                 </>
               ) : (
                 "حفظ التغييرات"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Issue Reporting Dialog */}
+      <Dialog open={issueDialogOpen} onOpenChange={setIssueDialogOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-orange-500" />
+              الإبلاغ عن مشكلة
+            </DialogTitle>
+            <DialogDescription>
+              حدد نوع المشكلة مع هذا الطلب
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>نوع المشكلة</Label>
+              <Select value={selectedIssueType} onValueChange={setSelectedIssueType}>
+                <SelectTrigger data-testid="select-issue-type">
+                  <SelectValue placeholder="اختر نوع المشكلة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unreachable">المشتري غير متاح</SelectItem>
+                  <SelectItem value="returned">تم إرجاع المنتج</SelectItem>
+                  <SelectItem value="cancelled">إلغاء الطلب</SelectItem>
+                  <SelectItem value="no_answer">لا يرد على الهاتف</SelectItem>
+                  <SelectItem value="wrong_address">عنوان خاطئ</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>ملاحظات (اختياري)</Label>
+              <Input
+                value={issueNote}
+                onChange={(e) => setIssueNote(e.target.value)}
+                placeholder="أضف تفاصيل إضافية..."
+                data-testid="input-issue-note"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIssueDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button 
+              onClick={() => {
+                if (selectedOrderForAction && selectedIssueType) {
+                  reportIssueMutation.mutate({
+                    orderId: selectedOrderForAction.id,
+                    issueType: selectedIssueType,
+                    issueNote: issueNote || undefined,
+                    status: selectedIssueType,
+                  });
+                }
+              }}
+              disabled={!selectedIssueType || reportIssueMutation.isPending}
+              className="bg-orange-600 hover:bg-orange-700"
+              data-testid="button-confirm-issue"
+            >
+              {reportIssueMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  جاري الحفظ...
+                </>
+              ) : (
+                "تأكيد"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Buyer Rating Dialog */}
+      <Dialog open={ratingDialogOpen} onOpenChange={setRatingDialogOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-yellow-500" />
+              تقييم المشتري
+            </DialogTitle>
+            <DialogDescription>
+              قيّم تجربتك مع هذا المشتري
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>التقييم</Label>
+              <div className="flex gap-2 justify-center">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setBuyerRating(star)}
+                    className="p-1 hover:scale-110 transition-transform"
+                    data-testid={`button-star-${star}`}
+                  >
+                    <Star 
+                      className={`h-8 w-8 ${star <= buyerRating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                    />
+                  </button>
+                ))}
+              </div>
+              <p className="text-center text-sm text-muted-foreground">
+                {buyerRating === 1 ? "سيء" :
+                 buyerRating === 2 ? "مقبول" :
+                 buyerRating === 3 ? "جيد" :
+                 buyerRating === 4 ? "جيد جداً" :
+                 "ممتاز"}
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>ملاحظات (اختياري)</Label>
+              <Input
+                value={buyerFeedback}
+                onChange={(e) => setBuyerFeedback(e.target.value)}
+                placeholder="أضف ملاحظة عن المشتري..."
+                data-testid="input-buyer-feedback"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setRatingDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button 
+              onClick={() => {
+                if (selectedOrderForAction) {
+                  rateBuyerMutation.mutate({
+                    orderId: selectedOrderForAction.id,
+                    rating: buyerRating,
+                    feedback: buyerFeedback || undefined,
+                  });
+                }
+              }}
+              disabled={rateBuyerMutation.isPending}
+              className="bg-yellow-600 hover:bg-yellow-700"
+              data-testid="button-confirm-rating"
+            >
+              {rateBuyerMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  جاري الحفظ...
+                </>
+              ) : (
+                "إرسال التقييم"
               )}
             </Button>
           </DialogFooter>
