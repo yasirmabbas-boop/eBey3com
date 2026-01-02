@@ -469,7 +469,7 @@ export async function registerRoutes(
         });
       }
       
-      // Anti-sniping: Add 45 seconds if bid placed in last 2 minutes
+      // Anti-sniping: Reset timer to 2 minutes if bid placed in last 2 minutes
       let timeExtended = false;
       let newEndTime: Date | undefined;
       
@@ -480,8 +480,8 @@ export async function registerRoutes(
         const twoMinutes = 2 * 60 * 1000;
         
         if (timeRemaining > 0 && timeRemaining <= twoMinutes) {
-          // Bid in last 2 minutes - extend by 2 minutes (Extended Bidding)
-          newEndTime = new Date(currentEndTime.getTime() + 2 * 60 * 1000);
+          // Bid in last 2 minutes - reset timer to exactly 2 minutes from now
+          newEndTime = new Date(now.getTime() + twoMinutes);
           await storage.updateListing(validatedData.listingId, { 
             auctionEndTime: newEndTime 
           });
