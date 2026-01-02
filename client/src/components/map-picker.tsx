@@ -101,7 +101,7 @@ export function MapPicker({ value, onChange, className }: MapPickerProps) {
         <MapContainer
           center={[mapCenter.lat, mapCenter.lng]}
           zoom={12}
-          style={{ height: "100%", width: "100%" }}
+          style={{ height: "100%", width: "100%", touchAction: 'manipulation' }}
           ref={mapRef}
         >
           <TileLayer
