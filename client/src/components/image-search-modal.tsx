@@ -9,7 +9,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { PRODUCTS } from "@/lib/mock-data";
+import type { Listing } from "@shared/schema";
+
+interface SearchResult {
+  id: string;
+  title: string;
+  price: number;
+  image: string;
+  currentBid?: number;
+  saleType?: string;
+}
 
 interface ImageSearchModalProps {
   open: boolean;
@@ -20,7 +29,7 @@ export function ImageSearchModal({ open, onOpenChange }: ImageSearchModalProps) 
   const [, setLocation] = useLocation();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<typeof PRODUCTS | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,12 +66,28 @@ export function ImageSearchModal({ open, onOpenChange }: ImageSearchModalProps) 
     
     setIsSearching(true);
     
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const res = await fetch("/api/listings?limit=20");
+      if (res.ok) {
+        const data = await res.json();
+        const listings: Listing[] = Array.isArray(data) ? data : (data.listings || []);
+        const shuffled = [...listings].sort(() => Math.random() - 0.5);
+        const results = shuffled.slice(0, Math.min(6, shuffled.length)).map(l => ({
+          id: l.id,
+          title: l.title,
+          price: l.price,
+          image: l.images?.[0] || "",
+          currentBid: l.currentBid || undefined,
+          saleType: l.saleType || "fixed",
+        }));
+        setSearchResults(results);
+      } else {
+        setSearchResults([]);
+      }
+    } catch {
+      setSearchResults([]);
+    }
     
-    const shuffled = [...PRODUCTS].sort(() => Math.random() - 0.5);
-    const results = shuffled.slice(0, Math.min(6, shuffled.length));
-    
-    setSearchResults(results);
     setIsSearching(false);
   }, [selectedImage]);
 

@@ -2,7 +2,6 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
-import { PRODUCTS } from "@/lib/mock-data";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -172,19 +171,7 @@ export default function SearchPage() {
     : (listingsData?.listings || []);
 
   const allProducts = useMemo(() => {
-    return listings.length > 0 ? listings : PRODUCTS.map(p => ({
-      ...p,
-      images: [p.image],
-      saleType: p.saleType || (p.currentBid ? "auction" : "fixed"),
-      auctionEndTime: p.auctionEndTime || null,
-      deliveryWindow: p.deliveryWindow || "",
-      returnPolicy: p.returnPolicy || "",
-      returnDetails: p.returnDetails || null,
-      isActive: true,
-      createdAt: new Date(),
-      city: p.city || "بغداد",
-      totalBids: p.totalBids || 0,
-    } as unknown as Listing));
+    return listings;
   }, [listings]);
 
   const applyFiltersToProducts = (products: Listing[], filters: FilterState) => {
