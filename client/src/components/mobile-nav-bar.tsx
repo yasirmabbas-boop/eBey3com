@@ -1,18 +1,31 @@
 import { Link, useLocation } from "wouter";
-import { Home, Search, MessageCircle, User, ShoppingCart } from "lucide-react";
+import { Home, Search, Bell, User, ShoppingCart } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
+import { useQuery } from "@tanstack/react-query";
 
 export function MobileNavBar() {
   const [location] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { totalItems } = useCart();
+
+  const { data: unreadCount = 0 } = useQuery<number>({
+    queryKey: ["/api/notifications/unread-count"],
+    queryFn: async () => {
+      const res = await fetch("/api/notifications/unread-count", { credentials: "include" });
+      if (!res.ok) return 0;
+      const data = await res.json();
+      return data.count || 0;
+    },
+    enabled: !!user?.id,
+    refetchInterval: 30000,
+  });
 
   const navItems = [
     { href: "/", icon: Home, label: "الرئيسية", testId: "nav-home" },
     { href: "/search", icon: Search, label: "البحث", testId: "nav-search" },
     { href: "/cart", icon: ShoppingCart, label: "السلة", testId: "nav-cart", badge: totalItems },
-    { href: "/messages", icon: MessageCircle, label: "الرسائل", testId: "nav-messages" },
+    { href: "/notifications", icon: Bell, label: "الإشعارات", testId: "nav-notifications", badge: unreadCount },
     { href: isAuthenticated ? "/my-account" : "/signin", icon: User, label: "حسابي", testId: "nav-account" },
   ];
 
