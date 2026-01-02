@@ -828,44 +828,57 @@ export default function ProductPage() {
 
                 {/* Fixed Price Buttons */}
                 {product.saleType !== "auction" && (
-                  <>
-                    <Button 
-                      size="lg" 
-                      className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90"
-                      onClick={handleBuyNowDirect}
-                      disabled={!!isPurchaseDisabled}
-                      data-testid="button-buy-now"
-                    >
-                      {isPurchaseDisabled ? "جاري التحميل..." : "اشتر الآن"}
-                    </Button>
+                  listing?.isActive ? (
+                    <>
+                      <Button 
+                        size="lg" 
+                        className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90"
+                        onClick={handleBuyNowDirect}
+                        disabled={!!isPurchaseDisabled}
+                        data-testid="button-buy-now"
+                      >
+                        {isPurchaseDisabled ? "جاري التحميل..." : "اشتر الآن"}
+                      </Button>
 
-                    <Button 
-                      variant="outline"
-                      size="lg" 
-                      className="w-full h-14 text-lg font-medium"
-                      onClick={handleAddCart}
-                      disabled={isAdding || !!isPurchaseDisabled}
-                      data-testid="button-add-cart"
-                    >
-                      {isAdding ? "جاري الإضافة..." : "أضف للسلة"}
-                    </Button>
-
-                    {product.isNegotiable && (
                       <Button 
                         variant="outline"
                         size="lg" 
                         className="w-full h-14 text-lg font-medium"
-                        onClick={() => {
-                          if (!requireAuth("offer")) return;
-                          setOfferAmount(Math.floor(product.price * 0.9).toString());
-                          setOfferDialogOpen(true);
-                        }}
-                        data-testid="button-make-offer"
+                        onClick={handleAddCart}
+                        disabled={isAdding || !!isPurchaseDisabled}
+                        data-testid="button-add-cart"
                       >
-                        قدّم عرضك
+                        {isAdding ? "جاري الإضافة..." : "أضف للسلة"}
                       </Button>
-                    )}
-                  </>
+
+                      {product.isNegotiable && (
+                        <Button 
+                          variant="outline"
+                          size="lg" 
+                          className="w-full h-14 text-lg font-medium"
+                          onClick={() => {
+                            if (!requireAuth("offer")) return;
+                            setOfferAmount(Math.floor(product.price * 0.9).toString());
+                            setOfferDialogOpen(true);
+                          }}
+                          data-testid="button-make-offer"
+                        >
+                          قدّم عرضك
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="bg-gray-100 border-2 border-gray-300 rounded-xl p-6 text-center" data-testid="sold-banner">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+                          <ShieldCheck className="h-8 w-8 text-gray-500" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-700">تم البيع</h3>
+                        <p className="text-gray-600">تم بيع هذا المنتج</p>
+                        <p className="text-lg font-bold text-gray-700">{product.price.toLocaleString()} د.ع</p>
+                      </div>
+                    </div>
+                  )
                 )}
 
                 {/* Watchlist Button */}

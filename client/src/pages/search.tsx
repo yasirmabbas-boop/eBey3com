@@ -113,6 +113,7 @@ interface FilterState {
   cities: string[];
   priceMin: string;
   priceMax: string;
+  includeSold: boolean;
 }
 
 export default function SearchPage() {
@@ -128,6 +129,7 @@ export default function SearchPage() {
     cities: [],
     priceMin: "",
     priceMax: "",
+    includeSold: false,
   });
   
   const [draftFilters, setDraftFilters] = useState<FilterState>(appliedFilters);
@@ -140,11 +142,14 @@ export default function SearchPage() {
   const ITEMS_PER_PAGE = 20;
 
   const { data: listingsData, isLoading } = useQuery({
-    queryKey: ["/api/listings", sellerIdParam],
+    queryKey: ["/api/listings", sellerIdParam, appliedFilters.includeSold],
     queryFn: async () => {
-      const url = sellerIdParam 
+      let url = sellerIdParam 
         ? `/api/listings?limit=100&sellerId=${sellerIdParam}`
         : "/api/listings?limit=100";
+      if (appliedFilters.includeSold) {
+        url += "&includeSold=true";
+      }
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch listings");
       return res.json();
@@ -355,6 +360,7 @@ export default function SearchPage() {
       cities: [],
       priceMin: "",
       priceMax: "",
+      includeSold: false,
     };
     setDraftFilters(cleared);
   };
@@ -593,6 +599,19 @@ export default function SearchPage() {
                           </div>
                           <Badge variant="outline" className="text-xs">{getSaleTypeCount("fixed")}</Badge>
                         </div>
+                        <div className="border-t pt-3 mt-3">
+                          <div className="flex items-center space-x-2 space-x-reverse">
+                            <Checkbox 
+                              id="includeSold" 
+                              checked={draftFilters.includeSold}
+                              onCheckedChange={(checked) => setDraftFilters(prev => ({ ...prev, includeSold: !!checked }))}
+                              data-testid="filter-include-sold"
+                            />
+                            <Label htmlFor="includeSold" className="flex items-center gap-2 cursor-pointer text-muted-foreground">
+                              عرض المباع
+                            </Label>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -735,11 +754,19 @@ export default function SearchPage() {
                 </button>
               </Badge>
             )}
+            {appliedFilters.includeSold && (
+              <Badge variant="secondary" className="gap-1 px-3 py-1 bg-gray-200">
+                عرض المباع
+                <button onClick={() => setAppliedFilters(prev => ({ ...prev, includeSold: false }))}>
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
             <Button 
               variant="ghost" 
               size="sm" 
               className="text-red-600"
-              onClick={() => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "" })}
+              onClick={() => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false })}
             >
               مسح الكل
             </Button>
@@ -757,7 +784,7 @@ export default function SearchPage() {
               <h3 className="text-xl font-bold mb-2">لا توجد نتائج</h3>
               <p className="text-muted-foreground mb-4">جرب تغيير الفلاتر أو البحث بكلمات أخرى</p>
               {activeFiltersCount > 0 && (
-                <Button variant="outline" onClick={() => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "" })}>
+                <Button variant="outline" onClick={() => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false })}>
                   مسح الفلاتر
                 </Button>
               )}
@@ -777,7 +804,12 @@ export default function SearchPage() {
                         style={{ imageRendering: "auto" }}
                       />
                       {/* Sale Type Badge */}
-                      <div className="absolute top-2 right-2">
+                      <div className="absolute top-2 right-2 flex flex-col gap-1">
+                        {!product.isActive && (
+                          <Badge className="bg-gray-700 text-white border-0 text-xs shadow-md">
+                            تم البيع
+                          </Badge>
+                        )}
                         {product.saleType === "auction" ? (
                           <Badge className="bg-purple-600 text-white border-0 text-xs shadow-md">
                             مزاد
@@ -788,6 +820,12 @@ export default function SearchPage() {
                           </Badge>
                         )}
                       </div>
+                      {/* Sold Overlay */}
+                      {!product.isActive && (
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <span className="text-white font-bold text-lg bg-black/50 px-4 py-2 rounded-lg">تم البيع</span>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Product Details */}
