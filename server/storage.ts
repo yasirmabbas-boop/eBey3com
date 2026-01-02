@@ -802,6 +802,7 @@ export class DatabaseStorage implements IStorage {
       listingId: bids.listingId,
       userId: bids.userId,
       amount: bids.amount,
+      shippingAddressId: bids.shippingAddressId,
       isWinning: bids.isWinning,
       createdAt: bids.createdAt,
       bidderName: users.displayName,
