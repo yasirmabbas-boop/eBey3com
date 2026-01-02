@@ -816,6 +816,7 @@ export default function ProductPage() {
                       return typeof endTime === 'string' ? endTime : endTime.toISOString();
                     })()}
                     onRequireAuth={() => requireAuth("bid")}
+                    isWinning={isWinning}
                   />
                 )}
 

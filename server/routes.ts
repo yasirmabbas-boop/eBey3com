@@ -416,6 +416,12 @@ export async function registerRoutes(
       }
       
       const highestBid = await storage.getHighestBid(validatedData.listingId);
+      
+      // Prevent users from outbidding themselves
+      if (highestBid && highestBid.userId === validatedData.userId) {
+        return res.status(400).json({ error: "أنت بالفعل صاحب أعلى مزايدة" });
+      }
+      
       const minBid = highestBid ? highestBid.amount + 1000 : listing.price;
       
       if (validatedData.amount < minBid) {

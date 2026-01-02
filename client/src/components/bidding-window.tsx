@@ -25,6 +25,7 @@ interface BiddingWindowProps {
   auctionEndTime?: string | null;
   onBidSuccess?: (bidAmount: number) => void;
   onRequireAuth?: () => boolean;
+  isWinning?: boolean;
 }
 
 const BID_INCREMENT = 1000;
@@ -93,6 +94,7 @@ export function BiddingWindow({
   timeLeft,
   onBidSuccess,
   onRequireAuth,
+  isWinning = false,
 }: BiddingWindowProps) {
   const [currentBid, setCurrentBid] = useState(initialCurrentBid);
   const [totalBids, setTotalBids] = useState(initialTotalBids);
@@ -216,7 +218,7 @@ export function BiddingWindow({
     setBidAmount(amount.toString());
   }, []);
 
-  const isSubmitDisabled = bidMutation.isPending;
+  const isSubmitDisabled = bidMutation.isPending || isWinning;
   const currentBidValue = parseBidAmount(bidAmount);
   const isValidBid = currentBidValue >= minimumBid && currentBidValue <= MAX_BID_LIMIT;
 
@@ -275,6 +277,12 @@ export function BiddingWindow({
       {timeLeft && (
         <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-6 text-sm text-red-700 font-medium">
           ⏰ ينتهي المزاد خلال: <strong>{timeLeft}</strong>
+        </div>
+      )}
+
+      {isWinning && (
+        <div className="bg-green-50 border border-green-300 p-3 rounded-lg mb-6 text-sm text-green-700 font-medium text-center">
+          ✅ أنت صاحب أعلى مزايدة حالياً - لا يمكنك المزايدة على نفسك
         </div>
       )}
 
