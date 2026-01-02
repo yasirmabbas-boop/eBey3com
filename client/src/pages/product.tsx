@@ -394,6 +394,11 @@ export default function ProductPage() {
   const isPurchaseDisabled = isAuthLoading && listing?.sellerId;
 
   const requireAuth = (action: string) => {
+    // If auth is still loading, don't show error - just return false to prevent action
+    if (isAuthLoading) {
+      return false;
+    }
+    
     if (!isAuthenticated) {
       toast({
         title: "يرجى تسجيل الدخول",
@@ -817,6 +822,7 @@ export default function ProductPage() {
                     })()}
                     onRequireAuth={() => requireAuth("bid")}
                     isWinning={!!isWinning}
+                    isAuthLoading={isAuthLoading}
                   />
                 )}
 

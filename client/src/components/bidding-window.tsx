@@ -26,6 +26,7 @@ interface BiddingWindowProps {
   onBidSuccess?: (bidAmount: number) => void;
   onRequireAuth?: () => boolean;
   isWinning?: boolean;
+  isAuthLoading?: boolean;
 }
 
 const BID_INCREMENT = 1000;
@@ -95,6 +96,7 @@ export function BiddingWindow({
   onBidSuccess,
   onRequireAuth,
   isWinning = false,
+  isAuthLoading = false,
 }: BiddingWindowProps) {
   const [currentBid, setCurrentBid] = useState(initialCurrentBid);
   const [totalBids, setTotalBids] = useState(initialTotalBids);
@@ -218,7 +220,7 @@ export function BiddingWindow({
     setBidAmount(amount.toString());
   }, []);
 
-  const isSubmitDisabled = bidMutation.isPending || isWinning;
+  const isSubmitDisabled = bidMutation.isPending || isWinning || isAuthLoading;
   const currentBidValue = parseBidAmount(bidAmount);
   const isValidBid = currentBidValue >= minimumBid && currentBidValue <= MAX_BID_LIMIT;
 
@@ -342,7 +344,12 @@ export function BiddingWindow({
         className="w-full bg-accent hover:bg-accent/90 text-white font-bold py-3 text-lg disabled:opacity-50"
         data-testid="button-submit-bid"
       >
-        {bidMutation.isPending ? (
+        {isAuthLoading ? (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin ml-2" />
+            جاري التحميل...
+          </>
+        ) : bidMutation.isPending ? (
           <>
             <Loader2 className="h-5 w-5 animate-spin ml-2" />
             جاري المعالجة...
