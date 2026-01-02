@@ -321,7 +321,7 @@ export default function ProductPage() {
             setWasOutbid(true);
             toast({
               title: "تم تجاوز مزايدتك! 📢",
-              description: `قام ${data.bidderName} بتقديم مزايدة أعلى (${data.currentBid.toLocaleString()} د.ع)`,
+              description: `تم تقديم مزايدة أعلى (${data.currentBid.toLocaleString()} د.ع)`,
               variant: "destructive",
             });
           }

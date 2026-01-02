@@ -495,12 +495,13 @@ export async function registerRoutes(
       
       const bidder = await storage.getUser(validatedData.userId);
       
+      // Broadcast with anonymous bidder name for privacy - only seller sees real name via notification
       broadcastBidUpdate({
         type: "bid_update",
         listingId: validatedData.listingId,
         currentBid,
         totalBids,
-        bidderName: bidder?.displayName || "مستخدم مجهول",
+        bidderName: "مزايد", // Anonymous for public
         bidderId: validatedData.userId,
         timestamp: new Date().toISOString(),
         auctionEndTime: newEndTime?.toISOString() || listing.auctionEndTime?.toISOString(),

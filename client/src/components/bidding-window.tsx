@@ -157,7 +157,7 @@ export function BiddingWindow({
     
     toast({
       title: "مزايدة جديدة! 🔔",
-      description: `${update.bidderName} زاد السعر إلى ${formatCurrency(update.currentBid)}`,
+      description: `تم رفع السعر إلى ${formatCurrency(update.currentBid)}`,
     });
   }, [toast]);
 
@@ -259,11 +259,6 @@ export function BiddingWindow({
             {formatCurrency(currentBid).replace(' د.ع', '')}
             <span className="text-xs ml-1">د.ع</span>
           </p>
-          {lastBidder && (
-            <p className="text-xs text-muted-foreground mt-1">
-              آخر مزايد: {lastBidder}
-            </p>
-          )}
         </div>
         <div className="bg-white p-4 rounded-lg border border-blue-100">
           <p className="text-sm text-muted-foreground mb-1">عدد المزايدات</p>
