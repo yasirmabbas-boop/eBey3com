@@ -130,15 +130,15 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
         buyerId: winner.id,
         sellerId: listing.sellerId,
         amount: highestBid.amount,
-        status: "pending_payment",
+        status: "processing",
       })
       .returning();
 
     await storage.createNotification({
       userId: winner.id,
       type: "auction_won",
-      title: "مبروك! فزت بالمزاد",
-      message: `فزت بالمزاد على "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع. يرجى إتمام عملية الدفع.`,
+      title: "مبروك! فزت بالمزاد 🎉",
+      message: `فزت بالمزاد على "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع. سيتم شحن طلبك قريباً.`,
       relatedId: listing.id,
     });
 
@@ -146,9 +146,10 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
       await storage.createNotification({
         userId: listing.sellerId,
         type: "auction_sold",
-        title: "تم بيع منتجك في المزاد",
-        message: `تهانينا! تم بيع "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع للمشتري ${winner.displayName || winner.phone}.`,
+        title: "تم بيع منتجك في المزاد! 🎉",
+        message: `تهانينا! تم بيع "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع للمشتري ${winner.displayName || winner.phone}. يرجى شحن المنتج.`,
         relatedId: listing.id,
+        linkUrl: "/seller-dashboard",
       });
     }
 
