@@ -326,9 +326,14 @@ export default function SellerDashboard() {
 
   const offerResponseMutation = useMutation({
     mutationFn: async ({ offerId, status, counterAmount }: { offerId: string; status: string; counterAmount?: number }) => {
+      const authToken = localStorage.getItem("authToken");
       const res = await fetch(`/api/offers/${offerId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
         body: JSON.stringify({ status, counterAmount }),
       });
       if (!res.ok) throw new Error("Failed to respond to offer");
