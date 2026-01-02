@@ -13,6 +13,7 @@ import { ShoppingCart, MapPin, Phone, User, Loader2, CheckCircle, ArrowRight, Pl
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { MapPicker } from "@/components/map-picker";
 import type { BuyerAddress } from "@shared/schema";
 
 const IRAQI_CITIES = [
@@ -51,6 +52,7 @@ export default function CheckoutPage() {
   const [city, setCity] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
+  const [mapLocation, setMapLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isOrderComplete, setIsOrderComplete] = useState(false);
 
   const { data: savedAddresses = [], isLoading: isAddressesLoading } = useQuery<BuyerAddress[]>({
@@ -414,6 +416,14 @@ export default function CheckoutPage() {
                       placeholder="رقم الشقة، علامة مميزة"
                       className="mt-1"
                       data-testid="input-address2"
+                    />
+                  </div>
+
+                  <div className="pt-2">
+                    <Label className="mb-2 block">تحديد الموقع على الخريطة (اختياري)</Label>
+                    <MapPicker
+                      value={mapLocation}
+                      onChange={setMapLocation}
                     />
                   </div>
                 </div>

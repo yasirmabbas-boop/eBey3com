@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shield, Smartphone, MapPin, Key, User, Save, Plus, Trash2, Star, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { MapPicker } from "@/components/map-picker";
 
 interface UserProfile {
   id: string;
@@ -111,6 +112,8 @@ export default function Settings() {
     addressLine2: "",
     notes: "",
     isDefault: false,
+    latitude: null as number | null,
+    longitude: null as number | null,
   });
 
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
@@ -328,6 +331,8 @@ export default function Settings() {
       addressLine2: "",
       notes: "",
       isDefault: false,
+      latitude: null,
+      longitude: null,
     });
   };
 
@@ -343,6 +348,8 @@ export default function Settings() {
       addressLine2: address.addressLine2 || "",
       notes: address.notes || "",
       isDefault: address.isDefault,
+      latitude: address.latitude || null,
+      longitude: address.longitude || null,
     });
     setAddressDialogOpen(true);
   };
@@ -770,6 +777,19 @@ export default function Settings() {
                           onChange={(e) => setAddressForm(prev => ({ ...prev, notes: e.target.value }))}
                           placeholder="تعليمات للتوصيل"
                           data-testid="input-address-notes"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>الموقع على الخريطة (اختياري)</Label>
+                        <MapPicker
+                          value={addressForm.latitude && addressForm.longitude 
+                            ? { lat: addressForm.latitude, lng: addressForm.longitude } 
+                            : null}
+                          onChange={(coords) => setAddressForm(prev => ({ 
+                            ...prev, 
+                            latitude: coords.lat, 
+                            longitude: coords.lng 
+                          }))}
                         />
                       </div>
                       <div className="flex items-center gap-2">

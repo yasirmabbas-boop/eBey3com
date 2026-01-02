@@ -212,6 +212,8 @@ export const buyerAddresses = pgTable("buyer_addresses", {
   addressLine1: text("address_line_1").notNull(),
   addressLine2: text("address_line_2"),
   notes: text("notes"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
   isDefault: boolean("is_default").notNull().default(false),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
