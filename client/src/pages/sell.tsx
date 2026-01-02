@@ -108,6 +108,8 @@ export default function SellPage() {
     serialNumber: "",
     quantityAvailable: "1",
     deliveryWindow: "",
+    shippingType: "seller_pays",
+    shippingCost: "",
     returnPolicy: "",
     returnDetails: "",
     sellerName: user?.displayName || "",
@@ -214,6 +216,8 @@ export default function SellPage() {
         serialNumber: isTemplateMode ? "" : sourceListing.serialNumber || "",
         quantityAvailable: isRelistMode ? "1" : sourceListing.quantityAvailable?.toString() || "1",
         deliveryWindow: sourceListing.deliveryWindow || "",
+        shippingType: (sourceListing as any).shippingType || "seller_pays",
+        shippingCost: (sourceListing as any).shippingCost?.toString() || "",
         returnPolicy: sourceListing.returnPolicy || "",
         returnDetails: sourceListing.returnDetails || "",
         sellerName: sourceListing.sellerName || user?.displayName || "",
@@ -538,6 +542,8 @@ export default function SellPage() {
         auctionStartTime: auctionStartTime,
         auctionEndTime: auctionEndTime,
         deliveryWindow: formData.deliveryWindow,
+        shippingType: formData.shippingType,
+        shippingCost: formData.shippingType === "buyer_pays" ? parseInt(formData.shippingCost) || 0 : 0,
         returnPolicy: formData.returnPolicy,
         returnDetails: formData.returnDetails || null,
         sellerName: formData.sellerName,
@@ -1857,6 +1863,54 @@ export default function SellPage() {
                 </Select>
                 {validationErrors.deliveryWindow && (
                   <p className="text-xs text-red-500">{validationErrors.deliveryWindow}</p>
+                )}
+              </div>
+
+              {/* Shipping Options */}
+              <div className="space-y-3">
+                <Label>تكلفة الشحن</Label>
+                <RadioGroup 
+                  value={formData.shippingType} 
+                  onValueChange={(v) => handleInputChange("shippingType", v)}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50">
+                    <RadioGroupItem value="seller_pays" id="ship-free" data-testid="radio-ship-free" />
+                    <Label htmlFor="ship-free" className="flex-1 cursor-pointer">
+                      <span className="font-medium">شحن مجاني</span>
+                      <p className="text-xs text-gray-500">على حساب البائع</p>
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50">
+                    <RadioGroupItem value="buyer_pays" id="ship-buyer" data-testid="radio-ship-buyer" />
+                    <Label htmlFor="ship-buyer" className="flex-1 cursor-pointer">
+                      <span className="font-medium">على حساب المشتري</span>
+                      <p className="text-xs text-gray-500">حدد تكلفة الشحن</p>
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50">
+                    <RadioGroupItem value="pickup" id="ship-pickup" data-testid="radio-ship-pickup" />
+                    <Label htmlFor="ship-pickup" className="flex-1 cursor-pointer">
+                      <span className="font-medium">استلام شخصي</span>
+                      <p className="text-xs text-gray-500">بدون شحن - التسليم باليد</p>
+                    </Label>
+                  </div>
+                </RadioGroup>
+                
+                {formData.shippingType === "buyer_pays" && (
+                  <div className="space-y-2 pt-2">
+                    <Label htmlFor="shippingCost">تكلفة الشحن (دينار عراقي) *</Label>
+                    <Input
+                      id="shippingCost"
+                      type="number"
+                      min="0"
+                      placeholder="مثال: 5000"
+                      value={formData.shippingCost}
+                      onChange={(e) => handleInputChange("shippingCost", e.target.value)}
+                      data-testid="input-shipping-cost"
+                    />
+                    <p className="text-xs text-gray-500">سيتم إضافة هذا المبلغ للسعر النهائي</p>
+                  </div>
                 )}
               </div>
 

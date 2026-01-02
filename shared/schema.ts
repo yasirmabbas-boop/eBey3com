@@ -296,6 +296,8 @@ export const listings = pgTable("listings", {
   auctionStartTime: timestamp("auction_start_time"),
   auctionEndTime: timestamp("auction_end_time"),
   deliveryWindow: text("delivery_window").notNull(),
+  shippingCost: integer("shipping_cost").default(0),
+  shippingType: text("shipping_type").default("seller_pays"),
   returnPolicy: text("return_policy").notNull(),
   returnDetails: text("return_details"),
   sellerName: text("seller_name").notNull(),

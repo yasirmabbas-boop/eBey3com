@@ -679,6 +679,16 @@ export default function ProductPage() {
             <span className="text-sm font-medium">{product.deliveryWindow || "3-5 أيام"}</span>
           </div>
           <div className="flex items-center justify-between">
+            <span className="text-gray-500 text-sm">الشحن</span>
+            <span className="text-sm font-medium">
+              {(listing as any)?.shippingType === "buyer_pays" 
+                ? `${((listing as any)?.shippingCost || 0).toLocaleString()} د.ع` 
+                : (listing as any)?.shippingType === "pickup" 
+                  ? "استلام شخصي" 
+                  : "مجاني (على حساب البائع)"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
             <span className="text-gray-500 text-sm">الحالة</span>
             <span className="text-sm font-medium">{product.condition}</span>
           </div>
