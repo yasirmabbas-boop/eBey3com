@@ -778,10 +778,17 @@ export async function registerRoutes(
         return res.status(500).json({ error: "فشل في تحديث حالة الشحن" });
       }
       
-      // If buyer is registered (not guest), send them a notification message
+      // If buyer is registered (not guest), send them notification and message
       if (transaction.buyerId && transaction.buyerId !== "guest") {
         const listing = await storage.getListing(transaction.listingId);
         try {
+          await storage.createNotification({
+            userId: transaction.buyerId,
+            type: "order_shipped",
+            title: "تم شحن طلبك! 📦",
+            message: `تم شحن طلبك "${listing?.title || 'منتج'}". سيصلك قريباً!`,
+            relatedId: transaction.listingId,
+          });
           await storage.sendMessage({
             senderId: transaction.sellerId,
             receiverId: transaction.buyerId,
@@ -789,7 +796,7 @@ export async function registerRoutes(
             listingId: transaction.listingId,
           });
         } catch (e) {
-          console.log("Could not send shipping notification message:", e);
+          console.log("Could not send shipping notification:", e);
         }
       }
       
