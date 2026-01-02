@@ -1376,6 +1376,9 @@ export async function registerRoutes(
               id: buyer.id,
               name: buyer.displayName,
               phone: buyer.phone,
+              city: buyer.city,
+              district: buyer.district,
+              address: buyer.addressLine1,
             } : undefined,
           };
         })

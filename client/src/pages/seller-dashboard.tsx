@@ -1235,14 +1235,26 @@ export default function SellerDashboard() {
 
                         {order.buyer && (
                           <div className="bg-blue-50 p-3 rounded-lg mb-3">
-                            <p className="text-sm font-semibold text-blue-800 mb-1 flex items-center gap-1">
+                            <p className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-1">
                               <Users className="h-4 w-4" />
                               معلومات المشتري
                             </p>
-                            <p className="text-sm">{order.buyer.name || "مشتري"}</p>
-                            {order.buyer.phone && (
-                              <p className="text-xs text-gray-600">{order.buyer.phone}</p>
-                            )}
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium">{order.buyer.name || "مشتري"}</p>
+                              {order.buyer.phone && (
+                                <p className="text-sm text-gray-600">📱 {order.buyer.phone}</p>
+                              )}
+                              {(order.buyer.city || order.buyer.district || order.buyer.address) && (
+                                <div className="text-sm text-gray-600 flex items-start gap-1">
+                                  <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                  <span>
+                                    {[order.buyer.address, order.buyer.district, order.buyer.city]
+                                      .filter(Boolean)
+                                      .join("، ")}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
 
