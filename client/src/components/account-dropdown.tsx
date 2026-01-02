@@ -24,6 +24,9 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
+// Feature flag for exchange option - set to true to enable
+const ENABLE_EXCHANGE_FEATURE = false;
+
 export function AccountDropdown() {
   const { user, isAuthenticated, logout } = useAuth();
 
@@ -119,12 +122,14 @@ export function AccountDropdown() {
           </DropdownMenuItem>
         </Link>
 
-        <Link href="/exchange-offers">
-          <DropdownMenuItem className="cursor-pointer" data-testid="menu-exchange-offers">
-            <RefreshCw className="h-4 w-4 ml-2" />
-            <span>عروض المراوس</span>
-          </DropdownMenuItem>
-        </Link>
+        {ENABLE_EXCHANGE_FEATURE && (
+          <Link href="/exchange-offers">
+            <DropdownMenuItem className="cursor-pointer" data-testid="menu-exchange-offers">
+              <RefreshCw className="h-4 w-4 ml-2" />
+              <span>عروض المراوس</span>
+            </DropdownMenuItem>
+          </Link>
+        )}
 
         <DropdownMenuSeparator />
 

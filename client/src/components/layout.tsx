@@ -17,6 +17,9 @@ import { SmartSearch } from "@/components/smart-search";
 import { BackButton } from "@/components/back-button";
 import { TutorialTrigger } from "@/components/onboarding-tutorial";
 
+// Feature flag for exchange option - set to true to enable
+const ENABLE_EXCHANGE_FEATURE = false;
+
 interface LayoutProps {
   children: React.ReactNode;
   hideHeader?: boolean;
@@ -42,7 +45,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
             <Link href="/" className="hover:opacity-80 transition-colors font-medium">الرئيسية</Link>
             <Link href="/search?saleType=auction" className="hover:opacity-80 transition-colors font-medium">المزادات</Link>
             <Link href="/search?saleType=fixed" className="hover:opacity-80 transition-colors font-medium">شراء الآن</Link>
-            <Link href="/search?exchange=true" className="hover:opacity-80 transition-colors font-medium">مراوس</Link>
+            {ENABLE_EXCHANGE_FEATURE && <Link href="/search?exchange=true" className="hover:opacity-80 transition-colors font-medium">مراوس</Link>}
             <Link href="/search" className="hover:opacity-80 transition-colors font-medium">عرض الكل</Link>
           </div>
           
