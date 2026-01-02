@@ -196,7 +196,12 @@ export class DatabaseStorage implements IStorage {
   async getListingsPaginated(options: { limit: number; offset: number; category?: string; saleType?: string; sellerId?: string }): Promise<{ listings: Listing[]; total: number }> {
     const { limit, offset, category, saleType, sellerId } = options;
     
-    const conditions = [eq(listings.isActive, true)];
+    // When fetching for a specific seller, show ALL their products (including ended auctions)
+    // For public listing pages, only show active listings
+    const conditions: any[] = [];
+    if (!sellerId) {
+      conditions.push(eq(listings.isActive, true));
+    }
     if (category) conditions.push(eq(listings.category, category));
     if (saleType) conditions.push(eq(listings.saleType, saleType));
     if (sellerId) conditions.push(eq(listings.sellerId, sellerId));
