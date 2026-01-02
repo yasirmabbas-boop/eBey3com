@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, Loader2 } from "lucide-react";
+import { MapPin, Navigation, Loader2, AlertCircle } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -40,12 +40,15 @@ function MapController({ center }: { center: { lat: number; lng: number } }) {
 
 export function MapPicker({ value, onChange, className }: MapPickerProps) {
   const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 33.3152, lng: 44.3661 });
   const mapRef = useRef<L.Map | null>(null);
 
   const handleGetLocation = () => {
+    setLocationError(null);
+    
     if (!navigator.geolocation) {
-      alert("المتصفح لا يدعم خدمة الموقع");
+      setLocationError("المتصفح لا يدعم خدمة الموقع");
       return;
     }
 
@@ -59,16 +62,21 @@ export function MapPicker({ value, onChange, className }: MapPickerProps) {
         onChange(coords);
         setMapCenter(coords);
         setIsLocating(false);
+        setLocationError(null);
       },
       (error) => {
         setIsLocating(false);
         if (error.code === error.PERMISSION_DENIED) {
-          alert("تم رفض صلاحية الوصول للموقع. يرجى السماح بالوصول من إعدادات المتصفح.");
+          setLocationError("تم رفض صلاحية الوصول للموقع. يرجى السماح بالوصول من إعدادات الجهاز.");
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          setLocationError("موقعك غير متاح حالياً. يرجى اختيار الموقع يدوياً على الخريطة.");
+        } else if (error.code === error.TIMEOUT) {
+          setLocationError("انتهت مهلة تحديد الموقع. يرجى المحاولة مرة أخرى.");
         } else {
-          alert("تعذر تحديد الموقع. يرجى المحاولة مرة أخرى أو اختيار الموقع يدوياً على الخريطة.");
+          setLocationError("تعذر تحديد الموقع. يرجى اختيار الموقع يدوياً على الخريطة.");
         }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
@@ -113,7 +121,14 @@ export function MapPicker({ value, onChange, className }: MapPickerProps) {
         </MapContainer>
       </div>
       
-      {value && (
+      {locationError && (
+        <div className="flex items-center gap-2 mt-2 p-2 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>{locationError}</span>
+        </div>
+      )}
+      
+      {value && !locationError && (
         <p className="text-xs text-muted-foreground mt-2 text-center" data-testid="text-coordinates">
           الإحداثيات: {value.lat.toFixed(6)}, {value.lng.toFixed(6)}
         </p>
