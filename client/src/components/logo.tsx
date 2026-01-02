@@ -1,17 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface LogoProps {
   className?: string;
   variant?: "default" | "light";
 }
 
+const IDLE_TIMEOUT = 45000;
+
 export function Logo({ className = "", variant = "default" }: LogoProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [logoImpact, setLogoImpact] = useState(false);
-
-  const getRandomInterval = useCallback(() => {
-    return Math.floor(Math.random() * 7000) + 5000;
-  }, []);
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasPlayedInitial = useRef(false);
 
   const triggerAnimation = useCallback(() => {
     setIsAnimating(true);
@@ -22,27 +22,49 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
     setTimeout(() => setIsAnimating(false), 1000);
   }, []);
 
-  useEffect(() => {
-    const initialDelay = setTimeout(() => {
+  const resetIdleTimer = useCallback(() => {
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+    }
+    idleTimerRef.current = setTimeout(() => {
       triggerAnimation();
-    }, 500);
+      resetIdleTimer();
+    }, IDLE_TIMEOUT + Math.random() * 15000);
+  }, [triggerAnimation]);
 
-    let timeoutId: NodeJS.Timeout;
-    const scheduleNext = () => {
-      timeoutId = setTimeout(() => {
+  useEffect(() => {
+    if (!hasPlayedInitial.current) {
+      const initialDelay = setTimeout(() => {
         triggerAnimation();
-        scheduleNext();
-      }, getRandomInterval());
+        hasPlayedInitial.current = true;
+        resetIdleTimer();
+      }, 800);
+      return () => clearTimeout(initialDelay);
+    }
+  }, [triggerAnimation, resetIdleTimer]);
+
+  useEffect(() => {
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    
+    const handleActivity = () => {
+      if (hasPlayedInitial.current) {
+        resetIdleTimer();
+      }
     };
-    
-    const startScheduling = setTimeout(scheduleNext, 1500);
-    
+
+    activityEvents.forEach(event => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+
     return () => {
-      clearTimeout(initialDelay);
-      clearTimeout(startScheduling);
-      clearTimeout(timeoutId);
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
     };
-  }, [triggerAnimation, getRandomInterval]);
+  }, [resetIdleTimer]);
 
   const colors =
     variant === "light"
