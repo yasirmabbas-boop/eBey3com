@@ -44,7 +44,8 @@ export function MapPicker({ value, onChange, className }: MapPickerProps) {
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 33.3152, lng: 44.3661 });
   const mapRef = useRef<L.Map | null>(null);
 
-  const handleGetLocation = () => {
+  const handleGetLocation = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.blur();
     setLocationError(null);
     
     if (!navigator.geolocation) {
@@ -105,11 +106,11 @@ export function MapPicker({ value, onChange, className }: MapPickerProps) {
         </Button>
       </div>
       
-      <div className="rounded-lg overflow-hidden border border-gray-200 h-[250px]">
+      <div className="rounded-lg overflow-hidden border border-gray-200 h-[250px]" tabIndex={-1}>
         <MapContainer
           center={[mapCenter.lat, mapCenter.lng]}
           zoom={12}
-          style={{ height: "100%", width: "100%", touchAction: 'manipulation' }}
+          style={{ height: "100%", width: "100%" }}
           ref={mapRef}
         >
           <TileLayer
