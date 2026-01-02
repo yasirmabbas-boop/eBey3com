@@ -276,6 +276,80 @@ export async function registerRoutes(
     }
   });
 
+  // Relist an item - creates a new listing based on an existing one
+  app.post("/api/listings/:id/relist", async (req, res) => {
+    try {
+      const sessionUserId = await getUserIdFromRequest(req);
+      if (!sessionUserId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+
+      const originalListing = await storage.getListing(req.params.id);
+      if (!originalListing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+
+      // Verify ownership
+      if (originalListing.sellerId !== sessionUserId) {
+        return res.status(403).json({ error: "لا يمكنك إعادة عرض منتج لا تملكه" });
+      }
+
+      // For auctions, require new start and end times
+      let auctionStartTime = null;
+      let auctionEndTime = null;
+      
+      if (originalListing.saleType === "auction") {
+        if (!req.body.auctionStartTime || !req.body.auctionEndTime) {
+          return res.status(400).json({ 
+            error: "المزادات تتطلب تحديد تاريخ ووقت البدء والانتهاء الجديد" 
+          });
+        }
+        
+        auctionStartTime = new Date(req.body.auctionStartTime);
+        auctionEndTime = new Date(req.body.auctionEndTime);
+        const hoursDiff = (auctionEndTime.getTime() - auctionStartTime.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursDiff < 24) {
+          return res.status(400).json({ 
+            error: "يجب أن تكون مدة المزاد 24 ساعة على الأقل" 
+          });
+        }
+      }
+
+      // Create new listing with same details but reset stats
+      const newListingData = {
+        title: originalListing.title,
+        description: originalListing.description,
+        price: req.body.price || originalListing.price,
+        category: originalListing.category,
+        condition: originalListing.condition,
+        images: originalListing.images,
+        saleType: originalListing.saleType,
+        timeLeft: null,
+        auctionStartTime,
+        auctionEndTime,
+        deliveryWindow: originalListing.deliveryWindow,
+        returnPolicy: originalListing.returnPolicy,
+        returnDetails: originalListing.returnDetails,
+        sellerName: originalListing.sellerName,
+        sellerId: sessionUserId,
+        city: originalListing.city,
+        brand: originalListing.brand,
+        isNegotiable: originalListing.isNegotiable,
+        serialNumber: originalListing.serialNumber,
+        quantityAvailable: req.body.quantityAvailable || 1,
+      };
+
+      const validatedData = insertListingSchema.parse(newListingData);
+      const newListing = await storage.createListing(validatedData);
+      
+      res.status(201).json(newListing);
+    } catch (error) {
+      console.error("Error relisting item:", error);
+      res.status(400).json({ error: "فشل في إعادة عرض المنتج", details: String(error) });
+    }
+  });
+
   app.get("/api/listings/:id/bids", async (req, res) => {
     try {
       const bids = await storage.getBidsForListing(req.params.id);

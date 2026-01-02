@@ -88,6 +88,8 @@ interface SellerProduct {
   productCode: string;
   quantityAvailable: number;
   quantitySold: number;
+  saleType?: string;
+  auctionEndTime?: string;
   buyer?: {
     id: string;
     name: string;
@@ -313,6 +315,8 @@ export default function SellerDashboard() {
       productCode: l.productCode || `P-${l.id.slice(0, 6)}`,
       quantityAvailable,
       quantitySold,
+      saleType: l.saleType || "fixed",
+      auctionEndTime: l.auctionEndTime ? new Date(l.auctionEndTime).toISOString() : undefined,
     };
   });
 
@@ -890,7 +894,8 @@ export default function SellerDashboard() {
                           )}
                           
                           {/* Relist button - for sold/shipped items */}
-                          {["sold", "pending_shipment", "shipped"].includes(product.status) && (
+                          {(["sold", "pending_shipment", "shipped", "ended", "sold_out"].includes(product.status) || 
+                            (product.saleType === "auction" && product.auctionEndTime && new Date(product.auctionEndTime) < new Date())) && (
                             <Button 
                               size="sm" 
                               variant="outline" 
@@ -1434,7 +1439,6 @@ export default function SellerDashboard() {
             sellerName: user?.displayName || "البائع",
             sellerCity: "العراق",
             buyerName: selectedProduct.buyer.name,
-            buyerPhone: selectedProduct.buyer.phone,
             deliveryAddress: selectedProduct.buyer.address || "",
             city: selectedProduct.buyer.city || "",
             district: selectedProduct.buyer.district || "",
