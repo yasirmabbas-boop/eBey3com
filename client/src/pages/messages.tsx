@@ -73,21 +73,46 @@ export default function MessagesPage() {
     enabled: !!partnerId,
   });
 
+  const uniquePartnerIds = Array.from(new Set(allMessages.map(msg => 
+    msg.senderId === user?.id ? msg.receiverId : msg.senderId
+  )));
+
+  const { data: partnerUsers = {} } = useQuery({
+    queryKey: ["/api/users/batch", uniquePartnerIds.join(",")],
+    queryFn: async () => {
+      const userMap: Record<string, { displayName?: string; phone?: string }> = {};
+      await Promise.all(uniquePartnerIds.map(async (id) => {
+        try {
+          const res = await fetch(`/api/users/${id}`);
+          if (res.ok) {
+            userMap[id] = await res.json();
+          }
+        } catch {}
+      }));
+      return userMap;
+    },
+    enabled: uniquePartnerIds.length > 0,
+  });
+
   const conversations: ConversationPartner[] = [];
   const partnerMap = new Map<string, ConversationPartner>();
   
   allMessages.forEach(msg => {
-    const partnerId = msg.senderId === user?.id ? msg.receiverId : msg.senderId;
-    if (!partnerMap.has(partnerId)) {
-      partnerMap.set(partnerId, {
-        id: partnerId,
-        name: "مستخدم",
+    const pId = msg.senderId === user?.id ? msg.receiverId : msg.senderId;
+    const partnerData = partnerUsers[pId];
+    if (!partnerMap.has(pId)) {
+      partnerMap.set(pId, {
+        id: pId,
+        name: partnerData?.displayName || partnerData?.phone || "مستخدم",
         lastMessage: msg.content,
         lastMessageTime: new Date(msg.createdAt),
         unreadCount: msg.receiverId === user?.id && !msg.isRead ? 1 : 0,
       });
     } else {
-      const existing = partnerMap.get(partnerId)!;
+      const existing = partnerMap.get(pId)!;
+      if (!existing.name || existing.name === "مستخدم") {
+        existing.name = partnerData?.displayName || partnerData?.phone || "مستخدم";
+      }
       if (msg.receiverId === user?.id && !msg.isRead) {
         existing.unreadCount = (existing.unreadCount || 0) + 1;
       }
