@@ -112,3 +112,31 @@ export function broadcastBidUpdate(update: BidUpdate) {
 export function getActiveConnections(): number {
   return wss?.clients.size || 0;
 }
+
+interface AuctionEndUpdate {
+  type: "auction_end";
+  listingId: string;
+  status: "sold" | "no_bids";
+  winnerId: string | null;
+  winnerName: string | null;
+  winningBid: number | null;
+}
+
+export function broadcastAuctionEnd(update: Omit<AuctionEndUpdate, "type">) {
+  const subscribers = listingSubscriptions.get(update.listingId);
+  if (!subscribers || subscribers.size === 0) {
+    return;
+  }
+
+  const message = JSON.stringify({ ...update, type: "auction_end" });
+  let sentCount = 0;
+
+  Array.from(subscribers).forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+      sentCount++;
+    }
+  });
+
+  log(`Broadcast auction end for listing ${update.listingId} to ${sentCount} clients`, "ws");
+}

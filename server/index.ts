@@ -4,6 +4,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { setupWebSocket } from "./websocket";
+import { startAuctionProcessor } from "./auction-processor";
 
 const app = express();
 const httpServer = createServer(app);
@@ -105,6 +106,7 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      startAuctionProcessor();
     },
   );
 })();
