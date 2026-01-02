@@ -68,6 +68,7 @@ export const bids = pgTable("bids", {
   listingId: varchar("listing_id").notNull(),
   userId: varchar("user_id").notNull(),
   amount: integer("amount").notNull(),
+  shippingAddressId: varchar("shipping_address_id"),
   isWinning: boolean("is_winning").notNull().default(false),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
