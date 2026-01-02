@@ -71,7 +71,11 @@ const categorizeMessage = (content: string): { type: Notification["type"]; title
   return { type: "message", title: "رسالة جديدة" };
 };
 
-export function NotificationsButton() {
+interface NotificationsButtonProps {
+  variant?: "default" | "mobile";
+}
+
+export function NotificationsButton({ variant = "default" }: NotificationsButtonProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -199,6 +203,16 @@ export function NotificationsButton() {
   };
 
   if (!user) {
+    if (variant === "mobile") {
+      return (
+        <div 
+          className="relative cursor-pointer"
+          onClick={() => window.location.href = "/signin"}
+        >
+          <Bell className="h-6 w-6 text-gray-600" />
+        </div>
+      );
+    }
     return (
       <Button
         variant="ghost"
@@ -212,22 +226,35 @@ export function NotificationsButton() {
     );
   }
 
+  const triggerButton = variant === "mobile" ? (
+    <div className="relative cursor-pointer">
+      <Bell className="h-6 w-6 text-gray-600" />
+      {unreadCount > 0 && (
+        <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold px-1">
+          {unreadCount > 9 ? "9+" : unreadCount}
+        </span>
+      )}
+    </div>
+  ) : (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="relative"
+      data-testid="button-notifications"
+    >
+      <Bell className="h-5 w-5" />
+      {unreadCount > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
+          {unreadCount > 9 ? "9+" : unreadCount}
+        </span>
+      )}
+    </Button>
+  );
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative"
-          data-testid="button-notifications"
-        >
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          )}
-        </Button>
+        {triggerButton}
       </PopoverTrigger>
       <PopoverContent 
         className="w-96 p-0" 

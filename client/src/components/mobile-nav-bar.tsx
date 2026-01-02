@@ -1,31 +1,19 @@
 import { Link, useLocation } from "wouter";
-import { Home, Search, Bell, User, ShoppingCart } from "lucide-react";
+import { Home, Search, User, ShoppingCart } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
-import { useQuery } from "@tanstack/react-query";
+import { NotificationsButton } from "@/components/notifications";
 
 export function MobileNavBar() {
   const [location] = useLocation();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { totalItems } = useCart();
-
-  const { data: unreadCount = 0 } = useQuery<number>({
-    queryKey: ["/api/notifications/unread-count"],
-    queryFn: async () => {
-      const res = await fetch("/api/notifications/unread-count", { credentials: "include" });
-      if (!res.ok) return 0;
-      const data = await res.json();
-      return data.count || 0;
-    },
-    enabled: !!user?.id,
-    refetchInterval: 30000,
-  });
 
   const navItems = [
     { href: "/", icon: Home, label: "الرئيسية", testId: "nav-home" },
     { href: "/search", icon: Search, label: "البحث", testId: "nav-search" },
     { href: "/cart", icon: ShoppingCart, label: "السلة", testId: "nav-cart", badge: totalItems },
-    { href: "/notifications", icon: Bell, label: "الإشعارات", testId: "nav-notifications", badge: unreadCount },
+    { type: "notifications" as const },
     { href: isAuthenticated ? "/my-account" : "/signin", icon: User, label: "حسابي", testId: "nav-account" },
   ];
 
@@ -46,12 +34,25 @@ export function MobileNavBar() {
       }}
     >
       <div className="flex items-center justify-around w-full h-16 px-2 bg-white">
-        {navItems.map((item) => {
-          const active = isActive(item.href);
+        {navItems.map((item, index) => {
+          if (item.type === "notifications") {
+            return (
+              <div 
+                key="notifications" 
+                className="flex flex-col items-center justify-center flex-1 py-2"
+                data-testid="nav-notifications"
+              >
+                <NotificationsButton variant="mobile" />
+                <span className="text-[11px] mt-1 text-gray-600">الإشعارات</span>
+              </div>
+            );
+          }
+          
+          const active = isActive(item.href!);
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={item.href!}
               className={`flex flex-col items-center justify-center flex-1 py-2 relative transition-colors active:scale-95 ${
                 active ? "text-blue-600" : "text-gray-600"
               }`}
