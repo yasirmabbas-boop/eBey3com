@@ -54,6 +54,9 @@ const HOURS = Array.from({ length: 24 }, (_, i) => {
   return { value: hour, label: `${hour}:00` };
 });
 
+// Feature flag for exchange option - set to true to enable
+const ENABLE_EXCHANGE_FEATURE = false;
+
 export default function SellPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -1550,22 +1553,24 @@ export default function SellPage() {
                     </div>
                   </div>
 
-                  {/* Allow Exchange Checkbox (مراوس) */}
-                  <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
-                    <Checkbox 
-                      id="exchangeToggle" 
-                      checked={allowExchange}
-                      onCheckedChange={(checked) => setAllowExchange(checked === true)}
-                      className="h-5 w-5 border-2"
-                      data-testid="checkbox-allow-exchange"
-                    />
-                    <div className="space-y-1 flex-1">
-                      <Label htmlFor="exchangeToggle" className="font-bold cursor-pointer">قابل للمراوس</Label>
-                      <p className="text-xs text-muted-foreground">
-                        السماح للمشترين بتقديم عروض تبادل مع منتجاتهم المعروضة
-                      </p>
+                  {/* Allow Exchange Checkbox (مراوس) - Feature flagged */}
+                  {ENABLE_EXCHANGE_FEATURE && (
+                    <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
+                      <Checkbox 
+                        id="exchangeToggle" 
+                        checked={allowExchange}
+                        onCheckedChange={(checked) => setAllowExchange(checked === true)}
+                        className="h-5 w-5 border-2"
+                        data-testid="checkbox-allow-exchange"
+                      />
+                      <div className="space-y-1 flex-1">
+                        <Label htmlFor="exchangeToggle" className="font-bold cursor-pointer">قابل للمراوس</Label>
+                        <p className="text-xs text-muted-foreground">
+                          السماح للمشترين بتقديم عروض تبادل مع منتجاتهم المعروضة
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -2230,7 +2235,7 @@ export default function SellPage() {
                     قابل للتفاوض
                   </Badge>
                 )}
-                {allowExchange && (
+                {ENABLE_EXCHANGE_FEATURE && allowExchange && (
                   <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                     قابل للمراوس
                   </Badge>
