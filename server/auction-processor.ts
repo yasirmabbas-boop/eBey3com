@@ -123,6 +123,20 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
       })
       .where(eq(listings.id, listing.id));
 
+    // Get shipping address from winning bid
+    let deliveryAddress: string | undefined;
+    let deliveryPhone: string | undefined;
+    let deliveryCity: string | undefined;
+    
+    if (highestBid.shippingAddressId) {
+      const shippingAddress = await storage.getBuyerAddressById(highestBid.shippingAddressId);
+      if (shippingAddress) {
+        deliveryAddress = `${shippingAddress.recipientName}\n${shippingAddress.addressLine1}${shippingAddress.district ? ` - ${shippingAddress.district}` : ''}${shippingAddress.notes ? `\n${shippingAddress.notes}` : ''}`;
+        deliveryPhone = shippingAddress.phone;
+        deliveryCity = shippingAddress.city;
+      }
+    }
+
     const [transaction] = await db
       .insert(transactions)
       .values({
@@ -131,6 +145,9 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
         sellerId: listing.sellerId,
         amount: highestBid.amount,
         status: "processing",
+        deliveryAddress,
+        deliveryPhone,
+        deliveryCity,
       })
       .returning();
 

@@ -76,6 +76,7 @@ export interface IStorage {
   
   // Buyer addresses
   getBuyerAddresses(userId: string): Promise<BuyerAddress[]>;
+  getBuyerAddressById(id: string): Promise<BuyerAddress | undefined>;
   createBuyerAddress(address: InsertBuyerAddress): Promise<BuyerAddress>;
   updateBuyerAddress(id: string, address: Partial<InsertBuyerAddress>): Promise<BuyerAddress | undefined>;
   deleteBuyerAddress(id: string): Promise<boolean>;
@@ -608,6 +609,13 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(buyerAddresses)
       .where(eq(buyerAddresses.userId, userId))
       .orderBy(desc(buyerAddresses.isDefault), desc(buyerAddresses.createdAt));
+  }
+
+  async getBuyerAddressById(id: string): Promise<BuyerAddress | undefined> {
+    const [address] = await db.select().from(buyerAddresses)
+      .where(eq(buyerAddresses.id, id))
+      .limit(1);
+    return address;
   }
 
   async createBuyerAddress(address: InsertBuyerAddress): Promise<BuyerAddress> {
