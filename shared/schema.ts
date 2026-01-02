@@ -40,6 +40,7 @@ export const users = pgTable("users", {
   locationLat: real("location_lat"),
   locationLng: real("location_lng"),
   ageBracket: text("age_bracket"),
+  gender: text("gender"),
   interests: text("interests").array(),
   surveyCompleted: boolean("survey_completed").notNull().default(false),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),

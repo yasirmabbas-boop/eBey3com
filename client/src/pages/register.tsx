@@ -123,6 +123,7 @@ export default function Register() {
     displayName: "",
     district: "",
     ageBracket: "",
+    gender: "",
     interests: [] as string[],
   });
 
@@ -195,6 +196,7 @@ export default function Register() {
           password: formData.password,
           displayName: formData.displayName,
           ageBracket: formData.ageBracket,
+          gender: formData.gender,
           interests: formData.interests,
           city: formData.district,
         }),
@@ -318,6 +320,23 @@ export default function Register() {
                   </SelectContent>
                 </Select>
                 {errors.ageBracket && <p className="text-red-500 text-xs">{errors.ageBracket}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label>الجنس</Label>
+                <Select
+                  value={formData.gender}
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, gender: v }))}
+                >
+                  <SelectTrigger data-testid="select-gender">
+                    <SelectValue placeholder="اختر الجنس" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">ذكر</SelectItem>
+                    <SelectItem value="female">أنثى</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.gender && <p className="text-red-500 text-xs">{errors.gender}</p>}
               </div>
 
               <div className="space-y-2">
