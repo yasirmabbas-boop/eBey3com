@@ -695,11 +695,11 @@ export default function Settings() {
                       إضافة عنوان
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-md">
+                  <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>{editingAddressId ? "تعديل العنوان" : "إضافة عنوان جديد"}</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4 mt-4">
+                    <div className="space-y-4 mt-4 pb-4">
                       <div className="space-y-2">
                         <Label>تسمية العنوان</Label>
                         <Input 
