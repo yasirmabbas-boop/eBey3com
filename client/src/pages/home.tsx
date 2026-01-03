@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, Sparkles, Loader2, Clock, Camera, ShoppingBag, Eye } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { OptimizedImage, ProductGridSkeleton } from "@/components/optimized-image";
+import { CategoryCarousel } from "@/components/category-carousel";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 import type { Listing } from "@shared/schema";
 
@@ -328,20 +329,28 @@ export default function Home() {
                     </Link>
                   </div>
                   
-                  <div className="flex gap-2 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <CategoryCarousel>
                     {productsByCategory[cat.id].map((product) => (
-                      <Link key={product.id} href={`/product/${product.id}`}>
-                        <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 flex-shrink-0 w-28 sm:w-48 active:scale-[0.98]" data-testid={`card-category-${cat.id}-${product.id}`}>
+                      <Link key={product.id} href={`/product/${product.id}`} className="snap-start">
+                        <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 flex-shrink-0 w-32 sm:w-52 active:scale-[0.98]" data-testid={`card-category-${cat.id}-${product.id}`}>
                           <div className="relative aspect-square overflow-hidden bg-gray-100">
                             <img 
                               src={product.image} 
                               alt={product.title} 
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              loading="lazy"
                             />
                             {product.currentBid && (
                               <Badge className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-primary text-white text-[9px] sm:text-xs px-1 sm:px-1.5">
                                 مزاد
                               </Badge>
+                            )}
+                            {product.saleType === "auction" && product.auctionEndTime && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 sm:p-2">
+                                <div className="text-[9px] sm:text-xs text-white font-medium">
+                                  <AuctionCountdown endTime={product.auctionEndTime} />
+                                </div>
+                              </div>
                             )}
                           </div>
                           <CardContent className="p-1.5 sm:p-3">
@@ -355,7 +364,7 @@ export default function Home() {
                         </Card>
                       </Link>
                     ))}
-                  </div>
+                  </CategoryCarousel>
                 </div>
               ))}
             </div>
