@@ -35,6 +35,7 @@ import MyAccount from "@/pages/my-account";
 import MyBids from "@/pages/my-bids";
 import AdminPage from "@/pages/admin";
 import ForgotPassword from "@/pages/forgot-password";
+import SecuritySettings from "@/pages/security-settings";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -65,6 +66,7 @@ function Router() {
       <Route path="/contact" component={ContactUs} />
       <Route path="/security-guide" component={SecurityGuide} />
       <Route path="/security" component={Security} />
+      <Route path="/security-settings" component={SecuritySettings} />
       <Route path="/settings" component={Settings} />
       <Route path="/sell" component={SellPage} />
       <Route path="/deals-guide" component={DealsGuide} />

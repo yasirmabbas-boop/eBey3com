@@ -1327,6 +1327,23 @@ export async function registerRoutes(
         return res.status(401).json({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" });
       }
 
+      // Check if 2FA is enabled
+      if (user.twoFactorEnabled && user.twoFactorSecret) {
+        // Generate a pending token for 2FA verification
+        const crypto = await import("crypto");
+        const pendingToken = crypto.randomBytes(32).toString("hex");
+        
+        // Store pending token temporarily
+        await storage.updateUser(user.id, { authToken: pendingToken } as any);
+        
+        return res.json({ 
+          requires2FA: true,
+          phone: user.phone,
+          pendingToken,
+          message: "يرجى إدخال رمز المصادقة الثنائية"
+        });
+      }
+
       // Generate auth token for Safari/ITP compatibility
       const crypto = await import("crypto");
       const authToken = crypto.randomBytes(32).toString("hex");
@@ -1363,6 +1380,206 @@ export async function registerRoutes(
       }
       res.json({ success: true });
     });
+  });
+
+  // 2FA (Google Authenticator) Routes
+  app.post("/api/auth/2fa/setup", async (req, res) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+          const token = authHeader.substring(7);
+          const user = await storage.getUserByAuthToken(token);
+          if (!user) {
+            return res.status(401).json({ error: "غير مسجل الدخول" });
+          }
+          (req as any).userId = user.id;
+        } else {
+          return res.status(401).json({ error: "غير مسجل الدخول" });
+        }
+      }
+      
+      const activeUserId = userId || (req as any).userId;
+      const user = await storage.getUser(activeUserId);
+      if (!user) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+
+      const { authenticator } = await import("otplib");
+      const qrcode = await import("qrcode");
+      
+      const secret = authenticator.generateSecret();
+      const appName = "E-بيع";
+      const otpauth = authenticator.keyuri(user.phone || user.email || user.id, appName, secret);
+      
+      const qrCodeDataUrl = await qrcode.toDataURL(otpauth);
+      
+      // Store secret temporarily (not enabled yet)
+      await storage.updateUser(activeUserId, { twoFactorSecret: secret } as any);
+      
+      res.json({ 
+        secret,
+        qrCode: qrCodeDataUrl,
+        message: "امسح رمز QR باستخدام تطبيق المصادقة"
+      });
+    } catch (error) {
+      console.error("Error setting up 2FA:", error);
+      res.status(500).json({ error: "فشل في إعداد المصادقة الثنائية" });
+    }
+  });
+
+  app.post("/api/auth/2fa/verify-setup", async (req, res) => {
+    try {
+      let userId = (req.session as any)?.userId;
+      if (!userId) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+          const token = authHeader.substring(7);
+          const user = await storage.getUserByAuthToken(token);
+          if (user) userId = user.id;
+        }
+      }
+      
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ error: "رمز التحقق مطلوب" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user || !user.twoFactorSecret) {
+        return res.status(400).json({ error: "يرجى إعداد المصادقة الثنائية أولاً" });
+      }
+
+      const { authenticator } = await import("otplib");
+      const isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret });
+      
+      if (!isValid) {
+        return res.status(400).json({ error: "رمز التحقق غير صحيح" });
+      }
+
+      // Enable 2FA
+      await storage.updateUser(userId, { twoFactorEnabled: true } as any);
+      
+      res.json({ success: true, message: "تم تفعيل المصادقة الثنائية بنجاح" });
+    } catch (error) {
+      console.error("Error verifying 2FA setup:", error);
+      res.status(500).json({ error: "فشل في التحقق من رمز المصادقة" });
+    }
+  });
+
+  app.post("/api/auth/2fa/disable", async (req, res) => {
+    try {
+      let userId = (req.session as any)?.userId;
+      if (!userId) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+          const token = authHeader.substring(7);
+          const user = await storage.getUserByAuthToken(token);
+          if (user) userId = user.id;
+        }
+      }
+      
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const { code, password } = req.body;
+      if (!code || !password) {
+        return res.status(400).json({ error: "رمز التحقق وكلمة المرور مطلوبان" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+
+      // Verify password
+      if (!user.password) {
+        return res.status(400).json({ error: "لا يمكن إيقاف المصادقة الثنائية لهذا الحساب" });
+      }
+      
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(400).json({ error: "كلمة المرور غير صحيحة" });
+      }
+
+      // Verify 2FA code
+      if (user.twoFactorSecret) {
+        const { authenticator } = await import("otplib");
+        const isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret });
+        if (!isValid) {
+          return res.status(400).json({ error: "رمز التحقق غير صحيح" });
+        }
+      }
+
+      // Disable 2FA
+      await storage.updateUser(userId, { 
+        twoFactorEnabled: false,
+        twoFactorSecret: null 
+      } as any);
+      
+      res.json({ success: true, message: "تم إيقاف المصادقة الثنائية" });
+    } catch (error) {
+      console.error("Error disabling 2FA:", error);
+      res.status(500).json({ error: "فشل في إيقاف المصادقة الثنائية" });
+    }
+  });
+
+  app.post("/api/auth/2fa/verify", async (req, res) => {
+    try {
+      const { phone, code, pendingToken } = req.body;
+      
+      if (!phone || !code || !pendingToken) {
+        return res.status(400).json({ error: "جميع الحقول مطلوبة" });
+      }
+
+      const user = await storage.getUserByPhone(phone);
+      if (!user || !user.twoFactorSecret) {
+        return res.status(400).json({ error: "المستخدم غير موجود" });
+      }
+
+      // Verify the pending token matches
+      if (user.authToken !== pendingToken) {
+        return res.status(400).json({ error: "جلسة تسجيل الدخول غير صالحة" });
+      }
+
+      const { authenticator } = await import("otplib");
+      const isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret });
+      
+      if (!isValid) {
+        return res.status(400).json({ error: "رمز التحقق غير صحيح" });
+      }
+
+      // Generate a new auth token
+      const crypto = await import("crypto");
+      const authToken = crypto.randomBytes(32).toString("hex");
+      await storage.updateUser(user.id, { 
+        authToken,
+        lastLoginAt: new Date()
+      } as any);
+
+      // Set session
+      (req.session as any).userId = user.id;
+
+      res.json({ 
+        id: user.id,
+        phone: user.phone,
+        displayName: user.displayName,
+        sellerApproved: user.sellerApproved,
+        isAdmin: user.isAdmin,
+        accountCode: user.accountCode,
+        avatar: user.avatar,
+        authToken,
+      });
+    } catch (error) {
+      console.error("Error verifying 2FA:", error);
+      res.status(500).json({ error: "فشل في التحقق من رمز المصادقة" });
+    }
   });
 
   app.get("/api/auth/me", async (req, res) => {
@@ -1435,6 +1652,7 @@ export async function registerRoutes(
       rating: user.rating,
       ratingCount: user.ratingCount,
       totalSales: user.totalSales,
+      twoFactorEnabled: user.twoFactorEnabled,
       createdAt: user.createdAt,
       ageBracket: user.ageBracket,
       interests: user.interests,

@@ -188,9 +188,9 @@ export default function MyAccount() {
     },
     {
       icon: <Shield className="h-6 w-6" />,
-      label: "الأمان والخصوصية",
-      description: "حماية حسابك",
-      href: "/security",
+      label: "إعدادات الأمان",
+      description: "المصادقة الثنائية وكلمة المرور",
+      href: "/security-settings",
     },
     {
       icon: <HelpCircle className="h-6 w-6" />,
