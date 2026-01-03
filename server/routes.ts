@@ -2409,5 +2409,94 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Get all listings (lightweight version without images for fast loading)
+  app.get("/api/admin/listings", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const listings = await storage.getListings();
+      // Return lightweight version without images for fast loading
+      const lightListings = listings.map(l => ({
+        id: l.id,
+        productCode: l.productCode,
+        title: l.title,
+        price: l.price,
+        category: l.category,
+        saleType: l.saleType,
+        sellerName: l.sellerName,
+        sellerId: l.sellerId,
+        city: l.city,
+        isActive: l.isActive,
+        isPaused: l.isPaused,
+        createdAt: l.createdAt,
+        currentBid: l.currentBid,
+        totalBids: l.totalBids,
+      }));
+      res.json(lightListings);
+    } catch (error) {
+      console.error("Error fetching admin listings:", error);
+      res.status(500).json({ error: "Failed to fetch listings" });
+    }
+  });
+
+  // Admin: Update listing status (pause/activate/deactivate)
+  app.put("/api/admin/listings/:id", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const { isActive, isPaused } = req.body;
+      const updates: { isActive?: boolean; isPaused?: boolean } = {};
+      if (typeof isActive === "boolean") updates.isActive = isActive;
+      if (typeof isPaused === "boolean") updates.isPaused = isPaused;
+      
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: "No valid updates provided" });
+      }
+      
+      const updated = await storage.updateListing(req.params.id, updates);
+      if (!updated) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating listing:", error);
+      res.status(500).json({ error: "Failed to update listing" });
+    }
+  });
+
+  // Admin: Delete listing
+  app.delete("/api/admin/listings/:id", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const deleted = await storage.deleteListing(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+      res.status(500).json({ error: "Failed to delete listing" });
+    }
+  });
+
   return httpServer;
 }
