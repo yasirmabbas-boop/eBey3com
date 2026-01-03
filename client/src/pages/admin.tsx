@@ -14,7 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck } from "lucide-react";
+import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, Pause, Play, Trash2, Eye, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
 interface AdminStats {
@@ -54,6 +55,23 @@ interface User {
   createdAt: string;
 }
 
+interface AdminListing {
+  id: string;
+  productCode?: string;
+  title: string;
+  price: number;
+  category: string;
+  saleType: string;
+  sellerName: string;
+  sellerId?: string;
+  city: string;
+  isActive: boolean;
+  isPaused: boolean;
+  createdAt: string;
+  currentBid?: number;
+  totalBids?: number;
+}
+
 function getAuthToken(): string | null {
   return localStorage.getItem("authToken");
 }
@@ -72,7 +90,8 @@ export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings">("stats");
+  const [listingSearch, setListingSearch] = useState("");
 
   useEffect(() => {
     if (!authLoading && (!user || !(user as any).isAdmin)) {
@@ -108,6 +127,16 @@ export default function AdminPage() {
       return res.json();
     },
     enabled: !authLoading && (user as any)?.isAdmin && (activeTab === "users" || activeTab === "seller-requests"),
+  });
+
+  const { data: listings, isLoading: listingsLoading } = useQuery<AdminListing[]>({
+    queryKey: ["/api/admin/listings"],
+    queryFn: async () => {
+      const res = await fetchWithAuth("/api/admin/listings");
+      if (!res.ok) throw new Error("Failed to fetch listings");
+      return res.json();
+    },
+    enabled: !authLoading && (user as any)?.isAdmin && activeTab === "listings",
   });
 
   const updateReportMutation = useMutation({
@@ -146,6 +175,44 @@ export default function AdminPage() {
     },
     onError: () => {
       toast({ title: "فشل في تحديث المستخدم", variant: "destructive" });
+    },
+  });
+
+  const updateListingMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: { isActive?: boolean; isPaused?: boolean } }) => {
+      const res = await fetchWithAuth(`/api/admin/listings/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) throw new Error("Failed to update listing");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/listings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({ title: "تم تحديث المنتج بنجاح" });
+    },
+    onError: () => {
+      toast({ title: "فشل في تحديث المنتج", variant: "destructive" });
+    },
+  });
+
+  const deleteListingMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetchWithAuth(`/api/admin/listings/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete listing");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/listings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({ title: "تم حذف المنتج بنجاح" });
+    },
+    onError: () => {
+      toast({ title: "فشل في حذف المنتج", variant: "destructive" });
     },
   });
 
@@ -250,6 +317,14 @@ export default function AdminPage() {
                         {users.filter(u => u.sellerRequestStatus === "pending").length}
                       </Badge>
                     ) : null}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("listings")}
+                    className={`flex items-center gap-3 px-4 py-3 text-right hover:bg-muted transition-colors ${activeTab === "listings" ? "bg-muted font-semibold border-r-4 border-primary" : ""}`}
+                    data-testid="button-tab-listings"
+                  >
+                    <Package className="h-5 w-5" />
+                    إدارة المنتجات
                   </button>
                 </nav>
               </CardContent>
@@ -566,6 +641,160 @@ export default function AdminPage() {
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>لا توجد طلبات جديدة للتسجيل كبائع</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeTab === "listings" && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                  <h2 className="text-2xl font-bold">إدارة المنتجات</h2>
+                  <div className="relative w-full sm:w-64">
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="بحث بالعنوان أو البائع..."
+                      value={listingSearch}
+                      onChange={(e) => setListingSearch(e.target.value)}
+                      className="pr-10"
+                      data-testid="input-listing-search"
+                    />
+                  </div>
+                </div>
+                {listingsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : listings && listings.length > 0 ? (
+                  <Card>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">العنوان</TableHead>
+                            <TableHead className="text-right">البائع</TableHead>
+                            <TableHead className="text-right">السعر</TableHead>
+                            <TableHead className="text-right">النوع</TableHead>
+                            <TableHead className="text-right">الحالة</TableHead>
+                            <TableHead className="text-right">الإجراءات</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {listings
+                            .filter(l => 
+                              !listingSearch || 
+                              l.title.toLowerCase().includes(listingSearch.toLowerCase()) ||
+                              l.sellerName.toLowerCase().includes(listingSearch.toLowerCase())
+                            )
+                            .map((listing) => (
+                            <TableRow key={listing.id} data-testid={`row-listing-${listing.id}`}>
+                              <TableCell className="font-medium max-w-xs truncate">{listing.title}</TableCell>
+                              <TableCell>{listing.sellerName}</TableCell>
+                              <TableCell>{(listing.currentBid || listing.price).toLocaleString()} د.ع</TableCell>
+                              <TableCell>
+                                {listing.saleType === "auction" ? (
+                                  <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">مزاد</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">سعر ثابت</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  {!listing.isActive ? (
+                                    <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">غير نشط</Badge>
+                                  ) : listing.isPaused ? (
+                                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">متوقف</Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">نشط</Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => window.open(`/product/${listing.id}`, '_blank')}
+                                    data-testid={`button-view-listing-${listing.id}`}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  {listing.isActive && !listing.isPaused && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-yellow-600 border-yellow-600 hover:bg-yellow-50"
+                                      onClick={() => updateListingMutation.mutate({ id: listing.id, updates: { isPaused: true } })}
+                                      disabled={updateListingMutation.isPending}
+                                      data-testid={`button-pause-listing-${listing.id}`}
+                                    >
+                                      <Pause className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {listing.isActive && listing.isPaused && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-green-600 border-green-600 hover:bg-green-50"
+                                      onClick={() => updateListingMutation.mutate({ id: listing.id, updates: { isPaused: false } })}
+                                      disabled={updateListingMutation.isPending}
+                                      data-testid={`button-resume-listing-${listing.id}`}
+                                    >
+                                      <Play className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {listing.isActive && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-gray-600 border-gray-600 hover:bg-gray-50"
+                                      onClick={() => updateListingMutation.mutate({ id: listing.id, updates: { isActive: false } })}
+                                      disabled={updateListingMutation.isPending}
+                                      data-testid={`button-deactivate-listing-${listing.id}`}
+                                    >
+                                      <XCircle className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {!listing.isActive && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-green-600 border-green-600 hover:bg-green-50"
+                                      onClick={() => updateListingMutation.mutate({ id: listing.id, updates: { isActive: true, isPaused: false } })}
+                                      disabled={updateListingMutation.isPending}
+                                      data-testid={`button-activate-listing-${listing.id}`}
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 border-red-600 hover:bg-red-50"
+                                    onClick={() => {
+                                      if (confirm("هل أنت متأكد من حذف هذا المنتج؟")) {
+                                        deleteListingMutation.mutate(listing.id);
+                                      }
+                                    }}
+                                    disabled={deleteListingMutation.isPending}
+                                    data-testid={`button-delete-listing-${listing.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="py-12 text-center text-muted-foreground">
+                      <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>لا توجد منتجات</p>
                     </CardContent>
                   </Card>
                 )}
