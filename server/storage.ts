@@ -13,10 +13,11 @@ import {
   type Offer, type InsertOffer,
   type Notification, type InsertNotification,
   type Report, type InsertReport,
-  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports 
+  type VerificationCode,
+  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes 
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, lt } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -139,6 +140,12 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUserStatus(id: string, updates: { sellerApproved?: boolean; isVerified?: boolean; isBanned?: boolean; sellerRequestStatus?: string }): Promise<User | undefined>;
   getAdminStats(): Promise<{ totalUsers: number; totalListings: number; activeListings: number; totalTransactions: number; pendingReports: number; totalRevenue: number }>;
+  
+  // Verification codes
+  createVerificationCode(phone: string, code: string, type: string, expiresAt: Date): Promise<any>;
+  getValidVerificationCode(phone: string, code: string, type: string): Promise<any | undefined>;
+  markVerificationCodeUsed(id: string): Promise<boolean>;
+  deleteExpiredVerificationCodes(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -969,6 +976,43 @@ export class DatabaseStorage implements IStorage {
       pendingReports: pendingReportsCount?.count || 0,
       totalRevenue: revenueResult?.total || 0,
     };
+  }
+
+  async createVerificationCode(phone: string, code: string, type: string, expiresAt: Date): Promise<VerificationCode> {
+    const [result] = await db.insert(verificationCodes).values({
+      phone,
+      code,
+      type,
+      expiresAt,
+    }).returning();
+    return result;
+  }
+
+  async getValidVerificationCode(phone: string, code: string, type: string): Promise<VerificationCode | undefined> {
+    const [result] = await db.select()
+      .from(verificationCodes)
+      .where(and(
+        eq(verificationCodes.phone, phone),
+        eq(verificationCodes.code, code),
+        eq(verificationCodes.type, type),
+        sql`${verificationCodes.expiresAt} > NOW()`,
+        sql`${verificationCodes.usedAt} IS NULL`
+      ));
+    return result;
+  }
+
+  async markVerificationCodeUsed(id: string): Promise<boolean> {
+    const [result] = await db.update(verificationCodes)
+      .set({ usedAt: new Date() })
+      .where(eq(verificationCodes.id, id))
+      .returning();
+    return !!result;
+  }
+
+  async deleteExpiredVerificationCodes(): Promise<number> {
+    const result = await db.delete(verificationCodes)
+      .where(lt(verificationCodes.expiresAt, new Date()));
+    return 0;
   }
 }
 

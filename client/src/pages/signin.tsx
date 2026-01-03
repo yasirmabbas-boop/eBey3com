@@ -156,6 +156,12 @@ export default function SignIn() {
                   "تسجيل الدخول"
                 )}
               </Button>
+
+              <div className="text-left">
+                <Link href="/forgot-password" className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
+                  نسيت كلمة المرور؟
+                </Link>
+              </div>
             </form>
 
             <div className="mt-6 text-center text-sm">

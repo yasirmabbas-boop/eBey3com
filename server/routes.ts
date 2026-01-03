@@ -1130,6 +1130,125 @@ export async function registerRoutes(
     }
   });
 
+  // SMS Verification Routes
+  app.post("/api/auth/send-verification", async (req, res) => {
+    try {
+      const { phone, type = "registration" } = req.body;
+      
+      if (!phone) {
+        return res.status(400).json({ error: "رقم الهاتف مطلوب" });
+      }
+      
+      // Check if Twilio is configured
+      const { isTwilioConfigured, generateVerificationCode, sendVerificationSMS } = await import("./sms");
+      if (!isTwilioConfigured()) {
+        return res.status(503).json({ error: "خدمة الرسائل النصية غير متاحة حالياً" });
+      }
+      
+      // For registration, check if phone is already registered
+      if (type === "registration") {
+        const existingUser = await storage.getUserByPhone(phone);
+        if (existingUser) {
+          return res.status(400).json({ error: "رقم الهاتف مستخدم بالفعل" });
+        }
+      }
+      
+      // For password reset, verify user exists
+      if (type === "password_reset") {
+        const existingUser = await storage.getUserByPhone(phone);
+        if (!existingUser) {
+          return res.status(404).json({ error: "لا يوجد حساب بهذا الرقم" });
+        }
+      }
+      
+      // Generate and store verification code
+      const code = generateVerificationCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      
+      await storage.createVerificationCode(phone, code, type, expiresAt);
+      
+      // Send SMS
+      const sent = await sendVerificationSMS(phone, code, type);
+      if (!sent) {
+        return res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+      }
+      
+      res.json({ success: true, message: "تم إرسال رمز التحقق" });
+    } catch (error) {
+      console.error("Error sending verification:", error);
+      res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+    }
+  });
+
+  app.post("/api/auth/verify-code", async (req, res) => {
+    try {
+      const { phone, code, type = "registration" } = req.body;
+      
+      if (!phone || !code) {
+        return res.status(400).json({ error: "رقم الهاتف ورمز التحقق مطلوبان" });
+      }
+      
+      const verification = await storage.getValidVerificationCode(phone, code, type);
+      if (!verification) {
+        return res.status(400).json({ error: "رمز التحقق غير صحيح أو منتهي الصلاحية" });
+      }
+      
+      // Mark code as used
+      await storage.markVerificationCodeUsed(verification.id);
+      
+      // If it's for password reset, return a one-time reset token
+      if (type === "password_reset") {
+        const crypto = await import("crypto");
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        
+        // Store reset token in user record temporarily
+        const user = await storage.getUserByPhone(phone);
+        if (user) {
+          await storage.updateUser(user.id, { authToken: resetToken } as any);
+        }
+        
+        return res.json({ success: true, verified: true, resetToken });
+      }
+      
+      res.json({ success: true, verified: true });
+    } catch (error) {
+      console.error("Error verifying code:", error);
+      res.status(500).json({ error: "فشل في التحقق من الرمز" });
+    }
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { phone, resetToken, newPassword } = req.body;
+      
+      if (!phone || !resetToken || !newPassword) {
+        return res.status(400).json({ error: "جميع الحقول مطلوبة" });
+      }
+      
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" });
+      }
+      
+      // Find user and verify reset token
+      const user = await storage.getUserByPhone(phone);
+      if (!user || user.authToken !== resetToken) {
+        return res.status(400).json({ error: "رابط إعادة التعيين غير صالح" });
+      }
+      
+      // Hash new password and update
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await storage.updateUser(user.id, { 
+        password: hashedPassword,
+        authToken: null 
+      } as any);
+      
+      res.json({ success: true, message: "تم تغيير كلمة المرور بنجاح" });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ error: "فشل في إعادة تعيين كلمة المرور" });
+    }
+  });
+
   // Phone/password authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
