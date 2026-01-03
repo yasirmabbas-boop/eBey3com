@@ -1102,6 +1102,34 @@ export async function registerRoutes(
     }
   });
 
+  // TEMPORARY: Fix admin status endpoint - remove after use
+  app.post("/api/admin/fix-admin-status", async (req, res) => {
+    try {
+      const { secretCode, phone } = req.body;
+      
+      // Security: require secret code
+      if (secretCode !== "Ss120$JyA-ADMIN-FIX") {
+        return res.status(403).json({ error: "Invalid secret code" });
+      }
+      
+      const user = await storage.getUserByPhone(phone || "07700000000");
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      await storage.updateUser(user.id, { isAdmin: true } as any);
+      
+      res.json({ 
+        success: true, 
+        message: `User ${user.displayName} (${user.phone}) is now admin`,
+        userId: user.id
+      });
+    } catch (error) {
+      console.error("Error fixing admin status:", error);
+      res.status(500).json({ error: "Failed to fix admin status" });
+    }
+  });
+
   // Phone/password authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {
