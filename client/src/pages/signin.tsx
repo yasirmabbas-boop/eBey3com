@@ -50,13 +50,27 @@ export default function SignIn() {
       });
 
       const data = await response.json();
+      
+      console.log("[DEBUG] Login response:", JSON.stringify(data, null, 2));
+      console.log("[DEBUG] Response ok:", response.ok);
 
       if (!response.ok) {
         throw new Error(data.error || "فشل تسجيل الدخول");
       }
 
+      console.log("[DEBUG] authToken received:", data.authToken ? "YES" : "NO");
+      
       if (data.authToken) {
-        localStorage.setItem("authToken", data.authToken);
+        try {
+          localStorage.setItem("authToken", data.authToken);
+          const savedToken = localStorage.getItem("authToken");
+          console.log("[DEBUG] Token saved to localStorage:", savedToken ? "SUCCESS" : "FAILED");
+          console.log("[DEBUG] Saved token value:", savedToken);
+        } catch (storageError) {
+          console.error("[DEBUG] localStorage error:", storageError);
+        }
+      } else {
+        console.error("[DEBUG] No authToken in response!");
       }
       
       toast({

@@ -21,6 +21,8 @@ function getAuthToken(): string | null {
 async function fetchUser(): Promise<AuthUser | null> {
   // Try custom auth first with token fallback for Safari
   const authToken = getAuthToken();
+  console.log("[DEBUG useAuth] authToken from localStorage:", authToken ? `${authToken.substring(0, 8)}...` : "NULL");
+  
   const headers: HeadersInit = {};
   if (authToken) {
     headers["Authorization"] = `Bearer ${authToken}`;
@@ -31,14 +33,21 @@ async function fetchUser(): Promise<AuthUser | null> {
     headers,
   });
 
+  console.log("[DEBUG useAuth] /api/auth/me response status:", meResponse.status);
+
   if (meResponse.ok) {
-    return meResponse.json();
+    const userData = await meResponse.json();
+    console.log("[DEBUG useAuth] User data from /api/auth/me:", JSON.stringify(userData, null, 2));
+    return userData;
   }
 
   // Fall back to Replit auth
+  console.log("[DEBUG useAuth] Falling back to /api/auth/user");
   const response = await fetch("/api/auth/user", {
     credentials: "include",
   });
+
+  console.log("[DEBUG useAuth] /api/auth/user response status:", response.status);
 
   if (response.status === 401) {
     return null;
@@ -48,7 +57,9 @@ async function fetchUser(): Promise<AuthUser | null> {
     return null;
   }
 
-  return response.json();
+  const userData = await response.json();
+  console.log("[DEBUG useAuth] User data from /api/auth/user:", JSON.stringify(userData, null, 2));
+  return userData;
 }
 
 async function logout(): Promise<void> {
