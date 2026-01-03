@@ -29,9 +29,11 @@ import {
   X,
   ArrowUpDown,
   Check,
-  Eye
+  Eye,
+  LayoutGrid
 } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
+import { CategoryCarousel } from "@/components/category-carousel";
 import type { Listing } from "@shared/schema";
 
 const CATEGORIES = [
@@ -790,94 +792,108 @@ export default function SearchPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {displayedProducts.map((product) => (
-                <Link key={product.id} href={`/product/${product.id}`}>
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 bg-white h-full" data-testid={`search-result-${product.id}`}>
-                    {/* Product Image */}
-                    <div className="relative aspect-square overflow-hidden bg-gray-100">
-                      <img 
-                        src={product.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"} 
-                        alt={product.title} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                        style={{ imageRendering: "auto" }}
-                      />
-                      {/* Sale Type Badge */}
-                      <div className="absolute top-2 right-2 flex flex-col gap-1">
-                        {!product.isActive && (
-                          <Badge className="bg-gray-700 text-white border-0 text-xs shadow-md">
-                            تم البيع
-                          </Badge>
-                        )}
-                        {product.saleType === "auction" ? (
-                          <Badge className="bg-purple-600 text-white border-0 text-xs shadow-md">
-                            مزاد
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-green-600 text-white border-0 text-xs shadow-md">
-                            شراء فوري
-                          </Badge>
-                        )}
-                      </div>
-                      {/* Sold Overlay */}
-                      {!product.isActive && (
-                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                          <span className="text-white font-bold text-lg bg-black/50 px-4 py-2 rounded-lg">تم البيع</span>
+            <div className="space-y-6">
+              {/* Group products by category for carousel view */}
+              {(() => {
+                const productsByCategory = CATEGORIES.reduce((acc, cat) => {
+                  const catProducts = displayedProducts.filter(p => p.category === cat.id);
+                  if (catProducts.length > 0) {
+                    acc[cat.id] = { name: cat.name, icon: cat.icon, products: catProducts };
+                  }
+                  return acc;
+                }, {} as Record<string, { name: string; icon: any; products: Listing[] }>);
+
+                const categoriesWithProducts = Object.entries(productsByCategory);
+
+                if (categoriesWithProducts.length === 0) {
+                  return (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-xl font-bold mb-2">لا توجد نتائج</h3>
+                    </div>
+                  );
+                }
+
+                return categoriesWithProducts.map(([catId, { name, icon: CatIcon, products }]) => (
+                  <div key={catId} className="bg-gray-50 rounded-xl p-3 sm:p-4">
+                    <div className="flex justify-between items-center mb-3 sm:mb-4">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="h-7 w-7 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center bg-primary/10">
+                          <CatIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                         </div>
-                      )}
+                        <h3 className="text-sm sm:text-lg font-bold text-primary">{name}</h3>
+                        <Badge variant="secondary" className="text-xs">{products.length}</Badge>
+                      </div>
                     </div>
                     
-                    {/* Product Details */}
-                    <div className="p-3">
-                      {/* Title */}
-                      <h3 className="font-semibold text-sm text-gray-900 line-clamp-2 group-hover:text-primary transition-colors leading-tight mb-2 min-h-[2.5rem]">
-                        {product.title}
-                      </h3>
-                      
-                      {/* Price */}
-                      <p className="font-bold text-lg text-primary mb-1">
-                        {(product.currentBid || product.price).toLocaleString()} <span className="text-xs font-normal text-gray-600">د.ع</span>
-                      </p>
-                      
-                      {/* Location and Views */}
-                      <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-                        {product.city && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {product.city}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          {(product as any).views || 0}
-                        </span>
-                      </div>
-
-                      {/* Tags Preview */}
-                      {product.tags && product.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {product.tags.slice(0, 2).map((tag: string, i: number) => (
-                            <span key={i} className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                              #{tag}
-                            </span>
-                          ))}
-                          {product.tags.length > 2 && (
-                            <span className="text-[10px] text-gray-400">+{product.tags.length - 2}</span>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* Auction Timer */}
-                      {product.saleType === "auction" && (
-                        <div className="mt-2 pt-2 border-t bg-orange-50 -mx-3 -mb-3 px-3 py-2 rounded-b-lg">
-                          <AuctionCountdown endTime={product.auctionEndTime} />
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                </Link>
-              ))}
+                    <CategoryCarousel>
+                      {products.map((product) => (
+                        <Link key={product.id} href={`/product/${product.id}`} className="snap-start">
+                          <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 bg-white flex-shrink-0 w-36 sm:w-56 active:scale-[0.98]" data-testid={`search-result-${product.id}`}>
+                            <div className="relative aspect-square overflow-hidden bg-gray-100">
+                              <img 
+                                src={product.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"} 
+                                alt={product.title} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                loading="lazy"
+                              />
+                              <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex flex-col gap-1">
+                                {!product.isActive && (
+                                  <Badge className="bg-gray-700 text-white border-0 text-[9px] sm:text-xs shadow-md">
+                                    تم البيع
+                                  </Badge>
+                                )}
+                                {product.saleType === "auction" ? (
+                                  <Badge className="bg-purple-600 text-white border-0 text-[9px] sm:text-xs shadow-md">
+                                    مزاد
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-green-600 text-white border-0 text-[9px] sm:text-xs shadow-md">
+                                    شراء فوري
+                                  </Badge>
+                                )}
+                              </div>
+                              {!product.isActive && (
+                                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                  <span className="text-white font-bold text-sm sm:text-lg bg-black/50 px-2 sm:px-4 py-1 sm:py-2 rounded-lg">تم البيع</span>
+                                </div>
+                              )}
+                              {product.saleType === "auction" && product.auctionEndTime && (
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 sm:p-2">
+                                  <div className="text-[9px] sm:text-xs text-white font-medium">
+                                    <AuctionCountdown endTime={product.auctionEndTime} />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="p-2 sm:p-3">
+                              <h3 className="font-semibold text-[10px] sm:text-sm text-gray-900 line-clamp-1 group-hover:text-primary transition-colors leading-tight mb-1">
+                                {product.title}
+                              </h3>
+                              <p className="font-bold text-sm sm:text-base text-primary">
+                                {(product.currentBid || product.price).toLocaleString()} <span className="text-[9px] sm:text-xs font-normal text-gray-600">د.ع</span>
+                              </p>
+                              <div className="flex items-center justify-between text-[9px] sm:text-xs text-gray-500 mt-1">
+                                {product.city && (
+                                  <span className="flex items-center gap-0.5">
+                                    <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                    {product.city}
+                                  </span>
+                                )}
+                                <span className="flex items-center gap-0.5">
+                                  <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                  {(product as any).views || 0}
+                                </span>
+                              </div>
+                            </div>
+                          </Card>
+                        </Link>
+                      ))}
+                    </CategoryCarousel>
+                  </div>
+                ));
+              })()}
             </div>
           )}
 
