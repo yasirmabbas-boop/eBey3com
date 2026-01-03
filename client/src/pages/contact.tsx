@@ -137,24 +137,6 @@ export default function ContactUs() {
 
           {/* Contact Info & Live Chat */}
           <div className="space-y-6">
-            {/* Quick Info */}
-            <Card className="p-6 bg-primary text-primary-foreground">
-              <h3 className="font-bold text-lg mb-4">معلومات الاتصال</h3>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5" />
-                  <span dir="ltr">+964 770 000 0000</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5" />
-                  <span>support@eby3.iq</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-5 w-5" />
-                  <span>بغداد، الكرادة، العراق</span>
-                </div>
-              </div>
-            </Card>
 
             {/* Live Chat Widget - Hidden for now, activate later by setting SHOW_LIVE_CHAT to true */}
             {false && <Card className="p-6 border-2 border-primary/20">
