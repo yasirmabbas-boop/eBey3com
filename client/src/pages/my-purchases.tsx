@@ -45,6 +45,7 @@ import {
   Calendar,
   Send,
   AlertTriangle,
+  RotateCcw,
 } from "lucide-react";
 
 interface Purchase {
@@ -315,8 +316,11 @@ export default function MyPurchases() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<Purchase | null>(null);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
+  const [returnReason, setReturnReason] = useState("");
+  const [returnDetails, setReturnDetails] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -354,6 +358,62 @@ export default function MyPurchases() {
       });
     },
   });
+
+  const currentOrderId = selectedOrder?.id || purchases[0]?.id;
+  
+  const { data: existingReturnRequest } = useQuery({
+    queryKey: ["/api/return-requests/transaction", currentOrderId],
+    queryFn: async () => {
+      if (!currentOrderId) return null;
+      const res = await fetch(`/api/return-requests/transaction/${currentOrderId}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!currentOrderId && !!user?.id,
+  });
+
+  const returnRequestMutation = useMutation({
+    mutationFn: async (data: { transactionId: string; reason: string; details?: string }) => {
+      const response = await fetch("/api/return-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create return request");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم إرسال طلب الإرجاع",
+        description: "سيتم مراجعة طلبك من قبل البائع",
+      });
+      setIsReturnDialogOpen(false);
+      setReturnReason("");
+      setReturnDetails("");
+      queryClient.invalidateQueries({ queryKey: ["/api/return-requests/transaction", currentOrderId] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل في إرسال طلب الإرجاع",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmitReturnRequest = () => {
+    const currentOrder = selectedOrder || purchases[0];
+    if (!currentOrder || !returnReason) return;
+    
+    returnRequestMutation.mutate({
+      transactionId: currentOrder.id,
+      reason: returnReason,
+      details: returnDetails || undefined,
+    });
+  };
 
   const handleSubmitReport = () => {
     const currentOrder = selectedOrder || purchases[0];
@@ -690,6 +750,42 @@ export default function MyPurchases() {
                         </Button>
                       </Link>
                     )}
+                    {(deliveryStatus === "delivered" || deliveryStatus === "completed") && (
+                      existingReturnRequest ? (
+                        <div className="p-3 rounded-lg bg-gray-50 border">
+                          <div className="flex items-center gap-2 text-sm">
+                            <RotateCcw className="h-4 w-4 text-gray-500" />
+                            <span className="font-medium">طلب الإرجاع</span>
+                            <Badge className={
+                              existingReturnRequest.status === "approved" 
+                                ? "bg-green-100 text-green-700 border-0"
+                                : existingReturnRequest.status === "rejected"
+                                ? "bg-red-100 text-red-700 border-0"
+                                : "bg-yellow-100 text-yellow-700 border-0"
+                            }>
+                              {existingReturnRequest.status === "approved" ? "مقبول" 
+                                : existingReturnRequest.status === "rejected" ? "مرفوض" 
+                                : "قيد المراجعة"}
+                            </Badge>
+                          </div>
+                          {existingReturnRequest.sellerResponse && (
+                            <p className="text-xs text-gray-600 mt-2">
+                              رد البائع: {existingReturnRequest.sellerResponse}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                          onClick={() => setIsReturnDialogOpen(true)}
+                          data-testid="button-request-return"
+                        >
+                          <RotateCcw className="h-4 w-4 ml-2" />
+                          طلب إرجاع المنتج
+                        </Button>
+                      )
+                    )}
                     <Button 
                       variant="ghost" 
                       className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -839,6 +935,85 @@ export default function MyPurchases() {
                 <Send className="h-4 w-4 ml-2" />
               )}
               إرسال البلاغ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Return Request Dialog */}
+      <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-orange-500" />
+              طلب إرجاع المنتج
+            </DialogTitle>
+            <DialogDescription>
+              يرجى تحديد سبب الإرجاع وسيتم إرسال طلبك للبائع للمراجعة
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="return-reason">سبب الإرجاع</Label>
+              <Select value={returnReason} onValueChange={setReturnReason}>
+                <SelectTrigger id="return-reason" data-testid="select-return-reason">
+                  <SelectValue placeholder="اختر سبب الإرجاع" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="defective">المنتج معيب أو تالف</SelectItem>
+                  <SelectItem value="not_as_described">المنتج مختلف عن الوصف</SelectItem>
+                  <SelectItem value="wrong_item">استلمت منتجاً خاطئاً</SelectItem>
+                  <SelectItem value="changed_mind">غيرت رأيي</SelectItem>
+                  <SelectItem value="other">سبب آخر</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="return-details">تفاصيل إضافية (اختياري)</Label>
+              <Textarea
+                id="return-details"
+                placeholder="اشرح سبب الإرجاع بالتفصيل..."
+                value={returnDetails}
+                onChange={(e) => setReturnDetails(e.target.value)}
+                rows={4}
+                className="resize-none"
+                data-testid="input-return-details"
+              />
+            </div>
+            
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+              <p className="text-yellow-800">
+                <strong>ملاحظة:</strong> سيقوم البائع بمراجعة طلبك والرد عليه. في حالة الموافقة، ستتواصل مباشرة مع البائع لترتيب الإرجاع.
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsReturnDialogOpen(false);
+                setReturnReason("");
+                setReturnDetails("");
+              }}
+              data-testid="button-cancel-return"
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleSubmitReturnRequest}
+              disabled={!returnReason || returnRequestMutation.isPending}
+              className="bg-orange-600 hover:bg-orange-700"
+              data-testid="button-submit-return"
+            >
+              {returnRequestMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+              ) : (
+                <Send className="h-4 w-4 ml-2" />
+              )}
+              إرسال طلب الإرجاع
             </Button>
           </DialogFooter>
         </DialogContent>
