@@ -869,7 +869,6 @@ export async function registerRoutes(
           title: "تم تأكيد الدفع",
           message: `تم تأكيد استلام الدفع للطلب ${listing?.title || "منتج"}. البائع يجهز طلبك للشحن.`,
           relatedId: transactionId,
-          relatedType: "transaction",
         });
       }
       
@@ -1165,7 +1164,27 @@ export async function registerRoutes(
       }
 
       const requests = await storage.getReturnRequestsForSeller(userId);
-      res.json(requests);
+      
+      // Enrich with listing and buyer info
+      const enrichedRequests = await Promise.all(requests.map(async (request) => {
+        const listing = await storage.getListing(request.listingId);
+        const buyer = await storage.getUser(request.buyerId);
+        return {
+          ...request,
+          listing: listing ? {
+            id: listing.id,
+            title: listing.title,
+            images: listing.images,
+          } : null,
+          buyer: buyer ? {
+            id: buyer.id,
+            displayName: buyer.displayName,
+            phone: buyer.phone,
+          } : null,
+        };
+      }));
+      
+      res.json(enrichedRequests);
     } catch (error) {
       console.error("Error fetching return requests:", error);
       res.status(500).json({ error: "فشل في جلب طلبات الإرجاع" });
