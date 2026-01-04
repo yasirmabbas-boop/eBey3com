@@ -136,7 +136,7 @@ export default function Register() {
       newErrors.password = "كلمة المرور مطلوبة";
     } else {
       const passedReqs = passwordRequirements.filter(r => r.test(formData.password)).length;
-      if (passedReqs < 5) {
+      if (passedReqs < passwordRequirements.length) {
         newErrors.password = "كلمة المرور لا تستوفي جميع المتطلبات";
       }
     }
