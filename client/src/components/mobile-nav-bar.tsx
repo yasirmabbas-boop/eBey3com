@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, Search, User, ShoppingCart } from "lucide-react";
+import { Home, Heart, User, ShoppingCart } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
 import { NotificationsButton } from "@/components/notifications";
@@ -11,7 +11,7 @@ export function MobileNavBar() {
 
   const navItems = [
     { href: "/", icon: Home, label: "الرئيسية", testId: "nav-home" },
-    { href: "/search", icon: Search, label: "البحث", testId: "nav-search" },
+    { href: "/favorites", icon: Heart, label: "المفضلة", testId: "nav-favorites" },
     { href: "/cart", icon: ShoppingCart, label: "السلة", testId: "nav-cart", badge: totalItems },
     { type: "notifications" as const },
     { href: isAuthenticated ? "/my-account" : "/signin", icon: User, label: "حسابي", testId: "nav-account" },
