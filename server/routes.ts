@@ -1035,6 +1035,158 @@ export async function registerRoutes(
     }
   });
 
+  // Return Requests Routes
+  app.post("/api/return-requests", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+
+      const { transactionId, reason, details } = req.body;
+      
+      if (!transactionId || !reason) {
+        return res.status(400).json({ error: "جميع الحقول مطلوبة" });
+      }
+
+      const transaction = await storage.getTransactionById(transactionId);
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+
+      if (transaction.buyerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بطلب الإرجاع" });
+      }
+
+      const existingRequest = await storage.getReturnRequestByTransaction(transactionId);
+      if (existingRequest) {
+        return res.status(400).json({ error: "تم طلب الإرجاع مسبقاً لهذا الطلب" });
+      }
+
+      const listing = await storage.getListing(transaction.listingId);
+      if (listing?.returnPolicy === "لا يوجد إرجاع" || listing?.returnPolicy === "no_returns") {
+        return res.status(400).json({ error: "هذا المنتج لا يقبل الإرجاع" });
+      }
+
+      const returnRequest = await storage.createReturnRequest({
+        transactionId,
+        buyerId: userId,
+        sellerId: transaction.sellerId,
+        listingId: transaction.listingId,
+        reason,
+        details,
+      });
+
+      await storage.createNotification({
+        userId: transaction.sellerId,
+        type: "return_request",
+        title: "طلب إرجاع جديد",
+        message: `لديك طلب إرجاع جديد للمنتج`,
+        linkUrl: `/seller-dashboard?tab=returns`,
+        relatedId: returnRequest.id,
+      });
+
+      res.status(201).json(returnRequest);
+    } catch (error) {
+      console.error("Error creating return request:", error);
+      res.status(500).json({ error: "فشل في إنشاء طلب الإرجاع" });
+    }
+  });
+
+  app.get("/api/return-requests/buyer", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+
+      const requests = await storage.getReturnRequestsForBuyer(userId);
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching return requests:", error);
+      res.status(500).json({ error: "فشل في جلب طلبات الإرجاع" });
+    }
+  });
+
+  app.get("/api/return-requests/seller", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+
+      const requests = await storage.getReturnRequestsForSeller(userId);
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching return requests:", error);
+      res.status(500).json({ error: "فشل في جلب طلبات الإرجاع" });
+    }
+  });
+
+  app.get("/api/return-requests/transaction/:transactionId", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+
+      const request = await storage.getReturnRequestByTransaction(req.params.transactionId);
+      res.json(request || null);
+    } catch (error) {
+      console.error("Error fetching return request:", error);
+      res.status(500).json({ error: "فشل في جلب طلب الإرجاع" });
+    }
+  });
+
+  app.patch("/api/return-requests/:id/respond", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+
+      const { status, sellerResponse } = req.body;
+      if (!status || !["approved", "rejected"].includes(status)) {
+        return res.status(400).json({ error: "حالة غير صالحة" });
+      }
+
+      const request = await storage.getReturnRequestById(req.params.id);
+      if (!request) {
+        return res.status(404).json({ error: "طلب الإرجاع غير موجود" });
+      }
+
+      if (request.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بالرد على هذا الطلب" });
+      }
+
+      if (request.status !== "pending") {
+        return res.status(400).json({ error: "تم الرد على هذا الطلب مسبقاً" });
+      }
+
+      const updated = await storage.updateReturnRequestStatus(req.params.id, status, sellerResponse);
+
+      if (status === "approved") {
+        await storage.updateTransactionStatus(request.transactionId, "return_approved");
+      }
+
+      await storage.createNotification({
+        userId: request.buyerId,
+        type: "return_response",
+        title: status === "approved" ? "تم قبول طلب الإرجاع" : "تم رفض طلب الإرجاع",
+        message: status === "approved" 
+          ? "تم قبول طلب الإرجاع الخاص بك. يرجى التواصل مع البائع لترتيب الإرجاع."
+          : `تم رفض طلب الإرجاع. ${sellerResponse || ""}`,
+        linkUrl: `/buyer-dashboard?tab=orders`,
+        relatedId: request.id,
+      });
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error responding to return request:", error);
+      res.status(500).json({ error: "فشل في الرد على طلب الإرجاع" });
+    }
+  });
+
   app.get("/api/categories", async (req, res) => {
     try {
       const categories = await storage.getCategories();
