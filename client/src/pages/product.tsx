@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import type { CarouselApi } from "@/components/ui/carousel";
 import { FullscreenImageViewer } from "@/components/fullscreen-image-viewer";
 import { useRoute, useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -65,9 +66,27 @@ export default function ProductPage() {
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
 
-  // Image gallery state
+  // Image gallery state with carousel API for swipe support
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+
+  // Sync carousel with selected image index
+  useEffect(() => {
+    if (!carouselApi) return;
+    
+    carouselApi.on("select", () => {
+      setSelectedImageIndex(carouselApi.selectedScrollSnap());
+    });
+  }, [carouselApi]);
+
+  // Update carousel when thumbnail is clicked
+  const scrollToImage = useCallback((index: number) => {
+    if (carouselApi) {
+      carouselApi.scrollTo(index);
+    }
+    setSelectedImageIndex(index);
+  }, [carouselApi]);
 
   // Live bidding state
   const [liveBidData, setLiveBidData] = useState<{
@@ -520,64 +539,89 @@ export default function ProductPage() {
     <Layout>
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         
-        {/* Image Gallery - Interactive Slider */}
+        {/* Image Gallery - Swipeable Carousel */}
         {(() => {
           const images = product.images && product.images.length > 0 
             ? product.images 
             : [product.image];
-          
-          const goToPrevious = () => {
-            setSelectedImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1);
-          };
-          
-          const goToNext = () => {
-            setSelectedImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1);
-          };
 
           return (
             <div className="mb-6">
-              {/* Main Image with Navigation */}
-              <div className="relative aspect-[4/3] md:aspect-[16/9] bg-gray-100 rounded-xl overflow-hidden mb-3 group">
-                <img 
-                  src={images[selectedImageIndex] || product.image} 
-                  alt={product.title} 
-                  className="w-full h-full object-contain bg-white cursor-zoom-in"
-                  onClick={() => setFullscreenOpen(true)}
-                  data-testid="img-main-product"
-                />
+              {/* Main Image Carousel with Swipe Support */}
+              <Carousel
+                setApi={setCarouselApi}
+                opts={{
+                  align: "start",
+                  loop: images.length > 1,
+                  direction: "rtl",
+                }}
+                className="w-full mb-3"
+              >
+                <CarouselContent className="-mr-0">
+                  {images.map((img, index) => (
+                    <CarouselItem key={index} className="pr-0">
+                      <div 
+                        className="relative aspect-[4/3] md:aspect-[16/9] bg-gray-100 rounded-xl overflow-hidden group"
+                        onClick={() => setFullscreenOpen(true)}
+                      >
+                        <img 
+                          src={img} 
+                          alt={`${product.title} - صورة ${index + 1}`} 
+                          className="w-full h-full object-contain bg-white cursor-zoom-in"
+                          data-testid={`img-product-${index}`}
+                        />
+                        
+                        {/* Zoom hint */}
+                        <div className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          🔍 اضغط للتكبير
+                        </div>
+
+                        {/* Swipe hint for mobile */}
+                        {images.length > 1 && (
+                          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full flex items-center gap-2 md:hidden">
+                            <span>←</span>
+                            <span>{selectedImageIndex + 1} / {images.length}</span>
+                            <span>→</span>
+                          </div>
+                        )}
+
+                        {/* Desktop counter */}
+                        {images.length > 1 && (
+                          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full hidden md:block">
+                            {selectedImageIndex + 1} / {images.length}
+                          </div>
+                        )}
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
                 
-                {/* Zoom hint */}
-                <div className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  🔍 اضغط للتكبير
-                </div>
-                
-                {/* Navigation Arrows - Only show if multiple images */}
+                {/* Navigation Arrows - Desktop only */}
                 {images.length > 1 && (
                   <>
-                    <button 
-                      onClick={goToPrevious}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg rounded-full w-10 h-10 flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                      data-testid="button-prev-image"
-                    >
-                      ›
-                    </button>
-                    <button 
-                      onClick={goToNext}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg rounded-full w-10 h-10 flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                      data-testid="button-next-image"
-                    >
-                      ‹
-                    </button>
+                    <CarouselPrevious className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2" />
+                    <CarouselNext className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2" />
                   </>
                 )}
+              </Carousel>
 
-                {/* Image Counter */}
-                {images.length > 1 && (
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full">
-                    {selectedImageIndex + 1} / {images.length}
-                  </div>
-                )}
-              </div>
+              {/* Dot Indicators for Mobile */}
+              {images.length > 1 && (
+                <div className="flex justify-center gap-2 md:hidden mb-3">
+                  {images.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => scrollToImage(i)}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        selectedImageIndex === i 
+                          ? 'bg-primary w-4' 
+                          : 'bg-gray-300'
+                      }`}
+                      data-testid={`dot-${i}`}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Thumbnail Strip */}
               {images.length > 1 && (
@@ -585,7 +629,7 @@ export default function ProductPage() {
                   {images.map((img, i) => (
                     <div 
                       key={i} 
-                      onClick={() => setSelectedImageIndex(i)}
+                      onClick={() => scrollToImage(i)}
                       className={`w-16 h-16 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
                         selectedImageIndex === i 
                           ? 'border-primary ring-2 ring-primary/30' 
