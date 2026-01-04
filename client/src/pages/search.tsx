@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { CategoryCarousel } from "@/components/category-carousel";
+import { FavoriteButton } from "@/components/favorite-button";
 import type { Listing } from "@shared/schema";
 
 const CATEGORIES = [
@@ -852,6 +853,9 @@ export default function SearchPage() {
                                     شراء فوري
                                   </Badge>
                                 )}
+                              </div>
+                              <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
+                                <FavoriteButton listingId={product.id} size="sm" />
                               </div>
                               {!product.isActive && (
                                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center">

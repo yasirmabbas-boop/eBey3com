@@ -11,6 +11,7 @@ import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, Sparkle
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { OptimizedImage, ProductGridSkeleton } from "@/components/optimized-image";
 import { CategoryCarousel } from "@/components/category-carousel";
+import { FavoriteButton } from "@/components/favorite-button";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 import type { Listing } from "@shared/schema";
 
@@ -210,6 +211,9 @@ export default function Home() {
                           مزاد
                         </Badge>
                       )}
+                      <div className="absolute top-1 left-1 sm:top-2 sm:left-2">
+                        <FavoriteButton listingId={product.id} size="sm" />
+                      </div>
                     </div>
                     <CardContent className="p-1.5 sm:p-3">
                       <h3 className="font-bold text-[10px] sm:text-sm mb-0.5 sm:mb-1 line-clamp-1 group-hover:text-primary transition-colors">
@@ -295,6 +299,9 @@ export default function Home() {
                           مزاد
                         </Badge>
                       )}
+                      <div className="absolute top-1 left-1 sm:top-2 sm:left-2">
+                        <FavoriteButton listingId={product.id} size="sm" />
+                      </div>
                     </div>
                     <CardContent className="p-2 sm:p-4">
                       <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">
@@ -380,6 +387,9 @@ export default function Home() {
                                 مزاد
                               </Badge>
                             )}
+                            <div className="absolute top-1 left-1 sm:top-2 sm:left-2">
+                              <FavoriteButton listingId={product.id} size="sm" />
+                            </div>
                             {product.saleType === "auction" && product.auctionEndTime && (
                               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 sm:p-2">
                                 <div className="text-[9px] sm:text-xs text-white font-medium">
