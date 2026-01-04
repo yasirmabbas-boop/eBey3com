@@ -139,6 +139,21 @@ export default function SearchPage() {
   const [sortBy, setSortBy] = useState(searchQuery ? "relevance" : "newest");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  useEffect(() => {
+    const freshFilters: FilterState = {
+      category: categoryParam,
+      conditions: [],
+      saleTypes: [],
+      cities: [],
+      priceMin: "",
+      priceMax: "",
+      includeSold: false,
+    };
+    setAppliedFilters(freshFilters);
+    setDraftFilters(freshFilters);
+    setSortBy(searchQuery ? "relevance" : "newest");
+  }, [searchQuery, categoryParam]);
+
   const sellerIdParam = params.get("sellerId");
   
   const [displayLimit, setDisplayLimit] = useState(20);

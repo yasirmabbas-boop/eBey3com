@@ -39,7 +39,7 @@ export default function FavoritesPage() {
     enabled: !!user?.id,
   });
 
-  const { data: listings = [] } = useQuery<Listing[]>({
+  const { data: listingsData } = useQuery({
     queryKey: ["/api/listings"],
     queryFn: async () => {
       const res = await fetch("/api/listings");
@@ -47,6 +47,8 @@ export default function FavoritesPage() {
       return res.json();
     },
   });
+
+  const listings: Listing[] = Array.isArray(listingsData) ? listingsData : (listingsData as any)?.listings || [];
 
   const favoriteListings = listings.filter(listing => 
     watchlistItems.some(w => w.listingId === listing.id)
