@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Heart, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -43,16 +43,17 @@ export function FavoriteButton({ listingId, className, size = "md" }: FavoriteBu
     enabled: !!user?.id,
   });
 
-  const isFavorite = isOptimistic !== null ? isOptimistic : watchlist.some(w => w.listingId === listingId);
+  const isInWatchlist = watchlist.some(w => w.listingId === listingId);
+  const isFavorite = isOptimistic !== null ? isOptimistic : isInWatchlist;
 
   const toggleMutation = useMutation({
-    mutationFn: async () => {
-      const method = isFavorite ? "DELETE" : "POST";
-      const url = isFavorite 
+    mutationFn: async (shouldRemove: boolean) => {
+      const method = shouldRemove ? "DELETE" : "POST";
+      const url = shouldRemove 
         ? `/api/watchlist/${user?.id}/${listingId}`
         : `/api/watchlist`;
       
-      const body = isFavorite ? undefined : JSON.stringify({ userId: user?.id, listingId });
+      const body = shouldRemove ? undefined : JSON.stringify({ userId: user?.id, listingId });
       
       const res = await fetch(url, {
         method,
@@ -62,15 +63,15 @@ export function FavoriteButton({ listingId, className, size = "md" }: FavoriteBu
       });
       
       if (!res.ok) throw new Error("Failed to toggle favorite");
-      return res.json();
+      return { shouldRemove };
     },
-    onMutate: () => {
-      setIsOptimistic(!isFavorite);
+    onMutate: (shouldRemove) => {
+      setIsOptimistic(!shouldRemove);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
       toast({
-        title: isFavorite ? "تمت الإزالة من المفضلة" : "تمت الإضافة للمفضلة",
+        title: data.shouldRemove ? "تمت الإزالة من المفضلة" : "تمت الإضافة للمفضلة",
       });
     },
     onError: () => {
@@ -97,7 +98,8 @@ export function FavoriteButton({ listingId, className, size = "md" }: FavoriteBu
       return;
     }
     
-    toggleMutation.mutate();
+    const currentlyFavorite = isOptimistic !== null ? isOptimistic : isInWatchlist;
+    toggleMutation.mutate(currentlyFavorite);
   };
 
   return (
