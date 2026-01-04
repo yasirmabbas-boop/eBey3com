@@ -226,9 +226,13 @@ export default function MySales() {
 
   const markAsShippedMutation = useMutation({
     mutationFn: async (transactionId: string) => {
+      const authToken = localStorage.getItem("authToken");
       const res = await fetch(`/api/transactions/${transactionId}/ship`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
+        },
         credentials: "include",
       });
       if (!res.ok) throw new Error("فشل في تحديث حالة الشحن");
@@ -257,9 +261,13 @@ export default function MySales() {
 
   const markAsDeliveredMutation = useMutation({
     mutationFn: async (transactionId: string) => {
+      const authToken = localStorage.getItem("authToken");
       const res = await fetch(`/api/transactions/${transactionId}/deliver`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
+        },
         credentials: "include",
       });
       if (!res.ok) throw new Error("فشل في تحديث حالة التسليم");
