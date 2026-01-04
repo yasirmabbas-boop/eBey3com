@@ -159,7 +159,7 @@ export default function Home() {
               بيع واشتري بأمان
             </h1>
             <p className="text-lg md:text-2xl mb-6 text-blue-100">
-              Buy and Sell With Trust!
+              Buy and Sell With Trust
             </p>
             <p className="text-sm md:text-base text-blue-200 mb-8">
               منصتك الأولى للمزادات والتسوق الآمن في العراق
