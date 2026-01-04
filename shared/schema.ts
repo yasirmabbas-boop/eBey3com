@@ -387,6 +387,7 @@ export const returnRequests = pgTable("return_requests", {
   transactionId: varchar("transaction_id").notNull(),
   buyerId: varchar("buyer_id").notNull(),
   sellerId: varchar("seller_id").notNull(),
+  listingId: varchar("listing_id").notNull(),
   reason: text("reason").notNull(),
   details: text("details"),
   status: text("status").notNull().default("pending"),
