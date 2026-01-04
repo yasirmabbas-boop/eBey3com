@@ -667,14 +667,40 @@ export default function SellPage() {
   };
 
   const [isRequestingSellerAccess, setIsRequestingSellerAccess] = useState(false);
+  const [sellerFormData, setSellerFormData] = useState({
+    shopName: "",
+    phone: "",
+    city: "",
+    description: "",
+  });
+
+  const IRAQI_CITIES = [
+    "بغداد", "البصرة", "نينوى", "أربيل", "النجف", "كربلاء", 
+    "الأنبار", "ديالى", "كركوك", "صلاح الدين", "السليمانية", 
+    "دهوك", "واسط", "ميسان", "ذي قار", "المثنى", "القادسية", "بابل"
+  ];
   
   const handleRequestSellerAccess = async () => {
+    if (!sellerFormData.shopName.trim()) {
+      toast({ title: "خطأ", description: "الرجاء إدخال اسم المتجر", variant: "destructive" });
+      return;
+    }
+    if (!sellerFormData.phone.trim()) {
+      toast({ title: "خطأ", description: "الرجاء إدخال رقم الهاتف", variant: "destructive" });
+      return;
+    }
+    if (!sellerFormData.city) {
+      toast({ title: "خطأ", description: "الرجاء اختيار المحافظة", variant: "destructive" });
+      return;
+    }
+
     setIsRequestingSellerAccess(true);
     try {
       const response = await fetch("/api/seller-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        body: JSON.stringify(sellerFormData),
       });
       
       const data = await response.json();
@@ -777,22 +803,89 @@ export default function SellPage() {
                 </>
               ) : (
                 <>
-                  <p className="text-muted-foreground">
-                    للبدء في بيع المنتجات على منصة اي-بيع، يجب أن يتم اعتمادك كبائع من قبل الإدارة.
+                  <p className="text-muted-foreground text-sm">
+                    أكمل النموذج التالي للتسجيل كبائع على منصة اي-بيع
                   </p>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-right">
-                    <h4 className="font-medium text-blue-800 mb-2">مميزات البائع:</h4>
-                    <ul className="text-sm text-blue-700 space-y-1">
+                  
+                  <div className="space-y-4 text-right">
+                    <div>
+                      <Label htmlFor="shopName" className="text-sm font-medium">
+                        اسم المتجر / النشاط التجاري <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="shopName"
+                        placeholder="مثال: متجر الساعات الفاخرة"
+                        value={sellerFormData.shopName}
+                        onChange={(e) => setSellerFormData(prev => ({ ...prev, shopName: e.target.value }))}
+                        className="mt-1"
+                        data-testid="input-shop-name"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="phone" className="text-sm font-medium">
+                        رقم الهاتف <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="07XX XXX XXXX"
+                        value={sellerFormData.phone}
+                        onChange={(e) => setSellerFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        className="mt-1"
+                        dir="ltr"
+                        data-testid="input-seller-phone"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="city" className="text-sm font-medium">
+                        المحافظة <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        value={sellerFormData.city}
+                        onValueChange={(value) => setSellerFormData(prev => ({ ...prev, city: value }))}
+                      >
+                        <SelectTrigger className="mt-1" data-testid="select-seller-city">
+                          <SelectValue placeholder="اختر المحافظة" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {IRAQI_CITIES.map((city) => (
+                            <SelectItem key={city} value={city}>{city}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="description" className="text-sm font-medium">
+                        وصف المنتجات التي ستبيعها
+                      </Label>
+                      <Textarea
+                        id="description"
+                        placeholder="مثال: ساعات أصلية، ملابس فاخرة، إلكترونيات..."
+                        value={sellerFormData.description}
+                        onChange={(e) => setSellerFormData(prev => ({ ...prev, description: e.target.value }))}
+                        className="mt-1 min-h-[80px]"
+                        data-testid="input-seller-description"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-right">
+                    <h4 className="font-medium text-blue-800 mb-1 text-sm">مميزات البائع:</h4>
+                    <ul className="text-xs text-blue-700 space-y-0.5">
                       <li>• إضافة منتجات للبيع المباشر أو المزاد</li>
                       <li>• لوحة تحكم متقدمة للبائع</li>
                       <li>• التواصل المباشر مع المشترين</li>
-                      <li>• إحصائيات وتقارير المبيعات</li>
                     </ul>
                   </div>
+
                   <Button 
                     className="w-full" 
                     onClick={handleRequestSellerAccess}
                     disabled={isRequestingSellerAccess}
+                    data-testid="button-submit-seller-request"
                   >
                     {isRequestingSellerAccess ? (
                       <>

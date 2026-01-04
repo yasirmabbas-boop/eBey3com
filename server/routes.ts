@@ -2825,10 +2825,19 @@ export async function registerRoutes(
       if (user.sellerRequestStatus === "pending") {
         return res.status(400).json({ error: "لديك طلب قيد المراجعة بالفعل" });
       }
-      
-      const updated = await storage.updateUserStatus(userId, {
+
+      const { shopName, phone, city, description } = req.body;
+
+      const updateData: any = {
         sellerRequestStatus: "pending",
-      });
+      };
+
+      if (shopName) updateData.displayName = shopName;
+      if (phone) updateData.phone = phone;
+      if (city) updateData.city = city;
+      
+      await storage.updateUser(userId, updateData);
+      await storage.updateUserStatus(userId, { sellerRequestStatus: "pending" });
       
       res.json({ success: true, message: "تم تقديم طلب البيع بنجاح" });
     } catch (error) {
