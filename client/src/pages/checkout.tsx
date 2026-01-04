@@ -16,6 +16,15 @@ import { useToast } from "@/hooks/use-toast";
 import { MapPicker } from "@/components/map-picker";
 import type { BuyerAddress } from "@shared/schema";
 
+function getAuthHeaders(): HeadersInit {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  const authToken = localStorage.getItem("authToken");
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+  return headers;
+}
+
 const IRAQI_CITIES = [
   "بغداد",
   "البصرة", 
@@ -58,7 +67,10 @@ export default function CheckoutPage() {
   const { data: savedAddresses = [], isLoading: isAddressesLoading } = useQuery<BuyerAddress[]>({
     queryKey: ["/api/addresses"],
     queryFn: async () => {
-      const res = await fetch("/api/addresses", { credentials: "include" });
+      const res = await fetch("/api/addresses", { 
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) return [];
       return res.json();
     },
@@ -68,7 +80,10 @@ export default function CheckoutPage() {
   const { data: userData, isLoading: isUserLoading } = useQuery({
     queryKey: ["/api/account/profile"],
     queryFn: async () => {
-      const res = await fetch("/api/account/profile", { credentials: "include" });
+      const res = await fetch("/api/account/profile", { 
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) return null;
       return res.json();
     },
@@ -150,7 +165,7 @@ export default function CheckoutPage() {
     }) => {
       const res = await fetch("/api/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         credentials: "include",
         body: JSON.stringify(data),
       });
