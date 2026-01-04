@@ -1459,6 +1459,7 @@ export default function SellerDashboard() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="pending_payment">بانتظار الدفع</SelectItem>
                   <SelectItem value="pending">بانتظار الشحن</SelectItem>
                   <SelectItem value="shipped">تم الشحن</SelectItem>
                   <SelectItem value="delivered">تم التسليم</SelectItem>
@@ -1478,6 +1479,7 @@ export default function SellerDashboard() {
             ) : (() => {
               const filteredOrders = sellerOrders.filter(order => {
                 if (salesFilter === "all") return true;
+                if (salesFilter === "pending_payment") return order.status === "pending_payment";
                 if (salesFilter === "pending") return order.status === "pending" || order.status === "processing";
                 if (salesFilter === "shipped") return order.status === "shipped";
                 if (salesFilter === "delivered") return order.status === "delivered" || order.status === "completed";
