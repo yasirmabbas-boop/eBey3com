@@ -831,6 +831,55 @@ export async function registerRoutes(
     }
   });
 
+  // Confirm payment received (seller action for cash transactions)
+  app.patch("/api/transactions/:id/confirm-payment", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      const transactionId = req.params.id;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول لتأكيد استلام الدفع" });
+      }
+      
+      const transaction = await storage.getTransactionById(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+      
+      if (transaction.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بتحديث هذا الطلب" });
+      }
+      
+      if (transaction.status !== "pending_payment") {
+        return res.status(400).json({ error: "الطلب ليس في حالة انتظار الدفع" });
+      }
+      
+      const updated = await storage.updateTransactionStatus(transactionId, "pending");
+      if (!updated) {
+        return res.status(500).json({ error: "فشل في تأكيد استلام الدفع" });
+      }
+      
+      // Notify buyer that payment was confirmed
+      if (transaction.buyerId && transaction.buyerId !== "guest") {
+        const listing = await storage.getListing(transaction.listingId);
+        await storage.createNotification({
+          userId: transaction.buyerId,
+          type: "payment_confirmed",
+          title: "تم تأكيد الدفع",
+          message: `تم تأكيد استلام الدفع للطلب ${listing?.title || "منتج"}. البائع يجهز طلبك للشحن.`,
+          relatedId: transactionId,
+          relatedType: "transaction",
+        });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error confirming payment:", error);
+      res.status(500).json({ error: "فشل في تأكيد استلام الدفع" });
+    }
+  });
+
   // Mark transaction as shipped (seller action)
   app.patch("/api/transactions/:id/ship", async (req, res) => {
     try {

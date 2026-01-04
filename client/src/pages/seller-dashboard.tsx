@@ -180,6 +180,8 @@ const getStatusBadge = (status: string) => {
 
 const getDeliveryBadge = (status: string) => {
   switch (status) {
+    case "pending_payment":
+      return <Badge className="bg-orange-100 text-orange-800 border-0">بانتظار الدفع</Badge>;
     case "pending":
     case "processing":
       return <Badge className="bg-yellow-100 text-yellow-800 border-0">بانتظار الشحن</Badge>;
@@ -482,6 +484,29 @@ export default function SellerDashboard() {
     },
     onError: (error: Error) => {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const confirmPaymentMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const authToken = localStorage.getItem("authToken");
+      const res = await fetch(`/api/transactions/${orderId}/confirm-payment`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("فشل في تأكيد استلام الدفع");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم تأكيد الدفع! 💰", description: "يمكنك الآن شحن الطلب" });
+      queryClient.invalidateQueries({ queryKey: ["/api/account/seller-orders"] });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في تأكيد استلام الدفع", variant: "destructive" });
     },
   });
 
@@ -1557,6 +1582,18 @@ export default function SellerDashboard() {
                             {order.amount.toLocaleString()} د.ع
                           </p>
                           <div className="flex gap-2 flex-wrap">
+                            {order.status === "pending_payment" && (
+                              <Button
+                                size="sm"
+                                onClick={() => confirmPaymentMutation.mutate(order.id)}
+                                disabled={confirmPaymentMutation.isPending}
+                                className="bg-green-600 hover:bg-green-700 gap-1"
+                                data-testid={`button-confirm-payment-${order.id}`}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                تأكيد استلام الدفع
+                              </Button>
+                            )}
                             {(order.status === "pending" || order.status === "processing") && (
                               <Button
                                 size="sm"
