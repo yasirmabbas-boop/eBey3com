@@ -179,7 +179,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div className="flex items-center gap-3 md:flex-col md:items-start">
-              <Logo variant="light" />
+              <Logo />
               <p className="text-xs md:text-sm leading-relaxed md:mt-2">
                 منصتك الأولى للبيع والشراء في العراق
               </p>

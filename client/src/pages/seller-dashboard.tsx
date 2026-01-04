@@ -780,7 +780,7 @@ export default function SellerDashboard() {
               </button>
             </Link>
             <Link href="/">
-              <Logo variant="light" />
+              <Logo />
             </Link>
           </div>
           <div className="flex items-center gap-2">
