@@ -6,6 +6,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { broadcastBidUpdate } from "./websocket";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { analyzeImageForSearch } from "./replit_integrations/image";
 import multer from "multer";
 
 const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -633,6 +634,87 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error creating bid:", error);
       res.status(400).json({ error: "Failed to create bid", details: String(error) });
+    }
+  });
+
+  // AI-powered image search - analyze image and find matching products
+  app.post("/api/image-search", async (req, res) => {
+    try {
+      const { imageBase64 } = req.body;
+      
+      if (!imageBase64) {
+        return res.status(400).json({ error: "Image data is required" });
+      }
+
+      // Analyze the image using AI vision
+      const analysis = await analyzeImageForSearch(imageBase64);
+      
+      // Get all listings to search through
+      const { listings } = await storage.getListingsPaginated({ limit: 100, offset: 0 });
+      
+      // Build search terms from analysis
+      const searchTerms: string[] = [
+        analysis.brand,
+        analysis.itemType,
+        analysis.category,
+        analysis.description,
+        ...analysis.keywords
+      ].filter((term): term is string => !!term && term.length > 0);
+      
+      // Score each listing based on how well it matches
+      const scoredListings = listings.map(listing => {
+        let score = 0;
+        const title = (listing.title || "").toLowerCase();
+        const description = (listing.description || "").toLowerCase();
+        const category = (listing.category || "").toLowerCase();
+        const tags = (listing.tags || []).map((t: string) => t.toLowerCase());
+        
+        for (const term of searchTerms) {
+          const lowerTerm = term.toLowerCase();
+          
+          // Exact title match = highest score
+          if (title.includes(lowerTerm)) score += 50;
+          // Category match
+          if (category.includes(lowerTerm) || lowerTerm.includes(category)) score += 30;
+          // Tag match
+          if (tags.some((tag: string) => tag.includes(lowerTerm) || lowerTerm.includes(tag))) score += 25;
+          // Description match
+          if (description.includes(lowerTerm)) score += 10;
+        }
+        
+        // Brand match is extra important
+        if (analysis.brand) {
+          const brandLower = analysis.brand.toLowerCase();
+          if (title.includes(brandLower)) score += 100;
+          if (tags.some((tag: string) => tag.includes(brandLower))) score += 80;
+        }
+        
+        return { listing, score };
+      });
+      
+      // Filter and sort by score
+      const matchingListings = scoredListings
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 12)
+        .map(item => ({
+          id: item.listing.id,
+          title: item.listing.title,
+          price: item.listing.price,
+          image: item.listing.images?.[0] || "",
+          currentBid: item.listing.currentBid,
+          saleType: item.listing.saleType,
+          score: item.score
+        }));
+      
+      res.json({
+        analysis,
+        results: matchingListings,
+        searchTerms
+      });
+    } catch (error) {
+      console.error("Error in image search:", error);
+      res.status(500).json({ error: "Failed to analyze image" });
     }
   });
 
