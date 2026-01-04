@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bell, X, Clock, Gavel, Tag, ShoppingBag, MessageSquare, Check, Truck, Package, AlertTriangle } from "lucide-react";
+import { Bell, X, Clock, Gavel, Tag, ShoppingBag, MessageSquare, Check, Truck, Package, AlertTriangle, RotateCcw, Wallet, Trophy, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -14,7 +14,7 @@ import type { Message, Notification as DBNotification } from "@shared/schema";
 
 interface Notification {
   id: string;
-  type: "message" | "shipping" | "offer" | "bid" | "sale" | "outbid" | "new_bid";
+  type: "message" | "shipping" | "offer" | "bid" | "sale" | "outbid" | "new_bid" | "return_request" | "payment" | "auction_end" | "seller_approved";
   title: string;
   message: string;
   timestamp: Date;
@@ -40,6 +40,14 @@ const getNotificationIcon = (type: Notification["type"]) => {
       return <AlertTriangle className="h-5 w-5 text-red-500" />;
     case "sale":
       return <ShoppingBag className="h-5 w-5 text-green-600" />;
+    case "return_request":
+      return <RotateCcw className="h-5 w-5 text-orange-500" />;
+    case "payment":
+      return <Wallet className="h-5 w-5 text-emerald-500" />;
+    case "auction_end":
+      return <Trophy className="h-5 w-5 text-yellow-500" />;
+    case "seller_approved":
+      return <Store className="h-5 w-5 text-indigo-500" />;
     default:
       return <Bell className="h-5 w-5" />;
   }
@@ -59,14 +67,26 @@ const categorizeMessage = (content: string): { type: Notification["type"]; title
   if (content.includes("تم شحن طلبك") || content.includes("📦")) {
     return { type: "shipping", title: "تحديث الشحن" };
   }
-  if (content.includes("عرض جديد") || content.includes("تم قبول عرضك") || content.includes("تم رفض")) {
+  if (content.includes("عرض جديد") || content.includes("تم قبول عرضك") || content.includes("تم رفض عرضك")) {
     return { type: "offer", title: "تحديث العرض" };
   }
-  if (content.includes("مزايدة") || content.includes("مزاد")) {
+  if (content.includes("مزايدة") || content.includes("مزاد") || content.includes("تمت المزايدة")) {
     return { type: "bid", title: "تحديث المزاد" };
   }
   if (content.includes("تم بيع") || content.includes("طلب جديد")) {
     return { type: "sale", title: "طلب جديد" };
+  }
+  if (content.includes("طلب إرجاع") || content.includes("الإرجاع")) {
+    return { type: "return_request", title: "طلب إرجاع" };
+  }
+  if (content.includes("تم استلام الدفعة") || content.includes("الدفع")) {
+    return { type: "payment", title: "تحديث الدفع" };
+  }
+  if (content.includes("انتهى المزاد") || content.includes("فزت بالمزاد")) {
+    return { type: "auction_end", title: "انتهاء المزاد" };
+  }
+  if (content.includes("تم اعتمادك كبائع") || content.includes("موافقة البائع")) {
+    return { type: "seller_approved", title: "موافقة البائع" };
   }
   return { type: "message", title: "رسالة جديدة" };
 };
@@ -300,15 +320,50 @@ export function NotificationsButton({ variant = "default" }: NotificationsButton
                   )}
                   onClick={() => {
                     markAsRead(notification);
+                    setOpen(false);
+                    
                     if (notification.linkUrl) {
                       window.location.href = notification.linkUrl;
-                      setOpen(false);
-                    } else if (notification.productId) {
-                      window.location.href = `/product/${notification.productId}`;
-                      setOpen(false);
-                    } else {
-                      window.location.href = `/messages`;
-                      setOpen(false);
+                      return;
+                    }
+                    
+                    switch (notification.type) {
+                      case "sale":
+                        window.location.href = "/seller-dashboard?tab=sales";
+                        break;
+                      case "return_request":
+                        window.location.href = notification.isSystemNotification 
+                          ? "/seller-dashboard?tab=returns" 
+                          : "/my-purchases";
+                        break;
+                      case "shipping":
+                      case "payment":
+                        window.location.href = "/my-purchases";
+                        break;
+                      case "offer":
+                        window.location.href = notification.isSystemNotification 
+                          ? "/my-purchases" 
+                          : "/seller-dashboard?tab=offers";
+                        break;
+                      case "seller_approved":
+                        window.location.href = "/sell";
+                        break;
+                      case "bid":
+                      case "new_bid":
+                      case "outbid":
+                      case "auction_end":
+                        if (notification.productId) {
+                          window.location.href = `/product/${notification.productId}`;
+                        } else {
+                          window.location.href = "/my-purchases";
+                        }
+                        break;
+                      default:
+                        if (notification.productId) {
+                          window.location.href = `/product/${notification.productId}`;
+                        } else {
+                          window.location.href = "/messages";
+                        }
                     }
                   }}
                   data-testid={`notification-${notification.id}`}
