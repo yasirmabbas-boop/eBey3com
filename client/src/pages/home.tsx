@@ -147,6 +147,41 @@ export default function Home() {
 
   return (
     <Layout>
+      {/* Hero Banner */}
+      <section className="relative bg-gradient-to-l from-blue-600 via-blue-700 to-blue-900 text-white py-12 md:py-20 overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 right-10 w-32 h-32 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 left-10 w-48 h-48 bg-green-400 rounded-full blur-3xl"></div>
+        </div>
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center max-w-3xl mx-auto">
+            <h1 className="text-3xl md:text-5xl font-bold mb-4" style={{ fontFamily: "Cairo, sans-serif" }}>
+              بيع واشتري بأمان
+            </h1>
+            <p className="text-lg md:text-2xl mb-6 text-blue-100">
+              Buy and sell on E-بيع with trust
+            </p>
+            <p className="text-sm md:text-base text-blue-200 mb-8">
+              منصتك الأولى للمزادات والتسوق الآمن في العراق
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/search">
+                <Button size="lg" className="bg-white text-blue-700 hover:bg-blue-50 font-bold px-8">
+                  <Search className="h-5 w-5 ml-2" />
+                  تصفح المنتجات
+                </Button>
+              </Link>
+              <Link href="/sell">
+                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 font-bold px-8">
+                  <Tag className="h-5 w-5 ml-2" />
+                  ابدأ البيع
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Recommended Items Section */}
       {recommendedProducts.length > 0 && (
         <section className="py-4 sm:py-8 bg-white border-b">
