@@ -9,17 +9,12 @@ const IDLE_TIMEOUT = 45000;
 
 export function Logo({ className = "", size = "md" }: LogoProps) {
   const [isAnimating, setIsAnimating] = useState(false);
-  const [logoImpact, setLogoImpact] = useState(false);
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasPlayedInitial = useRef(false);
 
   const triggerAnimation = useCallback(() => {
     setIsAnimating(true);
-    setTimeout(() => {
-      setLogoImpact(true);
-      setTimeout(() => setLogoImpact(false), 300);
-    }, 500);
-    setTimeout(() => setIsAnimating(false), 1200);
+    setTimeout(() => setIsAnimating(false), 1000);
   }, []);
 
   const resetIdleTimer = useCallback(() => {
@@ -66,131 +61,57 @@ export function Logo({ className = "", size = "md" }: LogoProps) {
     };
   }, [resetIdleTimer]);
 
-  const sizeConfig = {
-    sm: { height: 32, fontSize: "text-xl", gap: "gap-0.5" },
-    md: { height: 40, fontSize: "text-2xl", gap: "gap-1" },
-    lg: { height: 56, fontSize: "text-3xl", gap: "gap-1.5" },
+  const sizeClasses = {
+    sm: "text-xl",
+    md: "text-2xl md:text-3xl",
+    lg: "text-3xl md:text-4xl",
   };
 
-  const config = sizeConfig[size];
-
   return (
-    <div
-      className={`flex items-center justify-center ${className} ${logoImpact ? 'logo-impact' : ''}`}
-    >
+    <div className={`flex items-center ${className}`}>
       <style>{`
         @keyframes dropBounce {
           0% {
-            transform: translateY(-120px);
+            transform: translateY(-80px);
             opacity: 0;
           }
-          15% {
-            transform: translateY(-60px);
+          20% {
             opacity: 1;
           }
           50% {
-            transform: translateY(0px);
+            transform: translateY(0);
           }
           65% {
-            transform: translateY(-18px);
+            transform: translateY(-12px);
           }
           80% {
-            transform: translateY(0px);
+            transform: translateY(0);
           }
           90% {
-            transform: translateY(-6px);
+            transform: translateY(-4px);
           }
           100% {
             transform: translateY(0);
           }
         }
-        @keyframes logoImpact {
-          0% {
-            transform: scale(1) translateY(0);
-          }
-          30% {
-            transform: scale(1.03) translateY(2px);
-          }
-          60% {
-            transform: scale(0.98) translateY(-1px);
-          }
-          100% {
-            transform: scale(1) translateY(0);
-          }
-        }
-        @keyframes cartWheelSpin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        .logo-animate {
-          animation: dropBounce 1s ease-out;
-        }
-        .logo-impact {
-          animation: logoImpact 0.3s ease-out;
-        }
-        .wheel-spin {
-          animation: cartWheelSpin 0.8s ease-out;
+        .logo-drop {
+          animation: dropBounce 0.8s ease-out forwards;
         }
       `}</style>
       
-      <div className={`flex items-end ${config.gap} ${config.fontSize} font-bold`} style={{ fontFamily: "'Cairo', sans-serif" }}>
-        {/* Arabic text "بيع" styled as shopping cart */}
-        <div className="relative flex flex-col items-center">
-          <svg 
-            viewBox="0 0 80 60" 
-            className={`${isAnimating ? 'logo-animate' : ''}`}
-            style={{ height: config.height, width: 'auto' }}
-          >
-            {/* Cart body - stylized Arabic بيع */}
-            <text 
-              x="5" 
-              y="38" 
-              fill="#4285F4" 
-              fontSize="36" 
-              fontFamily="Cairo, sans-serif" 
-              fontWeight="700"
-            >
-              بيع
-            </text>
-            {/* Cart items (3 circles) */}
-            <circle cx="25" cy="48" r="4" fill="#FBBC05" />
-            <circle cx="38" cy="48" r="4" fill="#FBBC05" />
-            <circle cx="51" cy="48" r="4" fill="#FBBC05" />
-            {/* Cart wheels */}
-            <circle 
-              cx="22" 
-              cy="58" 
-              r="5" 
-              fill="none" 
-              stroke="#FBBC05" 
-              strokeWidth="2"
-              className={isAnimating ? 'wheel-spin' : ''}
-              style={{ transformOrigin: '22px 58px' }}
-            />
-            <circle 
-              cx="52" 
-              cy="58" 
-              r="5" 
-              fill="none" 
-              stroke="#34A853" 
-              strokeWidth="2"
-              className={isAnimating ? 'wheel-spin' : ''}
-              style={{ transformOrigin: '52px 58px' }}
-            />
-          </svg>
-        </div>
-
-        {/* Red dash */}
-        <span className="text-red-600 font-bold" style={{ lineHeight: 1 }}>-</span>
-
-        {/* Green E (mirrored) */}
+      <span 
+        className={`font-bold tracking-tight flex items-center ${sizeClasses[size]}`}
+        style={{ fontFamily: "'Cairo', sans-serif" }}
+      >
+        <span style={{ color: "#4285F4" }}>بيع</span>
+        <span style={{ color: "#EA4335" }}>-</span>
         <span 
-          className={`text-green-600 font-bold inline-block transform scale-x-[-1] ${isAnimating ? 'logo-animate' : ''}`}
-          style={{ lineHeight: 1 }}
+          className={`inline-block ${isAnimating ? 'logo-drop' : ''}`}
+          style={{ color: "#34A853", transform: "scaleX(-1)" }}
         >
           E
         </span>
-      </div>
+      </span>
     </div>
   );
 }
