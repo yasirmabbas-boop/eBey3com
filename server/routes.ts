@@ -649,53 +649,94 @@ export async function registerRoutes(
       // Analyze the image using AI vision
       const analysis = await analyzeImageForSearch(imageBase64);
       
-      // Get all listings to search through
-      const { listings } = await storage.getListingsPaginated({ limit: 100, offset: 0 });
+      console.log("[image-search] AI Analysis result:", JSON.stringify(analysis, null, 2));
       
-      // Build search terms from analysis
-      const searchTerms: string[] = [
+      // Get all listings to search through
+      const { listings } = await storage.getListingsPaginated({ limit: 200, offset: 0 });
+      
+      // Build comprehensive search terms from analysis
+      const brandTerms: string[] = [
         analysis.brand,
+        analysis.model,
+        ...analysis.brandVariants
+      ].filter((term): term is string => !!term && term.length > 0);
+      
+      const otherTerms: string[] = [
         analysis.itemType,
         analysis.category,
-        analysis.description,
+        analysis.material,
+        ...analysis.colors,
         ...analysis.keywords
       ].filter((term): term is string => !!term && term.length > 0);
+      
+      const allSearchTerms = [...brandTerms, ...otherTerms];
       
       // Score each listing based on how well it matches
       const scoredListings = listings.map(listing => {
         let score = 0;
+        let hasBrandMatch = false;
         const title = (listing.title || "").toLowerCase();
         const description = (listing.description || "").toLowerCase();
         const category = (listing.category || "").toLowerCase();
         const tags = (listing.tags || []).map((t: string) => t.toLowerCase());
+        const allText = `${title} ${description} ${tags.join(" ")}`;
         
-        for (const term of searchTerms) {
+        // BRAND MATCHING - highest priority (200+ points for brand match)
+        for (const brandTerm of brandTerms) {
+          const lowerBrand = brandTerm.toLowerCase();
+          if (title.includes(lowerBrand)) {
+            score += 200;
+            hasBrandMatch = true;
+          } else if (tags.some((tag: string) => tag.includes(lowerBrand) || lowerBrand.includes(tag))) {
+            score += 150;
+            hasBrandMatch = true;
+          } else if (description.includes(lowerBrand)) {
+            score += 100;
+            hasBrandMatch = true;
+          }
+        }
+        
+        // Model matching (e.g., "Submariner", "Speedmaster")
+        if (analysis.model) {
+          const modelLower = analysis.model.toLowerCase();
+          if (allText.includes(modelLower)) {
+            score += 80;
+          }
+        }
+        
+        // Category must match for watches
+        const isWatch = analysis.category === "ساعات" || analysis.itemType.toLowerCase().includes("watch");
+        const listingIsWatch = category.includes("ساعات") || category.includes("watch");
+        if (isWatch && !listingIsWatch) {
+          score = 0; // Exclude non-watches if searching for watches
+        } else if (isWatch && listingIsWatch) {
+          score += 30; // Bonus for correct category
+        }
+        
+        // Other term matching (lower weight)
+        for (const term of otherTerms) {
           const lowerTerm = term.toLowerCase();
+          if (lowerTerm.length < 3) continue; // Skip very short terms
           
-          // Exact title match = highest score
-          if (title.includes(lowerTerm)) score += 50;
-          // Category match
-          if (category.includes(lowerTerm) || lowerTerm.includes(category)) score += 30;
-          // Tag match
-          if (tags.some((tag: string) => tag.includes(lowerTerm) || lowerTerm.includes(tag))) score += 25;
-          // Description match
-          if (description.includes(lowerTerm)) score += 10;
+          if (title.includes(lowerTerm)) score += 15;
+          else if (tags.some((tag: string) => tag.includes(lowerTerm))) score += 10;
+          else if (description.includes(lowerTerm)) score += 5;
         }
         
-        // Brand match is extra important
-        if (analysis.brand) {
-          const brandLower = analysis.brand.toLowerCase();
-          if (title.includes(brandLower)) score += 100;
-          if (tags.some((tag: string) => tag.includes(brandLower))) score += 80;
-        }
-        
-        return { listing, score };
+        return { listing, score, hasBrandMatch };
       });
       
-      // Filter and sort by score
-      const matchingListings = scoredListings
-        .filter(item => item.score > 0)
-        .sort((a, b) => b.score - a.score)
+      // Filter and sort - prioritize brand matches, require minimum score
+      const MIN_SCORE = analysis.brand ? 50 : 20; // Higher threshold if brand was detected
+      
+      let matchingListings = scoredListings
+        .filter(item => item.score >= MIN_SCORE)
+        .sort((a, b) => {
+          // Brand matches always first
+          if (a.hasBrandMatch && !b.hasBrandMatch) return -1;
+          if (!a.hasBrandMatch && b.hasBrandMatch) return 1;
+          return b.score - a.score;
+        })
         .slice(0, 12)
         .map(item => ({
           id: item.listing.id,
@@ -704,13 +745,17 @@ export async function registerRoutes(
           image: item.listing.images?.[0] || "",
           currentBid: item.listing.currentBid,
           saleType: item.listing.saleType,
-          score: item.score
+          score: item.score,
+          hasBrandMatch: item.hasBrandMatch
         }));
+      
+      console.log("[image-search] Found", matchingListings.length, "matches. Brand terms:", brandTerms);
       
       res.json({
         analysis,
         results: matchingListings,
-        searchTerms
+        searchTerms: allSearchTerms,
+        brandTerms
       });
     } catch (error) {
       console.error("Error in image search:", error);
