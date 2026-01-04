@@ -59,7 +59,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                 </span>
                 <Link href="/my-account" className="hidden sm:inline hover:opacity-80 font-medium">حسابي</Link>
                 {(user as any)?.sellerApproved ? (
-                  <Link href="/my-sales" className="hidden sm:inline hover:opacity-80 font-medium">مبيعاتي</Link>
+                  <Link href="/seller-dashboard" className="hidden sm:inline hover:opacity-80 font-medium">دكاني</Link>
                 ) : (
                   <Link href="/my-purchases" className="hidden sm:inline hover:opacity-80 font-medium">مشترياتي</Link>
                 )}

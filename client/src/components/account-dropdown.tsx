@@ -93,20 +93,13 @@ export function AccountDropdown() {
         </Link>
 
         {(user as any).sellerApproved && (
-          <Link href="/my-sales">
-            <DropdownMenuItem className="cursor-pointer" data-testid="menu-my-sales">
+          <Link href="/seller-dashboard">
+            <DropdownMenuItem className="cursor-pointer" data-testid="menu-my-shop">
               <Store className="h-4 w-4 ml-2" />
-              <span>مبيعاتي</span>
+              <span>دكاني</span>
             </DropdownMenuItem>
           </Link>
         )}
-
-        <Link href="/seller-dashboard">
-          <DropdownMenuItem className="cursor-pointer" data-testid="menu-my-listings">
-            <Package className="h-4 w-4 ml-2" />
-            <span>إعلاناتي</span>
-          </DropdownMenuItem>
-        </Link>
 
         <Link href="/my-auctions">
           <DropdownMenuItem className="cursor-pointer" data-testid="menu-my-auctions">
