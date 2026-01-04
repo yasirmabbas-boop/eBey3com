@@ -31,7 +31,7 @@ const ADS = [
     title: "أول مزاد إلكتروني في العراق",
     description: "بيع واشتري بأمان - اكتشف صفقات مميزة وكنوز نادرة من خلال مزاداتنا",
     image: "https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?w=1200&h=300&fit=crop",
-    badgeText: "E-بيع",
+    badgeText: "جديد",
     buttonText: "ابدأ الآن",
     link: "/search",
     color: "bg-[#1E3A8A]"
@@ -435,7 +435,7 @@ export default function Home() {
       {/* Trust Banner */}
       <section className="py-8 sm:py-12 bg-white border-t">
         <div className="container mx-auto px-3 sm:px-4 text-center">
-          <h2 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-8 text-primary">لماذا تختار E-بيع؟</h2>
+          <h2 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-8 text-primary">لماذا تختارنا؟</h2>
           <div className="grid grid-cols-1 gap-3 sm:gap-8 md:grid-cols-3">
             <div className="p-4 sm:p-6 bg-gray-50 rounded-xl">
               <h3 className="text-base sm:text-xl font-bold mb-1 sm:mb-2">موثوق وآمن</h3>
