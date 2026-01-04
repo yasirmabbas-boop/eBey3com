@@ -87,26 +87,27 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
       <style>{`
         @keyframes dropBounce {
           0% {
-            transform: translateY(-120px);
+            transform: scaleX(-1) translateY(-120px);
             opacity: 0;
           }
           15% {
+            transform: scaleX(-1) translateY(-60px);
             opacity: 1;
           }
           50% {
-            transform: translateY(0px);
+            transform: scaleX(-1) translateY(0px);
           }
           65% {
-            transform: translateY(-18px);
+            transform: scaleX(-1) translateY(-18px);
           }
           80% {
-            transform: translateY(0px);
+            transform: scaleX(-1) translateY(0px);
           }
           90% {
-            transform: translateY(-6px);
+            transform: scaleX(-1) translateY(-6px);
           }
           100% {
-            transform: translateY(0);
+            transform: scaleX(-1) translateY(0);
           }
         }
         @keyframes logoImpact {
