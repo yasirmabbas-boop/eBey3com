@@ -85,34 +85,28 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
       style={{ fontFamily: "'Cairo', sans-serif" }}
     >
       <style>{`
-        @keyframes dropSpinBounce {
+        @keyframes dropBounce {
           0% {
-            transform: scaleX(-1) translateY(-150px);
+            transform: translateY(-120px);
             opacity: 0;
           }
-          10% {
+          15% {
             opacity: 1;
           }
-          40% {
-            transform: scaleX(-1) translateY(0px);
-          }
           50% {
-            transform: scaleX(-1) translateY(-20px);
+            transform: translateY(0px);
           }
-          60% {
-            transform: scaleX(-1) translateY(0px);
-          }
-          70% {
-            transform: scaleX(-1) translateY(-10px);
+          65% {
+            transform: translateY(-18px);
           }
           80% {
-            transform: scaleX(-1) translateY(0px);
+            transform: translateY(0px);
           }
           90% {
-            transform: scaleX(-1) translateY(-4px);
+            transform: translateY(-6px);
           }
           100% {
-            transform: scaleX(-1) translateY(0);
+            transform: translateY(0);
           }
         }
         @keyframes logoImpact {
@@ -141,7 +135,7 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
           }
         }
         .logo-e-animate {
-          animation: dropSpinBounce 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          animation: dropBounce 1s ease-out;
         }
         .logo-impact {
           animation: logoImpact 0.3s ease-out;
