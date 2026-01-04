@@ -2,12 +2,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 interface LogoProps {
   className?: string;
-  size?: "sm" | "md" | "lg";
 }
 
 const IDLE_TIMEOUT = 45000;
 
-export function Logo({ className = "", size = "md" }: LogoProps) {
+export function Logo({ className = "" }: LogoProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasPlayedInitial = useRef(false);
@@ -61,53 +60,46 @@ export function Logo({ className = "", size = "md" }: LogoProps) {
     };
   }, [resetIdleTimer]);
 
-  const sizeClasses = {
-    sm: "text-xl",
-    md: "text-2xl md:text-3xl",
-    lg: "text-3xl md:text-4xl",
-  };
-
   return (
-    <div className={`flex items-center ${className}`}>
+    <div className={`inline-flex items-center ${className}`}>
       <style>{`
         @keyframes dropBounce {
           0% {
-            transform: translateY(-80px);
+            transform: scaleX(-1) translateY(-80px);
             opacity: 0;
           }
           20% {
             opacity: 1;
           }
           50% {
-            transform: translateY(0);
+            transform: scaleX(-1) translateY(0);
           }
           65% {
-            transform: translateY(-12px);
+            transform: scaleX(-1) translateY(-12px);
           }
           80% {
-            transform: translateY(0);
+            transform: scaleX(-1) translateY(0);
           }
           90% {
-            transform: translateY(-4px);
+            transform: scaleX(-1) translateY(-4px);
           }
           100% {
-            transform: translateY(0);
+            transform: scaleX(-1) translateY(0);
           }
         }
-        .logo-drop {
+        .e-drop {
           animation: dropBounce 0.8s ease-out forwards;
+        }
+        .e-normal {
+          transform: scaleX(-1);
         }
       `}</style>
       
-      <span 
-        className={`font-bold tracking-tight flex items-center ${sizeClasses[size]}`}
-        style={{ fontFamily: "'Cairo', sans-serif" }}
-      >
-        <span style={{ color: "#4285F4" }}>بيع</span>
-        <span style={{ color: "#EA4335" }}>-</span>
+      <span className="text-2xl md:text-3xl font-bold flex items-center" style={{ fontFamily: "Cairo, sans-serif" }}>
+        <span className="text-blue-500">بيع</span>
+        <span className="text-red-500 mx-0.5">-</span>
         <span 
-          className={`inline-block ${isAnimating ? 'logo-drop' : ''}`}
-          style={{ color: "#34A853", transform: "scaleX(-1)" }}
+          className={`text-green-600 ${isAnimating ? 'e-drop' : 'e-normal'}`}
         >
           E
         </span>
