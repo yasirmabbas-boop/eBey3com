@@ -18,8 +18,8 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
     setTimeout(() => {
       setLogoImpact(true);
       setTimeout(() => setLogoImpact(false), 300);
-    }, 650);
-    setTimeout(() => setIsAnimating(false), 1000);
+    }, 500);
+    setTimeout(() => setIsAnimating(false), 1200);
   }, []);
 
   const resetIdleTimer = useCallback(() => {
@@ -85,24 +85,34 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
       style={{ fontFamily: "'Cairo', sans-serif" }}
     >
       <style>{`
-        @keyframes jumpFlip {
+        @keyframes dropSpinBounce {
           0% {
-            transform: scaleX(-1) translateY(0) rotateY(0);
+            transform: scaleX(-1) translateY(-150px) rotate(0deg);
+            opacity: 0;
           }
-          15% {
-            transform: scaleX(-1) translateY(-14px) rotateY(0);
+          10% {
+            opacity: 1;
           }
           40% {
-            transform: scaleX(-1) translateY(-22px) rotateY(180deg);
+            transform: scaleX(-1) translateY(0px) rotate(360deg);
+          }
+          50% {
+            transform: scaleX(-1) translateY(-20px) rotate(400deg);
+          }
+          60% {
+            transform: scaleX(-1) translateY(0px) rotate(450deg);
           }
           70% {
-            transform: scaleX(-1) translateY(-6px) rotateY(360deg);
+            transform: scaleX(-1) translateY(-10px) rotate(500deg);
           }
-          85% {
-            transform: scaleX(-1) translateY(4px) rotateY(360deg);
+          80% {
+            transform: scaleX(-1) translateY(0px) rotate(540deg);
+          }
+          90% {
+            transform: scaleX(-1) translateY(-4px) rotate(700deg);
           }
           100% {
-            transform: scaleX(-1) translateY(0) rotateY(360deg);
+            transform: scaleX(-1) translateY(0) rotate(720deg);
           }
         }
         @keyframes logoImpact {
@@ -131,7 +141,7 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
           }
         }
         .logo-e-animate {
-          animation: jumpFlip 0.8s ease-in-out;
+          animation: dropSpinBounce 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         .logo-impact {
           animation: logoImpact 0.3s ease-out;
