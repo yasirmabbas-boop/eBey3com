@@ -158,7 +158,7 @@ export default function Home() {
             <h1 className="text-3xl md:text-5xl font-bold mb-4" style={{ fontFamily: "Cairo, sans-serif" }}>
               بيع واشتري بأمان
             </h1>
-            <p className="text-lg md:text-2xl mb-6 text-blue-100">
+            <p className="text-lg md:text-2xl mb-6 text-blue-100 uppercase tracking-wide">
               Buy and Sell With Trust
             </p>
             <p className="text-sm md:text-base text-blue-200 mb-8">
