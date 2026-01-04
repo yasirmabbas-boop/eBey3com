@@ -1,0 +1,199 @@
+import { useState } from "react";
+import { Link } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Layout } from "@/components/layout";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Heart, Loader2, ShoppingBag, Trash2, Eye } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { AuctionCountdown } from "@/components/auction-countdown";
+import type { Listing, Watchlist } from "@shared/schema";
+
+function getAuthHeaders(): HeadersInit {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  const authToken = localStorage.getItem("authToken");
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+  return headers;
+}
+
+export default function FavoritesPage() {
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: watchlistItems = [], isLoading } = useQuery<Watchlist[]>({
+    queryKey: ["/api/watchlist", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const res = await fetch(`/api/users/${user.id}/watchlist`, {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: listings = [] } = useQuery<Listing[]>({
+    queryKey: ["/api/listings"],
+    queryFn: async () => {
+      const res = await fetch("/api/listings");
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  const favoriteListings = listings.filter(listing => 
+    watchlistItems.some(w => w.listingId === listing.id)
+  );
+
+  const removeMutation = useMutation({
+    mutationFn: async (listingId: string) => {
+      const res = await fetch(`/api/watchlist/${user?.id}/${listingId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to remove");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
+      toast({ title: "تمت إزالة المنتج من المفضلة" });
+    },
+  });
+
+  const formatPrice = (price: number) => {
+    return price.toLocaleString("ar-IQ") + " د.ع";
+  };
+
+  if (isAuthLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12 text-center">
+          <Heart className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+          <h1 className="text-2xl font-bold mb-2">المفضلة</h1>
+          <p className="text-gray-500 mb-6">يجب تسجيل الدخول لعرض قائمة المفضلة</p>
+          <Link href="/signin">
+            <Button>تسجيل الدخول</Button>
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-3 mb-6">
+          <Heart className="h-8 w-8 text-red-500 fill-red-500" />
+          <h1 className="text-2xl font-bold">المفضلة</h1>
+          <Badge variant="secondary" className="text-sm">
+            {favoriteListings.length} منتج
+          </Badge>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : favoriteListings.length === 0 ? (
+          <div className="text-center py-12">
+            <Heart className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+            <h2 className="text-xl font-bold mb-2">لا توجد منتجات في المفضلة</h2>
+            <p className="text-gray-500 mb-6">
+              أضف منتجات إلى قائمة المفضلة بالنقر على أيقونة القلب
+            </p>
+            <Link href="/search">
+              <Button>
+                <ShoppingBag className="h-4 w-4 ml-2" />
+                تصفح المنتجات
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {favoriteListings.map((listing) => (
+              <Card 
+                key={listing.id} 
+                className="overflow-hidden hover:shadow-lg transition-shadow group"
+                data-testid={`favorite-item-${listing.id}`}
+              >
+                <Link href={`/product/${listing.id}`}>
+                  <div className="relative aspect-square overflow-hidden bg-gray-100">
+                    <img
+                      src={listing.images?.[0] || "https://via.placeholder.com/300"}
+                      alt={listing.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {listing.saleType === "auction" && (
+                      <Badge className="absolute top-2 right-2 bg-primary text-white text-xs">
+                        مزاد
+                      </Badge>
+                    )}
+                  </div>
+                </Link>
+                <CardContent className="p-3">
+                  <Link href={`/product/${listing.id}`}>
+                    <h3 className="font-bold text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors">
+                      {listing.title}
+                    </h3>
+                  </Link>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-bold text-primary text-sm">
+                      {formatPrice(listing.currentBid || listing.price)}
+                    </p>
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                      <Eye className="h-3 w-3" />
+                      {(listing as any).views || 0}
+                    </span>
+                  </div>
+                  {listing.saleType === "auction" && listing.auctionEndTime && (
+                    <div className="mb-2">
+                      <AuctionCountdown endTime={listing.auctionEndTime} />
+                    </div>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-red-500 hover:text-red-600 hover:bg-red-50"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      removeMutation.mutate(listing.id);
+                    }}
+                    disabled={removeMutation.isPending}
+                    data-testid={`remove-favorite-${listing.id}`}
+                  >
+                    {removeMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 ml-1" />
+                        إزالة
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+}

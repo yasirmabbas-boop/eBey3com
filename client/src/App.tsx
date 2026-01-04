@@ -36,6 +36,7 @@ import MyBids from "@/pages/my-bids";
 import AdminPage from "@/pages/admin";
 import ForgotPassword from "@/pages/forgot-password";
 import SecuritySettings from "@/pages/security-settings";
+import FavoritesPage from "@/pages/favorites";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/messages/:partnerId" component={MessagesPage} />
       <Route path="/my-account" component={MyAccount} />
       <Route path="/my-bids" component={MyBids} />
+      <Route path="/favorites" component={FavoritesPage} />
       <Route path="/admin" component={AdminPage} />
       <Route component={NotFound} />
     </Switch>

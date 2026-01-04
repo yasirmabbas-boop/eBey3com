@@ -117,7 +117,7 @@ export default function MyAccount() {
       icon: <Heart className="h-6 w-6" />,
       label: "المفضلة",
       description: "تابع المنتجات المحفوظة",
-      href: "/search?watchlist=true",
+      href: "/favorites",
       badge: buyerSummary?.wishlistItems || undefined,
     },
     {
