@@ -87,32 +87,32 @@ export function Logo({ className = "", variant = "default" }: LogoProps) {
       <style>{`
         @keyframes dropSpinBounce {
           0% {
-            transform: scaleX(-1) translateY(-150px) rotate(0deg);
+            transform: scaleX(-1) translateY(-150px);
             opacity: 0;
           }
           10% {
             opacity: 1;
           }
           40% {
-            transform: scaleX(-1) translateY(0px) rotate(360deg);
+            transform: scaleX(-1) translateY(0px);
           }
           50% {
-            transform: scaleX(-1) translateY(-20px) rotate(400deg);
+            transform: scaleX(-1) translateY(-20px);
           }
           60% {
-            transform: scaleX(-1) translateY(0px) rotate(450deg);
+            transform: scaleX(-1) translateY(0px);
           }
           70% {
-            transform: scaleX(-1) translateY(-10px) rotate(500deg);
+            transform: scaleX(-1) translateY(-10px);
           }
           80% {
-            transform: scaleX(-1) translateY(0px) rotate(540deg);
+            transform: scaleX(-1) translateY(0px);
           }
           90% {
-            transform: scaleX(-1) translateY(-4px) rotate(700deg);
+            transform: scaleX(-1) translateY(-4px);
           }
           100% {
-            transform: scaleX(-1) translateY(0) rotate(720deg);
+            transform: scaleX(-1) translateY(0);
           }
         }
         @keyframes logoImpact {
