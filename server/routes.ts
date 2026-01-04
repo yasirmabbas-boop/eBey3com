@@ -2723,9 +2723,19 @@ export async function registerRoutes(
         counterMessage
       );
       
-      // If offer is accepted, create a transaction and update listing
-      if (status === "accepted" && updated) {
-        const listing = await storage.getListing(offer.listingId);
+      // Get listing for notification message
+      const listing = await storage.getListing(offer.listingId);
+      const listingTitle = listing?.title || "منتج";
+      
+      // Send notification to buyer based on offer status
+      if (status === "accepted") {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: "offer_accepted",
+          title: "تم قبول عرضك! 🎉",
+          message: `تم قبول عرضك على "${listingTitle}" بقيمة ${offer.offerAmount.toLocaleString()} د.ع`,
+          relatedId: offer.listingId,
+        });
         
         // Create transaction record
         const transaction = await storage.createTransaction({
@@ -2749,6 +2759,22 @@ export async function registerRoutes(
         }
         
         console.log("Transaction created for accepted offer:", transaction.id);
+      } else if (status === "rejected") {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: "offer_rejected",
+          title: "تم رفض عرضك",
+          message: `للأسف، رفض البائع عرضك على "${listingTitle}"`,
+          relatedId: offer.listingId,
+        });
+      } else if (status === "countered") {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: "offer_countered",
+          title: "عرض مضاد من البائع! 💬",
+          message: `البائع أرسل عرضاً مضاداً على "${listingTitle}" بقيمة ${counterAmount?.toLocaleString()} د.ع`,
+          relatedId: offer.listingId,
+        });
       }
       
       res.json(updated);
