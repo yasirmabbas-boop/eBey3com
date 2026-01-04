@@ -5,6 +5,7 @@ import { createServer } from "http";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { setupWebSocket } from "./websocket";
 import { startAuctionProcessor } from "./auction-processor";
+import { socialMetaMiddleware } from "./social-meta";
 
 const app = express();
 const httpServer = createServer(app);
@@ -82,6 +83,9 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
     throw err;
   });
+
+  // Social media meta tag middleware - serve dynamic OG tags for crawlers
+  app.use(socialMetaMiddleware);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
