@@ -13,24 +13,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 
 const passwordRequirements = [
-  { id: "length", label: "٨ أحرف على الأقل", test: (p: string) => p.length >= 8 },
-  { id: "uppercase", label: "حرف كبير واحد على الأقل (A-Z)", test: (p: string) => /[A-Z]/.test(p) },
-  { id: "lowercase", label: "حرف صغير واحد على الأقل (a-z)", test: (p: string) => /[a-z]/.test(p) },
-  { id: "number", label: "رقم واحد على الأقل (0-9)", test: (p: string) => /[0-9]/.test(p) },
-  { id: "special", label: "رمز خاص واحد على الأقل (!@#$%^&*)", test: (p: string) => /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/`~]/.test(p) },
+  { id: "length", label: "٦ أحرف على الأقل", test: (p: string) => p.length >= 6 },
 ];
 
 function PasswordStrengthIndicator({ password }: { password: string }) {
-  const strength = useMemo(() => {
-    return passwordRequirements.filter(r => r.test(password)).length;
-  }, [password]);
+  const isValid = password.length >= 6;
 
   const getStrengthLabel = () => {
-    if (strength === 0) return { text: "", color: "bg-gray-200" };
-    if (strength <= 2) return { text: "ضعيفة", color: "bg-red-500" };
-    if (strength <= 3) return { text: "متوسطة", color: "bg-yellow-500" };
-    if (strength <= 4) return { text: "جيدة", color: "bg-blue-500" };
-    return { text: "قوية", color: "bg-green-500" };
+    if (!password) return { text: "", color: "bg-gray-200" };
+    if (!isValid) return { text: "قصيرة جداً", color: "bg-red-500" };
+    return { text: "مقبولة", color: "bg-green-500" };
   };
 
   const { text, color } = getStrengthLabel();
@@ -38,19 +30,12 @@ function PasswordStrengthIndicator({ password }: { password: string }) {
   return (
     <div className="space-y-2 mt-2">
       <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div
-            key={i}
-            className={`h-1.5 flex-1 rounded-full transition-colors ${i <= strength ? color : "bg-gray-200"}`}
-          />
-        ))}
+        <div className={`h-1.5 flex-1 rounded-full transition-colors ${isValid ? color : password ? "bg-red-500" : "bg-gray-200"}`} />
       </div>
       {password && (
         <div className="flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">قوة كلمة المرور:</span>
-          <span className={`text-xs font-medium ${
-            strength <= 2 ? "text-red-600" : strength <= 3 ? "text-yellow-600" : strength <= 4 ? "text-blue-600" : "text-green-600"
-          }`}>{text}</span>
+          <span className="text-xs text-muted-foreground">كلمة المرور:</span>
+          <span className={`text-xs font-medium ${isValid ? "text-green-600" : "text-red-600"}`}>{text}</span>
         </div>
       )}
       <div className="space-y-1 mt-2">

@@ -789,7 +789,6 @@ export default function MySales() {
             sellerName: user?.displayName || (user as any)?.username || "",
             sellerCity: (user as any)?.city || "",
             buyerName: selectedSale.buyerInfo.displayName || selectedSale.buyerInfo.username || "مشتري",
-            buyerPhone: "",
             deliveryAddress: selectedSale.deliveryAddress || "",
             city: selectedSale.buyerInfo.city || "",
             district: "",
