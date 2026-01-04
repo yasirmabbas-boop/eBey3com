@@ -14,7 +14,8 @@ import {
   type Notification, type InsertNotification,
   type Report, type InsertReport,
   type VerificationCode,
-  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes 
+  type ReturnRequest, type InsertReturnRequest,
+  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes, returnRequests 
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, lt } from "drizzle-orm";
@@ -146,6 +147,14 @@ export interface IStorage {
   getValidVerificationCode(phone: string, code: string, type: string): Promise<any | undefined>;
   markVerificationCodeUsed(id: string): Promise<boolean>;
   deleteExpiredVerificationCodes(): Promise<number>;
+  
+  // Return requests
+  createReturnRequest(request: InsertReturnRequest): Promise<ReturnRequest>;
+  getReturnRequestById(id: string): Promise<ReturnRequest | undefined>;
+  getReturnRequestByTransaction(transactionId: string): Promise<ReturnRequest | undefined>;
+  getReturnRequestsForBuyer(buyerId: string): Promise<ReturnRequest[]>;
+  getReturnRequestsForSeller(sellerId: string): Promise<ReturnRequest[]>;
+  updateReturnRequestStatus(id: string, status: string, sellerResponse?: string): Promise<ReturnRequest | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1013,6 +1022,45 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(verificationCodes)
       .where(lt(verificationCodes.expiresAt, new Date()));
     return 0;
+  }
+
+  async createReturnRequest(request: InsertReturnRequest): Promise<ReturnRequest> {
+    const [result] = await db.insert(returnRequests).values(request).returning();
+    return result;
+  }
+
+  async getReturnRequestById(id: string): Promise<ReturnRequest | undefined> {
+    const [result] = await db.select().from(returnRequests).where(eq(returnRequests.id, id));
+    return result;
+  }
+
+  async getReturnRequestByTransaction(transactionId: string): Promise<ReturnRequest | undefined> {
+    const [result] = await db.select().from(returnRequests).where(eq(returnRequests.transactionId, transactionId));
+    return result;
+  }
+
+  async getReturnRequestsForBuyer(buyerId: string): Promise<ReturnRequest[]> {
+    return db.select().from(returnRequests)
+      .where(eq(returnRequests.buyerId, buyerId))
+      .orderBy(desc(returnRequests.createdAt));
+  }
+
+  async getReturnRequestsForSeller(sellerId: string): Promise<ReturnRequest[]> {
+    return db.select().from(returnRequests)
+      .where(eq(returnRequests.sellerId, sellerId))
+      .orderBy(desc(returnRequests.createdAt));
+  }
+
+  async updateReturnRequestStatus(id: string, status: string, sellerResponse?: string): Promise<ReturnRequest | undefined> {
+    const [result] = await db.update(returnRequests)
+      .set({ 
+        status, 
+        sellerResponse,
+        respondedAt: new Date()
+      })
+      .where(eq(returnRequests.id, id))
+      .returning();
+    return result;
   }
 }
 
