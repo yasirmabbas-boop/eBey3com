@@ -65,9 +65,9 @@ export default function CheckoutPage() {
   const [isOrderComplete, setIsOrderComplete] = useState(false);
 
   const { data: savedAddresses = [], isLoading: isAddressesLoading } = useQuery<BuyerAddress[]>({
-    queryKey: ["/api/addresses"],
+    queryKey: ["/api/account/addresses"],
     queryFn: async () => {
-      const res = await fetch("/api/addresses", { 
+      const res = await fetch("/api/account/addresses", { 
         credentials: "include",
         headers: getAuthHeaders(),
       });
