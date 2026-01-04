@@ -44,6 +44,9 @@ import {
   Bell,
   RotateCcw,
   XCircle,
+  Upload,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   Select,
@@ -223,6 +226,9 @@ export default function SellerDashboard() {
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
   const [stockProductId, setStockProductId] = useState<string | null>(null);
   const [newStockQuantity, setNewStockQuantity] = useState("");
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<{ success: number; failed: number; errors: string[] } | null>(null);
 
   const { data: listingsData, isLoading: listingsLoading } = useQuery({
     queryKey: ["/api/listings", user?.id],
@@ -673,6 +679,48 @@ export default function SellerDashboard() {
     navigate(`/sell?edit=${productId}`);
   };
 
+  const handleBulkUpload = async (file: File) => {
+    setIsUploading(true);
+    setUploadResult(null);
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const token = localStorage.getItem("authToken");
+      const res = await fetch("/api/listings/bulk-upload", {
+        method: "POST",
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "فشل في رفع الملف");
+      }
+      
+      setUploadResult({ success: data.success, failed: data.failed, errors: data.errors || [] });
+      
+      if (data.success > 0) {
+        toast({
+          title: "تم الاستيراد بنجاح",
+          description: data.message,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
+      }
+    } catch (err: any) {
+      toast({
+        title: "خطأ",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const activeProducts = sellerProducts.filter(p => p.status === "active");
 
   const pendingOrders = sellerOrders.filter(o => o.status === "pending" || o.status === "processing");
@@ -934,6 +982,16 @@ export default function SellerDashboard() {
                 />
               </div>
               <div className="flex gap-2 w-full md:w-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setBulkUploadOpen(true)}
+                  className="gap-2"
+                  data-testid="button-bulk-upload"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  استيراد CSV
+                </Button>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-40" data-testid="select-status-filter">
                     <Filter className="h-4 w-4 ml-2" />
@@ -2006,6 +2064,106 @@ export default function SellerDashboard() {
                 <CheckCircle className="h-4 w-4 ml-1" />
               )}
               قبول الإرجاع
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Upload Dialog */}
+      <Dialog open={bulkUploadOpen} onOpenChange={setBulkUploadOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-primary" />
+              استيراد منتجات من ملف CSV
+            </DialogTitle>
+            <DialogDescription>
+              قم برفع ملف CSV يحتوي على بيانات منتجاتك لإضافتها دفعة واحدة
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
+              <input
+                type="file"
+                accept=".csv"
+                className="hidden"
+                id="csv-upload"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleBulkUpload(file);
+                }}
+                disabled={isUploading}
+                data-testid="input-csv-file"
+              />
+              <label htmlFor="csv-upload" className="cursor-pointer">
+                {isUploading ? (
+                  <div className="flex flex-col items-center">
+                    <Loader2 className="h-10 w-10 text-primary animate-spin mb-2" />
+                    <p className="text-sm text-gray-600">جاري معالجة الملف...</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Upload className="h-10 w-10 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600 mb-1">اضغط لاختيار ملف CSV</p>
+                    <p className="text-xs text-gray-400">الحد الأقصى: 5 ميجابايت</p>
+                  </div>
+                )}
+              </label>
+            </div>
+
+            {uploadResult && (
+              <div className={`p-4 rounded-lg ${uploadResult.failed > 0 ? "bg-amber-50 border border-amber-200" : "bg-green-50 border border-green-200"}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  {uploadResult.failed > 0 ? (
+                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                  ) : (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  )}
+                  <span className="font-medium">
+                    تم استيراد {uploadResult.success} منتج
+                    {uploadResult.failed > 0 && ` (فشل ${uploadResult.failed})`}
+                  </span>
+                </div>
+                {uploadResult.errors.length > 0 && (
+                  <div className="text-sm text-amber-700 max-h-32 overflow-y-auto">
+                    {uploadResult.errors.slice(0, 5).map((err, i) => (
+                      <p key={i}>• {err}</p>
+                    ))}
+                    {uploadResult.errors.length > 5 && (
+                      <p className="text-gray-500">... و{uploadResult.errors.length - 5} أخطاء أخرى</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-medium text-blue-800 mb-2 text-sm">تحتاج إلى قالب؟</h4>
+              <p className="text-xs text-blue-700 mb-2">
+                قم بتحميل قالب CSV مع الأعمدة المطلوبة والأمثلة
+              </p>
+              <a
+                href="/api/listings/csv-template"
+                download
+                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                data-testid="link-download-template"
+              >
+                <Download className="h-4 w-4" />
+                تحميل القالب
+              </a>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setBulkUploadOpen(false);
+                setUploadResult(null);
+              }}
+            >
+              إغلاق
             </Button>
           </DialogFooter>
         </DialogContent>
