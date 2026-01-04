@@ -6,6 +6,9 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { broadcastBidUpdate } from "./websocket";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import multer from "multer";
+
+const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 // Helper to get user ID from session or auth token (Safari/ITP fallback)
 async function getUserIdFromRequest(req: Request): Promise<string | null> {
@@ -197,6 +200,122 @@ export async function registerRoutes(
       console.error("Error creating listing:", error);
       res.status(400).json({ error: "Failed to create listing", details: String(error) });
     }
+  });
+
+  // CSV Bulk Upload for Sellers
+  app.post("/api/listings/bulk-upload", csvUpload.single("file"), async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user || !user.sellerApproved) {
+        return res.status(403).json({ error: "يجب أن تكون بائعاً معتمداً" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "الرجاء رفع ملف CSV" });
+      }
+
+      const csvContent = req.file.buffer.toString("utf-8");
+      const lines = csvContent.split("\n").filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        return res.status(400).json({ error: "الملف فارغ أو لا يحتوي على بيانات" });
+      }
+
+      const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+      const requiredHeaders = ["title", "description", "price", "category", "condition", "city"];
+      const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+      
+      if (missingHeaders.length > 0) {
+        return res.status(400).json({ 
+          error: `الأعمدة المطلوبة غير موجودة: ${missingHeaders.join(", ")}` 
+        });
+      }
+
+      const results = { success: 0, failed: 0, errors: [] as string[] };
+
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          const values = parseCSVLine(lines[i]);
+          const row: Record<string, string> = {};
+          headers.forEach((h, idx) => { row[h] = values[idx] || ""; });
+
+          const listingData = {
+            title: row.title?.trim(),
+            description: row.description?.trim(),
+            price: parseInt(row.price, 10) || 0,
+            category: row.category?.trim() || "other",
+            condition: row.condition?.trim() || "used",
+            city: row.city?.trim() || user.city || "بغداد",
+            brand: row.brand?.trim() || null,
+            images: row.images ? row.images.split(";").map(u => u.trim()).filter(Boolean) : [],
+            saleType: "fixed" as const,
+            deliveryWindow: row.deliverywindow?.trim() || "3-5 أيام",
+            returnPolicy: row.returnpolicy?.trim() || "لا يوجد إرجاع",
+            sellerName: user.displayName || "",
+            sellerId: userId,
+            isNegotiable: row.isnegotiable === "true" || row.isnegotiable === "نعم",
+            quantityAvailable: parseInt(row.quantity, 10) || 1,
+          };
+
+          if (!listingData.title || !listingData.description || listingData.price <= 0) {
+            results.failed++;
+            results.errors.push(`السطر ${i + 1}: بيانات غير مكتملة`);
+            continue;
+          }
+
+          await storage.createListing(listingData);
+          results.success++;
+        } catch (err) {
+          results.failed++;
+          results.errors.push(`السطر ${i + 1}: ${String(err)}`);
+        }
+      }
+
+      res.json({
+        message: `تم استيراد ${results.success} منتج بنجاح${results.failed > 0 ? `، فشل ${results.failed}` : ""}`,
+        ...results,
+      });
+    } catch (error) {
+      console.error("Error in bulk upload:", error);
+      res.status(500).json({ error: "حدث خطأ أثناء معالجة الملف" });
+    }
+  });
+
+  // Helper function to parse CSV line (handles quoted values)
+  function parseCSVLine(line: string): string[] {
+    const result: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === "," && !inQuotes) {
+        result.push(current.trim());
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  }
+
+  // CSV Template Download
+  app.get("/api/listings/csv-template", (req, res) => {
+    const headers = "title,description,price,category,condition,city,brand,images,deliveryWindow,returnPolicy,isNegotiable,quantity";
+    const exampleRow = '"ساعة روليكس أصلية","ساعة روليكس موديل 2020 بحالة ممتازة",500000,watches,excellent,بغداد,Rolex,"https://example.com/img1.jpg;https://example.com/img2.jpg","3-5 أيام","إرجاع خلال 7 أيام",true,1';
+    const csvContent = `${headers}\n${exampleRow}`;
+    
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=ebay_iraq_template.csv");
+    res.send("\uFEFF" + csvContent); // BOM for Excel Arabic support
   });
 
   app.patch("/api/listings/:id", async (req, res) => {
