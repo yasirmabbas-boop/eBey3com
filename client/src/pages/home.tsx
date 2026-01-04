@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, Sparkles, Loader2, Clock, Camera, ShoppingBag, Eye } from "lucide-react";
+import { Tag, ChevronLeft, ChevronRight, Gavel, Search, Zap, LayoutGrid, Sparkles, Loader2, Clock, Camera, ShoppingBag, Eye, Heart } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { OptimizedImage, ProductGridSkeleton } from "@/components/optimized-image";
 import { CategoryCarousel } from "@/components/category-carousel";
@@ -178,6 +178,14 @@ export default function Home() {
                   ابدأ البيع
                 </Button>
               </Link>
+              {user && (
+                <Link href="/favorites">
+                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 font-bold px-8">
+                    <Heart className="h-5 w-5 ml-2" />
+                    المفضلة
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
