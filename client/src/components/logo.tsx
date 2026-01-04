@@ -96,13 +96,13 @@ export function Logo({ className = "" }: LogoProps) {
       `}</style>
       
       <span className="text-2xl md:text-3xl font-bold flex items-center" style={{ fontFamily: "Cairo, sans-serif" }}>
-        <span className="text-blue-500">بيع</span>
-        <span className="text-red-500 mx-0.5">-</span>
         <span 
           className={`text-green-600 ${isAnimating ? 'e-drop' : 'e-normal'}`}
         >
           E
         </span>
+        <span className="text-red-500 mx-0.5">-</span>
+        <span className="text-blue-500">بيع</span>
       </span>
     </div>
   );
