@@ -42,6 +42,8 @@ import {
   Menu,
   LogOut,
   Bell,
+  RotateCcw,
+  XCircle,
 } from "lucide-react";
 import {
   Select,
@@ -133,6 +135,30 @@ interface SellerMessage extends Message {
   senderName: string;
   listingTitle: string | null;
   listingImage: string | null;
+}
+
+interface SellerReturnRequest {
+  id: string;
+  transactionId: string;
+  listingId: string;
+  buyerId: string;
+  sellerId: string;
+  reason: string;
+  details?: string;
+  status: string;
+  sellerResponse?: string;
+  createdAt: string;
+  respondedAt?: string;
+  listing?: {
+    id: string;
+    title: string;
+    images: string[];
+  };
+  buyer?: {
+    id: string;
+    displayName: string;
+    phone?: string;
+  };
 }
 
 const getStatusBadge = (status: string) => {
@@ -268,6 +294,72 @@ export default function SellerDashboard() {
     },
     enabled: !!user?.id && (user as any)?.sellerApproved,
   });
+
+  const { data: returnRequests = [], isLoading: returnsLoading } = useQuery<SellerReturnRequest[]>({
+    queryKey: ["/api/return-requests/seller"],
+    queryFn: async () => {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch("/api/return-requests/seller", {
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Failed to fetch return requests");
+      return res.json();
+    },
+    enabled: !!user?.id && (user as any)?.sellerApproved,
+  });
+
+  const [returnResponseOpen, setReturnResponseOpen] = useState(false);
+  const [selectedReturnRequest, setSelectedReturnRequest] = useState<SellerReturnRequest | null>(null);
+  const [returnResponseText, setReturnResponseText] = useState("");
+
+  const returnResponseMutation = useMutation({
+    mutationFn: async ({ id, status, sellerResponse }: { id: string; status: "approved" | "rejected"; sellerResponse?: string }) => {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch(`/api/return-requests/${id}/respond`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({ status, sellerResponse }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to respond to return request");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم الرد على طلب الإرجاع",
+        description: "تم إرسال ردك بنجاح",
+      });
+      setReturnResponseOpen(false);
+      setSelectedReturnRequest(null);
+      setReturnResponseText("");
+      queryClient.invalidateQueries({ queryKey: ["/api/return-requests/seller"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل في الرد على طلب الإرجاع",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const getReturnReasonLabel = (reason: string) => {
+    switch (reason) {
+      case "defective": return "المنتج معيب أو تالف";
+      case "not_as_described": return "المنتج مختلف عن الوصف";
+      case "wrong_item": return "استلمت منتجاً خاطئاً";
+      case "changed_mind": return "غيرت رأيي";
+      case "other": return "سبب آخر";
+      default: return reason;
+    }
+  };
 
   const sellerProducts: SellerProduct[] = listings.map(l => {
     const quantityAvailable = l.quantityAvailable || 1;
@@ -758,7 +850,7 @@ export default function SellerDashboard() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-5 w-full max-w-3xl">
             <TabsTrigger value="products" className="gap-2">
               <Package className="h-4 w-4" />
               المنتجات
@@ -778,6 +870,15 @@ export default function SellerDashboard() {
               {receivedOffers.filter(o => o.status === "pending").length > 0 && (
                 <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 mr-1">
                   {receivedOffers.filter(o => o.status === "pending").length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="returns" className="gap-2">
+              <RotateCcw className="h-4 w-4" />
+              الإرجاعات
+              {returnRequests.filter(r => r.status === "pending").length > 0 && (
+                <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 mr-1">
+                  {returnRequests.filter(r => r.status === "pending").length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -1206,6 +1307,109 @@ export default function SellerDashboard() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="returns" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <RotateCcw className="h-5 w-5 text-orange-500" />
+                  طلبات الإرجاع
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {returnsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : returnRequests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <RotateCcw className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">لا توجد طلبات إرجاع</p>
+                    <p className="text-sm text-gray-400 mt-2">عندما يطلب المشترون إرجاع منتجات، ستظهر هنا</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {returnRequests.map(request => (
+                      <div 
+                        key={request.id} 
+                        className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                        data-testid={`return-request-${request.id}`}
+                      >
+                        <div className="flex items-start gap-4">
+                          {request.listing?.images?.[0] && (
+                            <img 
+                              src={request.listing.images[0]} 
+                              alt={request.listing?.title || "منتج"} 
+                              className="w-20 h-20 object-cover rounded"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <h4 className="font-semibold">{request.listing?.title || "منتج"}</h4>
+                                <p className="text-sm text-gray-500">
+                                  المشتري: {request.buyer?.displayName || "مشتري"}
+                                </p>
+                              </div>
+                              <Badge className={
+                                request.status === "approved" 
+                                  ? "bg-green-100 text-green-700 border-0"
+                                  : request.status === "rejected"
+                                  ? "bg-red-100 text-red-700 border-0"
+                                  : "bg-yellow-100 text-yellow-700 border-0"
+                              }>
+                                {request.status === "approved" ? "مقبول" 
+                                  : request.status === "rejected" ? "مرفوض" 
+                                  : "قيد المراجعة"}
+                              </Badge>
+                            </div>
+                            
+                            <div className="bg-gray-50 p-3 rounded mb-3">
+                              <p className="text-sm font-medium text-gray-700 mb-1">
+                                سبب الإرجاع: {getReturnReasonLabel(request.reason)}
+                              </p>
+                              {request.details && (
+                                <p className="text-sm text-gray-600">{request.details}</p>
+                              )}
+                            </div>
+                            
+                            <p className="text-xs text-gray-400 mb-3">
+                              تاريخ الطلب: {new Date(request.createdAt).toLocaleDateString("ar-IQ")}
+                            </p>
+                            
+                            {request.status === "pending" && (
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700 gap-1"
+                                  onClick={() => {
+                                    setSelectedReturnRequest(request);
+                                    setReturnResponseOpen(true);
+                                  }}
+                                  data-testid={`button-respond-return-${request.id}`}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                  الرد على الطلب
+                                </Button>
+                              </div>
+                            )}
+                            
+                            {request.status !== "pending" && request.sellerResponse && (
+                              <div className="bg-blue-50 p-2 rounded mt-2">
+                                <p className="text-sm text-blue-800">
+                                  ردك: {request.sellerResponse}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -1664,6 +1868,97 @@ export default function SellerDashboard() {
               ) : (
                 "إرسال التقييم"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Return Response Dialog */}
+      <Dialog open={returnResponseOpen} onOpenChange={setReturnResponseOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-orange-500" />
+              الرد على طلب الإرجاع
+            </DialogTitle>
+            <DialogDescription>
+              قم بمراجعة طلب الإرجاع وقرر قبوله أو رفضه
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedReturnRequest && (
+            <div className="space-y-4 py-4">
+              <div className="bg-gray-50 p-3 rounded">
+                <p className="font-medium text-sm">{selectedReturnRequest.listing?.title || "منتج"}</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  سبب الإرجاع: {getReturnReasonLabel(selectedReturnRequest.reason)}
+                </p>
+                {selectedReturnRequest.details && (
+                  <p className="text-sm text-gray-600 mt-1">{selectedReturnRequest.details}</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label>رسالة للمشتري (اختياري)</Label>
+                <Input
+                  value={returnResponseText}
+                  onChange={(e) => setReturnResponseText(e.target.value)}
+                  placeholder="أضف رسالة توضيحية للمشتري..."
+                  data-testid="input-return-response"
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setReturnResponseOpen(false);
+                setSelectedReturnRequest(null);
+                setReturnResponseText("");
+              }}
+              data-testid="button-cancel-return-response"
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (selectedReturnRequest) {
+                  returnResponseMutation.mutate({
+                    id: selectedReturnRequest.id,
+                    status: "rejected",
+                    sellerResponse: returnResponseText || undefined,
+                  });
+                }
+              }}
+              disabled={returnResponseMutation.isPending}
+              data-testid="button-reject-return"
+            >
+              <XCircle className="h-4 w-4 ml-1" />
+              رفض
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => {
+                if (selectedReturnRequest) {
+                  returnResponseMutation.mutate({
+                    id: selectedReturnRequest.id,
+                    status: "approved",
+                    sellerResponse: returnResponseText || undefined,
+                  });
+                }
+              }}
+              disabled={returnResponseMutation.isPending}
+              data-testid="button-approve-return"
+            >
+              {returnResponseMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-1" />
+              ) : (
+                <CheckCircle className="h-4 w-4 ml-1" />
+              )}
+              قبول الإرجاع
             </Button>
           </DialogFooter>
         </DialogContent>
