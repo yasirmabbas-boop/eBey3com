@@ -1,7 +1,7 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema, insertBuyerAddressSchema } from "@shared/schema";
+import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema, insertBuyerAddressSchema, insertContactMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { broadcastBidUpdate } from "./websocket";
@@ -3361,6 +3361,81 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error deleting listing:", error);
       res.status(500).json({ error: "Failed to delete listing" });
+    }
+  });
+
+  // Contact messages - public endpoint to submit
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const parsed = insertContactMessageSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid data", details: parsed.error.errors });
+      }
+      const message = await storage.createContactMessage(parsed.data);
+      res.status(201).json({ success: true, id: message.id });
+    } catch (error) {
+      console.error("Error creating contact message:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  // Admin: Get all contact messages
+  app.get("/api/admin/contact-messages", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const messages = await storage.getAllContactMessages();
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching contact messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  // Admin: Get unread contact message count
+  app.get("/api/admin/contact-messages/unread-count", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const count = await storage.getUnreadContactMessageCount();
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+      res.status(500).json({ error: "Failed to fetch count" });
+    }
+  });
+
+  // Admin: Mark contact message as read
+  app.put("/api/admin/contact-messages/:id/read", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const success = await storage.markContactMessageAsRead(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking message as read:", error);
+      res.status(500).json({ error: "Failed to update message" });
     }
   });
 
