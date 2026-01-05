@@ -19,7 +19,7 @@ import {
   users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes, returnRequests, contactMessages
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, lt } from "drizzle-orm";
+import { eq, desc, and, or, sql, lt } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -217,8 +217,20 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(listings).where(eq(listings.isActive, true)).orderBy(desc(listings.createdAt));
   }
 
-  async getListingsPaginated(options: { limit: number; offset: number; category?: string; saleType?: string; sellerId?: string; includeSold?: boolean }): Promise<{ listings: Listing[]; total: number }> {
-    const { limit, offset, category, saleType, sellerId, includeSold } = options;
+  async getListingsPaginated(options: { 
+    limit: number; 
+    offset: number; 
+    category?: string; 
+    saleType?: string; 
+    sellerId?: string; 
+    includeSold?: boolean;
+    searchQuery?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    condition?: string;
+    city?: string;
+  }): Promise<{ listings: Listing[]; total: number }> {
+    const { limit, offset, category, saleType, sellerId, includeSold, searchQuery, minPrice, maxPrice, condition, city } = options;
     
     // When fetching for a specific seller, show ALL their products (including ended auctions)
     // For public listing pages, only show active listings unless includeSold is true
@@ -229,6 +241,37 @@ export class DatabaseStorage implements IStorage {
     if (category) conditions.push(eq(listings.category, category));
     if (saleType) conditions.push(eq(listings.saleType, saleType));
     if (sellerId) conditions.push(eq(listings.sellerId, sellerId));
+    
+    // Search query - search in title, description, and tags
+    if (searchQuery && searchQuery.trim()) {
+      const searchTerm = `%${searchQuery.trim().toLowerCase()}%`;
+      conditions.push(
+        or(
+          sql`LOWER(${listings.title}) LIKE ${searchTerm}`,
+          sql`LOWER(${listings.description}) LIKE ${searchTerm}`,
+          sql`LOWER(${listings.category}) LIKE ${searchTerm}`,
+          sql`EXISTS (SELECT 1 FROM unnest(${listings.tags}) AS tag WHERE LOWER(tag) LIKE ${searchTerm})`
+        )
+      );
+    }
+    
+    // Price filters
+    if (minPrice !== undefined && !isNaN(minPrice)) {
+      conditions.push(sql`COALESCE(${listings.currentBid}, ${listings.price}) >= ${minPrice}`);
+    }
+    if (maxPrice !== undefined && !isNaN(maxPrice)) {
+      conditions.push(sql`COALESCE(${listings.currentBid}, ${listings.price}) <= ${maxPrice}`);
+    }
+    
+    // Condition filter
+    if (condition) {
+      conditions.push(sql`LOWER(${listings.condition}) LIKE ${`%${condition.toLowerCase()}%`}`);
+    }
+    
+    // City filter
+    if (city) {
+      conditions.push(sql`LOWER(${listings.city}) LIKE ${`%${city.toLowerCase()}%`}`);
+    }
     
     const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
     

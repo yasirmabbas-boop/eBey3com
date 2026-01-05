@@ -1,0 +1,26 @@
+@Workspace Act as a Senior Full Stack Engineer. We need to refactor the search functionality in the application. Currently, the "SearchPage" component performs "client-side filtering," but because the API only returns the first 100 items, the search results are incomplete and incorrect.
+
+Please perform the following refactoring in two specific steps:
+
+STEP 1: UPDATE THE BACKEND (Server-Side)
+1. Locate the backend route handler for "GET /api/listings" (likely in `server/routes.ts` or a similar file).
+2. Modify this route to accept query parameters for filtering directly from the database. It should handle:
+   - `q` (search query for title/description)
+   - `category`
+   - `minPrice` and `maxPrice`
+   - `sellerId`
+   - `saleType` (auction vs fixed)
+   - `includeSold`
+3. Ensure the database query filters the results *before* returning them to the frontend. Do not simply fetch all and filter in memory; use proper SQL/ORM where clauses.
+
+STEP 2: UPDATE THE FRONTEND (Client-Side)
+1. Go to the Search Page component (the file I have open or `client/src/pages/search-page.tsx`).
+2. Update the `useQuery` hook for `listingsData`. Instead of hardcoding `/api/listings?limit=100`, construct the URL dynamically using `URLSearchParams` based on the `searchQuery` and `appliedFilters` state.
+3. Pass the `searchQuery`, `category`, `priceMin`, `priceMax`, etc., as query parameters to the API.
+4. Remove the `applyFiltersToProducts` function and the complex client-side filtering logic inside `useMemo`. The data returned from `listingsData` should now be treated as the final, already-filtered list.
+5. Ensure `calculateRelevanceScore` is removed or only used for sorting if absolutely necessary, as relevance should ideally be handled by the database.
+
+CRITICAL CONSTRAINTS:
+- Do not break the existing UI components (Cards, Badges, Layout).
+- Ensure the API response format remains consistent so the frontend doesn't crash.
+- If you modify the backend, ensure you are using the existing database schema and ORM (e.g., Drizzle or Prisma) correctly.
