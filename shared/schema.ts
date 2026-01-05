@@ -469,4 +469,26 @@ export const insertVerificationCodeSchema = createInsertSchema(verificationCodes
 export type InsertVerificationCode = z.infer<typeof insertVerificationCodeSchema>;
 export type VerificationCode = typeof verificationCodes.$inferSelect;
 
+// Contact form submissions
+export const contactMessages = pgTable("contact_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").notNull().default(false),
+  repliedAt: timestamp("replied_at"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertContactMessageSchema = createInsertSchema(contactMessages).omit({
+  id: true,
+  createdAt: true,
+  isRead: true,
+  repliedAt: true,
+});
+
+export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
+export type ContactMessage = typeof contactMessages.$inferSelect;
+
 export * from "./models/auth";
