@@ -19,18 +19,52 @@ export default function ContactUs() {
   const [loading, setLoading] = useState(false);
   const [showLiveChat, setShowLiveChat] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.name || !formData.email || !formData.subject || !formData.message) {
+      toast({
+        title: "خطأ",
+        description: "يرجى ملء جميع الحقول المطلوبة",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      
+      if (!res.ok) {
+        throw new Error("Failed to send message");
+      }
+      
       toast({
         title: "تم إرسال رسالتك بنجاح ✅",
-        description: "سقوم فريقنا بالرد عليك في أقرب وقت ممكن.",
+        description: "سيقوم فريقنا بالرد عليك في أقرب وقت ممكن.",
       });
-      // Reset form logic here if needed
-    }, 1500);
+      
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "فشل في إرسال الرسالة. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChatSend = () => {
@@ -65,27 +99,43 @@ export default function ContactUs() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">الاسم الكامل</label>
-                    <Input placeholder="أدخل اسمك الكامل" required />
+                    <Input 
+                      placeholder="أدخل اسمك الكامل" 
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      required 
+                      data-testid="input-contact-name"
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">البريد الإلكتروني</label>
-                    <Input type="email" placeholder="example@domain.com" required />
+                    <Input 
+                      type="email" 
+                      placeholder="example@domain.com" 
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      required 
+                      data-testid="input-contact-email"
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">سبب التواصل</label>
-                  <Select required>
-                    <SelectTrigger>
+                  <Select 
+                    value={formData.subject}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, subject: value }))}
+                  >
+                    <SelectTrigger data-testid="select-contact-subject">
                       <SelectValue placeholder="اختر سبب التواصل" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="support">دعم فني</SelectItem>
-                      <SelectItem value="sales">استفسار عن مبيعات</SelectItem>
-                      <SelectItem value="auction">مشكلة في المزاد</SelectItem>
-                      <SelectItem value="complaint">شكوى</SelectItem>
-                      <SelectItem value="suggestion">اقتراح</SelectItem>
-                      <SelectItem value="other">أخرى</SelectItem>
+                      <SelectItem value="دعم فني">دعم فني</SelectItem>
+                      <SelectItem value="استفسار عن مبيعات">استفسار عن مبيعات</SelectItem>
+                      <SelectItem value="مشكلة في المزاد">مشكلة في المزاد</SelectItem>
+                      <SelectItem value="شكوى">شكوى</SelectItem>
+                      <SelectItem value="اقتراح">اقتراح</SelectItem>
+                      <SelectItem value="أخرى">أخرى</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -95,11 +145,14 @@ export default function ContactUs() {
                   <Textarea 
                     placeholder="اكتب تفاصيل استفسارك هنا..." 
                     className="min-h-[150px]"
+                    value={formData.message}
+                    onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
                     required 
+                    data-testid="input-contact-message"
                   />
                 </div>
 
-                <Button type="submit" className="w-full h-12 text-lg" disabled={loading}>
+                <Button type="submit" className="w-full h-12 text-lg" disabled={loading} data-testid="button-contact-submit">
                   {loading ? "جاري الإرسال..." : "إرسال الرسالة"}
                 </Button>
               </form>

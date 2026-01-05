@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, Pause, Play, Trash2, Eye, Search } from "lucide-react";
+import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, Pause, Play, Trash2, Eye, Search, Mail, MailOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
@@ -72,6 +72,16 @@ interface AdminListing {
   totalBids?: number;
 }
 
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
 function getAuthToken(): string | null {
   return localStorage.getItem("authToken");
 }
@@ -90,7 +100,7 @@ export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "messages">("stats");
   const [listingSearch, setListingSearch] = useState("");
 
   useEffect(() => {
@@ -137,6 +147,29 @@ export default function AdminPage() {
       return res.json();
     },
     enabled: !authLoading && (user as any)?.isAdmin && activeTab === "listings",
+  });
+
+  const { data: contactMessages, isLoading: messagesLoading } = useQuery<ContactMessage[]>({
+    queryKey: ["/api/admin/contact-messages"],
+    queryFn: async () => {
+      const res = await fetchWithAuth("/api/admin/contact-messages");
+      if (!res.ok) throw new Error("Failed to fetch contact messages");
+      return res.json();
+    },
+    enabled: !authLoading && (user as any)?.isAdmin && activeTab === "messages",
+  });
+
+  const markMessageReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetchWithAuth(`/api/admin/contact-messages/${id}/read`, {
+        method: "PUT",
+      });
+      if (!res.ok) throw new Error("Failed to mark message as read");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/contact-messages"] });
+    },
   });
 
   const updateReportMutation = useMutation({
@@ -325,6 +358,19 @@ export default function AdminPage() {
                   >
                     <Package className="h-5 w-5" />
                     إدارة المنتجات
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("messages")}
+                    className={`flex items-center gap-3 px-4 py-3 text-right hover:bg-muted transition-colors ${activeTab === "messages" ? "bg-muted font-semibold border-r-4 border-primary" : ""}`}
+                    data-testid="button-tab-messages"
+                  >
+                    <Mail className="h-5 w-5" />
+                    رسائل التواصل
+                    {contactMessages?.filter(m => !m.isRead).length ? (
+                      <Badge variant="secondary" className="mr-auto bg-blue-100 text-blue-800">
+                        {contactMessages.filter(m => !m.isRead).length}
+                      </Badge>
+                    ) : null}
                   </button>
                 </nav>
               </CardContent>
@@ -795,6 +841,86 @@ export default function AdminPage() {
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>لا توجد منتجات</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeTab === "messages" && (
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold">رسائل التواصل</h2>
+                {messagesLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : contactMessages && contactMessages.length > 0 ? (
+                  <div className="space-y-4">
+                    {contactMessages.map((msg) => (
+                      <Card key={msg.id} className={msg.isRead ? "opacity-75" : "border-primary/50"} data-testid={`card-message-${msg.id}`}>
+                        <CardContent className="pt-6">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-2">
+                                {msg.isRead ? (
+                                  <MailOpen className="h-5 w-5 text-gray-400" />
+                                ) : (
+                                  <Mail className="h-5 w-5 text-primary" />
+                                )}
+                                <span className="font-semibold text-lg">{msg.name}</span>
+                                {!msg.isRead && (
+                                  <Badge variant="default" className="bg-blue-500">جديد</Badge>
+                                )}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                <span className="font-medium">{msg.email}</span>
+                                <span className="mx-2">•</span>
+                                <span>{new Date(msg.createdAt).toLocaleDateString("ar-IQ", { 
+                                  year: "numeric", 
+                                  month: "long", 
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit"
+                                })}</span>
+                              </div>
+                              <div className="mt-2">
+                                <Badge variant="outline" className="mb-2">{msg.subject}</Badge>
+                                <p className="text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">{msg.message}</p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              {!msg.isRead && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => markMessageReadMutation.mutate(msg.id)}
+                                  disabled={markMessageReadMutation.isPending}
+                                  data-testid={`button-mark-read-${msg.id}`}
+                                >
+                                  <CheckCircle className="h-4 w-4 ml-1" />
+                                  تم القراءة
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => window.location.href = `mailto:${msg.email}?subject=رد: ${msg.subject}`}
+                                data-testid={`button-reply-${msg.id}`}
+                              >
+                                <Mail className="h-4 w-4 ml-1" />
+                                رد بالإيميل
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="py-12 text-center text-muted-foreground">
+                      <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>لا توجد رسائل تواصل</p>
                     </CardContent>
                   </Card>
                 )}
