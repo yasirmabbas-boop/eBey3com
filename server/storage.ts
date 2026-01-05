@@ -15,7 +15,8 @@ import {
   type Report, type InsertReport,
   type VerificationCode,
   type ReturnRequest, type InsertReturnRequest,
-  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes, returnRequests 
+  type ContactMessage, type InsertContactMessage,
+  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes, returnRequests, contactMessages
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, lt } from "drizzle-orm";
@@ -155,6 +156,13 @@ export interface IStorage {
   getReturnRequestsForBuyer(buyerId: string): Promise<ReturnRequest[]>;
   getReturnRequestsForSeller(sellerId: string): Promise<ReturnRequest[]>;
   updateReturnRequestStatus(id: string, status: string, sellerResponse?: string): Promise<ReturnRequest | undefined>;
+  
+  // Contact messages
+  createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
+  getAllContactMessages(): Promise<ContactMessage[]>;
+  getContactMessageById(id: string): Promise<ContactMessage | undefined>;
+  markContactMessageAsRead(id: string): Promise<boolean>;
+  getUnreadContactMessageCount(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1061,6 +1069,35 @@ export class DatabaseStorage implements IStorage {
       .where(eq(returnRequests.id, id))
       .returning();
     return result;
+  }
+
+  async createContactMessage(message: InsertContactMessage): Promise<ContactMessage> {
+    const [result] = await db.insert(contactMessages).values(message).returning();
+    return result;
+  }
+
+  async getAllContactMessages(): Promise<ContactMessage[]> {
+    return db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt));
+  }
+
+  async getContactMessageById(id: string): Promise<ContactMessage | undefined> {
+    const [result] = await db.select().from(contactMessages).where(eq(contactMessages.id, id));
+    return result;
+  }
+
+  async markContactMessageAsRead(id: string): Promise<boolean> {
+    const [result] = await db.update(contactMessages)
+      .set({ isRead: true })
+      .where(eq(contactMessages.id, id))
+      .returning();
+    return !!result;
+  }
+
+  async getUnreadContactMessageCount(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(contactMessages)
+      .where(eq(contactMessages.isRead, false));
+    return Number(result[0]?.count || 0);
   }
 }
 
