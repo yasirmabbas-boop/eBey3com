@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, Loader2, Phone, Plus, Store, LogOut, HelpCircle } from "lucide-react";
+import { ShoppingCart, User, Menu, Loader2, Plus, Store, LogOut, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { AccountDropdown } from "@/components/account-dropdown";
@@ -206,13 +206,6 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                     <TutorialTrigger />
                   </li>
                 </ul>
-              </div>
-              <div className="col-span-2 md:col-span-1">
-                <h3 className="font-bold text-white text-sm mb-2">تواصل</h3>
-                <div className="flex items-center gap-2 text-xs">
-                  <Phone className="h-3 w-3" />
-                  <span>٠٧٧٠٠٠٠٠٠٠٠</span>
-                </div>
               </div>
             </div>
           </div>
