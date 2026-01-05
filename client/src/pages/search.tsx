@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation, useSearch, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -121,28 +121,14 @@ interface FilterState {
 
 export default function SearchPage() {
   const [location] = useLocation();
-  const [urlSearch, setUrlSearch] = useState(window.location.search);
+  const searchString = useSearch();
   
-  useEffect(() => {
-    setUrlSearch(window.location.search);
-  }, [location]);
-  
-  useEffect(() => {
-    const handlePopState = () => setUrlSearch(window.location.search);
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-  
-  const { categoryParam, searchQuery, sellerIdParam, saleTypeParam, exchangeParam } = useMemo(() => {
-    const params = new URLSearchParams(urlSearch);
-    return {
-      categoryParam: params.get("category"),
-      searchQuery: params.get("q"),
-      sellerIdParam: params.get("sellerId"),
-      saleTypeParam: params.get("saleType"),
-      exchangeParam: params.get("exchange"),
-    };
-  }, [urlSearch]);
+  const params = useMemo(() => new URLSearchParams(searchString), [searchString]);
+  const categoryParam = params.get("category");
+  const searchQuery = params.get("q");
+  const sellerIdParam = params.get("sellerId");
+  const saleTypeParam = params.get("saleType");
+  const exchangeParam = params.get("exchange");
   
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({
     category: categoryParam,
