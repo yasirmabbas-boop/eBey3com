@@ -121,9 +121,20 @@ interface FilterState {
 
 export default function SearchPage() {
   const [location] = useLocation();
+  const [urlSearch, setUrlSearch] = useState(window.location.search);
+  
+  useEffect(() => {
+    setUrlSearch(window.location.search);
+  }, [location]);
+  
+  useEffect(() => {
+    const handlePopState = () => setUrlSearch(window.location.search);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   
   const { categoryParam, searchQuery, sellerIdParam, saleTypeParam, exchangeParam } = useMemo(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(urlSearch);
     return {
       categoryParam: params.get("category"),
       searchQuery: params.get("q"),
@@ -131,7 +142,7 @@ export default function SearchPage() {
       saleTypeParam: params.get("saleType"),
       exchangeParam: params.get("exchange"),
     };
-  }, [location]);
+  }, [urlSearch]);
   
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({
     category: categoryParam,
