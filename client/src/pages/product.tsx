@@ -756,6 +756,32 @@ export default function ProductPage() {
           </div>
         </div>
 
+        {/* Return Policy Section */}
+        <div className="py-4 border-b">
+          <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+            <RotateCcw className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800 mb-1">سياسة الإرجاع</p>
+              <p className="text-sm text-amber-700">
+                {product.returnPolicy === "no_returns" 
+                  ? "لا يمكن إرجاع هذا المنتج" 
+                  : product.returnPolicy === "3_days" 
+                    ? "يمكن الإرجاع خلال 3 أيام من الاستلام"
+                    : product.returnPolicy === "7_days"
+                      ? "يمكن الإرجاع خلال 7 أيام من الاستلام"
+                      : product.returnPolicy === "14_days"
+                        ? "يمكن الإرجاع خلال 14 أيام من الاستلام"
+                        : product.returnPolicy === "30_days"
+                          ? "يمكن الإرجاع خلال 30 أيام من الاستلام"
+                          : "يرجى التواصل مع البائع لمعرفة سياسة الإرجاع"}
+              </p>
+              <p className="text-xs text-amber-600 mt-1">
+                يجب أن يكون المنتج بحالته الأصلية مع جميع الملحقات
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Show notice if this is the user's own product */}
         {isOwnProduct && (
           <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl text-center my-4">
