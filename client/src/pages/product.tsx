@@ -763,21 +763,13 @@ export default function ProductPage() {
             <div>
               <p className="text-sm font-semibold text-amber-800 mb-1">سياسة الإرجاع</p>
               <p className="text-sm text-amber-700">
-                {product.returnPolicy === "no_returns" 
-                  ? "لا يمكن إرجاع هذا المنتج" 
-                  : product.returnPolicy === "3_days" 
-                    ? "يمكن الإرجاع خلال 3 أيام من الاستلام"
-                    : product.returnPolicy === "7_days"
-                      ? "يمكن الإرجاع خلال 7 أيام من الاستلام"
-                      : product.returnPolicy === "14_days"
-                        ? "يمكن الإرجاع خلال 14 أيام من الاستلام"
-                        : product.returnPolicy === "30_days"
-                          ? "يمكن الإرجاع خلال 30 أيام من الاستلام"
-                          : "يرجى التواصل مع البائع لمعرفة سياسة الإرجاع"}
+                {product.returnPolicy || "يرجى التواصل مع البائع لمعرفة سياسة الإرجاع"}
               </p>
-              <p className="text-xs text-amber-600 mt-1">
-                يجب أن يكون المنتج بحالته الأصلية مع جميع الملحقات
-              </p>
+              {product.returnPolicy && product.returnPolicy !== "لا يوجد إرجاع" && (
+                <p className="text-xs text-amber-600 mt-1">
+                  يجب أن يكون المنتج بحالته الأصلية مع جميع الملحقات
+                </p>
+              )}
             </div>
           </div>
         </div>

@@ -121,7 +121,12 @@ interface FilterState {
 
 export default function SearchPage() {
   const [location] = useLocation();
-  const params = new URLSearchParams(window.location.search);
+  const params = useMemo(() => {
+    const queryIndex = location.indexOf("?");
+    const queryString = queryIndex >= 0 ? location.slice(queryIndex) : "";
+    return new URLSearchParams(queryString);
+  }, [location]);
+  
   const categoryParam = params.get("category");
   const searchQuery = params.get("q");
   
@@ -138,6 +143,7 @@ export default function SearchPage() {
   const [draftFilters, setDraftFilters] = useState<FilterState>(appliedFilters);
   const [sortBy, setSortBy] = useState(searchQuery ? "relevance" : "newest");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [displayLimit, setDisplayLimit] = useState(20);
 
   useEffect(() => {
     const freshFilters: FilterState = {
@@ -152,11 +158,10 @@ export default function SearchPage() {
     setAppliedFilters(freshFilters);
     setDraftFilters(freshFilters);
     setSortBy(searchQuery ? "relevance" : "newest");
+    setDisplayLimit(20);
   }, [searchQuery, categoryParam]);
 
   const sellerIdParam = params.get("sellerId");
-  
-  const [displayLimit, setDisplayLimit] = useState(20);
   const ITEMS_PER_PAGE = 20;
 
   const { data: listingsData, isLoading } = useQuery({
