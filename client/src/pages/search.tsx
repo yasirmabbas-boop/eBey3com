@@ -214,65 +214,8 @@ export default function SearchPage() {
     return listings;
   }, [listings]);
 
-  const applyFiltersToProducts = (products: Listing[], filters: FilterState) => {
-    let result = [...products];
-
-    if (filters.category) {
-      result = result.filter(p => p.category === filters.category);
-    }
-
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(p => 
-        p.title.toLowerCase().includes(query) || 
-        p.description?.toLowerCase().includes(query) ||
-        p.category?.toLowerCase().includes(query) ||
-        (p.tags && p.tags.some((tag: string) => tag.toLowerCase().includes(query)))
-      );
-    }
-
-    if (filters.conditions.length > 0) {
-      const selectedAliases = filters.conditions.flatMap(condId => {
-        const cond = CONDITIONS.find(c => c.id === condId);
-        return cond ? cond.aliases.map(a => a.toLowerCase().trim()) : [condId.toLowerCase().trim()];
-      });
-      result = result.filter(p => {
-        const productCondition = (p.condition || "").toLowerCase().trim();
-        return selectedAliases.some(alias => productCondition.includes(alias) || alias.includes(productCondition));
-      });
-    }
-
-    if (filters.saleTypes.length > 0) {
-      result = result.filter(p => filters.saleTypes.includes(p.saleType || ""));
-    }
-
-    if (filters.cities.length > 0) {
-      result = result.filter(p => {
-        const productCity = (p.city || "").trim();
-        return filters.cities.some(city => 
-          productCity === city || 
-          productCity.includes(city) || 
-          city.includes(productCity)
-        );
-      });
-    }
-
-    const minPrice = filters.priceMin ? parseInt(filters.priceMin) : 0;
-    const maxPrice = filters.priceMax ? parseInt(filters.priceMax) : Infinity;
-    if (filters.priceMin || filters.priceMax) {
-      result = result.filter(p => {
-        const price = p.currentBid || p.price;
-        return price >= minPrice && price <= maxPrice;
-      });
-    }
-
-    return result;
-  };
-
   const filteredProducts = useMemo(() => {
-    let products = applyFiltersToProducts(allProducts, appliedFilters);
-
-    const sortedProducts = [...products];
+    const sortedProducts = [...allProducts];
     switch (sortBy) {
       case "relevance":
         if (searchQuery) {
@@ -314,7 +257,7 @@ export default function SearchPage() {
     }
 
     return sortedProducts;
-  }, [allProducts, appliedFilters, searchQuery, sortBy]);
+  }, [allProducts, searchQuery, sortBy]);
 
   const displayedProducts = useMemo(() => {
     return filteredProducts.slice(0, displayLimit);
@@ -323,31 +266,28 @@ export default function SearchPage() {
   const hasMoreProducts = displayLimit < filteredProducts.length;
 
   const draftFilteredProducts = useMemo(() => {
-    return applyFiltersToProducts(allProducts, draftFilters);
-  }, [allProducts, draftFilters, searchQuery]);
+    return allProducts;
+  }, [allProducts]);
 
   const getCategoryCount = (categoryId: string | null) => {
-    const testFilters = { ...draftFilters, category: categoryId };
-    return applyFiltersToProducts(allProducts, testFilters).length;
+    return allProducts.filter(p => !categoryId || p.category === categoryId).length;
   };
 
   const getConditionCount = (conditionId: string) => {
-    const newConditions = draftFilters.conditions.includes(conditionId)
-      ? draftFilters.conditions
-      : [...draftFilters.conditions, conditionId];
-    const testFilters = { ...draftFilters, conditions: [conditionId] };
-    const baseFilters = { ...draftFilters, conditions: [] };
-    return applyFiltersToProducts(allProducts, { ...baseFilters, conditions: [conditionId] }).length;
+    const cond = CONDITIONS.find(c => c.id === conditionId);
+    const aliases = cond ? cond.aliases.map(a => a.toLowerCase()) : [conditionId.toLowerCase()];
+    return allProducts.filter(p => {
+      const productCondition = (p.condition || "").toLowerCase();
+      return aliases.some(alias => productCondition.includes(alias));
+    }).length;
   };
 
   const getSaleTypeCount = (saleType: string) => {
-    const baseFilters = { ...draftFilters, saleTypes: [] };
-    return applyFiltersToProducts(allProducts, { ...baseFilters, saleTypes: [saleType] }).length;
+    return allProducts.filter(p => p.saleType === saleType).length;
   };
 
   const getCityCount = (city: string) => {
-    const baseFilters = { ...draftFilters, cities: [] };
-    return applyFiltersToProducts(allProducts, { ...baseFilters, cities: [city] }).length;
+    return allProducts.filter(p => (p.city || "").includes(city)).length;
   };
 
   const toggleDraftCondition = (condition: string) => {
