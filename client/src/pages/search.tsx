@@ -121,14 +121,17 @@ interface FilterState {
 
 export default function SearchPage() {
   const [location] = useLocation();
-  const params = useMemo(() => {
-    const queryIndex = location.indexOf("?");
-    const queryString = queryIndex >= 0 ? location.slice(queryIndex) : "";
-    return new URLSearchParams(queryString);
-  }, [location]);
   
-  const categoryParam = params.get("category");
-  const searchQuery = params.get("q");
+  const { categoryParam, searchQuery, sellerIdParam, saleTypeParam, exchangeParam } = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      categoryParam: params.get("category"),
+      searchQuery: params.get("q"),
+      sellerIdParam: params.get("sellerId"),
+      saleTypeParam: params.get("saleType"),
+      exchangeParam: params.get("exchange"),
+    };
+  }, [location]);
   
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({
     category: categoryParam,
@@ -161,7 +164,6 @@ export default function SearchPage() {
     setDisplayLimit(20);
   }, [searchQuery, categoryParam]);
 
-  const sellerIdParam = params.get("sellerId");
   const ITEMS_PER_PAGE = 20;
 
   const { data: listingsData, isLoading } = useQuery({
