@@ -163,15 +163,28 @@ export default function SearchPage() {
 
   const ITEMS_PER_PAGE = 20;
 
+  const buildApiUrl = useCallback(() => {
+    const apiParams = new URLSearchParams();
+    apiParams.set("limit", "500");
+    
+    if (sellerIdParam) apiParams.set("sellerId", sellerIdParam);
+    if (appliedFilters.includeSold) apiParams.set("includeSold", "true");
+    if (searchQuery) apiParams.set("q", searchQuery);
+    if (appliedFilters.category) apiParams.set("category", appliedFilters.category);
+    if (appliedFilters.priceMin) apiParams.set("minPrice", appliedFilters.priceMin);
+    if (appliedFilters.priceMax) apiParams.set("maxPrice", appliedFilters.priceMax);
+    if (saleTypeParam) apiParams.set("saleType", saleTypeParam);
+    if (appliedFilters.saleTypes.length === 1) apiParams.set("saleType", appliedFilters.saleTypes[0]);
+    if (appliedFilters.conditions.length === 1) apiParams.set("condition", appliedFilters.conditions[0]);
+    if (appliedFilters.cities.length === 1) apiParams.set("city", appliedFilters.cities[0]);
+    
+    return `/api/listings?${apiParams.toString()}`;
+  }, [sellerIdParam, appliedFilters, searchQuery, saleTypeParam]);
+
   const { data: listingsData, isLoading } = useQuery({
-    queryKey: ["/api/listings", sellerIdParam, appliedFilters.includeSold],
+    queryKey: ["/api/listings", sellerIdParam, appliedFilters, searchQuery, saleTypeParam],
     queryFn: async () => {
-      let url = sellerIdParam 
-        ? `/api/listings?limit=100&sellerId=${sellerIdParam}`
-        : "/api/listings?limit=100";
-      if (appliedFilters.includeSold) {
-        url += "&includeSold=true";
-      }
+      const url = buildApiUrl();
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch listings");
       return res.json();
