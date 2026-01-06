@@ -426,13 +426,12 @@ export default function SwipePage() {
         <div className="h-24 shrink-0"></div>
         
         <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
-          <p className="text-white/70 mb-4">لا توجد منتجات في هذه الفئة</p>
+          <p className="text-white/70 mb-4">لا توجد منتجات مطابقة للفلاتر المحددة</p>
           <Button 
-            variant="outline" 
-            className="border-white/30 text-white hover:bg-white/20"
+            className="bg-blue-500 hover:bg-blue-600 text-white"
             onClick={() => { setSelectedCategory(null); setSelectedSaleFilter(null); }}
           >
-            عرض كل المنتجات
+            إعادة تعيين الفلاتر
           </Button>
         </div>
       </div>
