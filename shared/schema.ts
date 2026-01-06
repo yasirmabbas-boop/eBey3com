@@ -491,4 +491,22 @@ export const insertContactMessageSchema = createInsertSchema(contactMessages).om
 export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 export type ContactMessage = typeof contactMessages.$inferSelect;
 
+// Product comments
+export const productComments = pgTable("product_comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  listingId: varchar("listing_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  content: text("content").notNull(),
+  parentId: varchar("parent_id"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertProductCommentSchema = createInsertSchema(productComments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertProductComment = z.infer<typeof insertProductCommentSchema>;
+export type ProductComment = typeof productComments.$inferSelect;
+
 export * from "./models/auth";
