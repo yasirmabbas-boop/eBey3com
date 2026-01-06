@@ -383,7 +383,7 @@ export default function SwipePage() {
   if (listings.length === 0) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col">
-        <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-sm border-b border-white/10">
+        <div className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm border-b border-white/10">
           <div className="overflow-x-auto scrollbar-hide">
             <div className="flex gap-2 p-3 min-w-max" dir="rtl">
               {CATEGORIES.map((cat) => (
@@ -396,7 +396,7 @@ export default function SwipePage() {
                       ? "bg-white text-black" 
                       : "text-white hover:bg-white/20"
                   }`}
-                  onClick={() => setSelectedCategory(cat.id)}
+                  onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
                 >
                   <cat.icon className="h-4 w-4" />
                   {cat.name}
@@ -404,14 +404,33 @@ export default function SwipePage() {
               ))}
             </div>
           </div>
+          <div className="overflow-x-auto scrollbar-hide border-t border-white/5">
+            <div className="flex gap-2 px-3 py-2 min-w-max" dir="rtl">
+              {SALE_FILTERS.map((filter) => (
+                <button
+                  key={filter.id || "all-sales"}
+                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                    selectedSaleFilter === filter.id 
+                      ? "bg-blue-500 text-white" 
+                      : "bg-white/10 text-white/70 hover:bg-white/20"
+                  }`}
+                  onClick={() => setSelectedSaleFilter(selectedSaleFilter === filter.id ? null : filter.id)}
+                >
+                  {filter.name}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
+        
+        <div className="h-24 shrink-0"></div>
         
         <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
           <p className="text-white/70 mb-4">لا توجد منتجات في هذه الفئة</p>
           <Button 
             variant="outline" 
             className="border-white/30 text-white hover:bg-white/20"
-            onClick={() => setSelectedCategory(null)}
+            onClick={() => { setSelectedCategory(null); setSelectedSaleFilter(null); }}
           >
             عرض كل المنتجات
           </Button>
