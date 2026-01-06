@@ -114,12 +114,12 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
             )}
             <button
               onClick={() => setLanguage(language === "ar" ? "ku" : "ar")}
-              className="hover:opacity-80 transition-colors flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded text-xs font-bold"
+              className="hover:opacity-80 transition-colors flex items-center gap-1.5 bg-white text-[#1E3A8A] px-3 py-1 rounded-full text-sm font-bold shadow-md"
               data-testid="button-language-toggle"
               title={language === "ar" ? "کوردی" : "عربي"}
             >
-              <Languages className="h-3.5 w-3.5" />
-              {language === "ar" ? "کو" : "عر"}
+              <Languages className="h-4 w-4" />
+              {language === "ar" ? "کوردی" : "عربي"}
             </button>
             <button
               onClick={handleShareSite}
