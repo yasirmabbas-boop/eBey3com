@@ -66,6 +66,7 @@ export default function SwipePage() {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   const { data: listingsData, isLoading } = useQuery({
     queryKey: ["/api/listings", selectedCategory],
@@ -91,7 +92,12 @@ export default function SwipePage() {
 
   useEffect(() => {
     setCurrentIndex(0);
+    setCurrentImageIndex(0);
   }, [selectedCategory]);
+
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [currentIndex]);
 
   const currentListing = listings[currentIndex];
 
@@ -298,19 +304,60 @@ export default function SwipePage() {
 
       {/* Main content area */}
       <div className="flex-1 relative overflow-hidden">
-        {/* Product image - full screen */}
+        {/* Product images carousel */}
         <div 
-          className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
+          className={`absolute inset-0 transition-opacity duration-300 ${
             isTransitioning ? "opacity-50" : "opacity-100"
           }`}
         >
-          {currentListing?.images?.[0] ? (
-            <img 
-              src={currentListing.images[0]} 
-              alt={currentListing.title}
-              className="w-full h-full object-cover"
-              data-testid="img-product-swipe"
-            />
+          {currentListing?.images && currentListing.images.length > 0 ? (
+            <div className="relative w-full h-full">
+              {/* Current image */}
+              <img 
+                src={currentListing.images[currentImageIndex] || currentListing.images[0]} 
+                alt={currentListing.title}
+                className="w-full h-full object-cover"
+                data-testid="img-product-swipe"
+              />
+              
+              {/* Image navigation - tap left/right areas */}
+              {currentListing.images.length > 1 && (
+                <>
+                  {/* Tap left for previous */}
+                  <button
+                    className="absolute left-0 top-0 w-1/3 h-2/3 z-20"
+                    onClick={() => setCurrentImageIndex(prev => 
+                      prev > 0 ? prev - 1 : currentListing.images!.length - 1
+                    )}
+                    data-testid="button-prev-image"
+                  />
+                  {/* Tap right for next */}
+                  <button
+                    className="absolute right-0 top-0 w-1/3 h-2/3 z-20"
+                    onClick={() => setCurrentImageIndex(prev => 
+                      prev < currentListing.images!.length - 1 ? prev + 1 : 0
+                    )}
+                    data-testid="button-next-image"
+                  />
+                  
+                  {/* Image dots indicator */}
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-30">
+                    {currentListing.images.map((_, idx) => (
+                      <button
+                        key={idx}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          idx === currentImageIndex 
+                            ? "bg-white w-4" 
+                            : "bg-white/50"
+                        }`}
+                        onClick={() => setCurrentImageIndex(idx)}
+                        data-testid={`image-dot-${idx}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           ) : (
             <div className="w-full h-full bg-gray-800 flex items-center justify-center">
               <Package className="w-20 h-20 text-gray-600" />
