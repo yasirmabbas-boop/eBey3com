@@ -524,6 +524,16 @@ export async function registerRoutes(
   app.post("/api/bids", async (req, res) => {
     try {
       const validatedData = insertBidSchema.parse(req.body);
+      
+      // Check if user is verified before allowing bids
+      const bidder = await storage.getUser(validatedData.userId);
+      if (!bidder) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+      if (!bidder.isVerified) {
+        return res.status(403).json({ error: "يجب أن تكون موثقاً للمزايدة. يرجى توثيق حسابك أولاً." });
+      }
+      
       const listing = await storage.getListing(validatedData.listingId);
       if (!listing) {
         return res.status(404).json({ error: "Listing not found" });
@@ -584,7 +594,6 @@ export async function registerRoutes(
       
       // Send notification to seller about new bid
       if (listing.sellerId && listing.sellerId !== validatedData.userId) {
-        const bidder = await storage.getUser(validatedData.userId);
         await storage.createNotification({
           userId: listing.sellerId,
           type: "new_bid",
@@ -618,8 +627,6 @@ export async function registerRoutes(
       const allBids = await storage.getBidsForListing(validatedData.listingId);
       const totalBids = allBids.length;
       const currentBid = validatedData.amount;
-      
-      const bidder = await storage.getUser(validatedData.userId);
       
       // Broadcast with anonymous bidder name for privacy - only seller sees real name via notification
       broadcastBidUpdate({

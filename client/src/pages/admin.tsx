@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, Pause, Play, Trash2, Eye, Search, Mail, MailOpen } from "lucide-react";
+import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, UserX, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
@@ -579,6 +579,32 @@ export default function AdminPage() {
                                     >
                                       <UserCheck className="h-4 w-4 ml-1" />
                                       توثيق
+                                    </Button>
+                                  )}
+                                  {u.isVerified && !u.isAdmin && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                                      onClick={() => updateUserMutation.mutate({ id: u.id, updates: { isVerified: false } })}
+                                      disabled={updateUserMutation.isPending}
+                                      data-testid={`button-unverify-user-${u.id}`}
+                                    >
+                                      <UserX className="h-4 w-4 ml-1" />
+                                      إلغاء التوثيق
+                                    </Button>
+                                  )}
+                                  {u.sellerApproved && !u.isAdmin && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-yellow-600 border-yellow-600 hover:bg-yellow-50"
+                                      onClick={() => updateUserMutation.mutate({ id: u.id, updates: { sellerApproved: false, sellerRequestStatus: "rejected" } })}
+                                      disabled={updateUserMutation.isPending}
+                                      data-testid={`button-revoke-seller-${u.id}`}
+                                    >
+                                      <Store className="h-4 w-4 ml-1" />
+                                      إلغاء صلاحية البيع
                                     </Button>
                                   )}
                                   {!u.isBanned && !u.isAdmin && (
