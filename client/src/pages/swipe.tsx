@@ -716,7 +716,7 @@ export default function SwipePage() {
 
       {/* Bid Dialog */}
       <Dialog open={isBidOpen} onOpenChange={setIsBidOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
+        <DialogContent className="sm:max-w-md" dir="rtl" style={{ zIndex: 100001 }}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Gavel className="w-5 h-5" />
@@ -763,7 +763,7 @@ export default function SwipePage() {
 
       {/* Offer Dialog */}
       <Dialog open={isOfferOpen} onOpenChange={setIsOfferOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
+        <DialogContent className="sm:max-w-md" dir="rtl" style={{ zIndex: 100001 }}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Tag className="w-5 h-5" />
