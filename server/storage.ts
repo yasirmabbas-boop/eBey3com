@@ -197,15 +197,27 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  private generateAccountCode(): string {
-    const prefix = 'U';
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `${prefix}-${timestamp}${random}`;
+  private async generateAccountCode(): Promise<string> {
+    // Get highest account number to create sequential codes like EB-10001
+    const result = await db.select({ accountCode: users.accountCode })
+      .from(users)
+      .where(sql`account_code LIKE 'EB-%'`)
+      .orderBy(sql`CAST(SUBSTRING(account_code FROM 4) AS INTEGER) DESC`)
+      .limit(1);
+    
+    let nextNumber = 10001; // Start from 10001
+    if (result.length > 0 && result[0].accountCode) {
+      const match = result[0].accountCode.match(/EB-(\d+)/);
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1;
+      }
+    }
+    
+    return `EB-${nextNumber}`;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const accountCode = this.generateAccountCode();
+    const accountCode = await this.generateAccountCode();
     const userWithCode = {
       ...insertUser,
       accountCode,

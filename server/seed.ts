@@ -16,7 +16,7 @@ async function seed() {
     console.log("✅ Admin account already exists, skipping...");
   } else {
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
-    const accountCode = "A-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
+    const accountCode = "EB-10000"; // Admin gets the first account code
     
     await db.insert(users).values({
       phone: adminPhone,
