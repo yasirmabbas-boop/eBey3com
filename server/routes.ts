@@ -1,7 +1,7 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema, insertBuyerAddressSchema, insertContactMessageSchema } from "@shared/schema";
+import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema, insertBuyerAddressSchema, insertContactMessageSchema, insertProductCommentSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { broadcastBidUpdate } from "./websocket";
@@ -948,6 +948,56 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching seller messages:", error);
       res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  // Product comments
+  app.get("/api/comments/:listingId", async (req, res) => {
+    try {
+      const comments = await storage.getCommentsForListing(req.params.listingId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/comments", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول للتعليق" });
+      }
+      
+      const validatedData = insertProductCommentSchema.parse(req.body);
+      
+      if (validatedData.userId !== userId) {
+        return res.status(403).json({ error: "غير مصرح" });
+      }
+      
+      const comment = await storage.createComment(validatedData);
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      res.status(400).json({ error: "فشل في إضافة التعليق", details: String(error) });
+    }
+  });
+
+  app.delete("/api/comments/:id", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+      
+      const success = await storage.deleteComment(req.params.id, userId);
+      if (!success) {
+        return res.status(404).json({ error: "التعليق غير موجود أو غير مصرح بحذفه" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      res.status(500).json({ error: "فشل في حذف التعليق" });
     }
   });
 

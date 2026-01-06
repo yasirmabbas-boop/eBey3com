@@ -16,7 +16,8 @@ import {
   type VerificationCode,
   type ReturnRequest, type InsertReturnRequest,
   type ContactMessage, type InsertContactMessage,
-  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes, returnRequests, contactMessages
+  type ProductComment, type InsertProductComment,
+  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, lt } from "drizzle-orm";
@@ -163,6 +164,11 @@ export interface IStorage {
   getContactMessageById(id: string): Promise<ContactMessage | undefined>;
   markContactMessageAsRead(id: string): Promise<boolean>;
   getUnreadContactMessageCount(): Promise<number>;
+  
+  // Product comments
+  getCommentsForListing(listingId: string): Promise<Array<ProductComment & { userName: string; userAvatar?: string | null }>>;
+  createComment(comment: InsertProductComment): Promise<ProductComment>;
+  deleteComment(id: string, userId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1141,6 +1147,46 @@ export class DatabaseStorage implements IStorage {
       .from(contactMessages)
       .where(eq(contactMessages.isRead, false));
     return Number(result[0]?.count || 0);
+  }
+
+  async getCommentsForListing(listingId: string): Promise<Array<ProductComment & { userName: string; userAvatar?: string | null }>> {
+    const results = await db.select({
+      id: productComments.id,
+      listingId: productComments.listingId,
+      userId: productComments.userId,
+      content: productComments.content,
+      parentId: productComments.parentId,
+      createdAt: productComments.createdAt,
+      userName: users.displayName,
+      userAvatar: users.avatar,
+    })
+      .from(productComments)
+      .leftJoin(users, eq(productComments.userId, users.id))
+      .where(eq(productComments.listingId, listingId))
+      .orderBy(desc(productComments.createdAt));
+    
+    return results.map(r => ({
+      id: r.id,
+      listingId: r.listingId,
+      userId: r.userId,
+      content: r.content,
+      parentId: r.parentId,
+      createdAt: r.createdAt,
+      userName: r.userName || "مستخدم",
+      userAvatar: r.userAvatar,
+    }));
+  }
+
+  async createComment(comment: InsertProductComment): Promise<ProductComment> {
+    const [result] = await db.insert(productComments).values(comment).returning();
+    return result;
+  }
+
+  async deleteComment(id: string, userId: string): Promise<boolean> {
+    const [result] = await db.delete(productComments)
+      .where(and(eq(productComments.id, id), eq(productComments.userId, userId)))
+      .returning();
+    return !!result;
   }
 }
 
