@@ -30,7 +30,8 @@ import {
   ArrowUpDown,
   Check,
   Eye,
-  LayoutGrid
+  LayoutGrid,
+  Smartphone
 } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { CategoryCarousel } from "@/components/category-carousel";
@@ -451,6 +452,18 @@ export default function SearchPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link href={`/swipe${categoryParam ? `?category=${categoryParam}` : ""}${filteredProducts[0]?.id ? `${categoryParam ? "&" : "?"}id=${filteredProducts[0].id}` : ""}`}>
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="shrink-0"
+                data-testid="button-swipe-view"
+                title="وضع التصفح"
+              >
+                <Smartphone className="h-4 w-4" />
+              </Button>
+            </Link>
+            
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-44 text-sm" data-testid="select-sort">
                 <ArrowUpDown className="h-3.5 w-3.5 ml-1" />
