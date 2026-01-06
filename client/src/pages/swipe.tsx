@@ -574,7 +574,7 @@ export default function SwipePage() {
                 )}
               </ScrollArea>
 
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
+              <div className="absolute bottom-0 left-0 right-0 p-4 pb-20 bg-background border-t" style={{ zIndex: 100000 }}>
                 {isAuthenticated && user ? (
                   <form onSubmit={handleSubmitComment} className="flex gap-2">
                     <Input 
