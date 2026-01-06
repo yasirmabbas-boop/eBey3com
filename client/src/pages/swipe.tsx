@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearch, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,13 @@ const CATEGORIES = [
   { id: "أخرى", name: "أخرى", icon: Package },
 ];
 
+const SALE_FILTERS = [
+  { id: null, name: "الكل" },
+  { id: "auction", name: "مزادات" },
+  { id: "fixed", name: "شراء فوري" },
+  { id: "new", name: "جديد" },
+];
+
 export default function SwipePage() {
   const searchString = useSearch();
   const params = new URLSearchParams(searchString);
@@ -80,21 +87,37 @@ export default function SwipePage() {
   const [isOfferOpen, setIsOfferOpen] = useState(false);
   const [bidAmount, setBidAmount] = useState("");
   const [offerAmount, setOfferAmount] = useState("");
+  const [selectedSaleFilter, setSelectedSaleFilter] = useState<string | null>(null);
   
   const { data: listingsData, isLoading } = useQuery({
-    queryKey: ["/api/listings", selectedCategory],
+    queryKey: ["/api/listings", selectedCategory, selectedSaleFilter],
     queryFn: async () => {
       let url = "/api/listings?limit=50";
       if (selectedCategory) url += `&category=${selectedCategory}`;
+      if (selectedSaleFilter === "auction") url += `&saleType=auction`;
+      if (selectedSaleFilter === "fixed") url += `&saleType=fixed`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch listings");
       return res.json();
     },
   });
 
-  const listings: Listing[] = Array.isArray(listingsData) 
-    ? listingsData 
-    : (listingsData?.listings || []);
+  // Filter for "new" items (last 7 days)
+  const filteredListings = React.useMemo(() => {
+    let items: Listing[] = Array.isArray(listingsData) 
+      ? listingsData 
+      : (listingsData?.listings || []);
+    
+    if (selectedSaleFilter === "new") {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      items = items.filter(item => new Date(item.createdAt) >= sevenDaysAgo);
+    }
+    
+    return items;
+  }, [listingsData, selectedSaleFilter]);
+
+  const listings = filteredListings;
 
   useEffect(() => {
     if (startId && listings.length > 0) {
@@ -106,7 +129,7 @@ export default function SwipePage() {
   useEffect(() => {
     setCurrentIndex(0);
     setCurrentImageIndex(0);
-  }, [selectedCategory]);
+  }, [selectedCategory, selectedSaleFilter]);
 
   useEffect(() => {
     setCurrentImageIndex(0);
@@ -197,7 +220,7 @@ export default function SwipePage() {
   const sendOfferMutation = useMutation({
     mutationFn: async (amount: number) => {
       const token = localStorage.getItem("authToken");
-      const res = await fetch("/api/messages", {
+      const res = await fetch("/api/offers", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -205,10 +228,9 @@ export default function SwipePage() {
         },
         credentials: "include",
         body: JSON.stringify({
-          senderId: user?.id,
-          receiverId: currentListing.sellerId,
           listingId: currentListing.id,
-          content: `💰 عرض سعر: ${amount.toLocaleString()} د.ع للمنتج "${currentListing.title}"`,
+          offerAmount: amount,
+          message: `عرض سعر من صفحة التصفح`,
         }),
       });
       if (!res.ok) {
@@ -424,6 +446,25 @@ export default function SwipePage() {
                 <cat.icon className="h-4 w-4" />
                 {cat.name}
               </Button>
+            ))}
+          </div>
+        </div>
+        {/* Sale type filters */}
+        <div className="overflow-x-auto scrollbar-hide border-t border-white/5">
+          <div className="flex gap-2 px-3 py-2 min-w-max" dir="rtl">
+            {SALE_FILTERS.map((filter) => (
+              <button
+                key={filter.id || "all-sales"}
+                className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                  selectedSaleFilter === filter.id 
+                    ? "bg-blue-500 text-white" 
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                }`}
+                onClick={() => setSelectedSaleFilter(filter.id)}
+                data-testid={`sale-filter-${filter.id || "all"}`}
+              >
+                {filter.name}
+              </button>
             ))}
           </div>
         </div>
