@@ -234,14 +234,14 @@ export default function SwipePage() {
       <div className="min-h-screen bg-black text-white flex flex-col">
         {/* Category filter */}
         <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-sm border-b border-white/10">
-          <ScrollArea className="w-full">
-            <div className="flex gap-2 p-3" dir="rtl">
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 p-3 min-w-max" dir="rtl">
               {CATEGORIES.map((cat) => (
                 <Button
                   key={cat.id || "all"}
                   variant={selectedCategory === cat.id ? "default" : "ghost"}
                   size="sm"
-                  className={`shrink-0 gap-1.5 rounded-full ${
+                  className={`shrink-0 gap-1.5 rounded-full whitespace-nowrap ${
                     selectedCategory === cat.id 
                       ? "bg-white text-black" 
                       : "text-white hover:bg-white/20"
@@ -254,7 +254,7 @@ export default function SwipePage() {
                 </Button>
               ))}
             </div>
-          </ScrollArea>
+          </div>
         </div>
         
         <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
@@ -279,14 +279,14 @@ export default function SwipePage() {
     >
       {/* Category filter bar */}
       <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-sm border-b border-white/10">
-        <ScrollArea className="w-full">
-          <div className="flex gap-2 p-3" dir="rtl">
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 p-3 min-w-max" dir="rtl">
             {CATEGORIES.map((cat) => (
               <Button
                 key={cat.id || "all"}
                 variant={selectedCategory === cat.id ? "default" : "ghost"}
                 size="sm"
-                className={`shrink-0 gap-1.5 rounded-full ${
+                className={`shrink-0 gap-1.5 rounded-full whitespace-nowrap ${
                   selectedCategory === cat.id 
                     ? "bg-white text-black" 
                     : "text-white hover:bg-white/20"
@@ -299,7 +299,7 @@ export default function SwipePage() {
               </Button>
             ))}
           </div>
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Main content area */}
