@@ -1,18 +1,16 @@
 import { Link, useLocation } from "wouter";
-import { Home, Heart, User, ShoppingCart } from "lucide-react";
+import { Home, Heart, User, Layers } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useCart } from "@/hooks/use-cart";
 import { NotificationsButton } from "@/components/notifications";
 
 export function MobileNavBar() {
   const [location] = useLocation();
   const { isAuthenticated } = useAuth();
-  const { totalItems } = useCart();
 
   const navItems = [
     { href: "/", icon: Home, label: "الرئيسية", testId: "nav-home" },
     { href: "/favorites", icon: Heart, label: "المفضلة", testId: "nav-favorites" },
-    { href: "/cart", icon: ShoppingCart, label: "السلة", testId: "nav-cart", badge: totalItems },
+    { href: "/swipe", icon: Layers, label: "تصفح", testId: "nav-swipe" },
     { type: "notifications" as const },
     { href: isAuthenticated ? "/my-account" : "/signin", icon: User, label: "حسابي", testId: "nav-account" },
   ];
@@ -58,14 +56,7 @@ export function MobileNavBar() {
               }`}
               data-testid={item.testId}
             >
-              <div className="relative">
-                <item.icon className={`h-6 w-6 ${active ? "stroke-[2.5]" : ""}`} />
-                {item.badge && item.badge > 0 && (
-                  <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold px-1">
-                    {item.badge > 99 ? "99+" : item.badge}
-                  </span>
-                )}
-              </div>
+              <item.icon className={`h-6 w-6 ${active ? "stroke-[2.5]" : ""}`} />
               <span className={`text-[11px] mt-1 ${active ? "font-bold" : ""}`}>{item.label}</span>
               {active && (
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-full" />
