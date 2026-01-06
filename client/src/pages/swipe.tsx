@@ -426,8 +426,8 @@ export default function SwipePage() {
       className="min-h-screen bg-black text-white flex flex-col overflow-hidden"
       data-testid="swipe-container"
     >
-      {/* Category filter bar */}
-      <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-sm border-b border-white/10">
+      {/* Category filter bar - fixed at top */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm border-b border-white/10">
         <div className="overflow-x-auto scrollbar-hide">
           <div className="flex gap-2 p-3 min-w-max" dir="rtl">
             {CATEGORIES.map((cat) => (
@@ -469,6 +469,9 @@ export default function SwipePage() {
           </div>
         </div>
       </div>
+
+      {/* Spacer for fixed header */}
+      <div className="h-24 shrink-0"></div>
 
       {/* Main content area with slide animation */}
       <div 
