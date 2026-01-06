@@ -440,7 +440,7 @@ export default function SwipePage() {
                     ? "bg-white text-black" 
                     : "text-white hover:bg-white/20"
                 }`}
-                onClick={() => setSelectedCategory(cat.id)}
+                onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
                 data-testid={`filter-${cat.id || "all"}`}
               >
                 <cat.icon className="h-4 w-4" />
@@ -460,7 +460,7 @@ export default function SwipePage() {
                     ? "bg-blue-500 text-white" 
                     : "bg-white/10 text-white/70 hover:bg-white/20"
                 }`}
-                onClick={() => setSelectedSaleFilter(filter.id)}
+                onClick={() => setSelectedSaleFilter(selectedSaleFilter === filter.id ? null : filter.id)}
                 data-testid={`sale-filter-${filter.id || "all"}`}
               >
                 {filter.name}
