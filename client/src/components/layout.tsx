@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, Loader2, Plus, Store, LogOut, HelpCircle } from "lucide-react";
+import { ShoppingCart, User, Menu, Loader2, Plus, Store, LogOut, HelpCircle, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { AccountDropdown } from "@/components/account-dropdown";
@@ -30,6 +30,26 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
   const { totalItems } = useCart();
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
 
+  const handleShareSite = async () => {
+    const shareData = {
+      title: "E-بيع - سوق العراق الإلكتروني",
+      text: "تسوق واشتري أفضل المنتجات في العراق",
+      url: window.location.origin,
+    };
+    
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // User cancelled or error
+      }
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(window.location.origin);
+      alert("تم نسخ الرابط!");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans" dir="rtl">
             
@@ -53,8 +73,8 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
           <div className="flex items-center gap-3 mr-auto">
             {isAuthenticated ? (
               <>
-                <span className="hidden sm:flex items-center gap-1 font-bold">
-                  {(user as any)?.sellerApproved ? <Store className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                <span className="hidden sm:flex items-center gap-1.5 font-bold text-base">
+                  {(user as any)?.sellerApproved ? <Store className="h-4 w-4" /> : <User className="h-4 w-4" />}
                   {user?.displayName || (user as any)?.phone}
                 </span>
                 <Link href="/my-account" className="hidden sm:inline hover:opacity-80 font-medium">حسابي</Link>
@@ -65,36 +85,44 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                 )}
                 <button 
                   onClick={() => logout()}
-                  className="hover:opacity-80 font-medium flex items-center gap-1"
+                  className="hover:opacity-80 font-medium flex items-center gap-1.5 text-base"
                   data-testid="button-logout"
                 >
-                  <LogOut className="h-3 w-3" />
+                  <LogOut className="h-4 w-4" />
                   <span className="hidden sm:inline">خروج</span>
                 </button>
                 {(user as any)?.sellerApproved && (
                   <Link 
                     href="/sell" 
-                    className="bg-white text-[#1E3A8A] hover:bg-gray-100 px-3 py-0.5 rounded-full font-bold flex items-center gap-1 transition-colors text-[10px]"
+                    className="bg-white text-[#1E3A8A] hover:bg-gray-100 px-4 py-1.5 rounded-full font-bold flex items-center gap-1.5 transition-colors text-sm shadow-md"
                     data-testid="button-sell-item"
                   >
-                    <Plus className="h-3 w-3" />
+                    <Plus className="h-4 w-4" />
                     أضف منتج
                   </Link>
                 )}
               </>
             ) : (
               !isLoading && (
-                <Link href="/signin" className="hover:opacity-80 transition-colors flex items-center gap-1" data-testid="button-login">
-                  <User className="h-3 w-3" />
+                <Link href="/signin" className="hover:opacity-80 transition-colors flex items-center gap-1.5 text-base font-medium" data-testid="button-login">
+                  <User className="h-4 w-4" />
                   تسجيل الدخول
                 </Link>
               )
             )}
+            <button
+              onClick={handleShareSite}
+              className="hover:opacity-80 transition-colors flex items-center gap-1"
+              data-testid="button-share-site"
+              title="شارك الموقع"
+            >
+              <Share2 className="h-4 w-4" />
+            </button>
             <NotificationsButton />
             <Link href="/cart" className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-colors" data-testid="link-cart">
-              <ShoppingCart className="h-3 w-3" />
+              <ShoppingCart className="h-4 w-4" />
               {totalItems > 0 && (
-                <span className="bg-red-500 text-white text-[9px] rounded-full px-1 h-3 flex items-center justify-center font-bold">{totalItems > 99 ? '99+' : totalItems}</span>
+                <span className="bg-red-500 text-white text-[10px] rounded-full px-1.5 h-4 flex items-center justify-center font-bold">{totalItems > 99 ? '99+' : totalItems}</span>
               )}
             </Link>
           </div>
