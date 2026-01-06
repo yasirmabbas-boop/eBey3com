@@ -460,13 +460,14 @@ export default function SwipePage() {
   }
 
   return (
-    <div 
-      ref={containerRef}
-      className="min-h-screen bg-black text-white flex flex-col overflow-hidden"
-      data-testid="swipe-container"
-    >
+    <div className="min-h-screen bg-black flex justify-center">
+      <div 
+        ref={containerRef}
+        className="w-full max-w-md min-h-screen bg-black text-white flex flex-col overflow-hidden relative"
+        data-testid="swipe-container"
+      >
       {/* Category filter bar - fixed at top */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm border-b border-white/10">
+      <div className="absolute top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm border-b border-white/10">
         <div className="overflow-x-auto scrollbar-hide">
           <div className="flex gap-2 p-3 min-w-max" dir="rtl">
             {CATEGORIES.map((cat) => (
@@ -892,6 +893,7 @@ export default function SwipePage() {
           </form>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }
