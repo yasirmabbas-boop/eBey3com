@@ -30,8 +30,7 @@ import {
   ArrowUpDown,
   Check,
   Eye,
-  LayoutGrid,
-  Smartphone
+  LayoutGrid
 } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { CategoryCarousel } from "@/components/category-carousel";
