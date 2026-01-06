@@ -10,6 +10,7 @@ import { OnboardingTutorial } from "@/components/onboarding-tutorial";
 import { MobileNavBar } from "@/components/mobile-nav-bar";
 import { InstallPWAPrompt } from "@/components/install-pwa-prompt";
 import { NavVisibilityProvider } from "@/hooks/use-nav-visibility";
+import { LanguageProvider } from "@/lib/i18n";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
@@ -90,19 +91,21 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <NavVisibilityProvider>
-          <ScrollToTop />
-          <Toaster />
-          <SurveyManager />
-          <OnboardingTutorial />
-          <SwipeBackNavigation>
-            <Router />
-          </SwipeBackNavigation>
-          <MobileNavBar />
-          <InstallPWAPrompt />
-        </NavVisibilityProvider>
-      </TooltipProvider>
+      <LanguageProvider>
+        <TooltipProvider>
+          <NavVisibilityProvider>
+            <ScrollToTop />
+            <Toaster />
+            <SurveyManager />
+            <OnboardingTutorial />
+            <SwipeBackNavigation>
+              <Router />
+            </SwipeBackNavigation>
+            <MobileNavBar />
+            <InstallPWAPrompt />
+          </NavVisibilityProvider>
+        </TooltipProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

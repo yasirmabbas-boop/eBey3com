@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, Loader2, Plus, Store, LogOut, HelpCircle, Share2 } from "lucide-react";
+import { ShoppingCart, User, Menu, Loader2, Plus, Store, LogOut, HelpCircle, Share2, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { AccountDropdown } from "@/components/account-dropdown";
@@ -16,6 +16,7 @@ import { NotificationsButton } from "@/components/notifications";
 import { SmartSearch } from "@/components/smart-search";
 import { BackButton } from "@/components/back-button";
 import { TutorialTrigger } from "@/components/onboarding-tutorial";
+import { useLanguage } from "@/lib/i18n";
 
 // Feature flag for exchange option - set to true to enable
 const ENABLE_EXCHANGE_FEATURE = false;
@@ -29,6 +30,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const { totalItems } = useCart();
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
+  const { language, setLanguage, t } = useLanguage();
 
   const handleShareSite = async () => {
     const shareData = {
@@ -111,10 +113,19 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
               )
             )}
             <button
+              onClick={() => setLanguage(language === "ar" ? "ku" : "ar")}
+              className="hover:opacity-80 transition-colors flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded text-xs font-bold"
+              data-testid="button-language-toggle"
+              title={language === "ar" ? "کوردی" : "عربي"}
+            >
+              <Languages className="h-3.5 w-3.5" />
+              {language === "ar" ? "کو" : "عر"}
+            </button>
+            <button
               onClick={handleShareSite}
               className="hover:opacity-80 transition-colors flex items-center gap-1"
               data-testid="button-share-site"
-              title="شارك الموقع"
+              title={t("shareSite")}
             >
               <Share2 className="h-4 w-4" />
             </button>
