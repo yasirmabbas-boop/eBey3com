@@ -263,7 +263,7 @@ export default function SwipePage() {
       <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
 
       {/* Right side actions */}
-      <div className="absolute right-4 bottom-32 flex flex-col items-center gap-6 z-40">
+      <div className="absolute right-4 bottom-48 flex flex-col items-center gap-6 z-40">
         <FavoriteButton 
           listingId={currentListing?.id || ""} 
         />
@@ -360,7 +360,7 @@ export default function SwipePage() {
       </div>
 
       {/* Product info */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 z-30">
+      <div className="absolute bottom-0 left-0 right-0 p-4 pb-24 z-30">
         <div className="max-w-lg">
           {/* Seller info */}
           <Link href={`/search?sellerId=${currentListing?.sellerId}`}>
