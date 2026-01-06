@@ -18,6 +18,7 @@ Preferred communication style: Simple, everyday language.
 - **UI Components**: Radix UI primitives with custom styling (New York theme)
 - **Build Tool**: Vite with custom plugins for Replit integration
 - **RTL Support**: Full Arabic language support with RTL layout direction
+- **Multilingual**: Arabic and Sorani Kurdish language support with live switching
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js
