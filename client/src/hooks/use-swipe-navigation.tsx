@@ -25,7 +25,7 @@ export function useSwipeNavigation() {
       // Swipe must start from left edge (within 30px) for back navigation
       // Swipe distance must be at least 80px
       const isFromLeftEdge = touchStartX.current < 30;
-      const isHorizontalSwipe = deltaX > 80 && deltaY < 100;
+      const isHorizontalSwipe = deltaX > 80 && deltaY < 30;
       
       if (isFromLeftEdge && isHorizontalSwipe && location !== "/") {
         window.history.back();
