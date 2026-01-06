@@ -5,9 +5,7 @@ import { NotificationsButton } from "@/components/notifications";
 import { useNavVisibility } from "@/hooks/use-nav-visibility";
 import { useLanguage } from "@/lib/i18n";
 
-const HIDDEN_NAV_PATHS = [
-  "/product/",
-];
+const HIDDEN_NAV_PATHS: string[] = [];
 
 export function MobileNavBar() {
   const [location] = useLocation();
