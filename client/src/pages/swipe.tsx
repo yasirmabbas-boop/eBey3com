@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearch, Link } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,7 +11,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { FavoriteButton } from "@/components/favorite-button";
 import { 
-  Heart, 
   MessageCircle, 
   Share2, 
   Gavel, 
@@ -27,7 +26,9 @@ import {
   Car,
   Home,
   Package,
-  Grid3X3
+  Grid3X3,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import type { Listing } from "@shared/schema";
 
@@ -60,13 +61,16 @@ export default function SwipePage() {
   const startId = params.get("id");
   
   const { user, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [slideDirection, setSlideDirection] = useState<'up' | 'down' | null>(null);
+  const [touchStart, setTouchStart] = useState({ x: 0, y: 0 });
   
   const { data: listingsData, isLoading } = useQuery({
     queryKey: ["/api/listings", selectedCategory],
@@ -100,6 +104,8 @@ export default function SwipePage() {
   }, [currentIndex]);
 
   const currentListing = listings[currentIndex];
+  const nextListing = listings[currentIndex + 1];
+  const prevListing = listings[currentIndex - 1];
 
   const { data: comments = [], refetch: refetchComments } = useQuery({
     queryKey: ["/api/comments", currentListing?.id],
@@ -114,9 +120,13 @@ export default function SwipePage() {
 
   const addCommentMutation = useMutation({
     mutationFn: async (content: string) => {
+      const token = localStorage.getItem("authToken");
       const res = await fetch("/api/comments", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
         credentials: "include",
         body: JSON.stringify({
           listingId: currentListing.id,
@@ -137,64 +147,77 @@ export default function SwipePage() {
   });
 
   const goToNext = useCallback(() => {
-    if (currentIndex < listings.length - 1 && !isTransitioning) {
-      setIsTransitioning(true);
+    if (currentIndex < listings.length - 1) {
+      setSlideDirection('up');
       setCurrentIndex(prev => prev + 1);
-      setTimeout(() => setIsTransitioning(false), 300);
+      setTimeout(() => setSlideDirection(null), 400);
     }
-  }, [currentIndex, listings.length, isTransitioning]);
+  }, [currentIndex, listings.length]);
 
   const goToPrev = useCallback(() => {
-    if (currentIndex > 0 && !isTransitioning) {
-      setIsTransitioning(true);
+    if (currentIndex > 0) {
+      setSlideDirection('down');
       setCurrentIndex(prev => prev - 1);
-      setTimeout(() => setIsTransitioning(false), 300);
+      setTimeout(() => setSlideDirection(null), 400);
     }
-  }, [currentIndex, isTransitioning]);
+  }, [currentIndex]);
+
+  const nextImage = useCallback(() => {
+    if (currentListing?.images && currentListing.images.length > 1) {
+      setCurrentImageIndex(prev => 
+        prev < currentListing.images!.length - 1 ? prev + 1 : 0
+      );
+    }
+  }, [currentListing]);
+
+  const prevImage = useCallback(() => {
+    if (currentListing?.images && currentListing.images.length > 1) {
+      setCurrentImageIndex(prev => 
+        prev > 0 ? prev - 1 : currentListing.images!.length - 1
+      );
+    }
+  }, [currentListing]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowDown" || e.key === "j") goToNext();
       if (e.key === "ArrowUp" || e.key === "k") goToPrev();
+      if (e.key === "ArrowLeft") nextImage();
+      if (e.key === "ArrowRight") prevImage();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [goToNext, goToPrev]);
+  }, [goToNext, goToPrev, nextImage, prevImage]);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart({
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    });
+  };
 
-    let startY = 0;
-    let startTime = 0;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      startY = e.touches[0].clientY;
-      startTime = Date.now();
-    };
-
-    const handleTouchEnd = (e: TouchEvent) => {
-      const endY = e.changedTouches[0].clientY;
-      const diffY = startY - endY;
-      const timeDiff = Date.now() - startTime;
-      
-      if (Math.abs(diffY) > 50 && timeDiff < 300) {
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const diffX = touchStart.x - endX;
+    const diffY = touchStart.y - endY;
+    
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      if (Math.abs(diffX) > 50) {
+        if (diffX > 0) nextImage();
+        else prevImage();
+      }
+    } else {
+      if (Math.abs(diffY) > 50) {
         if (diffY > 0) goToNext();
         else goToPrev();
       }
-    };
-
-    container.addEventListener("touchstart", handleTouchStart);
-    container.addEventListener("touchend", handleTouchEnd);
-    return () => {
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [goToNext, goToPrev]);
+    }
+  };
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim() || !isAuthenticated) return;
+    if (!commentText.trim() || !isAuthenticated || !user?.id) return;
     addCommentMutation.mutate(commentText.trim());
   };
 
@@ -232,7 +255,6 @@ export default function SwipePage() {
   if (listings.length === 0) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col">
-        {/* Category filter */}
         <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-sm border-b border-white/10">
           <div className="overflow-x-auto scrollbar-hide">
             <div className="flex gap-2 p-3 min-w-max" dir="rtl">
@@ -247,7 +269,6 @@ export default function SwipePage() {
                       : "text-white hover:bg-white/20"
                   }`}
                   onClick={() => setSelectedCategory(cat.id)}
-                  data-testid={`filter-${cat.id || "all"}`}
                 >
                   <cat.icon className="h-4 w-4" />
                   {cat.name}
@@ -274,7 +295,7 @@ export default function SwipePage() {
   return (
     <div 
       ref={containerRef}
-      className="min-h-screen bg-black text-white flex flex-col"
+      className="min-h-screen bg-black text-white flex flex-col overflow-hidden"
       data-testid="swipe-container"
     >
       {/* Category filter bar */}
@@ -302,56 +323,76 @@ export default function SwipePage() {
         </div>
       </div>
 
-      {/* Main content area */}
-      <div className="flex-1 relative overflow-hidden">
-        {/* Product images carousel */}
+      {/* Main content area with slide animation */}
+      <div 
+        ref={imageContainerRef}
+        className="flex-1 relative overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Previous product peek (top) */}
+        {prevListing && (
+          <div 
+            className={`absolute inset-x-0 -top-full h-full transition-transform duration-400 ease-out ${
+              slideDirection === 'down' ? 'translate-y-full' : ''
+            }`}
+          >
+            {prevListing.images?.[0] && (
+              <img 
+                src={prevListing.images[0]} 
+                alt={prevListing.title}
+                className="w-full h-full object-cover opacity-50"
+              />
+            )}
+          </div>
+        )}
+
+        {/* Current product */}
         <div 
-          className={`absolute inset-0 transition-opacity duration-300 ${
-            isTransitioning ? "opacity-50" : "opacity-100"
+          className={`absolute inset-0 transition-transform duration-400 ease-out ${
+            slideDirection === 'up' ? '-translate-y-full' : 
+            slideDirection === 'down' ? 'translate-y-full' : ''
           }`}
         >
+          {/* Image carousel */}
           {currentListing?.images && currentListing.images.length > 0 ? (
             <div className="relative w-full h-full">
-              {/* Current image */}
               <img 
                 src={currentListing.images[currentImageIndex] || currentListing.images[0]} 
                 alt={currentListing.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-opacity duration-200"
                 data-testid="img-product-swipe"
               />
               
-              {/* Image navigation - tap left/right areas */}
+              {/* Image navigation arrows */}
               {currentListing.images.length > 1 && (
                 <>
-                  {/* Tap left for previous */}
                   <button
-                    className="absolute left-0 top-0 w-1/3 h-2/3 z-20"
-                    onClick={() => setCurrentImageIndex(prev => 
-                      prev > 0 ? prev - 1 : currentListing.images!.length - 1
-                    )}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center z-20"
+                    onClick={prevImage}
                     data-testid="button-prev-image"
-                  />
-                  {/* Tap right for next */}
+                  >
+                    <ChevronLeft className="w-6 h-6 text-white" />
+                  </button>
                   <button
-                    className="absolute right-0 top-0 w-1/3 h-2/3 z-20"
-                    onClick={() => setCurrentImageIndex(prev => 
-                      prev < currentListing.images!.length - 1 ? prev + 1 : 0
-                    )}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center z-20"
+                    onClick={nextImage}
                     data-testid="button-next-image"
-                  />
+                  >
+                    <ChevronRight className="w-6 h-6 text-white" />
+                  </button>
                   
-                  {/* Image dots indicator */}
-                  <div className="absolute top-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-30">
+                  {/* Image dots */}
+                  <div className="absolute top-16 left-1/2 -translate-x-1/2 flex gap-1.5 z-30">
                     {currentListing.images.map((_, idx) => (
                       <button
                         key={idx}
-                        className={`w-2 h-2 rounded-full transition-all ${
+                        className={`h-1.5 rounded-full transition-all ${
                           idx === currentImageIndex 
-                            ? "bg-white w-4" 
-                            : "bg-white/50"
+                            ? "bg-white w-6" 
+                            : "bg-white/50 w-1.5"
                         }`}
                         onClick={() => setCurrentImageIndex(idx)}
-                        data-testid={`image-dot-${idx}`}
                       />
                     ))}
                   </div>
@@ -365,17 +406,29 @@ export default function SwipePage() {
           )}
         </div>
 
+        {/* Next product peek (bottom) */}
+        {nextListing && (
+          <div 
+            className={`absolute inset-x-0 top-full h-full transition-transform duration-400 ease-out ${
+              slideDirection === 'up' ? '-translate-y-full' : ''
+            }`}
+          >
+            {nextListing.images?.[0] && (
+              <img 
+                src={nextListing.images[0]} 
+                alt={nextListing.title}
+                className="w-full h-full object-cover opacity-50"
+              />
+            )}
+          </div>
+        )}
+
         {/* Gradient overlay */}
-        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none z-10" />
 
         {/* Right side action buttons */}
         <div className="absolute left-3 bottom-44 flex flex-col items-center gap-5 z-40">
-          {/* Favorite button */}
-          <div className="flex flex-col items-center">
-            <FavoriteButton 
-              listingId={currentListing?.id || ""} 
-            />
-          </div>
+          <FavoriteButton listingId={currentListing?.id || ""} />
           
           {/* Comments button */}
           <Sheet open={isCommentsOpen} onOpenChange={setIsCommentsOpen}>
@@ -395,11 +448,11 @@ export default function SwipePage() {
                 <SheetTitle className="text-right">التعليقات ({comments.length})</SheetTitle>
               </SheetHeader>
               
-              <ScrollArea className="h-[calc(100%-120px)] mt-4">
+              <ScrollArea className="h-[calc(100%-140px)] mt-4">
                 {comments.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">لا توجد تعليقات بعد</p>
+                  <p className="text-center text-muted-foreground py-8">لا توجد تعليقات بعد. كن أول من يعلق!</p>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-4 pr-2">
                     {(comments as ProductComment[]).map((comment) => (
                       <div key={comment.id} className="flex gap-3" data-testid={`comment-${comment.id}`}>
                         <Avatar className="w-8 h-8">
@@ -419,35 +472,35 @@ export default function SwipePage() {
                 )}
               </ScrollArea>
 
-              {isAuthenticated ? (
-                <form onSubmit={handleSubmitComment} className="absolute bottom-4 left-4 right-4 flex gap-2">
-                  <Input 
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="اكتب تعليقاً..."
-                    className="flex-1"
-                    data-testid="input-comment"
-                  />
-                  <Button 
-                    type="submit" 
-                    size="icon"
-                    disabled={!commentText.trim() || addCommentMutation.isPending}
-                    data-testid="button-submit-comment"
-                  >
-                    {addCommentMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                  </Button>
-                </form>
-              ) : (
-                <div className="absolute bottom-4 left-4 right-4 text-center">
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
+                {isAuthenticated && user ? (
+                  <form onSubmit={handleSubmitComment} className="flex gap-2">
+                    <Input 
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="اكتب تعليقاً..."
+                      className="flex-1"
+                      data-testid="input-comment"
+                    />
+                    <Button 
+                      type="submit" 
+                      size="icon"
+                      disabled={!commentText.trim() || addCommentMutation.isPending}
+                      data-testid="button-submit-comment"
+                    >
+                      {addCommentMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </form>
+                ) : (
                   <Link href="/signin">
                     <Button variant="outline" className="w-full">سجل دخولك للتعليق</Button>
                   </Link>
-                </div>
-              )}
+                )}
+              </div>
             </SheetContent>
           </Sheet>
 
@@ -466,7 +519,6 @@ export default function SwipePage() {
 
         {/* Bottom product info */}
         <div className="absolute bottom-0 right-0 left-16 p-4 pb-20 z-30" dir="rtl">
-          {/* Seller info */}
           <Link href={`/search?sellerId=${currentListing?.sellerId}`}>
             <div className="flex items-center gap-2 mb-3">
               <Avatar className="w-9 h-9 border-2 border-white">
@@ -476,12 +528,10 @@ export default function SwipePage() {
             </div>
           </Link>
 
-          {/* Title */}
           <h2 className="text-base font-bold mb-2 line-clamp-2" data-testid="text-product-title">
             {currentListing?.title}
           </h2>
           
-          {/* Price and badge */}
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xl font-bold text-white">
               {(currentListing?.currentBid || currentListing?.price || 0).toLocaleString()} د.ع
@@ -494,14 +544,12 @@ export default function SwipePage() {
             )}
           </div>
 
-          {/* Auction countdown */}
           {currentListing?.saleType === "auction" && currentListing?.auctionEndTime && (
             <div className="mb-3">
               <AuctionCountdown endTime={currentListing.auctionEndTime} />
             </div>
           )}
 
-          {/* Action button */}
           <Link href={`/product/${currentListing?.id}`}>
             <Button 
               className="w-full bg-white text-black hover:bg-gray-200"
