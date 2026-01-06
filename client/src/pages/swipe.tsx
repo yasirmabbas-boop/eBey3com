@@ -7,7 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { FavoriteButton } from "@/components/favorite-button";
 import { 
@@ -28,7 +30,9 @@ import {
   Package,
   Grid3X3,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Check,
+  Tag
 } from "lucide-react";
 import type { Listing } from "@shared/schema";
 
@@ -61,6 +65,7 @@ export default function SwipePage() {
   const startId = params.get("id");
   
   const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const containerRef = useRef<HTMLDivElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -71,6 +76,10 @@ export default function SwipePage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [slideDirection, setSlideDirection] = useState<'up' | 'down' | null>(null);
   const [touchStart, setTouchStart] = useState({ x: 0, y: 0 });
+  const [isBidOpen, setIsBidOpen] = useState(false);
+  const [isOfferOpen, setIsOfferOpen] = useState(false);
+  const [bidAmount, setBidAmount] = useState("");
+  const [offerAmount, setOfferAmount] = useState("");
   
   const { data: listingsData, isLoading } = useQuery({
     queryKey: ["/api/listings", selectedCategory],
@@ -145,6 +154,99 @@ export default function SwipePage() {
       refetchComments();
     },
   });
+
+  const placeBidMutation = useMutation({
+    mutationFn: async (amount: number) => {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch("/api/bids", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          listingId: currentListing.id,
+          amount,
+        }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "فشل في تقديم المزايدة");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setIsBidOpen(false);
+      setBidAmount("");
+      queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
+      toast({
+        title: "تم تقديم المزايدة بنجاح!",
+        description: `مزايدتك بقيمة ${Number(bidAmount).toLocaleString()} د.ع تم تسجيلها`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendOfferMutation = useMutation({
+    mutationFn: async (amount: number) => {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          senderId: user?.id,
+          receiverId: currentListing.sellerId,
+          listingId: currentListing.id,
+          content: `💰 عرض سعر: ${amount.toLocaleString()} د.ع للمنتج "${currentListing.title}"`,
+        }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "فشل في إرسال العرض");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setIsOfferOpen(false);
+      setOfferAmount("");
+      toast({
+        title: "تم إرسال العرض بنجاح!",
+        description: `عرضك بقيمة ${Number(offerAmount).toLocaleString()} د.ع تم إرساله للبائع`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePlaceBid = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(bidAmount);
+    if (!amount || amount <= 0) return;
+    placeBidMutation.mutate(amount);
+  };
+
+  const handleSendOffer = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(offerAmount);
+    if (!amount || amount <= 0) return;
+    sendOfferMutation.mutate(amount);
+  };
 
   const goToNext = useCallback(() => {
     if (currentIndex < listings.length - 1) {
@@ -550,24 +652,44 @@ export default function SwipePage() {
             </div>
           )}
 
-          <Link href={`/product/${currentListing?.id}`}>
-            <Button 
-              className="w-full bg-white text-black hover:bg-gray-200"
-              data-testid="button-view-details"
-            >
-              {currentListing?.saleType === "auction" ? (
-                <>
-                  <Gavel className="w-4 h-4 ml-2" />
-                  مزايدة الآن
-                </>
-              ) : (
-                <>
-                  <ShoppingBag className="w-4 h-4 ml-2" />
-                  شراء الآن
-                </>
-              )}
-            </Button>
-          </Link>
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            {currentListing?.saleType === "auction" ? (
+              <Button 
+                className="flex-1 bg-white text-black hover:bg-gray-200"
+                onClick={() => isAuthenticated ? setIsBidOpen(true) : null}
+                data-testid="button-quick-bid"
+              >
+                <Gavel className="w-4 h-4 ml-2" />
+                مزايدة
+              </Button>
+            ) : (
+              <Button 
+                className="flex-1 bg-white text-black hover:bg-gray-200"
+                onClick={() => isAuthenticated ? setIsOfferOpen(true) : null}
+                data-testid="button-quick-offer"
+              >
+                <Tag className="w-4 h-4 ml-2" />
+                قدم عرض
+              </Button>
+            )}
+            <Link href={`/product/${currentListing?.id}`}>
+              <Button 
+                variant="outline"
+                className="border-white/50 text-white hover:bg-white/20"
+                data-testid="button-view-details"
+              >
+                التفاصيل
+              </Button>
+            </Link>
+          </div>
+
+          {/* Not logged in message */}
+          {!isAuthenticated && (
+            <Link href="/signin">
+              <p className="text-center text-white/70 text-xs mt-2 underline">سجل دخولك للمزايدة أو تقديم عرض</p>
+            </Link>
+          )}
         </div>
 
         {/* Progress indicator */}
@@ -587,6 +709,102 @@ export default function SwipePage() {
           </Button>
         </Link>
       </div>
+
+      {/* Bid Dialog */}
+      <Dialog open={isBidOpen} onOpenChange={setIsBidOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gavel className="w-5 h-5" />
+              مزايدة سريعة
+            </DialogTitle>
+            <DialogDescription>
+              السعر الحالي: {(currentListing?.currentBid || currentListing?.startingBid || 0).toLocaleString()} د.ع
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handlePlaceBid} className="space-y-4">
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">مبلغ المزايدة (د.ع)</label>
+              <Input
+                type="number"
+                value={bidAmount}
+                onChange={(e) => setBidAmount(e.target.value)}
+                placeholder={`أدخل مبلغ أعلى من ${((currentListing?.currentBid || currentListing?.startingBid || 0) + 1000).toLocaleString()}`}
+                className="text-lg"
+                min={(currentListing?.currentBid || currentListing?.startingBid || 0) + 1000}
+                data-testid="input-bid-amount"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                type="submit" 
+                className="flex-1"
+                disabled={!bidAmount || placeBidMutation.isPending}
+                data-testid="button-confirm-bid"
+              >
+                {placeBidMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                ) : (
+                  <Check className="w-4 h-4 ml-2" />
+                )}
+                تأكيد المزايدة
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setIsBidOpen(false)}>
+                إلغاء
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Offer Dialog */}
+      <Dialog open={isOfferOpen} onOpenChange={setIsOfferOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Tag className="w-5 h-5" />
+              تقديم عرض سعر
+            </DialogTitle>
+            <DialogDescription>
+              السعر المطلوب: {(currentListing?.price || 0).toLocaleString()} د.ع
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSendOffer} className="space-y-4">
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">عرضك (د.ع)</label>
+              <Input
+                type="number"
+                value={offerAmount}
+                onChange={(e) => setOfferAmount(e.target.value)}
+                placeholder="أدخل المبلغ الذي تريد دفعه"
+                className="text-lg"
+                data-testid="input-offer-amount"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              سيتم إرسال عرضك للبائع كرسالة. سيتواصل معك البائع إذا وافق على العرض.
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                type="submit" 
+                className="flex-1"
+                disabled={!offerAmount || sendOfferMutation.isPending}
+                data-testid="button-confirm-offer"
+              >
+                {sendOfferMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                ) : (
+                  <Send className="w-4 h-4 ml-2" />
+                )}
+                إرسال العرض
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setIsOfferOpen(false)}>
+                إلغاء
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
