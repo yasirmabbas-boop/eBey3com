@@ -47,6 +47,7 @@ interface User {
   phone?: string;
   email?: string;
   displayName: string;
+  accountCode?: string;
   sellerApproved: boolean;
   sellerRequestStatus?: string;
   isAdmin: boolean;
@@ -102,6 +103,7 @@ export default function AdminPage() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "messages">("stats");
   const [listingSearch, setListingSearch] = useState("");
+  const [userSearchQuery, setUserSearchQuery] = useState("");
 
   useEffect(() => {
     if (!authLoading && (!user || !(user as any).isAdmin)) {
@@ -522,6 +524,18 @@ export default function AdminPage() {
             {activeTab === "users" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">إدارة المستخدمين</h2>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="بحث بالاسم أو رقم الحساب..."
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    className="max-w-md"
+                    data-testid="input-user-search"
+                  />
+                  <Button variant="outline" onClick={() => setUserSearchQuery("")} data-testid="button-clear-search">
+                    مسح
+                  </Button>
+                </div>
                 {usersLoading ? (
                   <div className="flex justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin" />
@@ -533,16 +547,27 @@ export default function AdminPage() {
                         <TableHeader>
                           <TableRow>
                             <TableHead className="text-right">الاسم</TableHead>
-                            <TableHead className="text-right">البريد</TableHead>
+                            <TableHead className="text-right">رقم الحساب</TableHead>
+                            <TableHead className="text-right">الهاتف/البريد</TableHead>
                             <TableHead className="text-right">صلاحيات البيع</TableHead>
                             <TableHead className="text-right">الحالة</TableHead>
                             <TableHead className="text-right">الإجراءات</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {users.map((u) => (
+                          {users.filter(u => {
+                            if (!userSearchQuery.trim()) return true;
+                            const query = userSearchQuery.toLowerCase();
+                            return (
+                              u.displayName?.toLowerCase().includes(query) ||
+                              u.accountCode?.toLowerCase().includes(query) ||
+                              u.phone?.toLowerCase().includes(query) ||
+                              u.email?.toLowerCase().includes(query)
+                            );
+                          }).map((u) => (
                             <TableRow key={u.id} data-testid={`row-user-${u.id}`}>
                               <TableCell className="font-medium">{u.displayName}</TableCell>
+                              <TableCell className="font-mono text-sm">{u.accountCode || "-"}</TableCell>
                               <TableCell>{u.phone || u.email || "-"}</TableCell>
                               <TableCell>
                                 {u.isAdmin ? (

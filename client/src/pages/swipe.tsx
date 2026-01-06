@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavVisibility } from "@/hooks/use-nav-visibility";
+import { useLanguage } from "@/lib/i18n";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { FavoriteButton } from "@/components/favorite-button";
 import { 
@@ -48,22 +49,22 @@ interface ProductComment {
   userAvatar: string | null;
 }
 
-const CATEGORIES = [
-  { id: null, name: "الكل", icon: Grid3X3 },
-  { id: "ساعات", name: "ساعات", icon: Watch },
-  { id: "إلكترونيات", name: "إلكترونيات", icon: Smartphone },
-  { id: "ملابس", name: "ملابس", icon: Shirt },
-  { id: "تحف وأثاث", name: "أثاث", icon: Armchair },
-  { id: "سيارات", name: "سيارات", icon: Car },
-  { id: "عقارات", name: "عقارات", icon: Home },
-  { id: "أخرى", name: "أخرى", icon: Package },
+const getCategoriesForLang = (lang: "ar" | "ku") => [
+  { id: null, name: lang === "ar" ? "الكل" : "هەموو", icon: Grid3X3 },
+  { id: "ساعات", name: lang === "ar" ? "ساعات" : "کاتژمێر", icon: Watch },
+  { id: "إلكترونيات", name: lang === "ar" ? "إلكترونيات" : "ئەلیکترۆنی", icon: Smartphone },
+  { id: "ملابس", name: lang === "ar" ? "ملابس" : "جلوبەرگ", icon: Shirt },
+  { id: "تحف وأثاث", name: lang === "ar" ? "أثاث" : "کەلوپەل", icon: Armchair },
+  { id: "سيارات", name: lang === "ar" ? "سيارات" : "ئۆتۆمبێل", icon: Car },
+  { id: "عقارات", name: lang === "ar" ? "عقارات" : "خانوبەرە", icon: Home },
+  { id: "أخرى", name: lang === "ar" ? "أخرى" : "تر", icon: Package },
 ];
 
-const SALE_FILTERS = [
-  { id: null, name: "الكل" },
-  { id: "auction", name: "مزادات" },
-  { id: "fixed", name: "شراء فوري" },
-  { id: "new", name: "جديد" },
+const getSaleFiltersForLang = (lang: "ar" | "ku") => [
+  { id: null, name: lang === "ar" ? "الكل" : "هەموو" },
+  { id: "auction", name: lang === "ar" ? "مزادات" : "مزایدە" },
+  { id: "fixed", name: lang === "ar" ? "شراء فوري" : "کڕینی یەکجار" },
+  { id: "new", name: lang === "ar" ? "جديد" : "نوێ" },
 ];
 
 export default function SwipePage() {
@@ -76,6 +77,10 @@ export default function SwipePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { showNav, hideNav } = useNavVisibility();
+  const { language, t } = useLanguage();
+  
+  const CATEGORIES = getCategoriesForLang(language);
+  const SALE_FILTERS = getSaleFiltersForLang(language);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);

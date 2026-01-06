@@ -3,6 +3,7 @@ import { Home, Heart, User, Layers } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { NotificationsButton } from "@/components/notifications";
 import { useNavVisibility } from "@/hooks/use-nav-visibility";
+import { useLanguage } from "@/lib/i18n";
 
 const HIDDEN_NAV_PATHS = [
   "/product/",
@@ -12,16 +13,17 @@ export function MobileNavBar() {
   const [location] = useLocation();
   const { isAuthenticated } = useAuth();
   const { isNavVisible } = useNavVisibility();
+  const { language } = useLanguage();
   
   const isPathHidden = HIDDEN_NAV_PATHS.some(path => location.startsWith(path));
   const shouldShowNav = isNavVisible && !isPathHidden;
 
   const navItems = [
-    { href: "/", icon: Home, label: "الرئيسية", testId: "nav-home" },
-    { href: "/favorites", icon: Heart, label: "المفضلة", testId: "nav-favorites" },
-    { href: "/swipe", icon: Layers, label: "تصفح", testId: "nav-swipe" },
+    { href: "/", icon: Home, label: language === "ar" ? "الرئيسية" : "سەرەکی", testId: "nav-home" },
+    { href: "/favorites", icon: Heart, label: language === "ar" ? "المفضلة" : "دڵخوازەکان", testId: "nav-favorites" },
+    { href: "/swipe", icon: Layers, label: language === "ar" ? "تصفح" : "گەڕان", testId: "nav-swipe" },
     { type: "notifications" as const },
-    { href: isAuthenticated ? "/my-account" : "/signin", icon: User, label: "حسابي", testId: "nav-account" },
+    { href: isAuthenticated ? "/my-account" : "/signin", icon: User, label: language === "ar" ? "حسابي" : "هەژمارەکەم", testId: "nav-account" },
   ];
 
   const isActive = (href: string) => {
@@ -52,7 +54,7 @@ export function MobileNavBar() {
                 data-testid="nav-notifications"
               >
                 <NotificationsButton variant="mobile" />
-                <span className="text-[11px] mt-1 text-gray-600">الإشعارات</span>
+                <span className="text-[11px] mt-1 text-gray-600">{language === "ar" ? "الإشعارات" : "ئاگادارکردنەوە"}</span>
               </div>
             );
           }
