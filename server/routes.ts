@@ -910,6 +910,22 @@ export async function registerRoutes(
       }
       
       const message = await storage.sendMessage(validatedData);
+      
+      // Create notification for the receiver
+      const sender = await storage.getUser(validatedData.senderId);
+      const isOffer = validatedData.content?.includes("عرض سعر:");
+      
+      await storage.createNotification({
+        userId: validatedData.receiverId,
+        type: isOffer ? "new_offer" : "new_message",
+        title: isOffer ? "عرض سعر جديد!" : "رسالة جديدة",
+        message: isOffer 
+          ? `${sender?.displayName || "مستخدم"} أرسل لك عرض سعر`
+          : `${sender?.displayName || "مستخدم"} أرسل لك رسالة`,
+        linkUrl: `/messages/${validatedData.senderId}`,
+        relatedId: validatedData.senderId,
+      });
+      
       res.status(201).json(message);
     } catch (error) {
       console.error("Error sending message:", error);

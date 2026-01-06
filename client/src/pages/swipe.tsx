@@ -251,16 +251,20 @@ export default function SwipePage() {
   const goToNext = useCallback(() => {
     if (currentIndex < listings.length - 1) {
       setSlideDirection('up');
-      setCurrentIndex(prev => prev + 1);
-      setTimeout(() => setSlideDirection(null), 400);
+      setTimeout(() => {
+        setCurrentIndex(prev => prev + 1);
+        setSlideDirection(null);
+      }, 300);
     }
   }, [currentIndex, listings.length]);
 
   const goToPrev = useCallback(() => {
     if (currentIndex > 0) {
       setSlideDirection('down');
-      setCurrentIndex(prev => prev - 1);
-      setTimeout(() => setSlideDirection(null), 400);
+      setTimeout(() => {
+        setCurrentIndex(prev => prev - 1);
+        setSlideDirection(null);
+      }, 300);
     }
   }, [currentIndex]);
 
@@ -435,7 +439,7 @@ export default function SwipePage() {
         {/* Previous product peek (top) */}
         {prevListing && (
           <div 
-            className={`absolute inset-x-0 -top-full h-full transition-transform duration-400 ease-out ${
+            className={`absolute inset-x-0 -top-full h-full transition-transform duration-300 ease-out ${
               slideDirection === 'down' ? 'translate-y-full' : ''
             }`}
           >
@@ -451,7 +455,7 @@ export default function SwipePage() {
 
         {/* Current product */}
         <div 
-          className={`absolute inset-0 transition-transform duration-400 ease-out ${
+          className={`absolute inset-0 transition-transform duration-300 ease-out ${
             slideDirection === 'up' ? '-translate-y-full' : 
             slideDirection === 'down' ? 'translate-y-full' : ''
           }`}
@@ -719,7 +723,7 @@ export default function SwipePage() {
               مزايدة سريعة
             </DialogTitle>
             <DialogDescription>
-              السعر الحالي: {(currentListing?.currentBid || currentListing?.startingBid || 0).toLocaleString()} د.ع
+              السعر الحالي: {(currentListing?.currentBid || currentListing?.price || 0).toLocaleString()} د.ع
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handlePlaceBid} className="space-y-4">
@@ -729,9 +733,9 @@ export default function SwipePage() {
                 type="number"
                 value={bidAmount}
                 onChange={(e) => setBidAmount(e.target.value)}
-                placeholder={`أدخل مبلغ أعلى من ${((currentListing?.currentBid || currentListing?.startingBid || 0) + 1000).toLocaleString()}`}
+                placeholder={`أدخل مبلغ أعلى من ${((currentListing?.currentBid || currentListing?.price || 0) + 1000).toLocaleString()}`}
                 className="text-lg"
-                min={(currentListing?.currentBid || currentListing?.startingBid || 0) + 1000}
+                min={(currentListing?.currentBid || currentListing?.price || 0) + 1000}
                 data-testid="input-bid-amount"
               />
             </div>
