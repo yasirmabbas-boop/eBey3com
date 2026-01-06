@@ -9,6 +9,7 @@ import { SwipeBackNavigation } from "@/components/swipe-back-navigation";
 import { OnboardingTutorial } from "@/components/onboarding-tutorial";
 import { MobileNavBar } from "@/components/mobile-nav-bar";
 import { InstallPWAPrompt } from "@/components/install-pwa-prompt";
+import { NavVisibilityProvider } from "@/hooks/use-nav-visibility";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
@@ -90,15 +91,17 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <ScrollToTop />
-        <Toaster />
-        <SurveyManager />
-        <OnboardingTutorial />
-        <SwipeBackNavigation>
-          <Router />
-        </SwipeBackNavigation>
-        <MobileNavBar />
-        <InstallPWAPrompt />
+        <NavVisibilityProvider>
+          <ScrollToTop />
+          <Toaster />
+          <SurveyManager />
+          <OnboardingTutorial />
+          <SwipeBackNavigation>
+            <Router />
+          </SwipeBackNavigation>
+          <MobileNavBar />
+          <InstallPWAPrompt />
+        </NavVisibilityProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useNavVisibility } from "@/hooks/use-nav-visibility";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { FavoriteButton } from "@/components/favorite-button";
 import { 
@@ -74,6 +75,7 @@ export default function SwipePage() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { showNav, hideNav } = useNavVisibility();
   const containerRef = useRef<HTMLDivElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -134,6 +136,12 @@ export default function SwipePage() {
   useEffect(() => {
     setCurrentImageIndex(0);
   }, [currentIndex]);
+
+  useEffect(() => {
+    return () => {
+      showNav();
+    };
+  }, [showNav]);
 
   const currentListing = listings[currentIndex];
   const nextListing = listings[currentIndex + 1];
@@ -288,7 +296,10 @@ export default function SwipePage() {
         setSlideDirection(null);
       }, 300);
     }
-  }, [currentIndex]);
+    if (currentIndex <= 1) {
+      showNav();
+    }
+  }, [currentIndex, showNav]);
 
   const nextImage = useCallback(() => {
     if (currentListing?.images && currentListing.images.length > 1) {
@@ -337,8 +348,13 @@ export default function SwipePage() {
       }
     } else {
       if (Math.abs(diffY) > 50) {
-        if (diffY > 0) goToNext();
-        else goToPrev();
+        if (diffY > 0) {
+          goToNext();
+          hideNav();
+        } else {
+          goToPrev();
+          showNav();
+        }
       }
     }
   };

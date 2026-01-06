@@ -2,10 +2,12 @@ import { Link, useLocation } from "wouter";
 import { Home, Heart, User, Layers } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { NotificationsButton } from "@/components/notifications";
+import { useNavVisibility } from "@/hooks/use-nav-visibility";
 
 export function MobileNavBar() {
   const [location] = useLocation();
   const { isAuthenticated } = useAuth();
+  const { isNavVisible } = useNavVisibility();
 
   const navItems = [
     { href: "/", icon: Home, label: "الرئيسية", testId: "nav-home" },
@@ -22,7 +24,9 @@ export function MobileNavBar() {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] md:hidden"
+      className={`fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] md:hidden transition-transform duration-300 ease-out ${
+        isNavVisible ? 'translate-y-0' : 'translate-y-full'
+      }`}
       dir="rtl"
       style={{ 
         zIndex: 99999,
