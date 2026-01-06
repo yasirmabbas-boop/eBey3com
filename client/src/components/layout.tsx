@@ -64,11 +64,11 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
         <div className="container mx-auto flex justify-between items-center">
           {/* Navigation Links - Desktop only */}
           <div className="hidden md:flex items-center gap-5">
-            <Link href="/" className="hover:opacity-80 transition-colors font-medium">الرئيسية</Link>
-            <Link href="/search?saleType=auction" className="hover:opacity-80 transition-colors font-medium">المزادات</Link>
-            <Link href="/search?saleType=fixed" className="hover:opacity-80 transition-colors font-medium">شراء الآن</Link>
+            <Link href="/" className="hover:opacity-80 transition-colors font-medium">{t("home")}</Link>
+            <Link href="/search?saleType=auction" className="hover:opacity-80 transition-colors font-medium">{t("auctions")}</Link>
+            <Link href="/search?saleType=fixed" className="hover:opacity-80 transition-colors font-medium">{t("buyNow")}</Link>
             {ENABLE_EXCHANGE_FEATURE && <Link href="/search?exchange=true" className="hover:opacity-80 transition-colors font-medium">مراوس</Link>}
-            <Link href="/search" className="hover:opacity-80 transition-colors font-medium">عرض الكل</Link>
+            <Link href="/search" className="hover:opacity-80 transition-colors font-medium">{t("viewAll")}</Link>
           </div>
           
           {/* User Actions */}
@@ -79,11 +79,11 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                   {(user as any)?.sellerApproved ? <Store className="h-4 w-4" /> : <User className="h-4 w-4" />}
                   {user?.displayName || (user as any)?.phone}
                 </span>
-                <Link href="/my-account" className="hidden sm:inline hover:opacity-80 font-medium">حسابي</Link>
+                <Link href="/my-account" className="hidden sm:inline hover:opacity-80 font-medium">{t("myAccount")}</Link>
                 {(user as any)?.sellerApproved ? (
-                  <Link href="/seller-dashboard" className="hidden sm:inline hover:opacity-80 font-medium">دكاني</Link>
+                  <Link href="/seller-dashboard" className="hidden sm:inline hover:opacity-80 font-medium">{t("myShop")}</Link>
                 ) : (
-                  <Link href="/my-purchases" className="hidden sm:inline hover:opacity-80 font-medium">مشترياتي</Link>
+                  <Link href="/my-purchases" className="hidden sm:inline hover:opacity-80 font-medium">{t("myPurchases")}</Link>
                 )}
                 <button 
                   onClick={() => logout()}
@@ -91,7 +91,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                   data-testid="button-logout"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline">خروج</span>
+                  <span className="hidden sm:inline">{t("logout")}</span>
                 </button>
                 {(user as any)?.sellerApproved && (
                   <Link 
@@ -100,7 +100,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                     data-testid="button-sell-item"
                   >
                     <Plus className="h-4 w-4" />
-                    أضف منتج
+                    {t("addProduct")}
                   </Link>
                 )}
               </>
@@ -108,7 +108,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
               !isLoading && (
                 <Link href="/signin" className="hover:opacity-80 transition-colors flex items-center gap-1.5 text-base font-medium" data-testid="button-login">
                   <User className="h-4 w-4" />
-                  تسجيل الدخول
+                  {t("login")}
                 </Link>
               )
             )}
@@ -159,24 +159,24 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
               </SheetTrigger>
               <SheetContent side="right">
                 <nav className="flex flex-col gap-4 mt-8">
-                  <Link href="/" className="text-lg font-semibold">الرئيسية</Link>
-                  <Link href="/search" className="text-lg">البحث</Link>
+                  <Link href="/" className="text-lg font-semibold">{t("home")}</Link>
+                  <Link href="/search" className="text-lg">{t("search")}</Link>
                   {isAuthenticated && (
                     <>
-                      <Link href="/my-account" className="text-lg text-primary font-semibold">حسابي</Link>
+                      <Link href="/my-account" className="text-lg text-primary font-semibold">{t("myAccount")}</Link>
                       {(user as any)?.sellerApproved && (
                         <>
-                          <Link href="/seller-dashboard" className="text-lg">لوحة البائع</Link>
-                          <Link href="/sell" className="text-lg">إضافة منتج</Link>
+                          <Link href="/seller-dashboard" className="text-lg">{t("sellerDashboard")}</Link>
+                          <Link href="/sell" className="text-lg">{t("addProduct")}</Link>
                         </>
                       )}
-                      <Link href="/my-purchases" className="text-lg">مشترياتي</Link>
-                      <Link href="/messages" className="text-lg">الرسائل</Link>
-                      <Link href="/settings" className="text-lg">الإعدادات</Link>
+                      <Link href="/my-purchases" className="text-lg">{t("myPurchases")}</Link>
+                      <Link href="/messages" className="text-lg">{language === "ar" ? "الرسائل" : "پەیامەکان"}</Link>
+                      <Link href="/settings" className="text-lg">{t("settings")}</Link>
                     </>
                   )}
                   {!isAuthenticated && (
-                    <Link href="/signin" className="text-lg text-primary font-semibold">تسجيل الدخول</Link>
+                    <Link href="/signin" className="text-lg text-primary font-semibold">{t("login")}</Link>
                   )}
                 </nav>
               </SheetContent>
