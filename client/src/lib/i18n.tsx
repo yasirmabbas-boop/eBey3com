@@ -90,6 +90,9 @@ export const translations: Translations = {
   register: { ar: "تسجيل", ku: "تۆمارکردن" },
   forgotPassword: { ar: "نسيت كلمة المرور؟", ku: "وشەی نهێنیت لەبیر چوو؟" },
   
+  // Favorites
+  favorites: { ar: "المفضلة", ku: "دڵخوازەکان" },
+  
   // Cart
   cart: { ar: "سلة التسوق", ku: "سەبەتەی کڕین" },
   emptyCart: { ar: "السلة فارغة", ku: "سەبەتە بەتاڵە" },

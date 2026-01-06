@@ -65,6 +65,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [, navigate] = useLocation();
   const { user } = useAuth();
+  const { language, t } = useLanguage();
   const currentAd = ADS[currentAdIndex];
 
   useEffect(() => {
@@ -158,32 +159,32 @@ export default function Home() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-3xl md:text-5xl font-bold mb-4" style={{ fontFamily: "Cairo, sans-serif" }}>
-              بيع واشتري بأمان
+              {language === "ar" ? "بيع واشتري بأمان" : "بە پارێزراوی بکڕە و بفرۆشە"}
             </h1>
             <p className="text-lg md:text-2xl mb-6 text-blue-100 uppercase tracking-wide">
               Buy and Sell With Trust
             </p>
             <p className="text-sm md:text-base text-blue-200 mb-8">
-              منصتك الأولى للمزادات والتسوق الآمن في العراق
+              {language === "ar" ? "منصتك الأولى للمزادات والتسوق الآمن في العراق" : "یەکەم پلاتفۆرمی مزایدە و کڕین بە پارێزراوی لە عێراق"}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="/search">
                 <Button size="lg" className="bg-white text-blue-700 hover:bg-blue-50 font-bold px-8">
                   <Search className="h-5 w-5 ml-2" />
-                  تصفح المنتجات
+                  {language === "ar" ? "تصفح المنتجات" : "بەرهەمەکان ببینە"}
                 </Button>
               </Link>
               <Link href="/sell">
                 <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 font-bold px-8">
                   <Tag className="h-5 w-5 ml-2" />
-                  ابدأ البيع
+                  {language === "ar" ? "ابدأ البيع" : "دەست بە فرۆشتن بکە"}
                 </Button>
               </Link>
               {user && (
                 <Link href="/favorites">
                   <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 font-bold px-8">
                     <Heart className="h-5 w-5 ml-2" />
-                    المفضلة
+                    {t("favorites") || (language === "ar" ? "المفضلة" : "دڵخوازەکان")}
                   </Button>
                 </Link>
               )}
@@ -199,9 +200,9 @@ export default function Home() {
             <div className="flex justify-between items-center mb-3 sm:mb-6">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
-                <h2 className="text-base sm:text-xl font-bold text-primary">منتجات مقترحة</h2>
+                <h2 className="text-base sm:text-xl font-bold text-primary">{language === "ar" ? "منتجات مقترحة" : "بەرهەمە پێشنیارکراوەکان"}</h2>
               </div>
-              <Link href="/search" className="text-accent hover:underline font-medium text-xs sm:text-sm">عرض المزيد</Link>
+              <Link href="/search" className="text-accent hover:underline font-medium text-xs sm:text-sm">{language === "ar" ? "عرض المزيد" : "زیاتر ببینە"}</Link>
             </div>
             <div className="grid grid-cols-3 gap-2 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {recommendedProducts.map((product) => (
@@ -251,7 +252,7 @@ export default function Home() {
         <div className="container mx-auto px-3 sm:px-4">
           <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-            <h2 className="text-base sm:text-lg font-bold text-primary">تصفح الأقسام</h2>
+            <h2 className="text-base sm:text-lg font-bold text-primary">{language === "ar" ? "تصفح الأقسام" : "بەشەکان ببینە"}</h2>
           </div>
           <div className="grid grid-cols-4 gap-2 sm:gap-3 md:grid-cols-8">
             {CATEGORIES.map((cat, i) => (
@@ -286,8 +287,8 @@ export default function Home() {
       <section className="py-6 sm:py-12 bg-gray-50">
         <div className="container mx-auto px-3 sm:px-4">
           <div className="flex justify-between items-center mb-4 sm:mb-8">
-            <h2 className="text-lg sm:text-2xl font-bold text-primary">وصل حديثاً</h2>
-            <Link href="/search" className="text-accent hover:underline font-medium text-sm">عرض الكل</Link>
+            <h2 className="text-lg sm:text-2xl font-bold text-primary">{language === "ar" ? "وصل حديثاً" : "تازە گەیشتوو"}</h2>
+            <Link href="/search" className="text-accent hover:underline font-medium text-sm">{t("viewAll")}</Link>
           </div>
           
           {isLoading ? (
