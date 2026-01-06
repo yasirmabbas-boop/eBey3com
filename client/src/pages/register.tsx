@@ -11,21 +11,19 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, X, Eye, EyeOff, Lock, UserPlus, Phone } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/lib/i18n";
 
-const passwordRequirements = [
-  { id: "length", label: "٦ أحرف على الأقل", test: (p: string) => p.length >= 6 },
-];
-
-function PasswordStrengthIndicator({ password }: { password: string }) {
+function PasswordStrengthIndicator({ password, language }: { password: string; language: "ar" | "ku" }) {
   const isValid = password.length >= 6;
 
   const getStrengthLabel = () => {
     if (!password) return { text: "", color: "bg-gray-200" };
-    if (!isValid) return { text: "قصيرة جداً", color: "bg-red-500" };
-    return { text: "مقبولة", color: "bg-green-500" };
+    if (!isValid) return { text: language === "ar" ? "قصيرة جداً" : "زۆر کورتە", color: "bg-red-500" };
+    return { text: language === "ar" ? "مقبولة" : "قبوڵە", color: "bg-green-500" };
   };
 
   const { text, color } = getStrengthLabel();
+  const passwordRequirementLabel = language === "ar" ? "٦ أحرف على الأقل" : "لانیکەم ٦ پیت";
 
   return (
     <div className="space-y-2 mt-2">
@@ -34,23 +32,21 @@ function PasswordStrengthIndicator({ password }: { password: string }) {
       </div>
       {password && (
         <div className="flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">كلمة المرور:</span>
+          <span className="text-xs text-muted-foreground">{language === "ar" ? "كلمة المرور:" : "وشەی نهێنی:"}</span>
           <span className={`text-xs font-medium ${isValid ? "text-green-600" : "text-red-600"}`}>{text}</span>
         </div>
       )}
       <div className="space-y-1 mt-2">
-        {passwordRequirements.map((req) => (
-          <div key={req.id} className="flex items-center gap-2 text-xs">
-            {req.test(password) ? (
-              <Check className="h-3.5 w-3.5 text-green-600" />
-            ) : (
-              <X className="h-3.5 w-3.5 text-gray-400" />
-            )}
-            <span className={req.test(password) ? "text-green-700" : "text-gray-500"}>
-              {req.label}
-            </span>
-          </div>
-        ))}
+        <div className="flex items-center gap-2 text-xs">
+          {password.length >= 6 ? (
+            <Check className="h-3.5 w-3.5 text-green-600" />
+          ) : (
+            <X className="h-3.5 w-3.5 text-gray-400" />
+          )}
+          <span className={password.length >= 6 ? "text-green-700" : "text-gray-500"}>
+            {passwordRequirementLabel}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -63,7 +59,7 @@ const IRAQI_DISTRICTS = [
   "ذي قار", "المثنى", "القادسية", "بابل",
 ];
 
-const AGE_BRACKETS = [
+const AGE_BRACKETS_AR = [
   { value: "18-24", label: "18-24 سنة" },
   { value: "25-34", label: "25-34 سنة" },
   { value: "35-44", label: "35-44 سنة" },
@@ -71,7 +67,15 @@ const AGE_BRACKETS = [
   { value: "55+", label: "55 سنة فأكثر" },
 ];
 
-const INTEREST_OPTIONS = [
+const AGE_BRACKETS_KU = [
+  { value: "18-24", label: "18-24 ساڵ" },
+  { value: "25-34", label: "25-34 ساڵ" },
+  { value: "35-44", label: "35-44 ساڵ" },
+  { value: "45-54", label: "45-54 ساڵ" },
+  { value: "55+", label: "55 ساڵ یان زیاتر" },
+];
+
+const INTEREST_OPTIONS_AR = [
   { value: "electronics", label: "إلكترونيات" },
   { value: "phones", label: "هواتف ذكية" },
   { value: "cars", label: "سيارات" },
@@ -84,15 +88,32 @@ const INTEREST_OPTIONS = [
   { value: "home", label: "منزل وحديقة" },
 ];
 
+const INTEREST_OPTIONS_KU = [
+  { value: "electronics", label: "ئەلیکترۆنیات" },
+  { value: "phones", label: "مۆبایلی زیرەک" },
+  { value: "cars", label: "ئۆتۆمبێلەکان" },
+  { value: "clothing", label: "جلوبەرگ" },
+  { value: "furniture", label: "کەلوپەل" },
+  { value: "antiques", label: "شتە کۆنەکان" },
+  { value: "sports", label: "وەرزش" },
+  { value: "books", label: "کتێبەکان" },
+  { value: "jewelry", label: "خشڵ" },
+  { value: "home", label: "ماڵ و باخچە" },
+];
+
 export default function Register() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading } = useAuth();
+  const { language, t } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const redirectUrl = urlParams.get("redirect");
   
   const [isLoading, setIsLoading] = useState(false);
+
+  const AGE_BRACKETS = language === "ar" ? AGE_BRACKETS_AR : AGE_BRACKETS_KU;
+  const INTEREST_OPTIONS = language === "ar" ? INTEREST_OPTIONS_AR : INTEREST_OPTIONS_KU;
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -123,34 +144,31 @@ export default function Register() {
     const newErrors: Record<string, string> = {};
     
     if (!formData.phone.trim()) {
-      newErrors.phone = "رقم الهاتف مطلوب";
+      newErrors.phone = language === "ar" ? "رقم الهاتف مطلوب" : "ژمارەی مۆبایل پێویستە";
     } else if (!validatePhone(formData.phone)) {
-      newErrors.phone = "رقم هاتف عراقي غير صالح (مثال: 07xxxxxxxxx)";
+      newErrors.phone = language === "ar" ? "رقم هاتف عراقي غير صالح (مثال: 07xxxxxxxxx)" : "ژمارەی مۆبایلی عێراقی دروست نییە (نموونە: 07xxxxxxxxx)";
     }
     
     if (!formData.displayName.trim()) {
-      newErrors.displayName = "الاسم الكامل مطلوب";
+      newErrors.displayName = language === "ar" ? "الاسم الكامل مطلوب" : "ناوی تەواو پێویستە";
     }
     
     if (!formData.password) {
-      newErrors.password = "كلمة المرور مطلوبة";
-    } else {
-      const passedReqs = passwordRequirements.filter(r => r.test(formData.password)).length;
-      if (passedReqs < passwordRequirements.length) {
-        newErrors.password = "كلمة المرور لا تستوفي جميع المتطلبات";
-      }
+      newErrors.password = language === "ar" ? "كلمة المرور مطلوبة" : "وشەی نهێنی پێویستە";
+    } else if (formData.password.length < 6) {
+      newErrors.password = language === "ar" ? "كلمة المرور لا تستوفي جميع المتطلبات" : "وشەی نهێنی هەموو مەرجەکان پڕناکاتەوە";
     }
 
     if (!formData.ageBracket) {
-      newErrors.ageBracket = "الفئة العمرية مطلوبة";
+      newErrors.ageBracket = language === "ar" ? "الفئة العمرية مطلوبة" : "گروپی تەمەن پێویستە";
     }
 
     if (!formData.district) {
-      newErrors.district = "المحافظة مطلوبة";
+      newErrors.district = language === "ar" ? "المحافظة مطلوبة" : "پارێزگا پێویستە";
     }
     
     if (!agreeTerms) {
-      newErrors.terms = "يجب الموافقة على الشروط والأحكام";
+      newErrors.terms = language === "ar" ? "يجب الموافقة على الشروط والأحكام" : "پێویستە ڕازی بیت بە مەرج و ڕێساکان";
     }
     
     setErrors(newErrors);
@@ -162,8 +180,8 @@ export default function Register() {
     
     if (!validateForm()) {
       toast({
-        title: "خطأ في البيانات",
-        description: "يرجى تصحيح الأخطاء المشار إليها",
+        title: language === "ar" ? "خطأ في البيانات" : "هەڵە لە زانیاریەکان",
+        description: language === "ar" ? "يرجى تصحيح الأخطاء المشار إليها" : "تکایە هەڵەکان چارەسەر بکە",
         variant: "destructive",
       });
       return;
@@ -190,12 +208,14 @@ export default function Register() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "فشل في إنشاء الحساب");
+        throw new Error(data.error || (language === "ar" ? "فشل في إنشاء الحساب" : "دروستکردنی هەژمار سەرکەوتوو نەبوو"));
       }
 
       toast({
-        title: "تم إنشاء الحساب بنجاح!",
-        description: `مرحباً ${data.displayName}، يمكنك الآن استخدام المنصة`,
+        title: language === "ar" ? "تم إنشاء الحساب بنجاح!" : "هەژمار بە سەرکەوتوویی دروستکرا!",
+        description: language === "ar" 
+          ? `مرحباً ${data.displayName}، يمكنك الآن استخدام المنصة`
+          : `بەخێربێیت ${data.displayName}، ئێستا دەتوانیت پلاتفۆرمەکە بەکاربهێنیت`,
       });
 
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
@@ -208,7 +228,7 @@ export default function Register() {
       }
     } catch (error: any) {
       toast({
-        title: "خطأ في التسجيل",
+        title: language === "ar" ? "خطأ في التسجيل" : "هەڵە لە تۆمارکردن",
         description: error.message,
         variant: "destructive",
       });
@@ -225,15 +245,18 @@ export default function Register() {
             <div className="mx-auto mb-2 h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
               <UserPlus className="h-7 w-7 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold text-primary">إنشاء حساب جديد</CardTitle>
+            <CardTitle className="text-2xl font-bold text-primary">{t("createAccount")}</CardTitle>
             <CardDescription>
-              انضم إلى مجتمع اي بيع للبيع والشراء الآمن
+              {language === "ar" 
+                ? "انضم إلى مجتمع اي بيع للبيع والشراء الآمن"
+                : "بەشداربە لە کۆمەڵگەی ئی بیع بۆ کڕین و فرۆشتنی سەلامەت"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="phone">رقم الهاتف</Label>
+                <Label htmlFor="phone">{t("phone")}</Label>
                 <div className="relative">
                   <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -247,16 +270,18 @@ export default function Register() {
                     data-testid="input-phone"
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">سيتم استخدام رقم الهاتف لتسجيل الدخول</p>
+                <p className="text-xs text-muted-foreground">
+                  {language === "ar" ? "سيتم استخدام رقم الهاتف لتسجيل الدخول" : "ژمارەی مۆبایل بەکاردەهێنرێت بۆ چوونە ژوورەوە"}
+                </p>
                 {errors.phone && <p className="text-red-500 text-xs">{errors.phone}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="displayName">الاسم الكامل</Label>
+                <Label htmlFor="displayName">{t("fullName")}</Label>
                 <Input
                   id="displayName"
                   type="text"
-                  placeholder="مثال: علي محمد"
+                  placeholder={language === "ar" ? "مثال: علي محمد" : "نموونە: هۆشیار عەلی"}
                   value={formData.displayName}
                   onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
                   data-testid="input-displayName"
@@ -265,13 +290,13 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">كلمة المرور</Label>
+                <Label htmlFor="password">{t("password")}</Label>
                 <div className="relative">
                   <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="أدخل كلمة مرور قوية"
+                    placeholder={language === "ar" ? "أدخل كلمة مرور قوية" : "وشەی نهێنیەکی بەهێز بنووسە"}
                     value={formData.password}
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                     className="pr-10 pl-10"
@@ -286,17 +311,17 @@ export default function Register() {
                   </button>
                 </div>
                 {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
-                <PasswordStrengthIndicator password={formData.password} />
+                <PasswordStrengthIndicator password={formData.password} language={language} />
               </div>
 
               <div className="space-y-2">
-                <Label>الفئة العمرية</Label>
+                <Label>{language === "ar" ? "الفئة العمرية" : "گروپی تەمەن"}</Label>
                 <Select
                   value={formData.ageBracket}
                   onValueChange={(v) => setFormData(prev => ({ ...prev, ageBracket: v }))}
                 >
                   <SelectTrigger data-testid="select-age-bracket">
-                    <SelectValue placeholder="اختر الفئة العمرية" />
+                    <SelectValue placeholder={language === "ar" ? "اختر الفئة العمرية" : "گروپی تەمەن هەڵبژێرە"} />
                   </SelectTrigger>
                   <SelectContent>
                     {AGE_BRACKETS.map((bracket) => (
@@ -308,30 +333,30 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label>الجنس</Label>
+                <Label>{language === "ar" ? "الجنس" : "ڕەگەز"}</Label>
                 <Select
                   value={formData.gender}
                   onValueChange={(v) => setFormData(prev => ({ ...prev, gender: v }))}
                 >
                   <SelectTrigger data-testid="select-gender">
-                    <SelectValue placeholder="اختر الجنس" />
+                    <SelectValue placeholder={language === "ar" ? "اختر الجنس" : "ڕەگەز هەڵبژێرە"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="male">ذكر</SelectItem>
-                    <SelectItem value="female">أنثى</SelectItem>
+                    <SelectItem value="male">{language === "ar" ? "ذكر" : "نێر"}</SelectItem>
+                    <SelectItem value="female">{language === "ar" ? "أنثى" : "مێ"}</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.gender && <p className="text-red-500 text-xs">{errors.gender}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label>المحافظة</Label>
+                <Label>{language === "ar" ? "المحافظة" : "پارێزگا"}</Label>
                 <Select
                   value={formData.district}
                   onValueChange={(v) => setFormData(prev => ({ ...prev, district: v }))}
                 >
                   <SelectTrigger data-testid="select-district">
-                    <SelectValue placeholder="اختر المحافظة" />
+                    <SelectValue placeholder={language === "ar" ? "اختر المحافظة" : "پارێزگا هەڵبژێرە"} />
                   </SelectTrigger>
                   <SelectContent>
                     {IRAQI_DISTRICTS.map((d) => (
@@ -343,7 +368,7 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label>الاهتمامات (اختياري)</Label>
+                <Label>{language === "ar" ? "الاهتمامات (اختياري)" : "ئارەزووەکان (ئیختیاری)"}</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {INTEREST_OPTIONS.map((interest) => (
                     <div key={interest.value} className="flex items-center gap-2">
@@ -375,10 +400,14 @@ export default function Register() {
                   data-testid="checkbox-terms"
                 />
                 <label htmlFor="terms" className="text-sm text-muted-foreground">
-                  أوافق على{" "}
-                  <Link href="/terms" className="text-primary hover:underline">الشروط والأحكام</Link>
-                  {" "}و{" "}
-                  <Link href="/privacy" className="text-primary hover:underline">سياسة الخصوصية</Link>
+                  {language === "ar" ? "أوافق على" : "ڕازیم بە"}{" "}
+                  <Link href="/terms" className="text-primary hover:underline">
+                    {language === "ar" ? "الشروط والأحكام" : "مەرج و ڕێساکان"}
+                  </Link>
+                  {" "}{language === "ar" ? "و" : "و"}{" "}
+                  <Link href="/privacy" className="text-primary hover:underline">
+                    {language === "ar" ? "سياسة الخصوصية" : "سیاسەتی تایبەتمەندی"}
+                  </Link>
                 </label>
               </div>
               {errors.terms && <p className="text-red-500 text-xs">{errors.terms}</p>}
@@ -392,18 +421,18 @@ export default function Register() {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                    جاري إنشاء الحساب...
+                    {language === "ar" ? "جاري إنشاء الحساب..." : "دروستکردنی هەژمار..."}
                   </>
                 ) : (
-                  "إنشاء حساب"
+                  t("signUp")
                 )}
               </Button>
             </form>
 
             <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">لديك حساب بالفعل؟ </span>
+              <span className="text-muted-foreground">{t("alreadyHaveAccount")} </span>
               <Link href="/signin" className="text-primary hover:underline font-medium">
-                تسجيل الدخول
+                {t("signIn")}
               </Link>
             </div>
 
@@ -412,7 +441,9 @@ export default function Register() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">أو</span>
+                <span className="bg-background px-2 text-muted-foreground">
+                  {language === "ar" ? "أو" : "یان"}
+                </span>
               </div>
             </div>
 
@@ -421,7 +452,9 @@ export default function Register() {
               className="flex items-center justify-center gap-2 w-full border rounded-lg py-2.5 hover:bg-gray-50 transition-colors"
             >
               <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4" />
-              <span className="text-sm font-medium">التسجيل عبر Google / Apple</span>
+              <span className="text-sm font-medium">
+                {language === "ar" ? "التسجيل عبر Google / Apple" : "تۆمارکردن لە ڕێگەی Google / Apple"}
+              </span>
             </a>
           </CardContent>
         </Card>

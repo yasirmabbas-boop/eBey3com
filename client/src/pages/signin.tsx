@@ -10,6 +10,7 @@ import { Phone, Lock, LogIn, Loader2, Shield } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { useLanguage } from "@/lib/i18n";
 
 type Step = "credentials" | "2fa";
 
@@ -18,6 +19,7 @@ export default function SignIn() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading } = useAuth();
+  const { language, t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<Step>("credentials");
   const [pendingToken, setPendingToken] = useState("");
@@ -39,8 +41,8 @@ export default function SignIn() {
     
     if (!formData.phone || !formData.password) {
       toast({
-        title: "خطأ",
-        description: "يرجى إدخال رقم الهاتف وكلمة المرور",
+        title: t("error"),
+        description: language === "ar" ? "يرجى إدخال رقم الهاتف وكلمة المرور" : "تکایە ژمارەی مۆبایل و وشەی نهێنی بنووسە",
         variant: "destructive",
       });
       return;
@@ -59,15 +61,15 @@ export default function SignIn() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "فشل تسجيل الدخول");
+        throw new Error(data.error || (language === "ar" ? "فشل تسجيل الدخول" : "چوونە ژوورەوە سەرکەوتوو نەبوو"));
       }
 
       if (data.requires2FA) {
         setPendingToken(data.pendingToken);
         setStep("2fa");
         toast({
-          title: "المصادقة الثنائية",
-          description: "يرجى إدخال رمز التحقق من تطبيق المصادقة",
+          title: language === "ar" ? "المصادقة الثنائية" : "دووچەشنە پشتڕاستکردنەوە",
+          description: language === "ar" ? "يرجى إدخال رمز التحقق من تطبيق المصادقة" : "تکایە کۆدی پشتڕاستکردنەوە لە ئەپی پشتڕاستکردنەوە بنووسە",
         });
         return;
       }
@@ -77,8 +79,8 @@ export default function SignIn() {
       }
       
       toast({
-        title: "تم تسجيل الدخول بنجاح",
-        description: `مرحباً ${data.displayName}`,
+        title: language === "ar" ? "تم تسجيل الدخول بنجاح" : "بە سەرکەوتوویی چوویتە ژوورەوە",
+        description: `${t("welcome")} ${data.displayName}`,
       });
 
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
@@ -87,7 +89,7 @@ export default function SignIn() {
       navigate("/");
     } catch (error: any) {
       toast({
-        title: "خطأ في تسجيل الدخول",
+        title: language === "ar" ? "خطأ في تسجيل الدخول" : "هەڵە لە چوونە ژوورەوە",
         description: error.message,
         variant: "destructive",
       });
@@ -101,8 +103,8 @@ export default function SignIn() {
     
     if (twoFactorCode.length !== 6) {
       toast({
-        title: "خطأ",
-        description: "يرجى إدخال رمز التحقق المكون من 6 أرقام",
+        title: t("error"),
+        description: language === "ar" ? "يرجى إدخال رمز التحقق المكون من 6 أرقام" : "تکایە کۆدی پشتڕاستکردنەوەی ٦ ژمارە بنووسە",
         variant: "destructive",
       });
       return;
@@ -125,7 +127,7 @@ export default function SignIn() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "رمز التحقق غير صحيح");
+        throw new Error(data.error || (language === "ar" ? "رمز التحقق غير صحيح" : "کۆدی پشتڕاستکردنەوە هەڵەیە"));
       }
 
       if (data.authToken) {
@@ -133,8 +135,8 @@ export default function SignIn() {
       }
       
       toast({
-        title: "تم تسجيل الدخول بنجاح",
-        description: `مرحباً ${data.displayName}`,
+        title: language === "ar" ? "تم تسجيل الدخول بنجاح" : "بە سەرکەوتوویی چوویتە ژوورەوە",
+        description: `${t("welcome")} ${data.displayName}`,
       });
 
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
@@ -143,7 +145,7 @@ export default function SignIn() {
       navigate("/");
     } catch (error: any) {
       toast({
-        title: "خطأ في التحقق",
+        title: language === "ar" ? "خطأ في التحقق" : "هەڵە لە پشتڕاستکردنەوە",
         description: error.message,
         variant: "destructive",
       });
@@ -165,12 +167,12 @@ export default function SignIn() {
               )}
             </div>
             <CardTitle className="text-2xl">
-              {step === "credentials" ? "تسجيل الدخول" : "المصادقة الثنائية"}
+              {step === "credentials" ? t("signIn") : (language === "ar" ? "المصادقة الثنائية" : "دووچەشنە پشتڕاستکردنەوە")}
             </CardTitle>
             <CardDescription>
               {step === "credentials" 
-                ? "أدخل رقم هاتفك وكلمة المرور للمتابعة"
-                : "أدخل رمز التحقق من تطبيق المصادقة"
+                ? (language === "ar" ? "أدخل رقم هاتفك وكلمة المرور للمتابعة" : "ژمارەی مۆبایل و وشەی نهێنیت بنووسە بۆ بەردەوامبوون")
+                : (language === "ar" ? "أدخل رمز التحقق من تطبيق المصادقة" : "کۆدی پشتڕاستکردنەوە لە ئەپی پشتڕاستکردنەوە بنووسە")
               }
             </CardDescription>
           </CardHeader>
@@ -178,7 +180,7 @@ export default function SignIn() {
             {step === "credentials" ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="phone">رقم الهاتف</Label>
+                  <Label htmlFor="phone">{t("phone")}</Label>
                   <div className="relative">
                     <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -195,13 +197,13 @@ export default function SignIn() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">كلمة المرور</Label>
+                  <Label htmlFor="password">{t("password")}</Label>
                   <div className="relative">
                     <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="password"
                       type="password"
-                      placeholder="أدخل كلمة المرور"
+                      placeholder={t("enterPassword")}
                       value={formData.password}
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                       className="pr-10"
@@ -219,23 +221,23 @@ export default function SignIn() {
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                      جاري تسجيل الدخول...
+                      {language === "ar" ? "جاري تسجيل الدخول..." : "چوونە ژوورەوە..."}
                     </>
                   ) : (
-                    "تسجيل الدخول"
+                    t("signIn")
                   )}
                 </Button>
 
                 <div className="text-left">
                   <Link href="/forgot-password" className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
-                    نسيت كلمة المرور؟
+                    {t("forgotPassword")}
                   </Link>
                 </div>
               </form>
             ) : (
               <form onSubmit={handleVerify2FA} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>رمز التحقق</Label>
+                  <Label>{language === "ar" ? "رمز التحقق" : "کۆدی پشتڕاستکردنەوە"}</Label>
                   <div className="flex justify-center" dir="ltr">
                     <InputOTP
                       maxLength={6}
@@ -254,7 +256,10 @@ export default function SignIn() {
                     </InputOTP>
                   </div>
                   <p className="text-sm text-muted-foreground text-center mt-2">
-                    افتح تطبيق Google Authenticator وأدخل الرمز المعروض
+                    {language === "ar" 
+                      ? "افتح تطبيق Google Authenticator وأدخل الرمز المعروض"
+                      : "ئەپی Google Authenticator بکەوە و کۆدەکە بنووسە"
+                    }
                   </p>
                 </div>
 
@@ -267,10 +272,10 @@ export default function SignIn() {
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                      جاري التحقق...
+                      {language === "ar" ? "جاري التحقق..." : "پشتڕاستکردنەوە..."}
                     </>
                   ) : (
-                    "تحقق"
+                    t("confirm")
                   )}
                 </Button>
 
@@ -285,7 +290,7 @@ export default function SignIn() {
                   }}
                   data-testid="button-back-to-login"
                 >
-                  العودة لتسجيل الدخول
+                  {language === "ar" ? "العودة لتسجيل الدخول" : "گەڕانەوە بۆ چوونە ژوورەوە"}
                 </Button>
               </form>
             )}
@@ -293,9 +298,9 @@ export default function SignIn() {
             {step === "credentials" && (
               <>
                 <div className="mt-6 text-center text-sm">
-                  <span className="text-muted-foreground">ليس لديك حساب؟ </span>
+                  <span className="text-muted-foreground">{t("dontHaveAccount")} </span>
                   <Link href="/register" className="text-primary hover:underline font-medium">
-                    إنشاء حساب جديد
+                    {t("createAccount")}
                   </Link>
                 </div>
 
@@ -305,7 +310,7 @@ export default function SignIn() {
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-background px-2 text-muted-foreground">
-                      أو
+                      {language === "ar" ? "أو" : "یان"}
                     </span>
                   </div>
                 </div>
@@ -315,7 +320,9 @@ export default function SignIn() {
                   className="flex items-center justify-center gap-2 w-full border rounded-lg py-2.5 hover:bg-gray-50 transition-colors"
                 >
                   <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4" />
-                  <span className="text-sm font-medium">تسجيل الدخول عبر Google / Apple</span>
+                  <span className="text-sm font-medium">
+                    {language === "ar" ? "تسجيل الدخول عبر Google / Apple" : "چوونەژوورەوە لە ڕێگەی Google / Apple"}
+                  </span>
                 </a>
               </>
             )}

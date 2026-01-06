@@ -35,55 +35,56 @@ import {
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { CategoryCarousel } from "@/components/category-carousel";
 import { FavoriteButton } from "@/components/favorite-button";
+import { useLanguage } from "@/lib/i18n";
 import type { Listing } from "@shared/schema";
 
 const CATEGORIES = [
-  { id: "ساعات", name: "ساعات", icon: Watch },
-  { id: "إلكترونيات", name: "إلكترونيات", icon: Smartphone },
-  { id: "ملابس", name: "ملابس", icon: Shirt },
-  { id: "تحف وأثاث", name: "تحف وأثاث", icon: Armchair },
-  { id: "سيارات", name: "سيارات", icon: Car },
-  { id: "عقارات", name: "عقارات", icon: Home },
-  { id: "أخرى", name: "أخرى", icon: Package },
+  { id: "ساعات", nameAr: "ساعات", nameKu: "کاتژمێر", icon: Watch },
+  { id: "إلكترونيات", nameAr: "إلكترونيات", nameKu: "ئەلیکترۆنیات", icon: Smartphone },
+  { id: "ملابس", nameAr: "ملابس", nameKu: "جلوبەرگ", icon: Shirt },
+  { id: "تحف وأثاث", nameAr: "تحف وأثاث", nameKu: "کەلوپەل", icon: Armchair },
+  { id: "سيارات", nameAr: "سيارات", nameKu: "ئۆتۆمبێل", icon: Car },
+  { id: "عقارات", nameAr: "عقارات", nameKu: "خانوبەرە", icon: Home },
+  { id: "أخرى", nameAr: "أخرى", nameKu: "تر", icon: Package },
 ];
 
 const CONDITIONS = [
-  { id: "New", label: "جديد", aliases: ["New", "جديد"] },
-  { id: "Vintage", label: "فينتاج / أنتيك", aliases: ["Vintage", "فينتاج", "أنتيك"] },
-  { id: "Used - Like New", label: "شبه جديد", aliases: ["Used - Like New", "شبه جديد"] },
-  { id: "Used - Good", label: "مستعمل - جيد", aliases: ["Used - Good", "جيد", "مستعمل"] },
-  { id: "Used - Fair", label: "مستعمل - مقبول", aliases: ["Used - Fair", "مقبول"] },
+  { id: "New", labelAr: "جديد", labelKu: "نوێ", aliases: ["New", "جديد"] },
+  { id: "Vintage", labelAr: "فينتاج / أنتيك", labelKu: "ڤینتەیج / کۆن", aliases: ["Vintage", "فينتاج", "أنتيك"] },
+  { id: "Used - Like New", labelAr: "شبه جديد", labelKu: "وەک نوێ", aliases: ["Used - Like New", "شبه جديد"] },
+  { id: "Used - Good", labelAr: "مستعمل - جيد", labelKu: "بەکارهاتوو - باش", aliases: ["Used - Good", "جيد", "مستعمل"] },
+  { id: "Used - Fair", labelAr: "مستعمل - مقبول", labelKu: "بەکارهاتوو - قبوڵ", aliases: ["Used - Fair", "مقبول"] },
 ];
 
 const CITIES = [
-  "بغداد",
-  "البصرة", 
-  "أربيل", 
-  "السليمانية", 
-  "الموصل",
-  "النجف", 
-  "كربلاء", 
-  "كركوك", 
-  "دهوك",
-  "الأنبار",
-  "بابل",
-  "ديالى",
-  "ذي قار",
-  "القادسية",
-  "المثنى",
-  "ميسان",
-  "صلاح الدين",
-  "واسط",
-  "نينوى",
+  { id: "بغداد", nameAr: "بغداد", nameKu: "بەغدا" },
+  { id: "البصرة", nameAr: "البصرة", nameKu: "بەسرە" },
+  { id: "أربيل", nameAr: "أربيل", nameKu: "هەولێر" },
+  { id: "السليمانية", nameAr: "السليمانية", nameKu: "سلێمانی" },
+  { id: "الموصل", nameAr: "الموصل", nameKu: "مووسڵ" },
+  { id: "النجف", nameAr: "النجف", nameKu: "نەجەف" },
+  { id: "كربلاء", nameAr: "كربلاء", nameKu: "کەربەلا" },
+  { id: "كركوك", nameAr: "كركوك", nameKu: "کەرکوک" },
+  { id: "دهوك", nameAr: "دهوك", nameKu: "دهۆک" },
+  { id: "الأنبار", nameAr: "الأنبار", nameKu: "ئەنبار" },
+  { id: "بابل", nameAr: "بابل", nameKu: "بابل" },
+  { id: "ديالى", nameAr: "ديالى", nameKu: "دیالە" },
+  { id: "ذي قار", nameAr: "ذي قار", nameKu: "زیقار" },
+  { id: "القادسية", nameAr: "القادسية", nameKu: "قادسیە" },
+  { id: "المثنى", nameAr: "المثنى", nameKu: "موسەننا" },
+  { id: "ميسان", nameAr: "ميسان", nameKu: "مەیسان" },
+  { id: "صلاح الدين", nameAr: "صلاح الدين", nameKu: "سەلاحەددین" },
+  { id: "واسط", nameAr: "واسط", nameKu: "واسط" },
+  { id: "نينوى", nameAr: "نينوى", nameKu: "نەینەوا" },
 ];
 
 const SORT_OPTIONS = [
-  { value: "relevance", label: "الأكثر صلة" },
-  { value: "newest", label: "الأحدث" },
-  { value: "price_low", label: "السعر: من الأقل للأعلى" },
-  { value: "price_high", label: "السعر: من الأعلى للأقل" },
-  { value: "ending_soon", label: "ينتهي قريباً" },
-  { value: "most_bids", label: "الأكثر مزايدة" },
+  { value: "relevance", labelAr: "الأكثر صلة", labelKu: "پەیوەندیدارترین" },
+  { value: "newest", labelAr: "الأحدث", labelKu: "نوێترین" },
+  { value: "price_low", labelAr: "السعر: من الأقل للأعلى", labelKu: "نرخ: لە کەمەوە بۆ زۆر" },
+  { value: "price_high", labelAr: "السعر: من الأعلى للأقل", labelKu: "نرخ: لە زۆرەوە بۆ کەم" },
+  { value: "ending_soon", labelAr: "ينتهي قريباً", labelKu: "بە زووی تەواو دەبێت" },
+  { value: "most_bids", labelAr: "الأكثر مزايدة", labelKu: "زۆرترین مزایدە" },
 ];
 
 function calculateRelevanceScore(product: Listing, query: string): number {
@@ -120,6 +121,7 @@ interface FilterState {
 }
 
 export default function SearchPage() {
+  const { language, t } = useLanguage();
   const [location] = useLocation();
   const searchString = useSearch();
   
@@ -354,9 +356,12 @@ export default function SearchPage() {
   ].reduce((a, b) => a + b, 0);
 
   const getPageTitle = () => {
-    if (searchQuery) return `نتائج البحث: "${searchQuery}"`;
-    if (appliedFilters.category) return appliedFilters.category;
-    return "جميع المنتجات";
+    if (searchQuery) return `${t("searchResults")}: "${searchQuery}"`;
+    if (appliedFilters.category) {
+      const cat = CATEGORIES.find(c => c.id === appliedFilters.category);
+      return cat ? (language === "ar" ? cat.nameAr : cat.nameKu) : appliedFilters.category;
+    }
+    return t("allProducts");
   };
 
   const quickToggleSaleType = (saleType: string) => {
@@ -383,18 +388,18 @@ export default function SearchPage() {
           <div className="bg-gradient-to-l from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-6 shadow-md">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
-                {sellerInfo.displayName?.charAt(0) || sellerInfo.username?.charAt(0) || "م"}
+                {sellerInfo.displayName?.charAt(0) || sellerInfo.username?.charAt(0) || (language === "ar" ? "م" : "د")}
               </div>
               <div className="flex-1">
-                <h2 className="text-xl font-bold">متجر {sellerInfo.displayName || sellerInfo.username}</h2>
+                <h2 className="text-xl font-bold">{t("store")} {sellerInfo.displayName || sellerInfo.username}</h2>
                 <div className="flex items-center gap-4 mt-1 text-blue-100 text-sm">
                   {sellerInfo.totalSales > 0 && (
-                    <span>{sellerInfo.totalSales} عملية بيع</span>
+                    <span>{sellerInfo.totalSales} {t("salesCount")}</span>
                   )}
                   {sellerInfo.ratingCount > 0 && (
-                    <span>{Math.round((sellerInfo.rating || 0) * 20)}% تقييم إيجابي</span>
+                    <span>{Math.round((sellerInfo.rating || 0) * 20)}% {t("positiveRating")}</span>
                   )}
-                  <span>{filteredProducts.length} منتج</span>
+                  <span>{filteredProducts.length} {t("product")}</span>
                 </div>
               </div>
             </div>
@@ -403,7 +408,7 @@ export default function SearchPage() {
 
         {/* Quick Filters Bar */}
         <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b">
-          <span className="text-sm font-medium text-muted-foreground ml-2">تصفية سريعة:</span>
+          <span className="text-sm font-medium text-muted-foreground ml-2">{t("quickFilter")}</span>
           <Button
             variant={appliedFilters.saleTypes.includes("auction") ? "default" : "outline"}
             size="sm"
@@ -412,7 +417,7 @@ export default function SearchPage() {
             data-testid="quick-filter-auction"
           >
             <Gavel className="h-3.5 w-3.5" />
-            مزادات
+            {t("auctions")}
           </Button>
           <Button
             variant={appliedFilters.saleTypes.includes("fixed") ? "default" : "outline"}
@@ -422,7 +427,7 @@ export default function SearchPage() {
             data-testid="quick-filter-fixed"
           >
             <ShoppingBag className="h-3.5 w-3.5" />
-            شراء فوري
+            {t("buyNow")}
           </Button>
           <div className="h-4 w-px bg-border mx-1" />
           {CATEGORIES.slice(0, 4).map((cat) => (
@@ -435,7 +440,7 @@ export default function SearchPage() {
               data-testid={`quick-filter-${cat.id}`}
             >
               <cat.icon className="h-3.5 w-3.5" />
-              {cat.name}
+              {language === "ar" ? cat.nameAr : cat.nameKu}
             </Button>
           ))}
         </div>
@@ -446,7 +451,7 @@ export default function SearchPage() {
               {getPageTitle()}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {filteredProducts.length} منتج متاح
+              {filteredProducts.length} {t("productAvailable")}
             </p>
           </div>
 
@@ -457,7 +462,7 @@ export default function SearchPage() {
                 size="icon"
                 className="shrink-0"
                 data-testid="button-swipe-view"
-                title="وضع التصفح"
+                title={t("browseMode")}
               >
                 <Smartphone className="h-4 w-4" />
               </Button>
@@ -466,12 +471,12 @@ export default function SearchPage() {
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-44 text-sm" data-testid="select-sort">
                 <ArrowUpDown className="h-3.5 w-3.5 ml-1" />
-                <SelectValue placeholder="ترتيب" />
+                <SelectValue placeholder={t("sortBy")} />
               </SelectTrigger>
               <SelectContent>
                 {SORT_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                    {language === "ar" ? option.labelAr : option.labelKu}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -486,7 +491,7 @@ export default function SearchPage() {
                   data-testid="open-filters"
                 >
                   <SlidersHorizontal className="h-4 w-4" />
-                  المزيد
+                  {t("moreFilters")}
                   {activeFiltersCount > 0 && (
                     <Badge className="bg-primary text-white text-xs px-1.5">{activeFiltersCount}</Badge>
                   )}
@@ -496,10 +501,10 @@ export default function SearchPage() {
                 <SheetHeader className="p-4 border-b bg-blue-50">
                   <SheetTitle className="flex items-center gap-2 text-xl">
                     <Filter className="h-5 w-5 text-blue-600" />
-                    الفلاتر
+                    {t("filters")}
                   </SheetTitle>
                   <p className="text-sm text-muted-foreground">
-                    {draftFilteredProducts.length} منتج متاح
+                    {draftFilteredProducts.length} {t("productAvailable")}
                   </p>
                 </SheetHeader>
 
@@ -513,14 +518,14 @@ export default function SearchPage() {
                         data-testid="clear-all-filters"
                       >
                         <X className="h-4 w-4 ml-2" />
-                        مسح جميع الفلاتر
+                        {t("clearAllFilters")}
                       </Button>
                     )}
 
                     <div className="bg-white p-4 rounded-lg border">
                       <h3 className="font-bold mb-4 flex items-center gap-2">
                         <Search className="h-4 w-4" />
-                        الفئات
+                        {t("categoriesLabel")}
                       </h3>
                       <div className="space-y-2">
                         <Button
@@ -529,7 +534,7 @@ export default function SearchPage() {
                           onClick={() => setDraftFilters(prev => ({ ...prev, category: null }))}
                           data-testid="filter-category-all"
                         >
-                          <span>جميع الفئات</span>
+                          <span>{t("allCategories")}</span>
                           <Badge variant="secondary" className="text-xs">{getCategoryCount(null)}</Badge>
                         </Button>
                         {CATEGORIES.map((cat) => (
@@ -542,7 +547,7 @@ export default function SearchPage() {
                           >
                             <span className="flex items-center gap-2">
                               <cat.icon className="h-4 w-4" />
-                              {cat.name}
+                              {language === "ar" ? cat.nameAr : cat.nameKu}
                             </span>
                             <Badge variant="secondary" className="text-xs">{getCategoryCount(cat.id)}</Badge>
                           </Button>
@@ -553,7 +558,7 @@ export default function SearchPage() {
                     <div className="bg-white p-4 rounded-lg border">
                       <h3 className="font-bold mb-4 flex items-center gap-2">
                         <Gavel className="h-4 w-4" />
-                        نوع البيع
+                        {t("saleTypeLabel")}
                       </h3>
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
@@ -566,7 +571,7 @@ export default function SearchPage() {
                             />
                             <Label htmlFor="auction" className="flex items-center gap-2 cursor-pointer">
                               <Gavel className="h-4 w-4 text-primary" />
-                              مزاد
+                              {t("auction")}
                             </Label>
                           </div>
                           <Badge variant="outline" className="text-xs">{getSaleTypeCount("auction")}</Badge>
@@ -581,7 +586,7 @@ export default function SearchPage() {
                             />
                             <Label htmlFor="fixed" className="flex items-center gap-2 cursor-pointer">
                               <ShoppingBag className="h-4 w-4 text-green-600" />
-                              سعر ثابت
+                              {t("fixedPrice")}
                             </Label>
                           </div>
                           <Badge variant="outline" className="text-xs">{getSaleTypeCount("fixed")}</Badge>
@@ -595,7 +600,7 @@ export default function SearchPage() {
                               data-testid="filter-include-sold"
                             />
                             <Label htmlFor="includeSold" className="flex items-center gap-2 cursor-pointer text-muted-foreground">
-                              عرض المباع
+                              {t("showSold")}
                             </Label>
                           </div>
                         </div>
@@ -605,7 +610,7 @@ export default function SearchPage() {
                     <div className="bg-white p-4 rounded-lg border">
                       <h3 className="font-bold mb-4 flex items-center gap-2">
                         <Filter className="h-4 w-4" />
-                        الحالة
+                        {t("conditionLabel")}
                       </h3>
                       <div className="space-y-3">
                         {CONDITIONS.map((condition) => (
@@ -617,7 +622,7 @@ export default function SearchPage() {
                                 onCheckedChange={() => toggleDraftCondition(condition.id)}
                                 data-testid={`filter-condition-${condition.id}`}
                               />
-                              <Label htmlFor={condition.id} className="cursor-pointer">{condition.label}</Label>
+                              <Label htmlFor={condition.id} className="cursor-pointer">{language === "ar" ? condition.labelAr : condition.labelKu}</Label>
                             </div>
                             <Badge variant="outline" className="text-xs">{getConditionCount(condition.id)}</Badge>
                           </div>
@@ -628,12 +633,12 @@ export default function SearchPage() {
                     <div className="bg-white p-4 rounded-lg border">
                       <h3 className="font-bold mb-4 flex items-center gap-2">
                         <SlidersHorizontal className="h-4 w-4" />
-                        نطاق السعر
+                        {t("priceRange")}
                       </h3>
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <Label className="text-xs text-muted-foreground">من</Label>
+                            <Label className="text-xs text-muted-foreground">{t("from")}</Label>
                             <Input
                               type="number"
                               placeholder="0"
@@ -644,7 +649,7 @@ export default function SearchPage() {
                             />
                           </div>
                           <div>
-                            <Label className="text-xs text-muted-foreground">إلى</Label>
+                            <Label className="text-xs text-muted-foreground">{t("to")}</Label>
                             <Input
                               type="number"
                               placeholder="∞"
@@ -655,28 +660,28 @@ export default function SearchPage() {
                             />
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground text-center">بالدينار العراقي</p>
+                        <p className="text-xs text-muted-foreground text-center">{t("inIraqiDinar")}</p>
                       </div>
                     </div>
 
                     <div className="bg-white p-4 rounded-lg border">
                       <h3 className="font-bold mb-4 flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        المدينة
+                        {t("cityLabel")}
                       </h3>
                       <div className="space-y-3 max-h-48 overflow-y-auto">
                         {CITIES.map((city) => (
-                          <div key={city} className="flex items-center justify-between">
+                          <div key={city.id} className="flex items-center justify-between">
                             <div className="flex items-center space-x-2 space-x-reverse">
                               <Checkbox 
-                                id={`city-${city}`}
-                                checked={draftFilters.cities.includes(city)}
-                                onCheckedChange={() => toggleDraftCity(city)}
-                                data-testid={`filter-city-${city}`}
+                                id={`city-${city.id}`}
+                                checked={draftFilters.cities.includes(city.id)}
+                                onCheckedChange={() => toggleDraftCity(city.id)}
+                                data-testid={`filter-city-${city.id}`}
                               />
-                              <Label htmlFor={`city-${city}`} className="cursor-pointer">{city}</Label>
+                              <Label htmlFor={`city-${city.id}`} className="cursor-pointer">{language === "ar" ? city.nameAr : city.nameKu}</Label>
                             </div>
-                            <Badge variant="outline" className="text-xs">{getCityCount(city)}</Badge>
+                            <Badge variant="outline" className="text-xs">{getCityCount(city.id)}</Badge>
                           </div>
                         ))}
                       </div>
@@ -691,7 +696,7 @@ export default function SearchPage() {
                     data-testid="apply-filters"
                   >
                     <Check className="h-5 w-5 ml-2" />
-                    تطبيق الفلاتر ({draftFilteredProducts.length} منتج)
+                    {t("applyFilters")} ({draftFilteredProducts.length} {t("product")})
                   </Button>
                 </SheetFooter>
               </SheetContent>
@@ -703,7 +708,10 @@ export default function SearchPage() {
           <div className="flex flex-wrap gap-2 mb-6">
             {appliedFilters.category && (
               <Badge variant="secondary" className="gap-1 px-3 py-1">
-                {appliedFilters.category}
+                {(() => {
+                  const cat = CATEGORIES.find(c => c.id === appliedFilters.category);
+                  return cat ? (language === "ar" ? cat.nameAr : cat.nameKu) : appliedFilters.category;
+                })()}
                 <button onClick={() => setAppliedFilters(prev => ({ ...prev, category: null }))}>
                   <X className="h-3 w-3" />
                 </button>
@@ -711,31 +719,37 @@ export default function SearchPage() {
             )}
             {appliedFilters.saleTypes.map(type => (
               <Badge key={type} variant="secondary" className="gap-1 px-3 py-1">
-                {type === "auction" ? "مزاد" : "سعر ثابت"}
+                {type === "auction" ? t("auction") : t("fixedPrice")}
                 <button onClick={() => setAppliedFilters(prev => ({ ...prev, saleTypes: prev.saleTypes.filter(t => t !== type) }))}>
                   <X className="h-3 w-3" />
                 </button>
               </Badge>
             ))}
-            {appliedFilters.conditions.map(cond => (
-              <Badge key={cond} variant="secondary" className="gap-1 px-3 py-1">
-                {CONDITIONS.find(c => c.id === cond)?.label || cond}
-                <button onClick={() => setAppliedFilters(prev => ({ ...prev, conditions: prev.conditions.filter(c => c !== cond) }))}>
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-            {appliedFilters.cities.map(city => (
-              <Badge key={city} variant="secondary" className="gap-1 px-3 py-1">
-                {city}
-                <button onClick={() => setAppliedFilters(prev => ({ ...prev, cities: prev.cities.filter(c => c !== city) }))}>
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
+            {appliedFilters.conditions.map(cond => {
+              const condition = CONDITIONS.find(c => c.id === cond);
+              return (
+                <Badge key={cond} variant="secondary" className="gap-1 px-3 py-1">
+                  {condition ? (language === "ar" ? condition.labelAr : condition.labelKu) : cond}
+                  <button onClick={() => setAppliedFilters(prev => ({ ...prev, conditions: prev.conditions.filter(c => c !== cond) }))}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              );
+            })}
+            {appliedFilters.cities.map(cityId => {
+              const city = CITIES.find(c => c.id === cityId);
+              return (
+                <Badge key={cityId} variant="secondary" className="gap-1 px-3 py-1">
+                  {city ? (language === "ar" ? city.nameAr : city.nameKu) : cityId}
+                  <button onClick={() => setAppliedFilters(prev => ({ ...prev, cities: prev.cities.filter(c => c !== cityId) }))}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              );
+            })}
             {(appliedFilters.priceMin || appliedFilters.priceMax) && (
               <Badge variant="secondary" className="gap-1 px-3 py-1">
-                السعر: {appliedFilters.priceMin || "0"} - {appliedFilters.priceMax || "∞"}
+                {t("priceLabel")} {appliedFilters.priceMin || "0"} - {appliedFilters.priceMax || "∞"}
                 <button onClick={() => setAppliedFilters(prev => ({ ...prev, priceMin: "", priceMax: "" }))}>
                   <X className="h-3 w-3" />
                 </button>
@@ -743,7 +757,7 @@ export default function SearchPage() {
             )}
             {appliedFilters.includeSold && (
               <Badge variant="secondary" className="gap-1 px-3 py-1 bg-gray-200">
-                عرض المباع
+                {t("showSold")}
                 <button onClick={() => setAppliedFilters(prev => ({ ...prev, includeSold: false }))}>
                   <X className="h-3 w-3" />
                 </button>
@@ -755,7 +769,7 @@ export default function SearchPage() {
               className="text-red-600"
               onClick={() => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false })}
             >
-              مسح الكل
+              {t("clearAll")}
             </Button>
           </div>
         )}
@@ -768,11 +782,11 @@ export default function SearchPage() {
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">لا توجد نتائج</h3>
-              <p className="text-muted-foreground mb-4">جرب تغيير الفلاتر أو البحث بكلمات أخرى</p>
+              <h3 className="text-xl font-bold mb-2">{t("noResults")}</h3>
+              <p className="text-muted-foreground mb-4">{t("tryChangingFilters")}</p>
               {activeFiltersCount > 0 && (
                 <Button variant="outline" onClick={() => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false })}>
-                  مسح الفلاتر
+                  {t("clearFilters")}
                 </Button>
               )}
             </div>
@@ -783,10 +797,10 @@ export default function SearchPage() {
                 const productsByCategory = CATEGORIES.reduce((acc, cat) => {
                   const catProducts = displayedProducts.filter(p => p.category === cat.id);
                   if (catProducts.length > 0) {
-                    acc[cat.id] = { name: cat.name, icon: cat.icon, products: catProducts };
+                    acc[cat.id] = { nameAr: cat.nameAr, nameKu: cat.nameKu, icon: cat.icon, products: catProducts };
                   }
                   return acc;
-                }, {} as Record<string, { name: string; icon: any; products: Listing[] }>);
+                }, {} as Record<string, { nameAr: string; nameKu: string; icon: any; products: Listing[] }>);
 
                 const categoriesWithProducts = Object.entries(productsByCategory);
 
@@ -794,19 +808,19 @@ export default function SearchPage() {
                   return (
                     <div className="text-center py-12 bg-gray-50 rounded-lg">
                       <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-xl font-bold mb-2">لا توجد نتائج</h3>
+                      <h3 className="text-xl font-bold mb-2">{t("noResults")}</h3>
                     </div>
                   );
                 }
 
-                return categoriesWithProducts.map(([catId, { name, icon: CatIcon, products }]) => (
+                return categoriesWithProducts.map(([catId, { nameAr, nameKu, icon: CatIcon, products }]) => (
                   <div key={catId} className="bg-gray-50 rounded-xl p-3 sm:p-4">
                     <div className="flex justify-between items-center mb-3 sm:mb-4">
                       <div className="flex items-center gap-2 sm:gap-3">
                         <div className="h-7 w-7 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center bg-primary/10">
                           <CatIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                         </div>
-                        <h3 className="text-sm sm:text-lg font-bold text-primary">{name}</h3>
+                        <h3 className="text-sm sm:text-lg font-bold text-primary">{language === "ar" ? nameAr : nameKu}</h3>
                         <Badge variant="secondary" className="text-xs">{products.length}</Badge>
                       </div>
                     </div>
@@ -825,16 +839,16 @@ export default function SearchPage() {
                               <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex flex-col gap-1">
                                 {!product.isActive && (
                                   <Badge className="bg-gray-700 text-white border-0 text-[9px] sm:text-xs shadow-md">
-                                    تم البيع
+                                    {t("sold")}
                                   </Badge>
                                 )}
                                 {product.saleType === "auction" ? (
                                   <Badge className="bg-purple-600 text-white border-0 text-[9px] sm:text-xs shadow-md">
-                                    مزاد
+                                    {t("auction")}
                                   </Badge>
                                 ) : (
                                   <Badge className="bg-green-600 text-white border-0 text-[9px] sm:text-xs shadow-md">
-                                    شراء فوري
+                                    {t("buyNow")}
                                   </Badge>
                                 )}
                               </div>
@@ -843,7 +857,7 @@ export default function SearchPage() {
                               </div>
                               {!product.isActive && (
                                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                                  <span className="text-white font-bold text-sm sm:text-lg bg-black/50 px-2 sm:px-4 py-1 sm:py-2 rounded-lg">تم البيع</span>
+                                  <span className="text-white font-bold text-sm sm:text-lg bg-black/50 px-2 sm:px-4 py-1 sm:py-2 rounded-lg">{t("sold")}</span>
                                 </div>
                               )}
                               {product.saleType === "auction" && product.auctionEndTime && (
@@ -895,7 +909,7 @@ export default function SearchPage() {
                 className="px-8"
                 data-testid="button-load-more"
               >
-                عرض المزيد ({filteredProducts.length - displayLimit} منتج آخر)
+                {t("showMore")} ({filteredProducts.length - displayLimit} {t("anotherProduct")})
               </Button>
             </div>
           )}

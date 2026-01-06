@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/lib/i18n";
 import type { Listing } from "@shared/schema";
 import { 
   Camera, 
@@ -62,6 +63,7 @@ export default function SellPage() {
   const [, setLocation] = useLocation();
   const searchString = useSearch();
   const { user, isLoading: authLoading } = useAuth();
+  const { language, t } = useLanguage();
   
   // Parse query parameters for edit, relist, and template modes
   const urlParams = new URLSearchParams(searchString);
@@ -177,7 +179,7 @@ export default function SellPage() {
         if (draft.hasBuyNow !== undefined) setHasBuyNow(draft.hasBuyNow);
         if (draft.hasReservePrice !== undefined) setHasReservePrice(draft.hasReservePrice);
         if (draft.tags) setTags(draft.tags);
-        toast({ title: "تم استرجاع المسودة", description: "تم تحميل البيانات المحفوظة مسبقاً" });
+        toast({ title: language === "ar" ? "تم استرجاع المسودة" : "ڕەشنووس گەڕایەوە", description: language === "ar" ? "تم تحميل البيانات المحفوظة مسبقاً" : "داتا پاشەکەوتکراوەکان بارکرا" });
       } catch (e) {
         console.error("Failed to load draft:", e);
       }
@@ -409,8 +411,8 @@ export default function SellPage() {
     
     if (filesToUpload.length === 0) {
       toast({
-        title: "الحد الأقصى للصور",
-        description: "يمكنك رفع 8 صور كحد أقصى",
+        title: language === "ar" ? "الحد الأقصى للصور" : "زۆرترین ژمارەی وێنە",
+        description: language === "ar" ? "يمكنك رفع 8 صور كحد أقصى" : "دەتوانیت ٨ وێنە زۆرترین بارکەیت",
         variant: "destructive",
       });
       return;
@@ -466,14 +468,14 @@ export default function SellPage() {
       }
       
       toast({
-        title: "تم رفع الصور بنجاح",
+        title: language === "ar" ? "تم رفع الصور بنجاح" : "وێنەکان بە سەرکەوتوویی بارکران",
         description: `تم رفع ${uploadedPaths.length} صورة`,
       });
     } catch (error) {
       console.error("Image upload error:", error);
       toast({
-        title: "خطأ في رفع الصور",
-        description: error instanceof Error ? error.message : "حدث خطأ أثناء رفع الصور",
+        title: language === "ar" ? "خطأ في رفع الصور" : "هەڵە لە بارکردنی وێنەکان",
+        description: error instanceof Error ? error.message : (language === "ar" ? "حدث خطأ أثناء رفع الصور" : "هەڵەیەک ڕوویدا لە کاتی بارکردنی وێنەکان"),
         variant: "destructive",
       });
     } finally {
@@ -541,8 +543,8 @@ export default function SellPage() {
     
     if (!validateForm()) {
       toast({
-        title: "يرجى إكمال جميع الحقول المطلوبة",
-        description: "تحقق من الحقول المميزة بالأحمر",
+        title: language === "ar" ? "يرجى إكمال جميع الحقول المطلوبة" : "تکایە هەموو خانە پێویستەکان تەواو بکە",
+        description: language === "ar" ? "تحقق من الحقول المميزة بالأحمر" : "خانە سوورەکان بپشکنە",
         variant: "destructive",
       });
       return;
@@ -625,8 +627,8 @@ export default function SellPage() {
         if (errorData.fieldErrors) {
           setValidationErrors(errorData.fieldErrors);
           toast({
-            title: "يرجى تصحيح الأخطاء",
-            description: "تحقق من الحقول المميزة بالأحمر",
+            title: language === "ar" ? "يرجى تصحيح الأخطاء" : "تکایە هەڵەکان چارەسەر بکە",
+            description: language === "ar" ? "تحقق من الحقول المميزة بالأحمر" : "خانە سوورەکان بپشکنە",
             variant: "destructive",
           });
           return;
@@ -682,15 +684,15 @@ export default function SellPage() {
   
   const handleRequestSellerAccess = async () => {
     if (!sellerFormData.shopName.trim()) {
-      toast({ title: "خطأ", description: "الرجاء إدخال اسم المتجر", variant: "destructive" });
+      toast({ title: t("error"), description: language === "ar" ? "الرجاء إدخال اسم المتجر" : "تکایە ناوی دوکان بنووسە", variant: "destructive" });
       return;
     }
     if (!sellerFormData.phone.trim()) {
-      toast({ title: "خطأ", description: "الرجاء إدخال رقم الهاتف", variant: "destructive" });
+      toast({ title: t("error"), description: language === "ar" ? "الرجاء إدخال رقم الهاتف" : "تکایە ژمارەی تەلەفۆن بنووسە", variant: "destructive" });
       return;
     }
     if (!sellerFormData.city) {
-      toast({ title: "خطأ", description: "الرجاء اختيار المحافظة", variant: "destructive" });
+      toast({ title: t("error"), description: language === "ar" ? "الرجاء اختيار المحافظة" : "تکایە پارێزگا هەڵبژێرە", variant: "destructive" });
       return;
     }
 
@@ -710,15 +712,15 @@ export default function SellPage() {
       }
       
       toast({
-        title: "تم تقديم الطلب بنجاح!",
-        description: "سيتم مراجعة طلبك من قبل الإدارة",
+        title: language === "ar" ? "تم تقديم الطلب بنجاح!" : "داواکە بە سەرکەوتوویی پێشکەشکرا!",
+        description: language === "ar" ? "سيتم مراجعة طلبك من قبل الإدارة" : "داواکەت لەلایەن بەڕێوەبەرایەتی پێداچوونەوەی بۆ دەکرێت",
       });
       
       // Reload the page to show the updated status
       window.location.reload();
     } catch (error: any) {
       toast({
-        title: "خطأ",
+        title: t("error"),
         description: error.message,
         variant: "destructive",
       });
@@ -737,18 +739,18 @@ export default function SellPage() {
               <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center">
                 <Lock className="h-8 w-8 text-amber-600" />
               </div>
-              <CardTitle className="text-2xl">تسجيل الدخول مطلوب</CardTitle>
+              <CardTitle className="text-2xl">{language === "ar" ? "تسجيل الدخول مطلوب" : "پێویستە بچیتە ژوورەوە"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                يجب تسجيل الدخول لتتمكن من بيع المنتجات
+                {language === "ar" ? "يجب تسجيل الدخول لتتمكن من بيع المنتجات" : "بۆ فرۆشتنی بەرهەمەکان دەبێت بچیتە ژوورەوە"}
               </p>
               <div className="flex flex-col gap-2">
                 <Link href="/signin">
-                  <Button className="w-full">تسجيل الدخول</Button>
+                  <Button className="w-full">{t("signIn")}</Button>
                 </Link>
                 <Link href="/register">
-                  <Button variant="outline" className="w-full">إنشاء حساب جديد</Button>
+                  <Button variant="outline" className="w-full">{t("createAccount")}</Button>
                 </Link>
               </div>
             </CardContent>
@@ -768,7 +770,7 @@ export default function SellPage() {
               <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">
                 <Package className="h-8 w-8 text-blue-600" />
               </div>
-              <CardTitle className="text-2xl">طلب التسجيل كبائع</CardTitle>
+              <CardTitle className="text-2xl">{language === "ar" ? "طلب التسجيل كبائع" : "داواکردنی تۆمارکردن وەک فرۆشیار"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {user.sellerRequestStatus === "pending" ? (
@@ -776,14 +778,14 @@ export default function SellPage() {
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 text-amber-700 mb-2">
                       <Clock className="h-5 w-5" />
-                      <span className="font-medium">طلبك قيد المراجعة</span>
+                      <span className="font-medium">{language === "ar" ? "طلبك قيد المراجعة" : "داواکەت لە چاوپێکەوتندایە"}</span>
                     </div>
                     <p className="text-sm text-amber-600">
-                      تم تقديم طلبك للتسجيل كبائع. سيتم إعلامك عند الموافقة على طلبك.
+                      {language === "ar" ? "تم تقديم طلبك للتسجيل كبائع. سيتم إعلامك عند الموافقة على طلبك." : "داواکارییەکەت بۆ فرۆشیاربوون پێشکەشکرا. ئاگاداری دەکەینەوە کاتێک داواکەت پەسەند دەکرێت."}
                     </p>
                   </div>
                   <Link href="/">
-                    <Button variant="outline" className="w-full">العودة للصفحة الرئيسية</Button>
+                    <Button variant="outline" className="w-full">{language === "ar" ? "العودة للصفحة الرئيسية" : "گەڕانەوە بۆ سەرەکی"}</Button>
                   </Link>
                 </>
               ) : user.sellerRequestStatus === "rejected" ? (
@@ -791,30 +793,30 @@ export default function SellPage() {
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 text-red-700 mb-2">
                       <AlertTriangle className="h-5 w-5" />
-                      <span className="font-medium">تم رفض الطلب</span>
+                      <span className="font-medium">{language === "ar" ? "تم رفض الطلب" : "داواکەت ڕەتکرایەوە"}</span>
                     </div>
                     <p className="text-sm text-red-600">
-                      للأسف تم رفض طلبك للتسجيل كبائع. يمكنك التواصل مع الدعم لمزيد من المعلومات.
+                      {language === "ar" ? "للأسف تم رفض طلبك للتسجيل كبائع. يمكنك التواصل مع الدعم لمزيد من المعلومات." : "بەداخەوە داواکارییەکەت بۆ فرۆشیاربوون ڕەتکرایەوە. دەتوانیت پەیوەندی بە پشتگیری بکەیت."}
                     </p>
                   </div>
                   <Link href="/">
-                    <Button variant="outline" className="w-full">العودة للصفحة الرئيسية</Button>
+                    <Button variant="outline" className="w-full">{language === "ar" ? "العودة للصفحة الرئيسية" : "گەڕانەوە بۆ سەرەکی"}</Button>
                   </Link>
                 </>
               ) : (
                 <>
                   <p className="text-muted-foreground text-sm">
-                    أكمل النموذج التالي للتسجيل كبائع على منصة اي-بيع
+                    {language === "ar" ? "أكمل النموذج التالي للتسجيل كبائع على منصة اي-بيع" : "فۆرمی خوارەوە تەواو بکە بۆ تۆمارکردن وەک فرۆشیار"}
                   </p>
                   
                   <div className="space-y-4 text-right">
                     <div>
                       <Label htmlFor="shopName" className="text-sm font-medium">
-                        اسم المتجر / النشاط التجاري <span className="text-red-500">*</span>
+                        {language === "ar" ? "اسم المتجر / النشاط التجاري" : "ناوی دوکان / چالاکی بازرگانی"} <span className="text-red-500">*</span>
                       </Label>
                       <Input
                         id="shopName"
-                        placeholder="مثال: متجر الساعات الفاخرة"
+                        placeholder={language === "ar" ? "مثال: متجر الساعات الفاخرة" : "نموونە: دوکانی کاتژمێری لوکس"}
                         value={sellerFormData.shopName}
                         onChange={(e) => setSellerFormData(prev => ({ ...prev, shopName: e.target.value }))}
                         className="mt-1"
@@ -824,7 +826,7 @@ export default function SellPage() {
 
                     <div>
                       <Label htmlFor="phone" className="text-sm font-medium">
-                        رقم الهاتف <span className="text-red-500">*</span>
+                        {t("phone")} <span className="text-red-500">*</span>
                       </Label>
                       <Input
                         id="phone"
@@ -840,14 +842,14 @@ export default function SellPage() {
 
                     <div>
                       <Label htmlFor="city" className="text-sm font-medium">
-                        المحافظة <span className="text-red-500">*</span>
+                        {language === "ar" ? "المحافظة" : "پارێزگا"} <span className="text-red-500">*</span>
                       </Label>
                       <Select
                         value={sellerFormData.city}
                         onValueChange={(value) => setSellerFormData(prev => ({ ...prev, city: value }))}
                       >
                         <SelectTrigger className="mt-1" data-testid="select-seller-city">
-                          <SelectValue placeholder="اختر المحافظة" />
+                          <SelectValue placeholder={language === "ar" ? "اختر المحافظة" : "پارێزگا هەڵبژێرە"} />
                         </SelectTrigger>
                         <SelectContent>
                           {IRAQI_CITIES.map((city) => (
@@ -859,11 +861,11 @@ export default function SellPage() {
 
                     <div>
                       <Label htmlFor="description" className="text-sm font-medium">
-                        وصف المنتجات التي ستبيعها
+                        {language === "ar" ? "وصف المنتجات التي ستبيعها" : "وەسفی بەرهەمەکانی کە دەیانفرۆشیت"}
                       </Label>
                       <Textarea
                         id="description"
-                        placeholder="مثال: ساعات أصلية، ملابس فاخرة، إلكترونيات..."
+                        placeholder={language === "ar" ? "مثال: ساعات أصلية، ملابس فاخرة، إلكترونيات..." : "نموونە: کاتژمێری ئەسڵی، جلوبەرگی لوکس، ئەلیکترۆنیات..."}
                         value={sellerFormData.description}
                         onChange={(e) => setSellerFormData(prev => ({ ...prev, description: e.target.value }))}
                         className="mt-1 min-h-[80px]"
@@ -873,11 +875,11 @@ export default function SellPage() {
                   </div>
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-right">
-                    <h4 className="font-medium text-blue-800 mb-1 text-sm">مميزات البائع:</h4>
+                    <h4 className="font-medium text-blue-800 mb-1 text-sm">{language === "ar" ? "مميزات البائع:" : "تایبەتمەندیەکانی فرۆشیار:"}</h4>
                     <ul className="text-xs text-blue-700 space-y-0.5">
-                      <li>• إضافة منتجات للبيع المباشر أو المزاد</li>
-                      <li>• لوحة تحكم متقدمة للبائع</li>
-                      <li>• التواصل المباشر مع المشترين</li>
+                      <li>• {language === "ar" ? "إضافة منتجات للبيع المباشر أو المزاد" : "زیادکردنی بەرهەم بۆ فرۆشتنی ڕاستەوخۆ یان مزایدە"}</li>
+                      <li>• {language === "ar" ? "لوحة تحكم متقدمة للبائع" : "داشبۆردی پێشکەوتوو بۆ فرۆشیار"}</li>
+                      <li>• {language === "ar" ? "التواصل المباشر مع المشترين" : "پەیوەندی ڕاستەوخۆ لەگەڵ کڕیاران"}</li>
                     </ul>
                   </div>
 
@@ -890,10 +892,10 @@ export default function SellPage() {
                     {isRequestingSellerAccess ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                        جاري إرسال الطلب...
+                        {language === "ar" ? "جاري إرسال الطلب..." : "داواکە دەنێردرێت..."}
                       </>
                     ) : (
-                      "تقديم طلب التسجيل كبائع"
+                      language === "ar" ? "تقديم طلب التسجيل كبائع" : "داواکاری تۆمارکردن وەک فرۆشیار"
                     )}
                   </Button>
                 </>
@@ -910,17 +912,23 @@ export default function SellPage() {
       <div className="container mx-auto px-4 py-8 pb-24 max-w-4xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">
-            {isEditMode ? "تعديل المنتج" : isRelistMode ? "إعادة عرض المنتج" : isTemplateMode ? "منتج جديد (من قالب)" : "بيع منتج جديد"}
+            {isEditMode 
+              ? (language === "ar" ? "تعديل المنتج" : "دەستکاریکردنی بەرهەم") 
+              : isRelistMode 
+                ? (language === "ar" ? "إعادة عرض المنتج" : "دووبارە پیشاندانی بەرهەم") 
+                : isTemplateMode 
+                  ? (language === "ar" ? "منتج جديد (من قالب)" : "بەرهەمی نوێ (لە قاڵب)") 
+                  : t("sellProduct")}
           </h1>
           <div className="flex items-center justify-between">
             <p className="text-muted-foreground">
               {isEditMode 
-                ? "قم بتعديل تفاصيل منتجك" 
+                ? (language === "ar" ? "قم بتعديل تفاصيل منتجك" : "وردەکاری بەرهەمەکەت دەستکاری بکە") 
                 : isRelistMode 
-                  ? "أنشئ عرض جديد لنفس المنتج" 
+                  ? (language === "ar" ? "أنشئ عرض جديد لنفس المنتج" : "ڕیکلامێکی نوێ بۆ هەمان بەرهەم دروست بکە") 
                   : isTemplateMode 
-                    ? "استخدم هذا المنتج كقالب لمنتج جديد"
-                    : "أضف منتجك للبيع على منصة اي-بيع"}
+                    ? (language === "ar" ? "استخدم هذا المنتج كقالب لمنتج جديد" : "ئەم بەرهەمە وەک قاڵب بۆ بەرهەمێکی نوێ بەکاربهێنە")
+                    : (language === "ar" ? "أضف منتجك للبيع على منصة اي-بيع" : "بەرهەمەکەت زیاد بکە بۆ فرۆشتن")}
             </p>
             {(isEditMode || isRelistMode || isTemplateMode) && (
               <Button
@@ -930,14 +938,14 @@ export default function SellPage() {
                 data-testid="button-cancel-edit"
               >
                 <X className="h-4 w-4" />
-                إلغاء
+                {t("cancel")}
               </Button>
             )}
           </div>
           {sourceListingId && sourceListingLoading && (
             <div className="flex items-center gap-2 mt-2 text-gray-500">
               <Loader2 className="h-4 w-4 animate-spin" />
-              جاري تحميل بيانات المنتج...
+              {language === "ar" ? "جاري تحميل بيانات المنتج..." : "زانیاری بەرهەم بارکردن..."}
             </div>
           )}
         </div>
@@ -950,16 +958,16 @@ export default function SellPage() {
                 <Clock className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="font-medium text-blue-800">لديك مسودة محفوظة</p>
-                <p className="text-sm text-blue-600">هل تريد استكمال العمل على المنتج السابق؟</p>
+                <p className="font-medium text-blue-800">{language === "ar" ? "لديك مسودة محفوظة" : "ڕەشنووسێکی پاشەکەوتکراوت هەیە"}</p>
+                <p className="text-sm text-blue-600">{language === "ar" ? "هل تريد استكمال العمل على المنتج السابق؟" : "دەتەوێت کارەکەت لەسەر بەرهەمی پێشوو تەواو بکەیت؟"}</p>
               </div>
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" size="sm" onClick={clearDraft}>
-                تجاهل
+                {language === "ar" ? "تجاهل" : "پشتگوێ بخە"}
               </Button>
               <Button type="button" size="sm" onClick={loadDraft} className="bg-blue-600 hover:bg-blue-700">
-                استرجاع المسودة
+                {language === "ar" ? "استرجاع المسودة" : "ڕەشنووس بگەڕێنەوە"}
               </Button>
             </div>
           </div>
@@ -972,7 +980,7 @@ export default function SellPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Camera className="h-5 w-5 text-primary" />
-                صور المنتج
+                {language === "ar" ? "صور المنتج" : "وێنەکانی بەرهەم"}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -988,7 +996,7 @@ export default function SellPage() {
                       <X className="h-4 w-4" />
                     </button>
                     {index === 0 && (
-                      <Badge className="absolute bottom-2 right-2 bg-primary">الرئيسية</Badge>
+                      <Badge className="absolute bottom-2 right-2 bg-primary">{language === "ar" ? "الرئيسية" : "سەرەکی"}</Badge>
                     )}
                   </div>
                 ))}
@@ -1008,12 +1016,12 @@ export default function SellPage() {
                     {isUploadingImages ? (
                       <>
                         <Loader2 className="h-8 w-8 text-primary mb-2 animate-spin" />
-                        <span className="text-sm text-primary">جاري الرفع...</span>
+                        <span className="text-sm text-primary">{language === "ar" ? "جاري الرفع..." : "بارکردن..."}</span>
                       </>
                     ) : (
                       <>
                         <Plus className="h-8 w-8 text-gray-400 mb-2" />
-                        <span className="text-sm text-gray-500">إضافة صورة</span>
+                        <span className="text-sm text-gray-500">{language === "ar" ? "إضافة صورة" : "وێنە زیاد بکە"}</span>
                       </>
                     )}
                   </label>
@@ -1033,12 +1041,12 @@ export default function SellPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Tag className="h-5 w-5 text-primary" />
-                معلومات المنتج
+                {language === "ar" ? "معلومات المنتج" : "زانیاری بەرهەم"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="title">عنوان المنتج *</Label>
+                <Label htmlFor="title">{t("productTitle")} *</Label>
                 <Input 
                   id="title" 
                   placeholder="مثال: ساعة رولكس سابماريينر فينتاج 1970" 
@@ -1050,7 +1058,7 @@ export default function SellPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">وصف المنتج *</Label>
+                <Label htmlFor="description">{t("productDescription")} *</Label>
                 <Textarea 
                   id="description" 
                   placeholder="اكتب وصفاً تفصيلياً للمنتج، الحالة، التاريخ، أي عيوب..."
@@ -1064,36 +1072,36 @@ export default function SellPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="category">الفئة *</Label>
+                  <Label htmlFor="category">{t("category")} *</Label>
                   <Select value={formData.category} onValueChange={(v) => handleInputChange("category", v)}>
                     <SelectTrigger data-testid="select-category">
-                      <SelectValue placeholder="اختر الفئة" />
+                      <SelectValue placeholder={t("selectCategory")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ساعات">ساعات</SelectItem>
-                      <SelectItem value="ملابس">ملابس</SelectItem>
-                      <SelectItem value="تحف وأثاث">تحف وأثاث</SelectItem>
-                      <SelectItem value="إلكترونيات">إلكترونيات</SelectItem>
-                      <SelectItem value="مجوهرات">مجوهرات</SelectItem>
-                      <SelectItem value="آلات موسيقية">آلات موسيقية</SelectItem>
-                      <SelectItem value="مقتنيات">مقتنيات</SelectItem>
-                      <SelectItem value="أخرى">أخرى</SelectItem>
+                      <SelectItem value="ساعات">{t("watches")}</SelectItem>
+                      <SelectItem value="ملابس">{t("clothing")}</SelectItem>
+                      <SelectItem value="تحف وأثاث">{t("furniture")}</SelectItem>
+                      <SelectItem value="إلكترونيات">{t("electronics")}</SelectItem>
+                      <SelectItem value="مجوهرات">{t("jewelry")}</SelectItem>
+                      <SelectItem value="آلات موسيقية">{t("music")}</SelectItem>
+                      <SelectItem value="مقتنيات">{t("collectibles")}</SelectItem>
+                      <SelectItem value="أخرى">{t("other")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="condition">الحالة *</Label>
+                  <Label htmlFor="condition">{t("condition")} *</Label>
                   <Select value={formData.condition} onValueChange={(v) => handleInputChange("condition", v)}>
                     <SelectTrigger data-testid="select-condition">
-                      <SelectValue placeholder="اختر الحالة" />
+                      <SelectValue placeholder={t("selectCondition")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="New">جديد (لم يُستخدم)</SelectItem>
-                      <SelectItem value="Used - Like New">شبه جديد</SelectItem>
-                      <SelectItem value="Used - Good">جيد</SelectItem>
-                      <SelectItem value="Used - Fair">مقبول</SelectItem>
-                      <SelectItem value="Vintage">فينتاج / انتيك</SelectItem>
+                      <SelectItem value="New">{t("new")} {language === "ar" ? "(لم يُستخدم)" : "(بەکارنەهاتوو)"}</SelectItem>
+                      <SelectItem value="Used - Like New">{t("likeNew")}</SelectItem>
+                      <SelectItem value="Used - Good">{t("usedGood")}</SelectItem>
+                      <SelectItem value="Used - Fair">{t("usedFair")}</SelectItem>
+                      <SelectItem value="Vintage">{t("vintage")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1101,10 +1109,10 @@ export default function SellPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="brand">الماركة / العلامة التجارية</Label>
+                  <Label htmlFor="brand">{language === "ar" ? "الماركة / العلامة التجارية" : "براند / نیشانی بازرگانی"}</Label>
                   <Select value={formData.brand || ""} onValueChange={(v) => handleInputChange("brand", v)}>
                     <SelectTrigger data-testid="select-brand">
-                      <SelectValue placeholder="اختر الماركة" />
+                      <SelectValue placeholder={language === "ar" ? "اختر الماركة" : "براند هەڵبژێرە"} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Rolex">Rolex</SelectItem>
@@ -1120,8 +1128,8 @@ export default function SellPage() {
                       <SelectItem value="LG">LG</SelectItem>
                       <SelectItem value="Nike">Nike</SelectItem>
                       <SelectItem value="Adidas">Adidas</SelectItem>
-                      <SelectItem value="بدون ماركة">بدون ماركة</SelectItem>
-                      <SelectItem value="أخرى">أخرى</SelectItem>
+                      <SelectItem value="بدون ماركة">{language === "ar" ? "بدون ماركة" : "بێ براند"}</SelectItem>
+                      <SelectItem value="أخرى">{t("other")}</SelectItem>
                     </SelectContent>
                   </Select>
                   {formData.brand === "أخرى" && (
@@ -1441,12 +1449,12 @@ export default function SellPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-primary" />
-                نوع البيع والسعر
+                {t("saleType")} {language === "ar" ? "والسعر" : "و نرخ"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <Label>اختر طريقة البيع *</Label>
+                <Label>{language === "ar" ? "اختر طريقة البيع" : "شێوازی فرۆشتن هەڵبژێرە"} *</Label>
                 <RadioGroup 
                   value={saleType} 
                   onValueChange={(v) => setSaleType(v as "auction" | "fixed")}
@@ -1462,7 +1470,7 @@ export default function SellPage() {
                     <div>
                       <div className="flex items-center gap-2 font-bold text-lg">
                         <Gavel className="h-5 w-5 text-primary" />
-                        مزاد
+                        {t("auction")}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         دع المشترين يتنافسون على منتجك للحصول على أفضل سعر
@@ -1480,7 +1488,7 @@ export default function SellPage() {
                     <div>
                       <div className="flex items-center gap-2 font-bold text-lg">
                         <ShoppingBag className="h-5 w-5 text-green-600" />
-                        سعر ثابت
+                        {t("fixedPrice")}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         حدد سعراً ثابتاً والمشتري يشتري مباشرة
@@ -1510,7 +1518,7 @@ export default function SellPage() {
                         />
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">د.ع</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">السعر الذي يبدأ منه المزاد</p>
+                      <p className="text-xs text-muted-foreground">{language === "ar" ? "السعر الذي يبدأ منه المزاد" : "ئەو نرخەی کە مزایدە لێی دەست پێ دەکات"}</p>
                     </div>
 
                     <div className="space-y-2">
@@ -1675,13 +1683,13 @@ export default function SellPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-primary" />
-                  توقيت المزاد
+                  {language === "ar" ? "توقيت المزاد" : "کاتی مزایدە"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Start Time Option */}
                 <div className="space-y-2">
-                  <Label htmlFor="startTime">موعد بدء المزاد</Label>
+                  <Label htmlFor="startTime">{language === "ar" ? "موعد بدء المزاد" : "کاتی دەستپێکردنی مزایدە"}</Label>
                   <Select value={startTimeOption} onValueChange={setStartTimeOption}>
                     <SelectTrigger data-testid="select-start-time">
                       <SelectValue placeholder="ابدأ فوراً" />
@@ -1732,13 +1740,13 @@ export default function SellPage() {
                 )}
                 
                 <p className="text-xs text-muted-foreground">
-                  ⏰ يجب أن تكون مدة المزاد 24 ساعة على الأقل
+                  ⏰ {language === "ar" ? "يجب أن تكون مدة المزاد 24 ساعة على الأقل" : "ماوەی مزایدە دەبێت لانیکەم ٢٤ کاتژمێر بێت"}
                 </p>
 
                 {/* End Date/Time */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-orange-50 rounded-lg">
                   <div className="space-y-2">
-                    <Label htmlFor="endDate">تاريخ انتهاء المزاد *</Label>
+                    <Label htmlFor="endDate">{language === "ar" ? "تاريخ انتهاء المزاد" : "ڕێکەوتی کۆتاییی مزایدە"} *</Label>
                     <Input 
                       id="endDate" 
                       type="date"
@@ -2171,11 +2179,11 @@ export default function SellPage() {
                 data-testid="button-submit-listing"
               >
                 {isSubmitting ? (
-                  <>جاري النشر...</>
+                  <>{language === "ar" ? "جاري النشر..." : "بڵاوکردنەوە..."}</>
                 ) : (
                   <>
                     <Upload className="h-5 w-5 ml-2" />
-                    نشر الإعلان
+                    {t("publishListing")}
                   </>
                 )}
               </Button>
@@ -2186,7 +2194,7 @@ export default function SellPage() {
                 className="h-14"
                 data-testid="button-save-draft"
               >
-                حفظ كمسودة
+                {t("saveDraft")}
               </Button>
             </div>
           </div>
@@ -2225,7 +2233,7 @@ export default function SellPage() {
                     <p className="font-bold text-lg">{formData.title || "—"}</p>
                   </div>
                   <Badge variant={saleType === "auction" ? "default" : "secondary"}>
-                    {saleType === "auction" ? "مزاد" : "سعر ثابت"}
+                    {saleType === "auction" ? t("auction") : t("fixedPrice")}
                   </Badge>
                 </div>
                 

@@ -5,6 +5,7 @@ import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/lib/i18n";
 import { Loader2, Lock } from "lucide-react";
 import type { Listing, Offer, Message } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
@@ -164,50 +165,67 @@ interface SellerReturnRequest {
   };
 }
 
-const getStatusBadge = (status: string) => {
+const getStatusBadge = (status: string, language: "ar" | "ku") => {
+  const labels = {
+    active: { ar: "نشط", ku: "چالاک" },
+    sold: { ar: "مباع", ku: "فرۆشرا" },
+    pending_shipment: { ar: "بانتظار الشحن", ku: "چاوەڕێی ناردن" },
+    shipped: { ar: "تم الشحن", ku: "نێردرا" },
+    draft: { ar: "مسودة", ku: "ڕەشنووس" },
+  };
   switch (status) {
     case "active":
-      return <Badge className="bg-green-100 text-green-800 border-0">نشط</Badge>;
+      return <Badge className="bg-green-100 text-green-800 border-0">{labels.active[language]}</Badge>;
     case "sold":
-      return <Badge className="bg-blue-100 text-blue-800 border-0">مباع</Badge>;
+      return <Badge className="bg-blue-100 text-blue-800 border-0">{labels.sold[language]}</Badge>;
     case "pending_shipment":
-      return <Badge className="bg-yellow-100 text-yellow-800 border-0">بانتظار الشحن</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800 border-0">{labels.pending_shipment[language]}</Badge>;
     case "shipped":
-      return <Badge className="bg-purple-100 text-purple-800 border-0">تم الشحن</Badge>;
+      return <Badge className="bg-purple-100 text-purple-800 border-0">{labels.shipped[language]}</Badge>;
     case "draft":
-      return <Badge className="bg-gray-100 text-gray-800 border-0">مسودة</Badge>;
+      return <Badge className="bg-gray-100 text-gray-800 border-0">{labels.draft[language]}</Badge>;
     default:
       return null;
   }
 };
 
-const getDeliveryBadge = (status: string) => {
+const getDeliveryBadge = (status: string, language: "ar" | "ku") => {
+  const labels = {
+    pending_payment: { ar: "بانتظار الدفع", ku: "چاوەڕێی پارەدان" },
+    pending_shipment: { ar: "بانتظار الشحن", ku: "چاوەڕێی ناردن" },
+    shipped: { ar: "تم الشحن", ku: "نێردرا" },
+    delivered: { ar: "تم التسليم", ku: "گەیەندرا" },
+  };
   switch (status) {
     case "pending_payment":
-      return <Badge className="bg-orange-100 text-orange-800 border-0">بانتظار الدفع</Badge>;
+      return <Badge className="bg-orange-100 text-orange-800 border-0">{labels.pending_payment[language]}</Badge>;
     case "pending":
     case "processing":
-      return <Badge className="bg-yellow-100 text-yellow-800 border-0">بانتظار الشحن</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800 border-0">{labels.pending_shipment[language]}</Badge>;
     case "shipped":
-      return <Badge className="bg-blue-100 text-blue-800 border-0">تم الشحن</Badge>;
+      return <Badge className="bg-blue-100 text-blue-800 border-0">{labels.shipped[language]}</Badge>;
     case "delivered":
     case "completed":
-      return <Badge className="bg-green-100 text-green-800 border-0">تم التسليم</Badge>;
+      return <Badge className="bg-green-100 text-green-800 border-0">{labels.delivered[language]}</Badge>;
     default:
       return <Badge className="bg-gray-100 text-gray-800 border-0">{status}</Badge>;
   }
 };
 
-const getTypeBadge = (type: string) => {
+const getTypeBadge = (type: string, language: "ar" | "ku") => {
+  const labels = {
+    auction: { ar: "مزاد", ku: "مزایدە" },
+    fixed: { ar: "سعر ثابت", ku: "نرخی جێگیر" },
+  };
   return type === "auction" ? (
     <Badge variant="outline" className="border-primary text-primary">
       <Gavel className="h-3 w-3 ml-1" />
-      مزاد
+      {labels.auction[language]}
     </Badge>
   ) : (
     <Badge variant="outline" className="border-green-600 text-green-600">
       <ShoppingBag className="h-3 w-3 ml-1" />
-      سعر ثابت
+      {labels.fixed[language]}
     </Badge>
   );
 };
@@ -215,6 +233,7 @@ const getTypeBadge = (type: string) => {
 export default function SellerDashboard() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { language, t } = useLanguage();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("products");
@@ -341,8 +360,8 @@ export default function SellerDashboard() {
     },
     onSuccess: () => {
       toast({
-        title: "تم الرد على طلب الإرجاع",
-        description: "تم إرسال ردك بنجاح",
+        title: language === "ar" ? "تم الرد على طلب الإرجاع" : "وەڵام درایەوە بۆ داواکاری گەڕاندنەوە",
+        description: language === "ar" ? "تم إرسال ردك بنجاح" : "وەڵامەکەت بە سەرکەوتوویی نێردرا",
       });
       setReturnResponseOpen(false);
       setSelectedReturnRequest(null);
@@ -351,22 +370,22 @@ export default function SellerDashboard() {
     },
     onError: (error: Error) => {
       toast({
-        title: "خطأ",
-        description: error.message || "فشل في الرد على طلب الإرجاع",
+        title: t("error"),
+        description: error.message || (language === "ar" ? "فشل في الرد على طلب الإرجاع" : "شکستی هێنا لە وەڵامدانەوە بۆ داواکاری گەڕاندنەوە"),
         variant: "destructive",
       });
     },
   });
 
   const getReturnReasonLabel = (reason: string) => {
-    switch (reason) {
-      case "defective": return "المنتج معيب أو تالف";
-      case "not_as_described": return "المنتج مختلف عن الوصف";
-      case "wrong_item": return "استلمت منتجاً خاطئاً";
-      case "changed_mind": return "غيرت رأيي";
-      case "other": return "سبب آخر";
-      default: return reason;
-    }
+    const labels: Record<string, { ar: string; ku: string }> = {
+      defective: { ar: "المنتج معيب أو تالف", ku: "بەرهەم خراپ یان تێکچوو" },
+      not_as_described: { ar: "المنتج مختلف عن الوصف", ku: "بەرهەم جیاوازە لە وەسف" },
+      wrong_item: { ar: "استلمت منتجاً خاطئاً", ku: "بەرهەمێکی هەڵەم وەرگرت" },
+      changed_mind: { ar: "غيرت رأيي", ku: "بڕیارم گۆڕی" },
+      other: { ar: "سبب آخر", ku: "هۆکاری تر" },
+    };
+    return labels[reason]?.[language] || reason;
   };
 
   const sellerProducts: SellerProduct[] = listings.map(l => {
@@ -427,11 +446,11 @@ export default function SellerDashboard() {
       return res.json();
     },
     onSuccess: () => {
-      toast({ title: "تم حذف المنتج", description: "تم حذف المنتج بنجاح من قائمتك" });
+      toast({ title: language === "ar" ? "تم حذف المنتج" : "بەرهەم سڕایەوە", description: language === "ar" ? "تم حذف المنتج بنجاح من قائمتك" : "بەرهەم بە سەرکەوتوویی لە لیستەکەت سڕایەوە" });
       queryClient.invalidateQueries({ queryKey: ["/api/listings", user?.id] });
     },
     onError: () => {
-      toast({ title: "خطأ", description: "فشل في حذف المنتج", variant: "destructive" });
+      toast({ title: t("error"), description: language === "ar" ? "فشل في حذف المنتج" : "شکستی هێنا لە سڕینەوەی بەرهەم", variant: "destructive" });
     },
   });
 
@@ -451,12 +470,12 @@ export default function SellerDashboard() {
       return res.json();
     },
     onSuccess: (_, variables) => {
-      const messages: Record<string, string> = {
-        accepted: "تم قبول العرض بنجاح - تم إنشاء طلب جديد",
-        rejected: "تم رفض العرض",
-        countered: "تم إرسال عرض مقابل",
+      const messages: Record<string, { ar: string; ku: string }> = {
+        accepted: { ar: "تم قبول العرض بنجاح - تم إنشاء طلب جديد", ku: "پێشنیار قبوڵکرا - داواکارییەکی نوێ دروستکرا" },
+        rejected: { ar: "تم رفض العرض", ku: "پێشنیار ڕەتکرایەوە" },
+        countered: { ar: "تم إرسال عرض مقابل", ku: "پێشنیارێکی بەرامبەر نێردرا" },
       };
-      toast({ title: "تم", description: messages[variables.status] || "تم تحديث العرض" });
+      toast({ title: t("success"), description: messages[variables.status]?.[language] || (language === "ar" ? "تم تحديث العرض" : "پێشنیار نوێکرایەوە") });
       queryClient.invalidateQueries({ queryKey: ["/api/received-offers"] });
       if (variables.status === "accepted") {
         queryClient.invalidateQueries({ queryKey: ["/api/account/seller-orders"] });
@@ -464,7 +483,7 @@ export default function SellerDashboard() {
       }
     },
     onError: () => {
-      toast({ title: "خطأ", description: "فشل في الرد على العرض", variant: "destructive" });
+      toast({ title: t("error"), description: language === "ar" ? "فشل في الرد على العرض" : "شکستی هێنا لە وەڵامدانەوە بۆ پێشنیار", variant: "destructive" });
     },
   });
 
@@ -482,14 +501,14 @@ export default function SellerDashboard() {
       return res.json();
     },
     onSuccess: () => {
-      toast({ title: "تم تحديث المخزون", description: "تم تحديث الكمية المتوفرة بنجاح" });
+      toast({ title: language === "ar" ? "تم تحديث المخزون" : "کۆگا نوێکرایەوە", description: language === "ar" ? "تم تحديث الكمية المتوفرة بنجاح" : "بڕی بەردەست بە سەرکەوتوویی نوێکرایەوە" });
       queryClient.invalidateQueries({ queryKey: ["/api/listings", user?.id] });
       setStockDialogOpen(false);
       setStockProductId(null);
       setNewStockQuantity("");
     },
     onError: (error: Error) => {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: t("error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -793,7 +812,7 @@ export default function SellerDashboard() {
               data-testid="button-logout"
             >
               <LogOut className="h-5 w-5" />
-              <span className="hidden sm:inline">تسجيل الخروج</span>
+              <span className="hidden sm:inline">{t("logout")}</span>
             </button>
             <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" data-testid="button-menu">
               <Menu className="h-6 w-6" />
@@ -807,15 +826,15 @@ export default function SellerDashboard() {
         <div className="container mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5 text-gray-600" />
-            <span className="text-sm text-gray-600">الإشعارات</span>
+            <span className="text-sm text-gray-600">{t("notifications")}</span>
             {pendingOrders.length > 0 && (
-              <Badge className="bg-red-500 text-white text-xs">{pendingOrders.length} طلب جديد</Badge>
+              <Badge className="bg-red-500 text-white text-xs">{pendingOrders.length} {language === "ar" ? "طلب جديد" : "داواکاری نوێ"}</Badge>
             )}
           </div>
           <Link href="/sell">
             <Button size="lg" className="gap-3 bg-primary hover:bg-primary/90 text-lg font-bold px-8 py-6 shadow-lg" data-testid="button-add-product">
               <Plus className="h-6 w-6" />
-              إضافة منتج جديد
+              {t("addProduct")}
             </Button>
           </Link>
         </div>
@@ -823,8 +842,8 @@ export default function SellerDashboard() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">📊 لوحة تحكم البائع</h1>
-          <p className="text-gray-600">إدارة منتجاتك ومبيعاتك وتتبع أدائك</p>
+          <h1 className="text-4xl font-bold text-primary mb-2">📊 {t("sellerDashboard")}</h1>
+          <p className="text-gray-600">{language === "ar" ? "إدارة منتجاتك ومبيعاتك وتتبع أدائك" : "بەڕێوەبردنی بەرهەمەکانت و فرۆشتنەکانت و شوێنکەوتنی کارەکەت"}</p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -835,7 +854,7 @@ export default function SellerDashboard() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-blue-600 font-medium">إجمالي المنتجات</p>
+                  <p className="text-sm text-blue-600 font-medium">{language === "ar" ? "إجمالي المنتجات" : "کۆی بەرهەمەکان"}</p>
                   <p className="text-3xl font-bold text-blue-800">{SELLER_STATS.totalProducts}</p>
                 </div>
                 <Package className="h-10 w-10 text-blue-500" />
@@ -850,7 +869,7 @@ export default function SellerDashboard() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-green-600 font-medium">المبيعات</p>
+                  <p className="text-sm text-green-600 font-medium">{t("sales")}</p>
                   <p className="text-3xl font-bold text-green-800">{SELLER_STATS.soldItems}</p>
                 </div>
                 <DollarSign className="h-10 w-10 text-green-500" />
@@ -862,7 +881,7 @@ export default function SellerDashboard() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-purple-600 font-medium">الإيرادات</p>
+                  <p className="text-sm text-purple-600 font-medium">{language === "ar" ? "الإيرادات" : "داهات"}</p>
                   <p className="text-2xl font-bold text-purple-800">{SELLER_STATS.totalRevenue.toLocaleString()}</p>
                   <p className="text-xs text-purple-600">د.ع</p>
                 </div>
@@ -878,7 +897,7 @@ export default function SellerDashboard() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-yellow-700 font-medium">بانتظار الشحن</p>
+                  <p className="text-sm text-yellow-700 font-medium">{language === "ar" ? "بانتظار الشحن" : "چاوەڕێی ناردن"}</p>
                   <p className="text-3xl font-bold text-yellow-800">{SELLER_STATS.pendingShipments}</p>
                 </div>
                 <Clock className="h-10 w-10 text-yellow-600" />
@@ -892,7 +911,7 @@ export default function SellerDashboard() {
             <CardHeader className="pb-2">
               <CardTitle className="text-yellow-800 flex items-center gap-2">
                 <AlertCircle className="h-5 w-5" />
-                تحتاج إلى اهتمامك ({pendingOrders.length})
+                {language === "ar" ? `تحتاج إلى اهتمامك (${pendingOrders.length})` : `ئاگاداریت پێویستە (${pendingOrders.length})`}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -934,11 +953,11 @@ export default function SellerDashboard() {
           <TabsList className="grid grid-cols-5 w-full max-w-3xl">
             <TabsTrigger value="products" className="gap-2">
               <Package className="h-4 w-4" />
-              المنتجات
+              {t("products")}
             </TabsTrigger>
             <TabsTrigger value="messages" className="gap-2">
               <MessageSquare className="h-4 w-4" />
-              الرسائل
+              {t("messages")}
               {sellerMessages.filter(m => !m.isRead).length > 0 && (
                 <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 mr-1">
                   {sellerMessages.filter(m => !m.isRead).length}
@@ -947,7 +966,7 @@ export default function SellerDashboard() {
             </TabsTrigger>
             <TabsTrigger value="offers" className="gap-2">
               <HandCoins className="h-4 w-4" />
-              العروض
+              {t("offers")}
               {receivedOffers.filter(o => o.status === "pending").length > 0 && (
                 <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 mr-1">
                   {receivedOffers.filter(o => o.status === "pending").length}
@@ -956,7 +975,7 @@ export default function SellerDashboard() {
             </TabsTrigger>
             <TabsTrigger value="returns" className="gap-2">
               <RotateCcw className="h-4 w-4" />
-              الإرجاعات
+              {language === "ar" ? "الإرجاعات" : "گەڕاندنەوە"}
               {returnRequests.filter(r => r.status === "pending").length > 0 && (
                 <Badge className="bg-red-500 text-white text-xs px-1.5 py-0.5 mr-1">
                   {returnRequests.filter(r => r.status === "pending").length}
@@ -965,7 +984,7 @@ export default function SellerDashboard() {
             </TabsTrigger>
             <TabsTrigger value="sales" className="gap-2">
               <ShoppingBag className="h-4 w-4" />
-              المبيعات
+              {t("sales")}
             </TabsTrigger>
           </TabsList>
 
@@ -974,7 +993,7 @@ export default function SellerDashboard() {
               <div className="relative flex-1 w-full md:max-w-md">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="البحث في منتجاتك..."
+                  placeholder={language === "ar" ? "البحث في منتجاتك..." : "گەڕان لە بەرهەمەکانت..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pr-10"
@@ -990,18 +1009,18 @@ export default function SellerDashboard() {
                   data-testid="button-bulk-upload"
                 >
                   <FileSpreadsheet className="h-4 w-4" />
-                  استيراد CSV
+                  {language === "ar" ? "استيراد CSV" : "هاوردەکردنی CSV"}
                 </Button>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-40" data-testid="select-status-filter">
                     <Filter className="h-4 w-4 ml-2" />
-                    <SelectValue placeholder="الحالة" />
+                    <SelectValue placeholder={t("condition")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">الكل</SelectItem>
-                    <SelectItem value="active">نشط</SelectItem>
-                    <SelectItem value="sold">مباع</SelectItem>
-                    <SelectItem value="draft">مسودة</SelectItem>
+                    <SelectItem value="all">{t("all")}</SelectItem>
+                    <SelectItem value="active">{language === "ar" ? "نشط" : "چالاک"}</SelectItem>
+                    <SelectItem value="sold">{t("sold")}</SelectItem>
+                    <SelectItem value="draft">{language === "ar" ? "مسودة" : "ڕەشنووس"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1018,7 +1037,7 @@ export default function SellerDashboard() {
                         className="w-full md:w-40 h-40 object-cover hover:opacity-90 transition-opacity"
                       />
                       <div className="absolute top-2 right-2">
-                        {getTypeBadge(product.type)}
+                        {getTypeBadge(product.type, language)}
                       </div>
                     </Link>
                     <div className="flex-1 p-4">
@@ -1027,26 +1046,26 @@ export default function SellerDashboard() {
                           <Link href={`/product/${product.id}`} className="cursor-pointer hover:text-primary transition-colors">
                             <h3 className="font-bold text-lg">{product.title}</h3>
                           </Link>
-                          <p className="text-sm text-gray-500">كود: {product.productCode} • {product.category}</p>
+                          <p className="text-sm text-gray-500">{language === "ar" ? "كود" : "کۆد"}: {product.productCode} • {product.category}</p>
                         </div>
-                        {getStatusBadge(product.status)}
+                        {getStatusBadge(product.status, language)}
                       </div>
 
                       <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
                         <span className="flex items-center gap-1">
                           <Eye className="h-4 w-4" />
-                          {product.views} مشاهدة
+                          {product.views} {language === "ar" ? "مشاهدة" : "بینین"}
                         </span>
                         {product.type === "auction" && product.bids && (
                           <span className="flex items-center gap-1">
                             <Gavel className="h-4 w-4" />
-                            {product.bids} مزايدة
+                            {product.bids} {t("auction")}
                           </span>
                         )}
                         {product.soldDate && (
                           <span className="flex items-center gap-1">
                             <CheckCircle className="h-4 w-4 text-green-500" />
-                            بيع في {product.soldDate}
+                            {language === "ar" ? "بيع في" : "فرۆشرا لە"} {product.soldDate}
                           </span>
                         )}
                       </div>
@@ -1068,7 +1087,7 @@ export default function SellerDashboard() {
                               data-testid={`button-print-${product.id}`}
                             >
                               <Printer className="h-4 w-4" />
-                              طباعة الشحن
+                              {language === "ar" ? "طباعة الشحن" : "چاپی ناردن"}
                             </Button>
                           )}
                           {/* Edit button - only for active/draft products (not sold) */}
@@ -1081,7 +1100,7 @@ export default function SellerDashboard() {
                               data-testid={`button-edit-${product.id}`}
                             >
                               <Edit className="h-4 w-4" />
-                              تعديل
+                              {t("edit")}
                             </Button>
                           )}
                           
@@ -1096,7 +1115,7 @@ export default function SellerDashboard() {
                               data-testid={`button-relist-${product.id}`}
                             >
                               <Plus className="h-4 w-4" />
-                              إعادة عرض
+                              {language === "ar" ? "إعادة عرض" : "دووبارە پیشاندان"}
                             </Button>
                           )}
                           
@@ -1110,7 +1129,7 @@ export default function SellerDashboard() {
                               data-testid={`button-update-stock-${product.id}`}
                             >
                               <Package className="h-4 w-4" />
-                              تعديل الكمية
+                              {language === "ar" ? "تعديل الكمية" : "گۆڕینی بڕ"}
                             </Button>
                           )}
                           
@@ -1123,7 +1142,7 @@ export default function SellerDashboard() {
                             data-testid={`button-template-${product.id}`}
                           >
                             <Package className="h-4 w-4" />
-                            كقالب
+                            {language === "ar" ? "كقالب" : "وەک قاڵب"}
                           </Button>
                           
                           {/* Delete button - only for active/draft */}
@@ -1136,15 +1155,17 @@ export default function SellerDashboard() {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                                  <AlertDialogTitle>{language === "ar" ? "هل أنت متأكد؟" : "دڵنیایت؟"}</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    سيتم حذف المنتج "{product.title}" نهائياً. لا يمكن التراجع عن هذا الإجراء.
+                                    {language === "ar" 
+                                      ? `سيتم حذف المنتج "${product.title}" نهائياً. لا يمكن التراجع عن هذا الإجراء.`
+                                      : `بەرهەمی "${product.title}" بە تەواوی دەسڕدرێتەوە. ناتوانیت لەم کردارە بگەڕێیتەوە.`}
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                                   <AlertDialogAction onClick={() => handleDeleteProduct(product.id)}>
-                                    حذف
+                                    {t("delete")}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -1160,7 +1181,7 @@ export default function SellerDashboard() {
               {filteredProducts.length === 0 && (
                 <Card className="p-8 text-center">
                   <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">لا توجد منتجات تطابق بحثك</p>
+                  <p className="text-gray-500">{language === "ar" ? "لا توجد منتجات تطابق بحثك" : "هیچ بەرهەمێک نەدۆزرایەوە کە لەگەڵ گەڕانەکەت بگونجێت"}</p>
                 </Card>
               )}
             </div>
