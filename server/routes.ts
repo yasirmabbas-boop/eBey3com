@@ -892,7 +892,17 @@ export async function registerRoutes(
 
   app.post("/api/messages", async (req, res) => {
     try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول لإرسال رسالة" });
+      }
+      
       const validatedData = insertMessageSchema.parse(req.body);
+      
+      // Ensure the sender is the authenticated user
+      if (validatedData.senderId !== userId) {
+        return res.status(403).json({ error: "غير مصرح" });
+      }
       
       // Prevent users from messaging themselves
       if (validatedData.senderId === validatedData.receiverId) {
