@@ -893,6 +893,7 @@ export default function ProductPage() {
                     onRequireAuth={() => requireAuth("bid")}
                     isWinning={!!isWinning}
                     isAuthLoading={isAuthLoading}
+                    isVerified={user?.isVerified || false}
                   />
                 )}
 

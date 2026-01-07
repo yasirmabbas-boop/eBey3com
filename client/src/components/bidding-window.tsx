@@ -28,6 +28,7 @@ interface BiddingWindowProps {
   onRequireAuth?: () => boolean;
   isWinning?: boolean;
   isAuthLoading?: boolean;
+  isVerified?: boolean;
 }
 
 const BID_INCREMENT = 1000;
@@ -104,6 +105,7 @@ export function BiddingWindow({
   onRequireAuth,
   isWinning = false,
   isAuthLoading = false,
+  isVerified = false,
 }: BiddingWindowProps) {
   const [currentBid, setCurrentBid] = useState(initialCurrentBid);
   const [totalBids, setTotalBids] = useState(initialTotalBids);
@@ -237,7 +239,7 @@ export function BiddingWindow({
     setBidAmount(amount.toString());
   }, []);
 
-  const isSubmitDisabled = bidMutation.isPending || isWinning || isAuthLoading;
+  const isSubmitDisabled = bidMutation.isPending || isWinning || isAuthLoading || (!!userId && !isVerified);
   const currentBidValue = parseBidAmount(bidAmount);
   const isValidBid = currentBidValue >= minimumBid && currentBidValue <= MAX_BID_LIMIT;
 
@@ -297,6 +299,12 @@ export function BiddingWindow({
       {isWinning && (
         <div className="bg-green-50 border border-green-300 p-3 rounded-lg mb-6 text-sm text-green-700 font-medium text-center">
           ✅ أنت صاحب أعلى مزايدة حالياً - لا يمكنك المزايدة على نفسك
+        </div>
+      )}
+
+      {!!userId && !isVerified && (
+        <div className="bg-yellow-50 border border-yellow-300 p-3 rounded-lg mb-6 text-sm text-yellow-700 font-medium text-center">
+          ⚠️ يجب توثيق حسابك للمزايدة. يرجى توثيق رقم هاتفك أولاً.
         </div>
       )}
 
