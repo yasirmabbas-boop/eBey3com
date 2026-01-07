@@ -185,7 +185,7 @@ export default function ProductPage() {
 
   // Report listing mutation
   const reportMutation = useMutation({
-    mutationFn: async (data: { targetId: string; targetType: string; reason: string; details?: string }) => {
+    mutationFn: async (data: { reportType: string; targetId: string; targetType: string; reason: string; details?: string }) => {
       const res = await fetch("/api/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1290,6 +1290,7 @@ export default function ProductPage() {
               onClick={() => {
                 if (!listing?.id || !reportReason) return;
                 reportMutation.mutate({
+                  reportType: "listing",
                   targetId: listing.id,
                   targetType: "listing",
                   reason: reportReason,

@@ -14,7 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, UserX, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen } from "lucide-react";
+import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, UserX, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
@@ -210,6 +211,31 @@ export default function AdminPage() {
     },
     onError: () => {
       toast({ title: "فشل في تحديث المستخدم", variant: "destructive" });
+    },
+  });
+
+  const [resetPasswordResult, setResetPasswordResult] = useState<{ userId: string; userName: string; tempPassword: string } | null>(null);
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetchWithAuth(`/api/admin/users/${userId}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error("Failed to reset password");
+      return res.json();
+    },
+    onSuccess: (data, userId) => {
+      const targetUser = users?.find(u => u.id === userId);
+      setResetPasswordResult({
+        userId,
+        userName: targetUser?.displayName || "المستخدم",
+        tempPassword: data.tempPassword,
+      });
+      toast({ title: "تم إعادة تعيين كلمة المرور بنجاح" });
+    },
+    onError: () => {
+      toast({ title: "فشل في إعادة تعيين كلمة المرور", variant: "destructive" });
     },
   });
 
@@ -658,6 +684,19 @@ export default function AdminPage() {
                                       إلغاء الحظر
                                     </Button>
                                   )}
+                                  {!u.isAdmin && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-purple-600 border-purple-600 hover:bg-purple-50"
+                                      onClick={() => resetPasswordMutation.mutate(u.id)}
+                                      disabled={resetPasswordMutation.isPending}
+                                      data-testid={`button-reset-password-${u.id}`}
+                                    >
+                                      <Key className="h-4 w-4 ml-1" />
+                                      إعادة كلمة المرور
+                                    </Button>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -980,6 +1019,46 @@ export default function AdminPage() {
           </main>
         </div>
       </div>
+
+      {/* Reset Password Result Dialog */}
+      <Dialog open={!!resetPasswordResult} onOpenChange={() => setResetPasswordResult(null)}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-right">تم إعادة تعيين كلمة المرور</DialogTitle>
+            <DialogDescription className="text-right">
+              كلمة المرور المؤقتة للمستخدم: <strong>{resetPasswordResult?.userName}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-2 p-4 bg-gray-100 rounded-lg">
+              <code className="flex-1 text-lg font-mono text-center select-all" dir="ltr">
+                {resetPasswordResult?.tempPassword}
+              </code>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (resetPasswordResult?.tempPassword) {
+                    navigator.clipboard.writeText(resetPasswordResult.tempPassword);
+                    toast({ title: "تم نسخ كلمة المرور" });
+                  }
+                }}
+                data-testid="button-copy-password"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground text-center">
+              يرجى إرسال كلمة المرور هذه للمستخدم. ينصح بتغييرها عند تسجيل الدخول.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setResetPasswordResult(null)} data-testid="button-close-password-dialog">
+              إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

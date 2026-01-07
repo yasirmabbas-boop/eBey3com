@@ -3431,6 +3431,48 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Reset user password
+  app.post("/api/admin/users/:id/reset-password", async (req, res) => {
+    try {
+      const adminId = await getUserIdFromRequest(req);
+      if (!adminId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const admin = await storage.getUser(adminId);
+      if (!admin || !admin.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const targetUser = await storage.getUser(req.params.id);
+      if (!targetUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Generate a random 8-character temporary password
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+      let tempPassword = "";
+      for (let i = 0; i < 8; i++) {
+        tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      
+      // Hash the new password
+      const bcrypt = await import("bcryptjs");
+      const hashedPassword = await bcrypt.hash(tempPassword, 10);
+      
+      // Update user's password
+      await storage.updateUser(req.params.id, { password: hashedPassword });
+      
+      res.json({ 
+        success: true, 
+        tempPassword,
+        message: "تم إعادة تعيين كلمة المرور بنجاح" 
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ error: "Failed to reset password" });
+    }
+  });
+
   // Admin: Get all listings (lightweight version without images for fast loading)
   app.get("/api/admin/listings", async (req, res) => {
     try {
