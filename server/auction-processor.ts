@@ -3,6 +3,7 @@ import { broadcastAuctionEnd } from "./websocket";
 import { db } from "./db";
 import { listings, bids, transactions, notifications } from "@shared/schema";
 import { eq, and, lt, isNotNull, sql, desc } from "drizzle-orm";
+import { sendPushNotification } from "./push-notifications";
 
 const PROCESS_INTERVAL_MS = 30000;
 const GRACE_PERIOD_MS = 5000;
@@ -88,6 +89,12 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
           message: `انتهى المزاد على "${listing.title}" بدون أي مزايدات. يمكنك إعادة عرض المنتج.`,
           relatedId: listing.id,
         });
+        sendPushNotification(listing.sellerId, {
+          title: "انتهى المزاد بدون مزايدات",
+          body: `انتهى المزاد على "${listing.title}" بدون أي مزايدات`,
+          url: `/product/${listing.id}`,
+          tag: `auction-${listing.id}`,
+        });
       }
 
       log(`Auction ${listing.id} ended with no bids`, "info");
@@ -158,6 +165,12 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
       message: `فزت بالمزاد على "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع. سيتم شحن طلبك قريباً.`,
       relatedId: listing.id,
     });
+    sendPushNotification(winner.id, {
+      title: "مبروك! فزت بالمزاد 🎉",
+      body: `فزت بالمزاد على "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع`,
+      url: `/product/${listing.id}`,
+      tag: `auction-won-${listing.id}`,
+    });
 
     if (listing.sellerId) {
       await storage.createNotification({
@@ -167,6 +180,12 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
         message: `تهانينا! تم بيع "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع للمشتري ${winner.displayName || winner.phone}. يرجى شحن المنتج.`,
         relatedId: listing.id,
         linkUrl: "/seller-dashboard",
+      });
+      sendPushNotification(listing.sellerId, {
+        title: "تم بيع منتجك في المزاد! 🎉",
+        body: `تم بيع "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع`,
+        url: "/seller-dashboard",
+        tag: `auction-sold-${listing.id}`,
       });
     }
 
@@ -180,6 +199,12 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
           title: "انتهى المزاد",
           message: `انتهى المزاد على "${listing.title}" ولم تفز. المزايدة الفائزة كانت ${highestBid.amount.toLocaleString("ar-IQ")} د.ع.`,
           relatedId: listing.id,
+        });
+        sendPushNotification(bid.userId, {
+          title: "انتهى المزاد",
+          body: `انتهى المزاد على "${listing.title}" ولم تفز`,
+          url: `/product/${listing.id}`,
+          tag: `auction-lost-${listing.id}`,
         });
       }
     }

@@ -9,6 +9,7 @@ import { SwipeBackNavigation } from "@/components/swipe-back-navigation";
 import { OnboardingTutorial } from "@/components/onboarding-tutorial";
 import { MobileNavBar } from "@/components/mobile-nav-bar";
 import { InstallPWAPrompt } from "@/components/install-pwa-prompt";
+import { PushNotificationPrompt } from "@/components/push-notification-prompt";
 import { NavVisibilityProvider } from "@/hooks/use-nav-visibility";
 import { LanguageProvider } from "@/lib/i18n";
 
@@ -103,6 +104,7 @@ function App() {
             </SwipeBackNavigation>
             <MobileNavBar />
             <InstallPWAPrompt />
+            <PushNotificationPrompt />
           </NavVisibilityProvider>
         </TooltipProvider>
       </LanguageProvider>

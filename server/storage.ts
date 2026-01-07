@@ -17,7 +17,8 @@ import {
   type ReturnRequest, type InsertReturnRequest,
   type ContactMessage, type InsertContactMessage,
   type ProductComment, type InsertProductComment,
-  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments
+  type PushSubscription, type InsertPushSubscription,
+  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, lt } from "drizzle-orm";
@@ -169,6 +170,12 @@ export interface IStorage {
   getCommentsForListing(listingId: string): Promise<Array<ProductComment & { userName: string; userAvatar?: string | null }>>;
   createComment(comment: InsertProductComment): Promise<ProductComment>;
   deleteComment(id: string, userId: string): Promise<boolean>;
+  
+  // Push subscriptions
+  createPushSubscription(userId: string, endpoint: string, p256dh: string, auth: string): Promise<any>;
+  getPushSubscription(userId: string): Promise<any | undefined>;
+  getPushSubscriptionsByUserId(userId: string): Promise<any[]>;
+  deletePushSubscription(endpoint: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1198,6 +1205,33 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db.delete(productComments)
       .where(and(eq(productComments.id, id), eq(productComments.userId, userId)))
       .returning();
+    return !!result;
+  }
+
+  async createPushSubscription(userId: string, endpoint: string, p256dh: string, auth: string): Promise<any> {
+    const [existing] = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+    if (existing) {
+      const [result] = await db.update(pushSubscriptions)
+        .set({ userId, p256dh, auth })
+        .where(eq(pushSubscriptions.endpoint, endpoint))
+        .returning();
+      return result;
+    }
+    const [result] = await db.insert(pushSubscriptions).values({ userId, endpoint, p256dh, auth }).returning();
+    return result;
+  }
+
+  async getPushSubscription(userId: string): Promise<any | undefined> {
+    const [result] = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+    return result;
+  }
+
+  async getPushSubscriptionsByUserId(userId: string): Promise<any[]> {
+    return db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+  }
+
+  async deletePushSubscription(endpoint: string): Promise<boolean> {
+    const [result] = await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint)).returning();
     return !!result;
   }
 }

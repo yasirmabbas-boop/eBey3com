@@ -3056,6 +3056,52 @@ export async function registerRoutes(
     }
   });
 
+  // Push notifications - get VAPID public key
+  app.get("/api/push/vapid-public-key", (_req, res) => {
+    const publicKey = process.env.VAPID_PUBLIC_KEY;
+    if (!publicKey) {
+      return res.status(500).json({ error: "VAPID key not configured" });
+    }
+    res.json({ publicKey });
+  });
+
+  // Push notifications - subscribe
+  app.post("/api/push/subscribe", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { endpoint, keys } = req.body;
+      if (!endpoint || !keys?.p256dh || !keys?.auth) {
+        return res.status(400).json({ error: "Invalid subscription data" });
+      }
+      
+      await storage.createPushSubscription(userId, endpoint, keys.p256dh, keys.auth);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error creating push subscription:", error);
+      res.status(500).json({ error: "Failed to create push subscription" });
+    }
+  });
+
+  // Push notifications - unsubscribe
+  app.post("/api/push/unsubscribe", async (req, res) => {
+    try {
+      const { endpoint } = req.body;
+      if (!endpoint) {
+        return res.status(400).json({ error: "Endpoint required" });
+      }
+      
+      await storage.deletePushSubscription(endpoint);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting push subscription:", error);
+      res.status(500).json({ error: "Failed to unsubscribe" });
+    }
+  });
+
   // User bids with listing info
   app.get("/api/account/my-bids", async (req, res) => {
     try {
