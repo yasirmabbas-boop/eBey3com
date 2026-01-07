@@ -70,7 +70,7 @@ export const translations: Translations = {
   usedLikeNew: { ar: "مستعمل - كالجديد", ku: "بەکارهاتوو - وەک نوێ" },
   usedGood: { ar: "مستعمل - جيد", ku: "بەکارهاتوو - باش" },
   usedFair: { ar: "مستعمل - مقبول", ku: "بەکارهاتوو - قبوڵ" },
-  vintage: { ar: "أثري", ku: "کۆن" },
+  vintage: { ar: "فنتج", ku: "کۆن" },
   good: { ar: "جيد", ku: "باش" },
   fair: { ar: "مقبول", ku: "قبوڵ" },
   
