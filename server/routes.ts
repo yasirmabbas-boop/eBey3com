@@ -525,10 +525,13 @@ export async function registerRoutes(
     try {
       const validatedData = insertBidSchema.parse(req.body);
       
-      // Check if user is verified before allowing bids
+      // Check if user is verified and not banned before allowing bids
       const bidder = await storage.getUser(validatedData.userId);
       if (!bidder) {
         return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+      if (bidder.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك المزايدة." });
       }
       if (!bidder.isVerified) {
         return res.status(403).json({ error: "يجب أن تكون موثقاً للمزايدة. يرجى توثيق حسابك أولاً." });
@@ -904,6 +907,12 @@ export async function registerRoutes(
         return res.status(401).json({ error: "يجب تسجيل الدخول لإرسال رسالة" });
       }
       
+      // Check if user is banned
+      const currentUser = await storage.getUser(userId);
+      if (currentUser?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك إرسال الرسائل." });
+      }
+      
       const validatedData = insertMessageSchema.parse(req.body);
       
       // Ensure the sender is the authenticated user
@@ -919,7 +928,6 @@ export async function registerRoutes(
       const message = await storage.sendMessage(validatedData);
       
       // Create notification for the receiver
-      const sender = await storage.getUser(validatedData.senderId);
       const isOffer = validatedData.content?.includes("عرض سعر:");
       
       await storage.createNotification({
@@ -927,8 +935,8 @@ export async function registerRoutes(
         type: isOffer ? "new_offer" : "new_message",
         title: isOffer ? "عرض سعر جديد!" : "رسالة جديدة",
         message: isOffer 
-          ? `${sender?.displayName || "مستخدم"} أرسل لك عرض سعر`
-          : `${sender?.displayName || "مستخدم"} أرسل لك رسالة`,
+          ? `${currentUser?.displayName || "مستخدم"} أرسل لك عرض سعر`
+          : `${currentUser?.displayName || "مستخدم"} أرسل لك رسالة`,
         linkUrl: `/messages/${validatedData.senderId}`,
         relatedId: validatedData.senderId,
       });
@@ -990,6 +998,12 @@ export async function registerRoutes(
       const userId = await getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ error: "يجب تسجيل الدخول للتعليق" });
+      }
+      
+      // Check if user is banned
+      const commenter = await storage.getUser(userId);
+      if (commenter?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك التعليق." });
       }
       
       const validatedData = insertProductCommentSchema.parse(req.body);
@@ -1069,6 +1083,14 @@ export async function registerRoutes(
     try {
       const validatedData = insertTransactionSchema.parse(req.body);
       const sessionUserId = await getUserIdFromRequest(req);
+      
+      // Check if user is banned
+      if (sessionUserId) {
+        const buyer = await storage.getUser(sessionUserId);
+        if (buyer?.isBanned) {
+          return res.status(403).json({ error: "حسابك محظور. لا يمكنك الشراء." });
+        }
+      }
       
       // Check if listing is still available
       const listing = await storage.getListing(validatedData.listingId);
