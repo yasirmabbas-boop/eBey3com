@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send, Trophy, AlertCircle, Eye, Flag } from "lucide-react";
+import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send, Trophy, AlertCircle, Eye, Flag, Globe } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -745,6 +745,17 @@ export default function ProductPage() {
                   : (language === "ar" ? "مجاني (على حساب البائع)" : "بەخۆڕایی (بە تێچووی فرۆشیار)")}
             </span>
           </div>
+          {(listing as any)?.internationalShipping && (
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500 text-sm flex items-center gap-1">
+                <Globe className="h-4 w-4" />
+                {language === "ar" ? "شحن دولي" : "گواستنەوەی نێودەوڵەتی"}
+              </span>
+              <span className="text-sm font-medium text-green-600">
+                {language === "ar" ? "متاح" : "بەردەستە"}
+              </span>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <span className="text-gray-500 text-sm">{t("condition")}</span>
             <span className="text-sm font-medium">{product.condition}</span>

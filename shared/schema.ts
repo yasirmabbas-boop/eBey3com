@@ -300,6 +300,7 @@ export const listings = pgTable("listings", {
   deliveryWindow: text("delivery_window").notNull(),
   shippingCost: integer("shipping_cost").default(0),
   shippingType: text("shipping_type").default("seller_pays"),
+  internationalShipping: boolean("international_shipping").notNull().default(false),
   returnPolicy: text("return_policy").notNull(),
   returnDetails: text("return_details"),
   sellerName: text("seller_name").notNull(),

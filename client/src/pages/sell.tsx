@@ -92,6 +92,7 @@ export default function SellPage() {
   const [hasReservePrice, setHasReservePrice] = useState(false);
   const [allowOffers, setAllowOffers] = useState(false);
   const [allowExchange, setAllowExchange] = useState(false);
+  const [internationalShipping, setInternationalShipping] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -176,6 +177,7 @@ export default function SellPage() {
         if (draft.saleType) setSaleType(draft.saleType);
         if (draft.allowOffers !== undefined) setAllowOffers(draft.allowOffers);
         if (draft.allowExchange !== undefined) setAllowExchange(draft.allowExchange);
+        if (draft.internationalShipping !== undefined) setInternationalShipping(draft.internationalShipping);
         if (draft.hasBuyNow !== undefined) setHasBuyNow(draft.hasBuyNow);
         if (draft.hasReservePrice !== undefined) setHasReservePrice(draft.hasReservePrice);
         if (draft.tags) setTags(draft.tags);
@@ -198,14 +200,14 @@ export default function SellPage() {
       const hasContent = formData.title || formData.description || formData.price || images.length > 0;
       if (hasContent) {
         try {
-          const draft = { formData, images: images.slice(0, 4), saleType, allowOffers, allowExchange, hasBuyNow, hasReservePrice, tags, savedAt: new Date().toISOString() };
+          const draft = { formData, images: images.slice(0, 4), saleType, allowOffers, allowExchange, internationalShipping, hasBuyNow, hasReservePrice, tags, savedAt: new Date().toISOString() };
           localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
         } catch (e) {
           console.warn("Failed to save draft to localStorage:", e);
         }
       }
     }
-  }, [formData, images, saleType, allowOffers, allowExchange, hasBuyNow, hasReservePrice, tags, isNewListing, draftLoaded, showDraftBanner]);
+  }, [formData, images, saleType, allowOffers, allowExchange, internationalShipping, hasBuyNow, hasReservePrice, tags, isNewListing, draftLoaded, showDraftBanner]);
 
   // Populate form when editing, relisting, or using as template
   useEffect(() => {
@@ -256,6 +258,7 @@ export default function SellPage() {
       setSaleType((sourceListing.saleType as "auction" | "fixed") || "fixed");
       setAllowOffers(sourceListing.isNegotiable || false);
       setAllowExchange(sourceListing.isExchangeable || false);
+      setInternationalShipping((sourceListing as any).internationalShipping || false);
       setTags((sourceListing as any).tags || []);
       
       // Set start time option based on whether auction has started
@@ -599,6 +602,7 @@ export default function SellPage() {
         city: formData.city,
         isNegotiable: allowOffers,
         isExchangeable: allowExchange,
+        internationalShipping: internationalShipping,
         serialNumber: formData.serialNumber || null,
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
         tags: tags.length > 0 ? tags : null,
@@ -1927,7 +1931,12 @@ export default function SellPage() {
                     </Label>
                   </div>
                   <div className="flex items-center gap-3 p-3 border rounded-lg border-blue-200 bg-blue-50">
-                    <Checkbox id="internationalShipping" data-testid="checkbox-international-shipping" />
+                    <Checkbox 
+                      id="internationalShipping" 
+                      data-testid="checkbox-international-shipping"
+                      checked={internationalShipping}
+                      onCheckedChange={(checked) => setInternationalShipping(checked === true)}
+                    />
                     <Label htmlFor="internationalShipping" className="cursor-pointer">
                       <span className="font-medium">🌍 شحن دولي</span>
                       <p className="text-xs text-muted-foreground">الشحن لدول محددة</p>
