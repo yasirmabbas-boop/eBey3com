@@ -108,6 +108,8 @@ export default function SellPage() {
     returnDetails: "",
     sellerName: user?.displayName || "",
     city: "",
+    area: "",
+    sku: "",
     startDate: "",
     startHour: "",
     endDate: "",
@@ -238,6 +240,8 @@ export default function SellPage() {
         returnDetails: sourceListing.returnDetails ?? "",
         sellerName: sourceListing.sellerName ?? user?.displayName ?? "",
         city: sourceListing.city ?? "",
+        area: sourceListing.area ?? "",
+        sku: sourceListing.sku ?? "",
         startDate,
         startHour,
         endDate,
@@ -456,16 +460,22 @@ export default function SellPage() {
       let auctionEndTime = null;
       
       if (saleType === "auction") {
-        // Set start time
+        // Set start time - use existing if in edit mode and not changed
         if (startTimeOption === "schedule" && formData.startDate && formData.startHour) {
           auctionStartTime = new Date(`${formData.startDate}T${formData.startHour}:00`).toISOString();
+        } else if (isEditMode && sourceListing?.auctionStartTime && !formData.startDate) {
+          // Preserve existing start time in edit mode if not modified
+          auctionStartTime = new Date(sourceListing.auctionStartTime).toISOString();
         } else {
           auctionStartTime = new Date().toISOString();
         }
         
-        // Set end time - always required
+        // Set end time - use existing if in edit mode and not changed
         if (formData.endDate && formData.endHour) {
           auctionEndTime = new Date(`${formData.endDate}T${formData.endHour}:00`).toISOString();
+        } else if (isEditMode && sourceListing?.auctionEndTime && !formData.endDate) {
+          // Preserve existing end time in edit mode if not modified
+          auctionEndTime = new Date(sourceListing.auctionEndTime).toISOString();
         }
       }
       
@@ -485,12 +495,14 @@ export default function SellPage() {
         auctionEndTime: auctionEndTime,
         deliveryWindow: formData.deliveryWindow,
         shippingType: formData.shippingType,
-        shippingCost: formData.shippingType === "buyer_pays" ? parseInt(formData.shippingCost) || 0 : 0,
+        shippingCost: formData.shippingType === "buyer_pays" ? (parseInt(formData.shippingCost) || 0) : 0,
         returnPolicy: formData.returnPolicy,
         returnDetails: formData.returnDetails || null,
         sellerName: formData.sellerName,
         sellerId: user?.id || null,
         city: formData.city,
+        area: formData.area || null,
+        sku: formData.sku || null,
         isNegotiable: allowOffers,
         isExchangeable: allowExchange,
         internationalShipping: internationalShipping,
@@ -1557,8 +1569,20 @@ export default function SellPage() {
                   <Label htmlFor="area">المنطقة / الحي</Label>
                   <Input 
                     id="area" 
+                    value={formData.area}
+                    onChange={(e) => handleInputChange("area", e.target.value)}
                     placeholder="مثال: الكرادة، المنصور..."
                     data-testid="input-area"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sku">رمز المنتج (SKU)</Label>
+                  <Input 
+                    id="sku" 
+                    value={formData.sku}
+                    onChange={(e) => handleInputChange("sku", e.target.value)}
+                    placeholder="رمز فريد للمنتج (اختياري)"
+                    data-testid="input-sku"
                   />
                 </div>
               </div>

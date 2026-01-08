@@ -306,6 +306,8 @@ export const listings = pgTable("listings", {
   sellerName: text("seller_name").notNull(),
   sellerId: varchar("seller_id"),
   city: text("city").notNull(),
+  area: text("area"),
+  sku: text("sku"),
   isActive: boolean("is_active").notNull().default(true),
   isPaused: boolean("is_paused").notNull().default(false),
   isNegotiable: boolean("is_negotiable").notNull().default(false),
