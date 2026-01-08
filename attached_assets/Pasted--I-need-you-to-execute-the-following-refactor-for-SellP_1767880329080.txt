@@ -1,0 +1,37 @@
+"I need you to execute the following refactor for SellPage.tsx and the associated backend routes. This is a high-priority task to fix data persistence and performance. Follow this execution order strictly:
+
+Phase 1: Database & Model Alignment
+
+    Check Schema: Open shared/schema.ts. Identify the exact names/types for shippingType, shippingCost, area, and sku.
+
+    Clean SellPage: Remove all code related to watchSpecs (state, UI, and auto-fill logic).
+
+    Update State: Ensure the formData object in SellPage.tsx includes area, sku, and shippingCost as keys.
+
+Phase 2: Data Mapping Logic (The 'Edit' Fix)
+
+    Refactor Loading: In the useEffect that loads sourceListing, map every field from the database to the form state.
+
+        Crucial: Use sourceListing.field ?? default to handle nulls correctly.
+
+        Dates: Convert database ISO strings into YYYY-MM-DD for the date input and HH:00 for the hour select.
+
+    Refactor Submission: In handleSubmit, explicitly convert strings to numbers: price: parseInt(formData.price) || 0, shippingCost: parseInt(formData.shippingCost) || 0. Ensure area and sku are included in the final payload.
+
+Phase 3: Backend & API (The 'Persistence' Fix)
+
+    Hardened PATCH Route: In routes.ts, update the PATCH handler. Ensure it only updates fields sent in the request (Partial Update) and verify that it correctly handles the transition of date strings back into Date objects.
+
+Phase 4: Performance & UX Optimization
+
+    Parallel Image Uploads: Refactor handleImageUpload using Promise.all so multiple images upload simultaneously.
+
+    Debounced Drafts: Wrap the localStorage save logic in a 1000ms debounce to prevent 'jank' while typing.
+
+    Component Splitting: Extract the Image Section, Pricing Section, and Shipping Section into separate functional components within SellPage.tsx to prevent full-page re-renders on every keystroke.
+
+Phase 5: Validation & Testing
+
+    Verify that a listing created with 'Buyer Pays Shipping' correctly displays and saves the cost.
+
+    Verify that editing a listing doesn't reset the shippingType to the default value."
