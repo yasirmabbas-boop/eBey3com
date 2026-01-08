@@ -933,7 +933,7 @@ export default function SellPage() {
             {(isEditMode || isRelistMode || isTemplateMode) && (
               <Button
                 variant="outline"
-                onClick={() => setLocation("/seller")}
+                onClick={() => setLocation("/seller-dashboard")}
                 className="gap-2"
                 data-testid="button-cancel-edit"
               >
