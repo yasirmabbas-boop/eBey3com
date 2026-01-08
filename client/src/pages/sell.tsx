@@ -81,6 +81,7 @@ export default function SellPage() {
   const [allowOffers, setAllowOffers] = useState(false);
   const [allowExchange, setAllowExchange] = useState(false);
   const [internationalShipping, setInternationalShipping] = useState(false);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -255,6 +256,7 @@ export default function SellPage() {
       setAllowOffers(sourceListing.isNegotiable ?? false);
       setAllowExchange(sourceListing.isExchangeable ?? false);
       setInternationalShipping(sourceListing.internationalShipping ?? false);
+      setSelectedCountries(sourceListing.internationalCountries ?? []);
       setTags(sourceListing.tags ?? []);
       
       // Set start time option based on whether auction has started
@@ -506,6 +508,7 @@ export default function SellPage() {
         isNegotiable: allowOffers,
         isExchangeable: allowExchange,
         internationalShipping: internationalShipping,
+        internationalCountries: selectedCountries.length > 0 ? selectedCountries : null,
         serialNumber: formData.serialNumber || null,
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
         tags: tags.length > 0 ? tags : null,
@@ -1629,66 +1632,39 @@ export default function SellPage() {
                 <div className="p-4 border border-blue-200 bg-blue-50/50 rounded-lg space-y-3">
                   <Label className="font-medium">الدول المتاحة للشحن الدولي</Label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-jordan" data-testid="checkbox-ship-jordan" />
-                      <Label htmlFor="ship-jordan" className="cursor-pointer text-sm">🇯🇴 الأردن</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-uae" data-testid="checkbox-ship-uae" />
-                      <Label htmlFor="ship-uae" className="cursor-pointer text-sm">🇦🇪 الإمارات</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-saudi" data-testid="checkbox-ship-saudi" />
-                      <Label htmlFor="ship-saudi" className="cursor-pointer text-sm">🇸🇦 السعودية</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-kuwait" data-testid="checkbox-ship-kuwait" />
-                      <Label htmlFor="ship-kuwait" className="cursor-pointer text-sm">🇰🇼 الكويت</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-qatar" data-testid="checkbox-ship-qatar" />
-                      <Label htmlFor="ship-qatar" className="cursor-pointer text-sm">🇶🇦 قطر</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-bahrain" data-testid="checkbox-ship-bahrain" />
-                      <Label htmlFor="ship-bahrain" className="cursor-pointer text-sm">🇧🇭 البحرين</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-oman" data-testid="checkbox-ship-oman" />
-                      <Label htmlFor="ship-oman" className="cursor-pointer text-sm">🇴🇲 عمان</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-lebanon" data-testid="checkbox-ship-lebanon" />
-                      <Label htmlFor="ship-lebanon" className="cursor-pointer text-sm">🇱🇧 لبنان</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-egypt" data-testid="checkbox-ship-egypt" />
-                      <Label htmlFor="ship-egypt" className="cursor-pointer text-sm">🇪🇬 مصر</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-turkey" data-testid="checkbox-ship-turkey" />
-                      <Label htmlFor="ship-turkey" className="cursor-pointer text-sm">🇹🇷 تركيا</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-usa" data-testid="checkbox-ship-usa" />
-                      <Label htmlFor="ship-usa" className="cursor-pointer text-sm">🇺🇸 أمريكا</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-uk" data-testid="checkbox-ship-uk" />
-                      <Label htmlFor="ship-uk" className="cursor-pointer text-sm">🇬🇧 بريطانيا</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-germany" data-testid="checkbox-ship-germany" />
-                      <Label htmlFor="ship-germany" className="cursor-pointer text-sm">🇩🇪 ألمانيا</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-sweden" data-testid="checkbox-ship-sweden" />
-                      <Label htmlFor="ship-sweden" className="cursor-pointer text-sm">🇸🇪 السويد</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox id="ship-australia" data-testid="checkbox-ship-australia" />
-                      <Label htmlFor="ship-australia" className="cursor-pointer text-sm">🇦🇺 أستراليا</Label>
-                    </div>
+                    {[
+                      { id: "jordan", label: "🇯🇴 الأردن", value: "الأردن" },
+                      { id: "uae", label: "🇦🇪 الإمارات", value: "الإمارات" },
+                      { id: "saudi", label: "🇸🇦 السعودية", value: "السعودية" },
+                      { id: "kuwait", label: "🇰🇼 الكويت", value: "الكويت" },
+                      { id: "qatar", label: "🇶🇦 قطر", value: "قطر" },
+                      { id: "bahrain", label: "🇧🇭 البحرين", value: "البحرين" },
+                      { id: "oman", label: "🇴🇲 عمان", value: "عمان" },
+                      { id: "lebanon", label: "🇱🇧 لبنان", value: "لبنان" },
+                      { id: "egypt", label: "🇪🇬 مصر", value: "مصر" },
+                      { id: "turkey", label: "🇹🇷 تركيا", value: "تركيا" },
+                      { id: "usa", label: "🇺🇸 أمريكا", value: "أمريكا" },
+                      { id: "uk", label: "🇬🇧 بريطانيا", value: "بريطانيا" },
+                      { id: "germany", label: "🇩🇪 ألمانيا", value: "ألمانيا" },
+                      { id: "sweden", label: "🇸🇪 السويد", value: "السويد" },
+                      { id: "australia", label: "🇦🇺 أستراليا", value: "أستراليا" },
+                    ].map((country) => (
+                      <div key={country.id} className="flex items-center gap-2">
+                        <Checkbox 
+                          id={`ship-${country.id}`} 
+                          data-testid={`checkbox-ship-${country.id}`}
+                          checked={selectedCountries.includes(country.value)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedCountries(prev => [...prev, country.value]);
+                            } else {
+                              setSelectedCountries(prev => prev.filter(c => c !== country.value));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`ship-${country.id}`} className="cursor-pointer text-sm">{country.label}</Label>
+                      </div>
+                    ))}
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
                     * تكاليف الشحن الدولي يتم الاتفاق عليها مع المشتري
