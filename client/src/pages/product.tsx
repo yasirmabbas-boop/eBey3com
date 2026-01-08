@@ -292,6 +292,11 @@ export default function ProductPage() {
     quantityAvailable: (listing as any).quantityAvailable || 1,
     quantitySold: (listing as any).quantitySold || 0,
     tags: listing.tags || [],
+    shippingType: listing.shippingType || "seller_pays",
+    shippingCost: listing.shippingCost || 0,
+    internationalShipping: listing.internationalShipping || false,
+    internationalCountries: listing.internationalCountries || [],
+    area: listing.area || null,
   } : null;
 
   // Track view when product loads - reset ref on listing change
@@ -738,14 +743,14 @@ export default function ProductPage() {
           <div className="flex items-center justify-between">
             <span className="text-gray-500 text-sm">{language === "ar" ? "الشحن" : "گواستنەوە"}</span>
             <span className="text-sm font-medium">
-              {(listing as any)?.shippingType === "buyer_pays" 
-                ? `${((listing as any)?.shippingCost || 0).toLocaleString()} ${t("iqd")}` 
-                : (listing as any)?.shippingType === "pickup" 
+              {product?.shippingType === "buyer_pays" 
+                ? `${(product?.shippingCost || 0).toLocaleString()} ${t("iqd")}` 
+                : product?.shippingType === "pickup" 
                   ? (language === "ar" ? "استلام شخصي" : "وەرگرتنی کەسی") 
                   : (language === "ar" ? "مجاني (على حساب البائع)" : "بەخۆڕایی (بە تێچووی فرۆشیار)")}
             </span>
           </div>
-          {(listing as any)?.internationalShipping && (
+          {product?.internationalShipping && (
             <div className="flex items-center justify-between">
               <span className="text-gray-500 text-sm flex items-center gap-1">
                 <Globe className="h-4 w-4" />
