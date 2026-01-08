@@ -373,6 +373,23 @@ export async function registerRoutes(
         }
       }
       
+      // Convert date strings to Date objects for timestamp columns
+      if (req.body.auctionStartTime !== undefined && req.body.auctionStartTime !== null) {
+        const parsed = new Date(req.body.auctionStartTime);
+        req.body.auctionStartTime = isNaN(parsed.getTime()) ? null : parsed;
+      }
+      if (req.body.auctionEndTime !== undefined && req.body.auctionEndTime !== null) {
+        const parsed = new Date(req.body.auctionEndTime);
+        req.body.auctionEndTime = isNaN(parsed.getTime()) ? null : parsed;
+      }
+      
+      // Convert shippingCost to number
+      if (req.body.shippingCost !== undefined) {
+        req.body.shippingCost = typeof req.body.shippingCost === "number" 
+          ? req.body.shippingCost 
+          : parseInt(req.body.shippingCost, 10) || 0;
+      }
+      
       const validatedData = updateListingSchema.parse(req.body) as Parameters<typeof storage.updateListing>[1];
       
       const listing = await storage.updateListing(req.params.id, validatedData);

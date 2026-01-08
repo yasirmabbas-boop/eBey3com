@@ -35,20 +35,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Lock,
-  Sparkles,
   Loader2
 } from "lucide-react";
-import { 
-  WATCH_BRANDS, 
-  WATCH_MOVEMENTS, 
-  WATCH_CASE_MATERIALS, 
-  WATCH_BAND_MATERIALS,
-  WATCH_DIAL_COLORS,
-  WATCH_FEATURES,
-  WATCH_CASE_SIZES,
-  WATCH_SHAPES,
-  DEPARTMENT_OPTIONS
-} from "@/lib/search-data";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   const hour = i.toString().padStart(2, '0');
@@ -194,19 +182,23 @@ export default function SellPage() {
     setShowDraftBanner(false);
   };
 
-  // Save draft to localStorage periodically (only for brand new listings)
+  // Save draft to localStorage with debounce (only for brand new listings)
   useEffect(() => {
-    if (isNewListing && draftLoaded && !showDraftBanner) {
-      const hasContent = formData.title || formData.description || formData.price || images.length > 0;
-      if (hasContent) {
-        try {
-          const draft = { formData, images: images.slice(0, 4), saleType, allowOffers, allowExchange, internationalShipping, hasBuyNow, hasReservePrice, tags, savedAt: new Date().toISOString() };
-          localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-        } catch (e) {
-          console.warn("Failed to save draft to localStorage:", e);
-        }
+    if (!isNewListing || !draftLoaded || showDraftBanner) return;
+    
+    const hasContent = formData.title || formData.description || formData.price || images.length > 0;
+    if (!hasContent) return;
+    
+    const timeoutId = setTimeout(() => {
+      try {
+        const draft = { formData, images: images.slice(0, 4), saleType, allowOffers, allowExchange, internationalShipping, hasBuyNow, hasReservePrice, tags, savedAt: new Date().toISOString() };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      } catch (e) {
+        console.warn("Failed to save draft to localStorage:", e);
       }
-    }
+    }, 1000); // 1 second debounce
+    
+    return () => clearTimeout(timeoutId);
   }, [formData, images, saleType, allowOffers, allowExchange, internationalShipping, hasBuyNow, hasReservePrice, tags, isNewListing, draftLoaded, showDraftBanner]);
 
   // Populate form when editing, relisting, or using as template
@@ -230,22 +222,22 @@ export default function SellPage() {
       }
       
       setFormData({
-        title: isTemplateMode ? "" : sourceListing.title || "",
-        description: sourceListing.description || "",
-        price: sourceListing.price?.toString() || "",
-        category: sourceListing.category || "",
-        condition: sourceListing.condition || "",
-        brand: sourceListing.brand || "",
+        title: isTemplateMode ? "" : sourceListing.title ?? "",
+        description: sourceListing.description ?? "",
+        price: sourceListing.price?.toString() ?? "",
+        category: sourceListing.category ?? "",
+        condition: sourceListing.condition ?? "",
+        brand: sourceListing.brand ?? "",
         customBrand: "",
-        serialNumber: isTemplateMode ? "" : sourceListing.serialNumber || "",
-        quantityAvailable: isRelistMode ? "1" : sourceListing.quantityAvailable?.toString() || "1",
-        deliveryWindow: sourceListing.deliveryWindow || "",
-        shippingType: (sourceListing as any).shippingType || "seller_pays",
-        shippingCost: (sourceListing as any).shippingCost?.toString() || "",
-        returnPolicy: sourceListing.returnPolicy || "",
-        returnDetails: sourceListing.returnDetails || "",
-        sellerName: sourceListing.sellerName || user?.displayName || "",
-        city: sourceListing.city || "",
+        serialNumber: isTemplateMode ? "" : sourceListing.serialNumber ?? "",
+        quantityAvailable: isRelistMode ? "1" : sourceListing.quantityAvailable?.toString() ?? "1",
+        deliveryWindow: sourceListing.deliveryWindow ?? "",
+        shippingType: sourceListing.shippingType ?? "seller_pays",
+        shippingCost: sourceListing.shippingCost?.toString() ?? "",
+        returnPolicy: sourceListing.returnPolicy ?? "",
+        returnDetails: sourceListing.returnDetails ?? "",
+        sellerName: sourceListing.sellerName ?? user?.displayName ?? "",
+        city: sourceListing.city ?? "",
         startDate,
         startHour,
         endDate,
@@ -254,12 +246,12 @@ export default function SellPage() {
         buyNowPrice: "",
         bidIncrement: "",
       });
-      setImages(sourceListing.images || []);
-      setSaleType((sourceListing.saleType as "auction" | "fixed") || "fixed");
-      setAllowOffers(sourceListing.isNegotiable || false);
-      setAllowExchange(sourceListing.isExchangeable || false);
-      setInternationalShipping((sourceListing as any).internationalShipping || false);
-      setTags((sourceListing as any).tags || []);
+      setImages(sourceListing.images ?? []);
+      setSaleType((sourceListing.saleType as "auction" | "fixed") ?? "fixed");
+      setAllowOffers(sourceListing.isNegotiable ?? false);
+      setAllowExchange(sourceListing.isExchangeable ?? false);
+      setInternationalShipping(sourceListing.internationalShipping ?? false);
+      setTags(sourceListing.tags ?? []);
       
       // Set start time option based on whether auction has started
       if (sourceListing.auctionStartTime) {
@@ -289,107 +281,6 @@ export default function SellPage() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [formData, images, isNewListing]);
-
-  const [isAutoFilling, setIsAutoFilling] = useState(false);
-  const [watchSpecs, setWatchSpecs] = useState({
-    referenceNumber: "",
-    brand: "",
-    model: "",
-    movement: "",
-    caseMaterial: "",
-    caseSize: "",
-    caseColor: "",
-    dialColor: "",
-    bandMaterial: "",
-    bandColor: "",
-    features: [] as string[],
-    watchShape: "",
-    department: "",
-    countryOfOrigin: "",
-    display: "Analog",
-    indices: "",
-    handedness: "Right",
-    customized: false,
-  });
-
-  const handleAutoFillWatch = async () => {
-    if (!watchSpecs.referenceNumber && !watchSpecs.model) {
-      toast({
-        title: "أدخل رقم المرجع أو الموديل",
-        description: "أدخل رقم المرجع أو اسم الموديل للبحث التلقائي",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsAutoFilling(true);
-
-    setTimeout(() => {
-      if (watchSpecs.referenceNumber.includes("6138") || watchSpecs.model.toLowerCase().includes("seiko")) {
-        setWatchSpecs(prev => ({
-          ...prev,
-          brand: "Seiko",
-          model: prev.model || "Seiko Reverse Baby Panda Chronograph",
-          movement: "Automatic (Self-Winding)",
-          caseMaterial: "Stainless Steel",
-          caseSize: "40mm",
-          caseColor: "Silver",
-          dialColor: "Reverse Panda",
-          bandMaterial: "Stainless Steel",
-          bandColor: "Silver",
-          features: ["Chronograph", "Day/Date"],
-          watchShape: "Round",
-          department: "men",
-          countryOfOrigin: "Japan",
-          display: "Analog",
-          indices: "Arabic Numerals, 12-Hour Dial",
-        }));
-        toast({
-          title: "تم العثور على المواصفات! ✨",
-          description: "تم ملء المواصفات تلقائياً من قاعدة البيانات",
-        });
-      } else if (watchSpecs.referenceNumber.toLowerCase().includes("116610") || watchSpecs.model.toLowerCase().includes("rolex")) {
-        setWatchSpecs(prev => ({
-          ...prev,
-          brand: "Rolex",
-          model: prev.model || "Rolex Submariner Date",
-          movement: "Automatic (Self-Winding)",
-          caseMaterial: "Stainless Steel",
-          caseSize: "41mm",
-          caseColor: "Silver",
-          dialColor: "Black",
-          bandMaterial: "Stainless Steel",
-          bandColor: "Silver",
-          features: ["Date", "Water Resistant"],
-          watchShape: "Round",
-          department: "men",
-          countryOfOrigin: "Switzerland",
-          display: "Analog",
-          indices: "Luminous Markers",
-        }));
-        toast({
-          title: "تم العثور على المواصفات! ✨",
-          description: "تم ملء المواصفات تلقائياً من قاعدة البيانات",
-        });
-      } else {
-        toast({
-          title: "لم يتم العثور على بيانات",
-          description: "يرجى إدخال المواصفات يدوياً",
-          variant: "destructive",
-        });
-      }
-      setIsAutoFilling(false);
-    }, 1500);
-  };
-
-  const toggleWatchFeature = (feature: string) => {
-    setWatchSpecs(prev => ({
-      ...prev,
-      features: prev.features.includes(feature)
-        ? prev.features.filter(f => f !== feature)
-        : [...prev.features, feature]
-    }));
-  };
 
   const isUserVerified = user?.isVerified === true;
 
@@ -424,9 +315,8 @@ export default function SellPage() {
     setIsUploadingImages(true);
 
     try {
-      const uploadedPaths: string[] = [];
-
-      for (const file of filesToUpload) {
+      // Upload all files in parallel using Promise.all
+      const uploadPromises = filesToUpload.map(async (file) => {
         // Step 1: Request presigned URL from backend
         const urlResponse = await fetch("/api/uploads/request-url", {
           method: "POST",
@@ -455,9 +345,10 @@ export default function SellPage() {
           throw new Error("فشل في رفع الصورة");
         }
 
-        // Store the object path (served via /objects/...)
-        uploadedPaths.push(objectPath);
-      }
+        return objectPath;
+      });
+
+      const uploadedPaths = await Promise.all(uploadPromises);
 
       setImages(prev => [...prev, ...uploadedPaths]);
       
@@ -1211,240 +1102,6 @@ export default function SellPage() {
                 <p className="text-xs text-gray-400">{tags.length}/10 كلمات مفتاحية</p>
               </div>
 
-              {/* Watch Specifications - Only show when category is watches */}
-              {formData.category === "ساعات" && (
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-primary flex items-center gap-2">
-                      <Tag className="h-5 w-5" />
-                      مواصفات الساعة التفصيلية
-                    </h3>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAutoFillWatch}
-                      disabled={isAutoFilling}
-                      className="gap-2"
-                      data-testid="button-auto-fill-watch"
-                    >
-                      {isAutoFilling ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4" />
-                      )}
-                      بحث تلقائي
-                    </Button>
-                  </div>
-
-                  <div className="bg-white border border-blue-100 rounded-lg p-3 text-sm text-blue-800">
-                    <p>💡 <strong>نصيحة:</strong> أدخل رقم المرجع (Reference Number) أو اسم الموديل واضغط "بحث تلقائي" لملء المواصفات تلقائياً</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>رقم المرجع (Reference Number)</Label>
-                      <Input
-                        value={watchSpecs.referenceNumber}
-                        onChange={(e) => setWatchSpecs(prev => ({ ...prev, referenceNumber: e.target.value }))}
-                        placeholder="مثال: 6138-8000"
-                        className="text-left bg-white"
-                        dir="ltr"
-                        data-testid="input-reference-number"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>العلامة التجارية (Brand)</Label>
-                      <Select 
-                        value={watchSpecs.brand} 
-                        onValueChange={(v) => setWatchSpecs(prev => ({ ...prev, brand: v }))}
-                      >
-                        <SelectTrigger className="bg-white" data-testid="select-watch-brand">
-                          <SelectValue placeholder="اختر العلامة التجارية" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WATCH_BRANDS.map(brand => (
-                            <SelectItem key={brand.en} value={brand.en}>
-                              {brand.ar} ({brand.en})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Label>الموديل (Model)</Label>
-                      <Input
-                        value={watchSpecs.model}
-                        onChange={(e) => setWatchSpecs(prev => ({ ...prev, model: e.target.value }))}
-                        placeholder="مثال: Seiko Reverse Baby Panda Chronograph"
-                        className="bg-white"
-                        data-testid="input-watch-model"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>نوع الحركة (Movement)</Label>
-                      <Select 
-                        value={watchSpecs.movement} 
-                        onValueChange={(v) => setWatchSpecs(prev => ({ ...prev, movement: v }))}
-                      >
-                        <SelectTrigger className="bg-white" data-testid="select-movement">
-                          <SelectValue placeholder="اختر نوع الحركة" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WATCH_MOVEMENTS.map(m => (
-                            <SelectItem key={m.en} value={m.en}>
-                              {m.ar} ({m.en})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>مادة العلبة (Case Material)</Label>
-                      <Select 
-                        value={watchSpecs.caseMaterial} 
-                        onValueChange={(v) => setWatchSpecs(prev => ({ ...prev, caseMaterial: v }))}
-                      >
-                        <SelectTrigger className="bg-white" data-testid="select-case-material">
-                          <SelectValue placeholder="اختر مادة العلبة" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WATCH_CASE_MATERIALS.map(m => (
-                            <SelectItem key={m.en} value={m.en}>
-                              {m.ar} ({m.en})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>حجم العلبة (Case Size)</Label>
-                      <Select 
-                        value={watchSpecs.caseSize} 
-                        onValueChange={(v) => setWatchSpecs(prev => ({ ...prev, caseSize: v }))}
-                      >
-                        <SelectTrigger className="bg-white" data-testid="select-case-size">
-                          <SelectValue placeholder="اختر حجم العلبة" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WATCH_CASE_SIZES.map(size => (
-                            <SelectItem key={size} value={size}>{size}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>شكل الساعة (Watch Shape)</Label>
-                      <Select 
-                        value={watchSpecs.watchShape} 
-                        onValueChange={(v) => setWatchSpecs(prev => ({ ...prev, watchShape: v }))}
-                      >
-                        <SelectTrigger className="bg-white" data-testid="select-watch-shape">
-                          <SelectValue placeholder="اختر شكل الساعة" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WATCH_SHAPES.map(s => (
-                            <SelectItem key={s.en} value={s.en}>
-                              {s.ar} ({s.en})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>لون القرص (Dial Color)</Label>
-                      <Select 
-                        value={watchSpecs.dialColor} 
-                        onValueChange={(v) => setWatchSpecs(prev => ({ ...prev, dialColor: v }))}
-                      >
-                        <SelectTrigger className="bg-white" data-testid="select-dial-color">
-                          <SelectValue placeholder="اختر لون القرص" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WATCH_DIAL_COLORS.map(c => (
-                            <SelectItem key={c.en} value={c.en}>
-                              {c.ar} ({c.en})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>مادة السوار (Band Material)</Label>
-                      <Select 
-                        value={watchSpecs.bandMaterial} 
-                        onValueChange={(v) => setWatchSpecs(prev => ({ ...prev, bandMaterial: v }))}
-                      >
-                        <SelectTrigger className="bg-white" data-testid="select-band-material">
-                          <SelectValue placeholder="اختر مادة السوار" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WATCH_BAND_MATERIALS.map(m => (
-                            <SelectItem key={m.en} value={m.en}>
-                              {m.ar} ({m.en})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>القسم (Department)</Label>
-                      <Select 
-                        value={watchSpecs.department} 
-                        onValueChange={(v) => setWatchSpecs(prev => ({ ...prev, department: v }))}
-                      >
-                        <SelectTrigger className="bg-white" data-testid="select-department">
-                          <SelectValue placeholder="اختر القسم" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {DEPARTMENT_OPTIONS.map(d => (
-                            <SelectItem key={d.value} value={d.value}>
-                              {d.ar} ({d.en})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>بلد المنشأ (Country of Origin)</Label>
-                      <Input
-                        value={watchSpecs.countryOfOrigin}
-                        onChange={(e) => setWatchSpecs(prev => ({ ...prev, countryOfOrigin: e.target.value }))}
-                        placeholder="مثال: Japan, Switzerland"
-                        className="bg-white"
-                        data-testid="input-country-origin"
-                      />
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Label>المميزات (Features)</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {WATCH_FEATURES.map(f => (
-                          <Badge
-                            key={f.en}
-                            variant={watchSpecs.features.includes(f.en) ? "default" : "outline"}
-                            className="cursor-pointer hover:bg-primary/80 transition-colors"
-                            onClick={() => toggleWatchFeature(f.en)}
-                            data-testid={`feature-${f.en}`}
-                          >
-                            {f.ar}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
