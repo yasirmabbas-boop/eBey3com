@@ -507,7 +507,7 @@ export default function SellPage() {
         sku: formData.sku || null,
         isNegotiable: allowOffers,
         isExchangeable: allowExchange,
-        internationalShipping: internationalShipping,
+        internationalShipping: internationalShipping || selectedCountries.length > 0,
         internationalCountries: selectedCountries.length > 0 ? selectedCountries : null,
         serialNumber: formData.serialNumber || null,
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,

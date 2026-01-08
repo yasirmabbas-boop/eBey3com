@@ -390,6 +390,17 @@ export async function registerRoutes(
           : parseInt(req.body.shippingCost, 10) || 0;
       }
       
+      // Ensure internationalCountries is array or null
+      if (req.body.internationalCountries !== undefined) {
+        if (!Array.isArray(req.body.internationalCountries)) {
+          req.body.internationalCountries = null;
+        }
+      }
+      
+      // Ensure area and sku are strings or null
+      if (req.body.area === "") req.body.area = null;
+      if (req.body.sku === "") req.body.sku = null;
+      
       const validatedData = updateListingSchema.parse(req.body) as Parameters<typeof storage.updateListing>[1];
       
       const listing = await storage.updateListing(req.params.id, validatedData);
