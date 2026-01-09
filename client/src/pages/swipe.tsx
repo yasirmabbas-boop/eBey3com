@@ -95,6 +95,7 @@ export default function SwipePage() {
   const [bidAmount, setBidAmount] = useState("");
   const [offerAmount, setOfferAmount] = useState("");
   const [selectedSaleFilter, setSelectedSaleFilter] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   
   const { data: listingsData, isLoading } = useQuery({
     queryKey: ["/api/listings", selectedCategory, selectedSaleFilter],
@@ -284,27 +285,29 @@ export default function SwipePage() {
   };
 
   const goToNext = useCallback(() => {
-    if (currentIndex < listings.length - 1) {
-      setSlideDirection('up');
-      setTimeout(() => {
-        setCurrentIndex(prev => prev + 1);
-        setSlideDirection(null);
-      }, 300);
-    }
-  }, [currentIndex, listings.length]);
+    if (isTransitioning || currentIndex >= listings.length - 1) return;
+    setIsTransitioning(true);
+    setSlideDirection('up');
+    setTimeout(() => {
+      setCurrentIndex(prev => prev + 1);
+      setSlideDirection(null);
+      setIsTransitioning(false);
+    }, 300);
+  }, [currentIndex, listings.length, isTransitioning]);
 
   const goToPrev = useCallback(() => {
-    if (currentIndex > 0) {
-      setSlideDirection('down');
-      setTimeout(() => {
-        setCurrentIndex(prev => prev - 1);
-        setSlideDirection(null);
-      }, 300);
-    }
+    if (isTransitioning || currentIndex <= 0) return;
+    setIsTransitioning(true);
+    setSlideDirection('down');
+    setTimeout(() => {
+      setCurrentIndex(prev => prev - 1);
+      setSlideDirection(null);
+      setIsTransitioning(false);
+    }, 300);
     if (currentIndex <= 1) {
       showNav();
     }
-  }, [currentIndex, showNav]);
+  }, [currentIndex, showNav, isTransitioning]);
 
   const nextImage = useCallback(() => {
     if (currentListing?.images && currentListing.images.length > 1) {
@@ -341,18 +344,20 @@ export default function SwipePage() {
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (isTransitioning) return;
+    
     const endX = e.changedTouches[0].clientX;
     const endY = e.changedTouches[0].clientY;
     const diffX = touchStart.x - endX;
     const diffY = touchStart.y - endY;
     
     if (Math.abs(diffX) > Math.abs(diffY)) {
-      if (Math.abs(diffX) > 50) {
+      if (Math.abs(diffX) > 80) {
         if (diffX > 0) nextImage();
         else prevImage();
       }
     } else {
-      if (Math.abs(diffY) > 50) {
+      if (Math.abs(diffY) > 100) {
         if (diffY > 0) {
           goToNext();
           hideNav();
