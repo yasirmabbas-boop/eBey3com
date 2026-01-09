@@ -36,6 +36,7 @@ import { AuctionCountdown } from "@/components/auction-countdown";
 import { CategoryCarousel } from "@/components/category-carousel";
 import { FavoriteButton } from "@/components/favorite-button";
 import { ProductGridSkeleton } from "@/components/optimized-image";
+import { EmptySearchState } from "@/components/empty-state";
 import { useLanguage } from "@/lib/i18n";
 import type { Listing } from "@shared/schema";
 
@@ -779,16 +780,11 @@ export default function SearchPage() {
           {isLoading ? (
             <ProductGridSkeleton count={12} />
           ) : filteredProducts.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg">
-              <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">{t("noResults")}</h3>
-              <p className="text-muted-foreground mb-4">{t("tryChangingFilters")}</p>
-              {activeFiltersCount > 0 && (
-                <Button variant="outline" onClick={() => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false })}>
-                  {t("clearFilters")}
-                </Button>
-              )}
-            </div>
+            <EmptySearchState 
+              query={searchQuery || undefined}
+              onClearFilters={activeFiltersCount > 0 ? () => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false }) : undefined}
+              language={language}
+            />
           ) : (
             <div className="space-y-6">
               {/* Group products by category for carousel view */}
@@ -805,10 +801,10 @@ export default function SearchPage() {
 
                 if (categoriesWithProducts.length === 0) {
                   return (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-xl font-bold mb-2">{t("noResults")}</h3>
-                    </div>
+                    <EmptySearchState 
+                      query={searchQuery || undefined}
+                      language={language}
+                    />
                   );
                 }
 

@@ -25,6 +25,7 @@ import {
   Filter,
 } from "lucide-react";
 import { ListSkeleton } from "@/components/optimized-image";
+import { EmptyState } from "@/components/empty-state";
 
 type TimePeriod = "week" | "two_weeks" | "three_months" | "all";
 
@@ -246,27 +247,21 @@ export default function MyBids() {
             <p className="text-muted-foreground">فشل في تحميل المزايدات</p>
           </Card>
         ) : !bids || bids.length === 0 ? (
-          <Card className="p-8 text-center">
-            <Gavel className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">لا توجد مزايدات</h2>
-            <p className="text-muted-foreground mb-4">
-              لم تقم بتقديم أي مزايدات بعد. تصفح المزادات وابدأ المزايدة!
-            </p>
-            <Link href="/search?saleType=auction">
-              <Button>تصفح المزادات</Button>
-            </Link>
-          </Card>
+          <EmptyState
+            type="bids"
+            title="لا توجد مزايدات"
+            description="لم تقم بتقديم أي مزايدات بعد. تصفح المزادات المتاحة وابدأ المزايدة على المنتجات التي تعجبك!"
+            actionLabel="تصفح المزادات"
+            actionHref="/search?saleType=auction"
+          />
         ) : filteredBids.length === 0 ? (
-          <Card className="p-8 text-center">
-            <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">لا توجد مزايدات في هذه الفترة</h2>
-            <p className="text-muted-foreground mb-4">
-              لم تقم بتقديم مزايدات خلال الفترة المحددة. جرب اختيار فترة أطول.
-            </p>
-            <Button variant="outline" onClick={() => setTimePeriod("all")}>
-              عرض جميع المزايدات
-            </Button>
-          </Card>
+          <EmptyState
+            type="bids"
+            title="لا توجد مزايدات في هذه الفترة"
+            description="لم تقم بتقديم مزايدات خلال الفترة المحددة. جرب اختيار فترة زمنية أطول."
+            actionLabel="عرض جميع المزايدات"
+            onAction={() => setTimePeriod("all")}
+          />
         ) : (
           <div className="space-y-4">
             {filteredBids.map((bid) => {

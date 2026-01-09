@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Heart, Loader2, ShoppingBag, Trash2, Eye } from "lucide-react";
 import { ProductGridSkeleton } from "@/components/optimized-image";
+import { EmptyState } from "@/components/empty-state";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { AuctionCountdown } from "@/components/auction-countdown";
@@ -118,19 +119,13 @@ export default function FavoritesPage() {
         {isLoading ? (
           <ProductGridSkeleton count={6} />
         ) : favoriteListings.length === 0 ? (
-          <div className="text-center py-12">
-            <Heart className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-            <h2 className="text-xl font-bold mb-2">لا توجد منتجات في المفضلة</h2>
-            <p className="text-gray-500 mb-6">
-              أضف منتجات إلى قائمة المفضلة بالنقر على أيقونة القلب
-            </p>
-            <Link href="/search">
-              <Button>
-                <ShoppingBag className="h-4 w-4 ml-2" />
-                تصفح المنتجات
-              </Button>
-            </Link>
-          </div>
+          <EmptyState
+            type="favorites"
+            title="لا توجد منتجات في المفضلة"
+            description="أضف منتجات إلى قائمة المفضلة بالنقر على أيقونة القلب لتتمكن من العودة إليها لاحقاً"
+            actionLabel="تصفح المنتجات"
+            actionHref="/search"
+          />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {favoriteListings.map((listing) => (

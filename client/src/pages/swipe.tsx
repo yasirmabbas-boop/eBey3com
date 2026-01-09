@@ -457,8 +457,17 @@ export default function SwipePage() {
         
         <div className="h-24 shrink-0"></div>
         
-        <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
-          <p className="text-white/70 mb-4">لا توجد منتجات مطابقة للفلاتر المحددة</p>
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+          <div className="relative mx-auto w-20 h-20 mb-5">
+            <div className="absolute inset-0 bg-white/10 rounded-full" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Package className="h-10 w-10 text-white/40" />
+            </div>
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">لا توجد منتجات</h3>
+          <p className="text-white/60 mb-5 text-sm max-w-xs">
+            لا توجد منتجات مطابقة للفلاتر المحددة. جرب تغيير الفئة أو نوع البيع.
+          </p>
           <Button 
             className="bg-blue-500 hover:bg-blue-600 text-white"
             onClick={() => { setSelectedCategory(null); setSelectedSaleFilter(null); }}
