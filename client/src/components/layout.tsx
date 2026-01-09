@@ -60,7 +60,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
 
       {/* Combined Top Bar */}
       {!hideHeader && (
-      <div className={`${isAuthenticated && (user as any)?.sellerApproved ? 'bg-gradient-to-l from-green-600 via-green-500 to-green-600' : 'bg-[#1E3A8A]'} text-white py-2.5 text-sm px-4 font-medium`}>
+      <div className={`${isAuthenticated && user?.sellerApproved ? 'bg-gradient-to-l from-green-600 via-green-500 to-green-600' : 'bg-[#1E3A8A]'} text-white py-2.5 text-sm px-4 font-medium`}>
         <div className="container mx-auto flex justify-between items-center">
           {/* Navigation Links - Desktop only */}
           <div className="hidden md:flex items-center gap-5">
@@ -76,11 +76,11 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
             {isAuthenticated ? (
               <>
                 <span className="hidden sm:flex items-center gap-1.5 font-bold text-base">
-                  {(user as any)?.sellerApproved ? <Store className="h-4 w-4" /> : <User className="h-4 w-4" />}
-                  {user?.displayName || (user as any)?.phone}
+                  {user?.sellerApproved ? <Store className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                  {user?.displayName || user?.phone}
                 </span>
                 <Link href="/my-account" className="hidden sm:inline hover:opacity-80 font-medium">{t("myAccount")}</Link>
-                {(user as any)?.sellerApproved ? (
+                {user?.sellerApproved ? (
                   <Link href="/seller-dashboard" className="hidden sm:inline hover:opacity-80 font-medium">{t("myShop")}</Link>
                 ) : (
                   <Link href="/my-purchases" className="hidden sm:inline hover:opacity-80 font-medium">{t("myPurchases")}</Link>
@@ -93,7 +93,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                   <LogOut className="h-4 w-4" />
                   <span className="hidden sm:inline">{t("logout")}</span>
                 </button>
-                {(user as any)?.sellerApproved && (
+                {user?.sellerApproved && (
                   <Link 
                     href="/sell" 
                     className="bg-white text-[#1E3A8A] hover:bg-gray-100 px-4 py-1.5 rounded-full font-bold flex items-center gap-1.5 transition-colors text-sm shadow-md"
@@ -164,7 +164,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                   {isAuthenticated && (
                     <>
                       <Link href="/my-account" className="text-lg text-primary font-semibold">{t("myAccount")}</Link>
-                      {(user as any)?.sellerApproved && (
+                      {user?.sellerApproved && (
                         <>
                           <Link href="/seller-dashboard" className="text-lg">{t("sellerDashboard")}</Link>
                           <Link href="/sell" className="text-lg">{t("addProduct")}</Link>

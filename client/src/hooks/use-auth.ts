@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { User } from "@shared/models/auth";
 
-interface AuthUser {
+export interface AuthUser {
   id: string;
   phone?: string | null;
   email?: string | null;
@@ -12,6 +12,16 @@ interface AuthUser {
   isAdmin?: boolean;
   accountCode?: string | null;
   isVerified?: boolean;
+  isBanned?: boolean;
+  banReason?: string | null;
+  rating?: number | null;
+  ratingCount?: number;
+  buyerRating?: number | null;
+  buyerRatingCount?: number;
+  totalSales?: number;
+  city?: string | null;
+  createdAt?: string | Date;
+  twoFactorEnabled?: boolean;
 }
 
 function getAuthToken(): string | null {

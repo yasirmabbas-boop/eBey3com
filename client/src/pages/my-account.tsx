@@ -62,7 +62,7 @@ export default function MyAccount() {
 
   const { data: sellerSummary } = useQuery<SellerSummary>({
     queryKey: ["/api/account/seller-summary"],
-    enabled: !!user?.id && (user as any)?.sellerApproved,
+    enabled: !!user?.id && user?.sellerApproved,
   });
 
   const { data: unreadMessages = 0 } = useQuery<number>({
@@ -222,8 +222,8 @@ export default function MyAccount() {
     </Link>
   );
 
-  const memberSince = (user as any).createdAt 
-    ? new Date((user as any).createdAt).getFullYear() 
+  const memberSince = user.createdAt 
+    ? new Date(user.createdAt).getFullYear() 
     : new Date().getFullYear();
 
   return (
@@ -234,17 +234,17 @@ export default function MyAccount() {
           {/* Profile Header */}
           <div className="flex items-center gap-4 py-6 border-b bg-white rounded-t-xl px-4 -mx-4 md:mx-0 md:px-6">
             <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl">
-              {user.displayName?.charAt(0) || (user as any).phone?.charAt(0) || "م"}
+              {user.displayName?.charAt(0) || user.phone?.charAt(0) || "م"}
             </div>
             <div className="flex-1">
-              <h1 className="font-bold text-lg text-gray-900">{user.displayName || (user as any).phone}</h1>
+              <h1 className="font-bold text-lg text-gray-900">{user.displayName || user.phone}</h1>
               <p className="text-sm text-gray-500">عضو منذ {memberSince}</p>
-              {(user as any).sellerApproved && (
+              {user.sellerApproved && (
                 <div className="flex items-center gap-1 mt-1">
                   <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                   <span className="text-sm text-gray-600">
-                    {(user as any).rating ? `${Math.round((user as any).rating * 20)}% تقييم إيجابي` : "جديد"} 
-                    {(user as any).totalSales ? ` • ${(user as any).totalSales} عملية بيع` : ""}
+                    {user.rating ? `${Math.round(user.rating * 20)}% تقييم إيجابي` : "جديد"} 
+                    {user.totalSales ? ` • ${user.totalSales} عملية بيع` : ""}
                   </span>
                 </div>
               )}
@@ -279,7 +279,7 @@ export default function MyAccount() {
           {/* Selling Section - Show for all users but highlight for sellers */}
           <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
             <h2 className="text-lg font-bold text-gray-900 mb-2">البيع</h2>
-            {!(user as any).sellerApproved ? (
+            {!user.sellerApproved ? (
               <div className="py-4">
                 <Link href="/sell">
                   <div className="flex items-center gap-4 py-4 px-4 bg-primary/5 rounded-xl cursor-pointer hover:bg-primary/10 transition-colors border border-primary/20">
