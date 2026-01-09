@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation, Link, useSearch } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import type { Listing } from "@shared/schema";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,8 +45,23 @@ const IRAQI_PROVINCES = [
 export default function SellWizardPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const { user, isLoading: authLoading } = useAuth();
   const { language, t } = useLanguage();
+  
+  const urlParams = new URLSearchParams(searchString);
+  const editListingId = urlParams.get("edit");
+  const isEditMode = !!editListingId;
+  
+  const { data: sourceListing, isLoading: sourceListingLoading } = useQuery<Listing>({
+    queryKey: ["/api/listings", editListingId],
+    queryFn: async () => {
+      const res = await fetch(`/api/listings/${editListingId}`);
+      if (!res.ok) throw new Error("Listing not found");
+      return res.json();
+    },
+    enabled: !!editListingId,
+  });
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,10 +95,48 @@ export default function SellWizardPage() {
   });
 
   useEffect(() => {
-    if (user?.displayName && !formData.sellerName) {
+    if (user?.displayName && !formData.sellerName && !isEditMode) {
       setFormData(prev => ({ ...prev, sellerName: user.displayName || "" }));
     }
-  }, [user]);
+  }, [user, isEditMode]);
+
+  useEffect(() => {
+    if (sourceListing && isEditMode) {
+      let endDate = "";
+      let endHour = "23";
+      
+      if (sourceListing.auctionEndTime) {
+        const end = new Date(sourceListing.auctionEndTime);
+        endDate = end.toISOString().split('T')[0];
+        endHour = end.getHours().toString().padStart(2, '0');
+      }
+      
+      setFormData({
+        title: sourceListing.title ?? "",
+        description: sourceListing.description ?? "",
+        category: sourceListing.category ?? "",
+        condition: sourceListing.condition ?? "",
+        brand: sourceListing.brand ?? "",
+        price: sourceListing.price?.toString() ?? "",
+        buyNowPrice: sourceListing.buyNowPrice?.toString() ?? "",
+        reservePrice: sourceListing.reservePrice?.toString() ?? "",
+        endDate,
+        endHour,
+        city: sourceListing.city ?? "",
+        area: sourceListing.area ?? "",
+        deliveryWindow: sourceListing.deliveryWindow ?? "3-5 أيام",
+        shippingType: sourceListing.shippingType ?? "seller_pays",
+        shippingCost: sourceListing.shippingCost?.toString() ?? "",
+        returnPolicy: sourceListing.returnPolicy ?? "لا يوجد إرجاع",
+        quantityAvailable: sourceListing.quantityAvailable?.toString() ?? "1",
+        sellerName: sourceListing.sellerName ?? user?.displayName ?? "",
+      });
+      setImages(sourceListing.images ?? []);
+      setSaleType((sourceListing.saleType as "auction" | "fixed") ?? "fixed");
+      setIsNegotiable(sourceListing.isNegotiable ?? false);
+      setTags(sourceListing.tags ?? []);
+    }
+  }, [sourceListing, isEditMode, user?.displayName]);
 
   const handleInputChange = useCallback((field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -215,8 +270,11 @@ export default function SellWizardPage() {
         sellerName: formData.sellerName || user?.displayName || "بائع",
       };
       
-      const res = await fetch("/api/listings", {
-        method: "POST",
+      const url = isEditMode ? `/api/listings/${editListingId}` : "/api/listings";
+      const method = isEditMode ? "PATCH" : "POST";
+      
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
@@ -226,17 +284,19 @@ export default function SellWizardPage() {
       
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || "Failed to create listing");
+        throw new Error(error.error || (isEditMode ? "Failed to update listing" : "Failed to create listing"));
       }
       
-      const newListing = await res.json();
+      const resultListing = await res.json();
       
       toast({
         title: language === "ar" ? "تم بنجاح!" : "سەرکەوتوو بوو!",
-        description: language === "ar" ? "تم نشر منتجك بنجاح" : "بەرهەمەکەت بە سەرکەوتوویی بڵاوکرایەوە",
+        description: isEditMode 
+          ? (language === "ar" ? "تم تحديث منتجك بنجاح" : "بەرهەمەکەت بە سەرکەوتوویی نوێکرایەوە")
+          : (language === "ar" ? "تم نشر منتجك بنجاح" : "بەرهەمەکەت بە سەرکەوتوویی بڵاوکرایەوە"),
       });
       
-      setLocation(`/product/${newListing.id}`);
+      setLocation(`/product/${resultListing.id}`);
     } catch (error: any) {
       toast({
         title: language === "ar" ? "خطأ" : "هەڵە",
@@ -248,7 +308,7 @@ export default function SellWizardPage() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || (isEditMode && sourceListingLoading)) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
