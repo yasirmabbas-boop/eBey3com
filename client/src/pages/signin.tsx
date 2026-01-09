@@ -11,6 +11,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useLanguage } from "@/lib/i18n";
+import { FormError } from "@/components/form-error";
+import { validatePhone, validatePassword } from "@/lib/form-validation";
 
 type Step = "credentials" | "2fa";
 
@@ -35,6 +37,13 @@ export default function SignIn() {
     phone: "",
     password: "",
   });
+  const [touched, setTouched] = useState({
+    phone: false,
+    password: false,
+  });
+  
+  const phoneValidation = touched.phone ? validatePhone(formData.phone, language) : { valid: true };
+  const passwordValidation = touched.password ? validatePassword(formData.password, language) : { valid: true };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,11 +198,13 @@ export default function SignIn() {
                       placeholder="07xxxxxxxxx"
                       value={formData.phone}
                       onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                      className="pr-10"
+                      onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
+                      className={`pr-10 ${!phoneValidation.valid ? "border-destructive focus-visible:ring-destructive" : ""}`}
                       dir="ltr"
                       data-testid="input-phone"
                     />
                   </div>
+                  <FormError message={phoneValidation.message} />
                 </div>
 
                 <div className="space-y-2">
@@ -206,10 +217,12 @@ export default function SignIn() {
                       placeholder={t("enterPassword")}
                       value={formData.password}
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                      className="pr-10"
+                      onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
+                      className={`pr-10 ${!passwordValidation.valid ? "border-destructive focus-visible:ring-destructive" : ""}`}
                       data-testid="input-password"
                     />
                   </div>
+                  <FormError message={passwordValidation.message} />
                 </div>
 
                 <Button 
