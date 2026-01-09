@@ -30,6 +30,7 @@ import MySales from "@/pages/my-sales";
 import SellerDashboard from "@/pages/seller-dashboard";
 import BuyerDashboard from "@/pages/buyer-dashboard";
 import SellPage from "@/pages/sell";
+import SellWizardPage from "@/pages/sell-wizard";
 import DealsGuide from "@/pages/deals-guide";
 import CartPage from "@/pages/cart";
 import CheckoutPage from "@/pages/checkout";
@@ -73,7 +74,8 @@ function Router() {
       <Route path="/security" component={Security} />
       <Route path="/security-settings" component={SecuritySettings} />
       <Route path="/settings" component={Settings} />
-      <Route path="/sell" component={SellPage} />
+      <Route path="/sell" component={SellWizardPage} />
+      <Route path="/sell-old" component={SellPage} />
       <Route path="/deals-guide" component={DealsGuide} />
       <Route path="/cart" component={CartPage} />
       <Route path="/checkout" component={CheckoutPage} />

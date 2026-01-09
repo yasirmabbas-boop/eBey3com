@@ -3,3 +3,4 @@ export { BasicInfoSection } from "./BasicInfoSection";
 export { SaleTypeSection } from "./SaleTypeSection";
 export { SchedulingSection } from "./SchedulingSection";
 export { ShippingSection } from "./ShippingSection";
+export { SellWizard } from "./SellWizard";
