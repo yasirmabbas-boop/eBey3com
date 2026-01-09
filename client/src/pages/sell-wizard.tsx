@@ -85,36 +85,65 @@ export default function SellWizardPage() {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files?.length) return;
+    if (!files || files.length === 0) return;
+
+    const maxFiles = 8 - images.length;
+    const filesToUpload = Array.from(files).slice(0, maxFiles);
     
+    if (filesToUpload.length === 0) {
+      toast({
+        title: language === "ar" ? "الحد الأقصى للصور" : "زۆرترین ژمارەی وێنە",
+        description: language === "ar" ? "يمكنك رفع 8 صور كحد أقصى" : "دەتوانیت ٨ وێنە زۆرترین بارکەیت",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsUploadingImages(true);
     
     try {
-      const uploadPromises = Array.from(files).slice(0, 8 - images.length).map(async (file) => {
-        const formData = new FormData();
-        formData.append("file", file);
-        
-        const res = await fetch("/api/upload", {
+      const uploadPromises = filesToUpload.map(async (file) => {
+        const urlResponse = await fetch("/api/uploads/request-url", {
           method: "POST",
-          body: formData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: file.name,
+            size: file.size,
+            contentType: file.type || "image/jpeg",
+          }),
         });
-        
-        if (!res.ok) throw new Error("Upload failed");
-        const data = await res.json();
-        return data.url;
+
+        if (!urlResponse.ok) {
+          throw new Error(language === "ar" ? "فشل في الحصول على رابط الرفع" : "شکست لە وەرگرتنی بەستەری بارکردن");
+        }
+
+        const { uploadURL, objectPath } = await urlResponse.json();
+
+        const uploadResponse = await fetch(uploadURL, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type || "image/jpeg" },
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error(language === "ar" ? "فشل في رفع الصورة" : "شکست لە بارکردنی وێنە");
+        }
+
+        return objectPath;
       });
       
-      const uploadedUrls = await Promise.all(uploadPromises);
-      setImages(prev => [...prev, ...uploadedUrls.filter(Boolean)]);
+      const uploadedPaths = await Promise.all(uploadPromises);
+      setImages(prev => [...prev, ...uploadedPaths]);
       
       toast({
-        title: language === "ar" ? "تم الرفع" : "بارکرا",
-        description: language === "ar" ? "تم رفع الصور بنجاح" : "وێنەکان بە سەرکەوتوویی بارکران",
+        title: language === "ar" ? "تم رفع الصور بنجاح" : "وێنەکان بە سەرکەوتوویی بارکران",
+        description: `${language === "ar" ? "تم رفع" : "بارکرا"} ${uploadedPaths.length} ${language === "ar" ? "صورة" : "وێنە"}`,
       });
     } catch (error) {
+      console.error("Image upload error:", error);
       toast({
-        title: language === "ar" ? "خطأ" : "هەڵە",
-        description: language === "ar" ? "فشل رفع الصور" : "بارکردنی وێنەکان سەرکەوتوو نەبوو",
+        title: language === "ar" ? "خطأ في رفع الصور" : "هەڵە لە بارکردنی وێنەکان",
+        description: error instanceof Error ? error.message : (language === "ar" ? "حدث خطأ أثناء رفع الصور" : "هەڵەیەک ڕوویدا لە کاتی بارکردنی وێنەکان"),
         variant: "destructive",
       });
     } finally {
