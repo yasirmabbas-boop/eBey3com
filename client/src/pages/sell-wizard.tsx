@@ -89,7 +89,9 @@ export default function SellWizardPage() {
     deliveryWindow: "3-5 أيام",
     shippingType: "seller_pays",
     shippingCost: "",
-    returnPolicy: "لا يوجد إرجاع",
+    returnPolicy: "",
+    startDate: "",
+    startHour: "00",
     quantityAvailable: "1",
     sellerName: "",
   });
@@ -127,7 +129,9 @@ export default function SellWizardPage() {
         deliveryWindow: sourceListing.deliveryWindow ?? "3-5 أيام",
         shippingType: sourceListing.shippingType ?? "seller_pays",
         shippingCost: sourceListing.shippingCost?.toString() ?? "",
-        returnPolicy: sourceListing.returnPolicy ?? "لا يوجد إرجاع",
+        returnPolicy: sourceListing.returnPolicy ?? "",
+        startDate: "",
+        startHour: "00",
         quantityAvailable: sourceListing.quantityAvailable?.toString() ?? "1",
         sellerName: sourceListing.sellerName ?? user?.displayName ?? "",
       });
@@ -217,8 +221,8 @@ export default function SellWizardPage() {
   const stepValidation = [
     images.length > 0,
     formData.title.trim().length >= 5 && formData.description.trim().length >= 10 && !!formData.category && !!formData.condition,
-    !!formData.price && parseInt(formData.price) >= 1000 && (saleType === "fixed" || (!!formData.endDate && !!formData.endHour)),
-    !!formData.city && !!formData.deliveryWindow,
+    !!formData.price && parseInt(formData.price) >= 1000 && (saleType === "fixed" || (!!formData.startDate && !!formData.startHour && !!formData.endDate && !!formData.endHour)),
+    !!formData.city && !!formData.deliveryWindow && !!formData.returnPolicy,
     true,
   ];
 
@@ -237,10 +241,17 @@ export default function SellWizardPage() {
     try {
       const authToken = localStorage.getItem("authToken");
       
+      let auctionStartTime: string | null = null;
       let auctionEndTime: string | null = null;
-      if (saleType === "auction" && formData.endDate) {
-        const endDateTime = new Date(`${formData.endDate}T${formData.endHour}:00:00`);
-        auctionEndTime = endDateTime.toISOString();
+      if (saleType === "auction") {
+        if (formData.startDate) {
+          const startDateTime = new Date(`${formData.startDate}T${formData.startHour}:00:00`);
+          auctionStartTime = startDateTime.toISOString();
+        }
+        if (formData.endDate) {
+          const endDateTime = new Date(`${formData.endDate}T${formData.endHour}:00:00`);
+          auctionEndTime = endDateTime.toISOString();
+        }
       }
       
       const listingData = {
@@ -252,7 +263,7 @@ export default function SellWizardPage() {
         brand: formData.brand || "بدون ماركة",
         images,
         saleType,
-        auctionStartTime: saleType === "auction" ? new Date().toISOString() : null,
+        auctionStartTime,
         auctionEndTime,
         buyNowPrice: formData.buyNowPrice ? parseInt(formData.buyNowPrice) : null,
         reservePrice: formData.reservePrice ? parseInt(formData.reservePrice) : null,
@@ -296,6 +307,7 @@ export default function SellWizardPage() {
           : (language === "ar" ? "تم نشر منتجك بنجاح" : "بەرهەمەکەت بە سەرکەوتوویی بڵاوکرایەوە"),
       });
       
+      window.history.replaceState(null, "", `/product/${resultListing.id}`);
       setLocation(`/product/${resultListing.id}`);
     } catch (error: any) {
       toast({
@@ -429,19 +441,12 @@ export default function SellWizardPage() {
             
             <div className="space-y-2">
               <Label>{language === "ar" ? "الماركة" : "براند"}</Label>
-              <Select value={formData.brand} onValueChange={(v) => handleInputChange("brand", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder={language === "ar" ? "اختياري" : "ئارەزوومەندانە"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Rolex">Rolex</SelectItem>
-                  <SelectItem value="Omega">Omega</SelectItem>
-                  <SelectItem value="Seiko">Seiko</SelectItem>
-                  <SelectItem value="Apple">Apple</SelectItem>
-                  <SelectItem value="Samsung">Samsung</SelectItem>
-                  <SelectItem value="بدون ماركة">{language === "ar" ? "بدون ماركة" : "بێ براند"}</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                placeholder={language === "ar" ? "اكتب اسم الماركة (اختياري)" : "ناوی براند بنووسە (ئارەزوومەندانە)"}
+                value={formData.brand}
+                onChange={(e) => handleInputChange("brand", e.target.value)}
+                data-testid="input-brand"
+              />
             </div>
 
             <div className="space-y-3">
@@ -549,17 +554,43 @@ export default function SellWizardPage() {
                 <Separator />
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
+                    <Label>{language === "ar" ? "تاريخ البداية" : "ڕێکەوتی دەستپێک"} *</Label>
+                    <Input 
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => handleInputChange("startDate", e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      data-testid="input-start-date"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{language === "ar" ? "ساعة البداية" : "کاتژمێری دەستپێک"} *</Label>
+                    <Select value={formData.startHour} onValueChange={(v) => handleInputChange("startHour", v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {HOURS.map(({ value, label }) => (
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label>{language === "ar" ? "تاريخ الانتهاء" : "ڕێکەوتی کۆتایی"} *</Label>
                     <Input 
                       type="date"
                       value={formData.endDate}
                       onChange={(e) => handleInputChange("endDate", e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
+                      min={formData.startDate || new Date().toISOString().split('T')[0]}
                       data-testid="input-end-date"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{language === "ar" ? "الساعة" : "کاتژمێر"} *</Label>
+                    <Label>{language === "ar" ? "ساعة الانتهاء" : "کاتژمێری کۆتایی"} *</Label>
                     <Select value={formData.endHour} onValueChange={(v) => handleInputChange("endHour", v)}>
                       <SelectTrigger>
                         <SelectValue />
@@ -585,26 +616,30 @@ export default function SellWizardPage() {
               </>
             )}
             
-            <Separator />
-            
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center gap-3">
-                <MessageSquare className="h-5 w-5 text-blue-600" />
-                <div>
-                  <Label className="font-medium">
-                    {language === "ar" ? "قابل للتفاوض" : "دەکرێت گفتوگۆ بکرێت"}
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    {language === "ar" ? "السماح للمشترين بتقديم عروض أسعار" : "ڕێگە بدە بە کڕیاران پێشنیاری نرخ بکەن"}
-                  </p>
+            {saleType === "fixed" && (
+              <>
+                <Separator />
+                
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <MessageSquare className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <Label className="font-medium">
+                        {language === "ar" ? "قابل للتفاوض" : "دەکرێت گفتوگۆ بکرێت"}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {language === "ar" ? "السماح للمشترين بتقديم عروض أسعار" : "ڕێگە بدە بە کڕیاران پێشنیاری نرخ بکەن"}
+                      </p>
+                    </div>
+                  </div>
+                  <Checkbox 
+                    checked={isNegotiable}
+                    onCheckedChange={(checked) => setIsNegotiable(!!checked)}
+                    data-testid="checkbox-negotiable"
+                  />
                 </div>
-              </div>
-              <Checkbox 
-                checked={isNegotiable}
-                onCheckedChange={(checked) => setIsNegotiable(!!checked)}
-                data-testid="checkbox-negotiable"
-              />
-            </div>
+              </>
+            )}
           </div>
 
           {/* Step 4: Shipping */}
@@ -683,6 +718,22 @@ export default function SellWizardPage() {
                   onChange={(e) => handleInputChange("shippingCost", e.target.value)}
                 />
               )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label>{language === "ar" ? "سياسة الإرجاع" : "سیاسەتی گەڕانەوە"} *</Label>
+              <Select value={formData.returnPolicy} onValueChange={(v) => handleInputChange("returnPolicy", v)}>
+                <SelectTrigger data-testid="select-return-policy">
+                  <SelectValue placeholder={language === "ar" ? "اختر سياسة الإرجاع" : "سیاسەتی گەڕانەوە هەڵبژێرە"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="لا يوجد إرجاع">{language === "ar" ? "لا يوجد إرجاع" : "گەڕانەوە نییە"}</SelectItem>
+                  <SelectItem value="3 أيام">{language === "ar" ? "إرجاع خلال 3 أيام" : "گەڕانەوە لە ماوەی ٣ ڕۆژ"}</SelectItem>
+                  <SelectItem value="7 أيام">{language === "ar" ? "إرجاع خلال 7 أيام" : "گەڕانەوە لە ماوەی ٧ ڕۆژ"}</SelectItem>
+                  <SelectItem value="14 يوم">{language === "ar" ? "إرجاع خلال 14 يوم" : "گەڕانەوە لە ماوەی ١٤ ڕۆژ"}</SelectItem>
+                  <SelectItem value="30 يوم">{language === "ar" ? "إرجاع خلال 30 يوم" : "گەڕانەوە لە ماوەی ٣٠ ڕۆژ"}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
           </div>

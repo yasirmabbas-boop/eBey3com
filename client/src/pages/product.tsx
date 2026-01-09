@@ -73,6 +73,11 @@ export default function ProductPage() {
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
 
+  // Scroll to top on page load
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [params?.id]);
+
   // Sync carousel with selected image index
   useEffect(() => {
     if (!carouselApi) return;
