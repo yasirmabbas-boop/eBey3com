@@ -288,25 +288,31 @@ export default function SwipePage() {
     if (isTransitioning || currentIndex >= listings.length - 1) return;
     setIsTransitioning(true);
     setSlideDirection('up');
-    setTimeout(() => {
-      setCurrentIndex(prev => prev + 1);
-      setSlideDirection(null);
-      setIsTransitioning(false);
-    }, 300);
+    
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        setCurrentIndex(prev => prev + 1);
+        setSlideDirection(null);
+        setTimeout(() => setIsTransitioning(false), 50);
+      }, 250);
+    });
   }, [currentIndex, listings.length, isTransitioning]);
 
   const goToPrev = useCallback(() => {
     if (isTransitioning || currentIndex <= 0) return;
     setIsTransitioning(true);
     setSlideDirection('down');
-    setTimeout(() => {
-      setCurrentIndex(prev => prev - 1);
-      setSlideDirection(null);
-      setIsTransitioning(false);
-    }, 300);
-    if (currentIndex <= 1) {
-      showNav();
-    }
+    
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        setCurrentIndex(prev => prev - 1);
+        setSlideDirection(null);
+        setTimeout(() => setIsTransitioning(false), 50);
+        if (currentIndex <= 1) {
+          showNav();
+        }
+      }, 250);
+    });
   }, [currentIndex, showNav, isTransitioning]);
 
   const nextImage = useCallback(() => {
@@ -352,12 +358,12 @@ export default function SwipePage() {
     const diffY = touchStart.y - endY;
     
     if (Math.abs(diffX) > Math.abs(diffY)) {
-      if (Math.abs(diffX) > 80) {
+      if (Math.abs(diffX) > 50) {
         if (diffX > 0) nextImage();
         else prevImage();
       }
     } else {
-      if (Math.abs(diffY) > 100) {
+      if (Math.abs(diffY) > 60) {
         if (diffY > 0) {
           goToNext();
           hideNav();
@@ -543,8 +549,8 @@ export default function SwipePage() {
         {/* Previous product peek (top) */}
         {prevListing && (
           <div 
-            className={`absolute inset-x-0 -top-full h-full transition-transform duration-300 ease-out ${
-              slideDirection === 'down' ? 'translate-y-full' : ''
+            className={`absolute inset-x-0 -top-full h-full will-change-transform ${
+              slideDirection === 'down' ? 'translate-y-full transition-transform duration-[250ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]' : 'transition-none'
             }`}
           >
             {prevListing.images?.[0] && (
@@ -559,9 +565,9 @@ export default function SwipePage() {
 
         {/* Current product */}
         <div 
-          className={`absolute inset-0 transition-transform duration-300 ease-out ${
-            slideDirection === 'up' ? '-translate-y-full' : 
-            slideDirection === 'down' ? 'translate-y-full' : ''
+          className={`absolute inset-0 will-change-transform ${
+            slideDirection === 'up' ? '-translate-y-full transition-transform duration-[250ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]' : 
+            slideDirection === 'down' ? 'translate-y-full transition-transform duration-[250ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]' : 'transition-none'
           }`}
         >
           {/* Image carousel */}
@@ -619,8 +625,8 @@ export default function SwipePage() {
         {/* Next product peek (bottom) */}
         {nextListing && (
           <div 
-            className={`absolute inset-x-0 top-full h-full transition-transform duration-400 ease-out ${
-              slideDirection === 'up' ? '-translate-y-full' : ''
+            className={`absolute inset-x-0 top-full h-full will-change-transform ${
+              slideDirection === 'up' ? '-translate-y-full transition-transform duration-[250ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]' : 'transition-none'
             }`}
           >
             {nextListing.images?.[0] && (
