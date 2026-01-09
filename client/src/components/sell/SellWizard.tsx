@@ -12,7 +12,8 @@ import {
   CheckCircle2,
   ChevronRight,
   ChevronLeft,
-  Check
+  Check,
+  X
 } from "lucide-react";
 
 interface Step {
@@ -30,6 +31,7 @@ interface SellWizardProps {
   children: React.ReactNode[];
   onSubmit: () => void;
   isSubmitting: boolean;
+  onCancel?: () => void;
 }
 
 export function SellWizard({
@@ -39,6 +41,7 @@ export function SellWizard({
   children,
   onSubmit,
   isSubmitting,
+  onCancel,
 }: SellWizardProps) {
   const { language } = useLanguage();
   
@@ -109,9 +112,23 @@ export function SellWizard({
           <h2 className="font-bold text-lg">
             {language === "ar" ? "إضافة منتج" : "بەرهەم زیادکردن"}
           </h2>
-          <Badge variant="outline" className="text-sm">
-            {currentStep} / {steps.length}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-sm">
+              {currentStep} / {steps.length}
+            </Badge>
+            {onCancel && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={onCancel}
+                className="h-8 w-8 text-gray-500 hover:text-red-500"
+                data-testid="wizard-cancel"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
         </div>
         
         <Progress value={progress} className="h-2 mb-4" />

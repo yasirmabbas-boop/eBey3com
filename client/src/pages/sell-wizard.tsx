@@ -25,8 +25,8 @@ import {
   Clock,
   Lock,
   Loader2,
-  Globe,
-  Package
+  Package,
+  MessageSquare
 } from "lucide-react";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
@@ -34,13 +34,10 @@ const HOURS = Array.from({ length: 24 }, (_, i) => {
   return { value: hour, label: `${hour}:00` };
 });
 
-const INTERNATIONAL_COUNTRIES = [
-  { id: "jordan", label: "🇯🇴 الأردن", value: "الأردن" },
-  { id: "uae", label: "🇦🇪 الإمارات", value: "الإمارات" },
-  { id: "saudi", label: "🇸🇦 السعودية", value: "السعودية" },
-  { id: "kuwait", label: "🇰🇼 الكويت", value: "الكويت" },
-  { id: "turkey", label: "🇹🇷 تركيا", value: "تركيا" },
-  { id: "germany", label: "🇩🇪 ألمانيا", value: "ألمانيا" },
+const IRAQI_PROVINCES = [
+  "بغداد", "البصرة", "أربيل", "السليمانية", "دهوك", "الموصل",
+  "كركوك", "الأنبار", "بابل", "ديالى", "كربلاء", "النجف",
+  "واسط", "ذي قار", "ميسان", "المثنى", "القادسية", "صلاح الدين"
 ];
 
 export default function SellWizardPage() {
@@ -56,8 +53,8 @@ export default function SellWizardPage() {
   const [images, setImages] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [saleType, setSaleType] = useState<"auction" | "fixed">("auction");
+  const [isNegotiable, setIsNegotiable] = useState(false);
   
   const [formData, setFormData] = useState({
     title: "",
@@ -77,7 +74,14 @@ export default function SellWizardPage() {
     shippingCost: "",
     returnPolicy: "لا يوجد إرجاع",
     quantityAvailable: "1",
+    sellerName: "",
   });
+
+  useEffect(() => {
+    if (user?.displayName && !formData.sellerName) {
+      setFormData(prev => ({ ...prev, sellerName: user.displayName || "" }));
+    }
+  }, [user]);
 
   const handleInputChange = useCallback((field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -202,12 +206,13 @@ export default function SellWizardPage() {
         deliveryWindow: formData.deliveryWindow,
         shippingType: formData.shippingType,
         shippingCost: formData.shippingType === "buyer_pays" ? parseInt(formData.shippingCost) || 0 : 0,
-        internationalShipping: selectedCountries.length > 0,
-        internationalCountries: selectedCountries,
+        internationalShipping: false,
+        internationalCountries: [],
         returnPolicy: formData.returnPolicy,
         tags,
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
-        isNegotiable: false,
+        isNegotiable,
+        sellerName: formData.sellerName || user?.displayName || "بائع",
       };
       
       const res = await fetch("/api/listings", {
@@ -283,6 +288,7 @@ export default function SellWizardPage() {
           currentStep={currentStep}
           onStepChange={setCurrentStep}
           stepValidation={stepValidation}
+          onCancel={() => setLocation("/")}
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
         >
@@ -518,6 +524,27 @@ export default function SellWizardPage() {
                 </div>
               </>
             )}
+            
+            <Separator />
+            
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <MessageSquare className="h-5 w-5 text-blue-600" />
+                <div>
+                  <Label className="font-medium">
+                    {language === "ar" ? "قابل للتفاوض" : "دەکرێت گفتوگۆ بکرێت"}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {language === "ar" ? "السماح للمشترين بتقديم عروض أسعار" : "ڕێگە بدە بە کڕیاران پێشنیاری نرخ بکەن"}
+                  </p>
+                </div>
+              </div>
+              <Checkbox 
+                checked={isNegotiable}
+                onCheckedChange={(checked) => setIsNegotiable(!!checked)}
+                data-testid="checkbox-negotiable"
+              />
+            </div>
           </div>
 
           {/* Step 4: Shipping */}
@@ -527,15 +554,12 @@ export default function SellWizardPage() {
                 <Label>{language === "ar" ? "المدينة" : "شار"} *</Label>
                 <Select value={formData.city} onValueChange={(v) => handleInputChange("city", v)}>
                   <SelectTrigger data-testid="select-city">
-                    <SelectValue placeholder={language === "ar" ? "اختر المدينة" : "شار هەڵبژێرە"} />
+                    <SelectValue placeholder={language === "ar" ? "اختر المحافظة" : "پارێزگا هەڵبژێرە"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="بغداد">بغداد</SelectItem>
-                    <SelectItem value="البصرة">البصرة</SelectItem>
-                    <SelectItem value="أربيل">أربيل</SelectItem>
-                    <SelectItem value="السليمانية">السليمانية</SelectItem>
-                    <SelectItem value="الموصل">الموصل</SelectItem>
-                    <SelectItem value="كركوك">كركوك</SelectItem>
+                    {IRAQI_PROVINCES.map((province) => (
+                      <SelectItem key={province} value={province}>{province}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -601,32 +625,6 @@ export default function SellWizardPage() {
               )}
             </div>
 
-            <div className="p-4 bg-blue-50 rounded-lg space-y-3">
-              <Label className="flex items-center gap-2">
-                <Globe className="h-4 w-4" />
-                {language === "ar" ? "شحن دولي" : "گواستنەوەی نێودەوڵەتی"}
-              </Label>
-              <div className="grid grid-cols-3 gap-2">
-                {INTERNATIONAL_COUNTRIES.map((country) => (
-                  <div key={country.id} className="flex items-center gap-2">
-                    <Checkbox 
-                      id={`ship-${country.id}`}
-                      checked={selectedCountries.includes(country.value)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedCountries(prev => [...prev, country.value]);
-                        } else {
-                          setSelectedCountries(prev => prev.filter(c => c !== country.value));
-                        }
-                      }}
-                    />
-                    <Label htmlFor={`ship-${country.id}`} className="text-sm cursor-pointer">
-                      {country.label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* Step 5: Review */}
@@ -694,12 +692,10 @@ export default function SellWizardPage() {
                 </div>
               </div>
               
-              {selectedCountries.length > 0 && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Globe className="h-4 w-4 text-blue-600" />
-                  <span>{language === "ar" ? "شحن دولي:" : "گواستنەوەی نێودەوڵەتی:"}</span>
-                  <span className="font-medium">{selectedCountries.join("، ")}</span>
-                </div>
+              {isNegotiable && (
+                <Badge variant="secondary" className="w-fit">
+                  {language === "ar" ? "قابل للتفاوض" : "دەکرێت گفتوگۆ بکرێت"}
+                </Badge>
               )}
               
               {tags.length > 0 && (
