@@ -108,3 +108,65 @@ export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
     </div>
   );
 }
+
+export function ListItemSkeleton() {
+  return (
+    <div className="flex gap-4 p-4 bg-white rounded-lg border">
+      <div className="w-20 h-20 bg-gray-100 rounded-lg animate-pulse shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
+        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+        <div className="h-5 bg-gray-200 rounded animate-pulse w-1/4" />
+      </div>
+    </div>
+  );
+}
+
+export function ListSkeleton({ count = 5 }: { count?: number }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <ListItemSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
+
+export function PageSkeleton({ title = true }: { title?: boolean }) {
+  return (
+    <div className="space-y-6">
+      {title && <div className="h-8 bg-gray-200 rounded animate-pulse w-1/3" />}
+      <ProductGridSkeleton count={8} />
+    </div>
+  );
+}
+
+export function ProductDetailSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="aspect-square bg-gray-100 rounded-lg animate-pulse" />
+      <div className="space-y-3">
+        <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4" />
+        <div className="h-8 bg-gray-200 rounded animate-pulse w-1/3" />
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-full" />
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6" />
+        <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
+      </div>
+      <div className="h-12 bg-gray-200 rounded animate-pulse w-full" />
+    </div>
+  );
+}
+
+export function SwipeSkeleton() {
+  return (
+    <div className="fixed inset-0 bg-black flex items-center justify-center">
+      <div className="w-full h-full flex flex-col">
+        <div className="flex-1 bg-gray-800 animate-pulse" />
+        <div className="p-4 space-y-3">
+          <div className="h-5 bg-gray-700 rounded animate-pulse w-2/3" />
+          <div className="h-4 bg-gray-700 rounded animate-pulse w-1/3" />
+        </div>
+      </div>
+    </div>
+  );
+}

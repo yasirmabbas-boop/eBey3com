@@ -401,7 +401,13 @@ export default function SwipePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-white" />
+        <div className="w-full h-full flex flex-col">
+          <div className="flex-1 bg-gray-800 animate-pulse" />
+          <div className="p-4 space-y-3">
+            <div className="h-5 bg-gray-700 rounded animate-pulse w-2/3" />
+            <div className="h-4 bg-gray-700 rounded animate-pulse w-1/3" />
+          </div>
+        </div>
       </div>
     );
   }

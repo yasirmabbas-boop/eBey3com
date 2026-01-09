@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Heart, Loader2, ShoppingBag, Trash2, Eye } from "lucide-react";
+import { ProductGridSkeleton } from "@/components/optimized-image";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { AuctionCountdown } from "@/components/auction-countdown";
@@ -77,8 +78,12 @@ export default function FavoritesPage() {
   if (isAuthLoading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-12 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-gray-200 rounded animate-pulse" />
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-24" />
+          </div>
+          <ProductGridSkeleton count={6} />
         </div>
       </Layout>
     );
@@ -111,9 +116,7 @@ export default function FavoritesPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <ProductGridSkeleton count={6} />
         ) : favoriteListings.length === 0 ? (
           <div className="text-center py-12">
             <Heart className="h-16 w-16 mx-auto text-gray-300 mb-4" />

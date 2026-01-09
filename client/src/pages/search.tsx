@@ -35,6 +35,7 @@ import {
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { CategoryCarousel } from "@/components/category-carousel";
 import { FavoriteButton } from "@/components/favorite-button";
+import { ProductGridSkeleton } from "@/components/optimized-image";
 import { useLanguage } from "@/lib/i18n";
 import type { Listing } from "@shared/schema";
 
@@ -776,9 +777,7 @@ export default function SearchPage() {
 
         <div>
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <ProductGridSkeleton count={12} />
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   Filter,
 } from "lucide-react";
+import { ListSkeleton } from "@/components/optimized-image";
 
 type TimePeriod = "week" | "two_weeks" | "three_months" | "all";
 
@@ -161,8 +162,12 @@ export default function MyBids() {
   if (isAuthLoading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-6 h-6 bg-gray-200 rounded animate-pulse" />
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-24" />
+          </div>
+          <ListSkeleton count={4} />
         </div>
       </Layout>
     );
@@ -234,9 +239,7 @@ export default function MyBids() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <ListSkeleton count={4} />
         ) : error ? (
           <Card className="p-8 text-center">
             <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
