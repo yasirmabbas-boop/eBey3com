@@ -179,6 +179,9 @@ export const transactions = pgTable("transactions", {
   buyerFeedback: text("buyer_feedback"),
   issueType: text("issue_type"),
   issueNote: text("issue_note"),
+  cancelledBySeller: boolean("cancelled_by_seller").default(false),
+  cancellationReason: text("cancellation_reason"),
+  cancelledAt: timestamp("cancelled_at"),
 });
 
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
