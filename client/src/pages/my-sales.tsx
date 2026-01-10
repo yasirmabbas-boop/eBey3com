@@ -27,7 +27,17 @@ import {
   Eye,
   Filter,
   Calendar,
+  XCircle,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -153,6 +163,8 @@ export default function MySales() {
   const [salesTimelineFilter, setSalesTimelineFilter] = useState<TimelineFilter>("all");
   const [offersStatusFilter, setOffersStatusFilter] = useState<OffersStatusFilter>("all");
   const [offersTimelineFilter, setOffersTimelineFilter] = useState<TimelineFilter>("all");
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery<EnrichedTransaction[]>({
     queryKey: ["/api/seller-transactions", user?.id],
@@ -287,6 +299,43 @@ export default function MySales() {
       toast({
         title: "خطأ",
         description: "فشل في تحديث حالة التسليم",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const cancelSaleMutation = useMutation({
+    mutationFn: async ({ transactionId, reason }: { transactionId: string; reason: string }) => {
+      const authToken = localStorage.getItem("authToken");
+      const res = await fetch(`/api/transactions/${transactionId}/seller-cancel`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({ reason }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "فشل في إلغاء الطلب");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم إلغاء الطلب",
+        description: "تم إلغاء الطلب وإبلاغ المشتري",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/seller-transactions"] });
+      setShowCancelDialog(false);
+      setCancelReason("");
+      setSelectedSale(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل في إلغاء الطلب",
         variant: "destructive",
       });
     },
@@ -637,6 +686,32 @@ export default function MySales() {
                           </div>
                         </Card>
                       )}
+
+                      {/* Cancel Sale Button - only for pending/pending_payment orders */}
+                      {(selectedSale.status === "pending" || selectedSale.status === "pending_payment") && (
+                        <Card className="p-6 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-300">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-bold text-red-800 text-lg mb-1 flex items-center gap-2">
+                                <XCircle className="h-5 w-5" />
+                                إلغاء الطلب
+                              </h3>
+                              <p className="text-sm text-red-700">
+                                إلغاء هذا الطلب وإبلاغ المشتري
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => setShowCancelDialog(true)}
+                              variant="outline"
+                              className="border-red-300 text-red-700 hover:bg-red-100 gap-2"
+                              data-testid="button-cancel-sale"
+                            >
+                              <XCircle className="h-5 w-5" />
+                              إلغاء
+                            </Button>
+                          </div>
+                        </Card>
+                      )}
                     </>
                   ) : (
                     <Card className="p-8 text-center">
@@ -798,6 +873,62 @@ export default function MySales() {
           }}
         />
       )}
+
+      {/* Cancel Sale Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-red-700 flex items-center gap-2">
+              <XCircle className="h-5 w-5" />
+              إلغاء الطلب
+            </DialogTitle>
+            <DialogDescription>
+              يرجى تقديم سبب الإلغاء. سيتم إبلاغ المشتري بالإلغاء.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="سبب الإلغاء (مثال: المنتج غير متوفر، تم البيع لشخص آخر...)"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="min-h-[100px]"
+              data-testid="textarea-cancel-reason"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              * سيتم تسجيل هذا الإلغاء ويمكن للمشرفين مراجعته
+            </p>
+          </div>
+          <DialogFooter className="gap-2 flex-row-reverse">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCancelDialog(false);
+                setCancelReason("");
+              }}
+            >
+              تراجع
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (selectedSale) {
+                  cancelSaleMutation.mutate({ 
+                    transactionId: selectedSale.id, 
+                    reason: cancelReason 
+                  });
+                }
+              }}
+              disabled={cancelReason.trim().length < 5 || cancelSaleMutation.isPending}
+              data-testid="button-confirm-cancel"
+            >
+              {cancelSaleMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+              ) : null}
+              تأكيد الإلغاء
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
