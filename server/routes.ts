@@ -1425,6 +1425,76 @@ export async function registerRoutes(
     }
   });
 
+  // Seller cancellation - cancel a sale with reason
+  app.patch("/api/transactions/:id/seller-cancel", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      const transactionId = req.params.id;
+      const { reason } = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول لإلغاء الطلب" });
+      }
+      
+      if (!reason || reason.trim().length < 5) {
+        return res.status(400).json({ error: "يجب تقديم سبب الإلغاء (5 أحرف على الأقل)" });
+      }
+      
+      const transaction = await storage.getTransactionById(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+      
+      if (transaction.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بإلغاء هذا الطلب" });
+      }
+      
+      // Only allow cancellation for pending/pending_payment orders
+      if (!["pending", "pending_payment"].includes(transaction.status)) {
+        return res.status(400).json({ error: "لا يمكن إلغاء الطلب بعد الشحن" });
+      }
+      
+      // Update transaction with cancellation info
+      const updated = await storage.cancelTransactionBySeller(transactionId, reason.trim());
+      
+      if (!updated) {
+        return res.status(500).json({ error: "فشل في إلغاء الطلب" });
+      }
+      
+      // Notify buyer about cancellation
+      if (transaction.buyerId && transaction.buyerId !== "guest") {
+        const listing = await storage.getListing(transaction.listingId);
+        try {
+          await storage.createNotification({
+            userId: transaction.buyerId,
+            type: "order_cancelled",
+            title: "تم إلغاء طلبك",
+            message: `عذراً، تم إلغاء طلبك "${listing?.title || 'منتج'}" من قبل البائع. السبب: ${reason}`,
+            relatedId: transaction.listingId,
+          });
+          await storage.sendMessage({
+            senderId: transaction.sellerId,
+            receiverId: transaction.buyerId,
+            content: `عذراً، تم إلغاء طلبك ❌\n\nالمنتج: ${listing?.title || 'منتج'}\nرقم الطلب: ${transactionId.slice(0, 8).toUpperCase()}\n\nسبب الإلغاء: ${reason}\n\nنعتذر عن أي إزعاج.`,
+            listingId: transaction.listingId,
+          });
+        } catch (e) {
+          console.log("Could not send cancellation notification:", e);
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "تم إلغاء الطلب بنجاح",
+        transaction: updated,
+      });
+    } catch (error) {
+      console.error("Error cancelling transaction:", error);
+      res.status(500).json({ error: "فشل في إلغاء الطلب" });
+    }
+  });
+
   // Rate buyer (seller rating for buyer)
   app.patch("/api/transactions/:id/rate-buyer", async (req, res) => {
     try {

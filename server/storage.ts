@@ -75,6 +75,7 @@ export interface IStorage {
   updateTransactionStatus(id: string, status: string): Promise<Transaction | undefined>;
   updateTransactionWithIssue(id: string, data: { status: string; issueType: string; issueNote?: string }): Promise<Transaction | undefined>;
   rateBuyer(transactionId: string, rating: number, feedback?: string): Promise<Transaction | undefined>;
+  cancelTransactionBySeller(id: string, reason: string): Promise<Transaction | undefined>;
   
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
@@ -690,6 +691,16 @@ export class DatabaseStorage implements IStorage {
     }
     
     return updated;
+  }
+
+  async cancelTransactionBySeller(id: string, reason: string): Promise<Transaction | undefined> {
+    const [txn] = await db.update(transactions).set({ 
+      status: "cancelled",
+      cancelledBySeller: true,
+      cancellationReason: reason,
+      cancelledAt: new Date(),
+    }).where(eq(transactions.id, id)).returning();
+    return txn;
   }
 
   async getCategories(): Promise<Category[]> {
