@@ -148,6 +148,11 @@ export async function registerRoutes(
         return res.status(403).json({ error: "يجب أن يكون حسابك معتمداً كبائع لإضافة منتجات" });
       }
       
+      // Check if user is banned
+      if (user.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك إضافة منتجات." });
+      }
+      
       // Validate auction times - auctions must have start and end times
       if (req.body.saleType === "auction") {
         if (!req.body.auctionStartTime || !req.body.auctionEndTime) {
@@ -1929,6 +1934,14 @@ export async function registerRoutes(
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" });
+      }
+
+      // Check if user is banned - block login completely
+      if (user.isBanned) {
+        return res.status(403).json({ 
+          error: "تم حظر حسابك من المنصة. لا يمكنك تسجيل الدخول.",
+          isBanned: true
+        });
       }
 
       // Check if 2FA is enabled
