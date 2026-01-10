@@ -2643,6 +2643,12 @@ export async function registerRoutes(
     }
 
     try {
+      // Check if user is banned
+      const user = await storage.getUser(userId);
+      if (user?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك الشراء." });
+      }
+
       const { listingId, quantity = 1 } = req.body;
       if (!listingId) {
         return res.status(400).json({ error: "معرف المنتج مطلوب" });
@@ -2749,6 +2755,12 @@ export async function registerRoutes(
     }
 
     try {
+      // Check if user is banned
+      const buyer = await storage.getUser(userId);
+      if (buyer?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك الشراء." });
+      }
+
       const { fullName, phone, city, addressLine1, addressLine2 } = req.body;
       
       if (!fullName || !phone || !city || !addressLine1) {
