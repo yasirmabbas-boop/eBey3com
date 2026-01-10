@@ -76,6 +76,7 @@ export interface IStorage {
   updateTransactionWithIssue(id: string, data: { status: string; issueType: string; issueNote?: string }): Promise<Transaction | undefined>;
   rateBuyer(transactionId: string, rating: number, feedback?: string): Promise<Transaction | undefined>;
   cancelTransactionBySeller(id: string, reason: string): Promise<Transaction | undefined>;
+  getCancelledTransactions(): Promise<Transaction[]>;
   
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
@@ -701,6 +702,12 @@ export class DatabaseStorage implements IStorage {
       cancelledAt: new Date(),
     }).where(eq(transactions.id, id)).returning();
     return txn;
+  }
+
+  async getCancelledTransactions(): Promise<Transaction[]> {
+    return db.select().from(transactions)
+      .where(eq(transactions.cancelledBySeller, true))
+      .orderBy(desc(transactions.cancelledAt));
   }
 
   async getCategories(): Promise<Category[]> {

@@ -3769,5 +3769,38 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Get seller cancellations
+  app.get("/api/admin/cancellations", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const cancellations = await storage.getCancelledTransactions();
+      
+      // Enrich with seller and buyer info
+      const enriched = await Promise.all(cancellations.map(async (tx) => {
+        const seller = await storage.getUser(tx.sellerId);
+        const buyer = tx.buyerId !== "guest" ? await storage.getUser(tx.buyerId) : null;
+        const listing = await storage.getListing(tx.listingId);
+        return {
+          ...tx,
+          sellerName: seller?.displayName || seller?.username || "بائع",
+          buyerName: buyer?.displayName || buyer?.username || "ضيف",
+          listingTitle: listing?.title || "منتج محذوف",
+        };
+      }));
+      
+      res.json(enriched);
+    } catch (error) {
+      console.error("Error fetching cancellations:", error);
+      res.status(500).json({ error: "Failed to fetch cancellations" });
+    }
+  });
+
   return httpServer;
 }

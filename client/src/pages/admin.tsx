@@ -113,7 +113,7 @@ export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "messages">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "messages" | "cancellations">("stats");
   const [listingSearch, setListingSearch] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
 
@@ -171,6 +171,29 @@ export default function AdminPage() {
       return res.json();
     },
     enabled: !authLoading && (user as any)?.isAdmin && activeTab === "messages",
+  });
+
+  interface CancelledTransaction {
+    id: string;
+    listingId: string;
+    sellerId: string;
+    buyerId: string;
+    amount: number;
+    cancellationReason: string;
+    cancelledAt: string;
+    sellerName: string;
+    buyerName: string;
+    listingTitle: string;
+  }
+
+  const { data: cancellations, isLoading: cancellationsLoading } = useQuery<CancelledTransaction[]>({
+    queryKey: ["/api/admin/cancellations"],
+    queryFn: async () => {
+      const res = await fetchWithAuth("/api/admin/cancellations");
+      if (!res.ok) throw new Error("Failed to fetch cancellations");
+      return res.json();
+    },
+    enabled: !authLoading && (user as any)?.isAdmin && activeTab === "cancellations",
   });
 
   const markMessageReadMutation = useMutation({
@@ -408,6 +431,19 @@ export default function AdminPage() {
                     {contactMessages?.filter(m => !m.isRead).length ? (
                       <Badge variant="secondary" className="mr-auto bg-blue-100 text-blue-800">
                         {contactMessages.filter(m => !m.isRead).length}
+                      </Badge>
+                    ) : null}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("cancellations")}
+                    className={`flex items-center gap-3 px-4 py-3 text-right hover:bg-muted transition-colors ${activeTab === "cancellations" ? "bg-muted font-semibold border-r-4 border-primary" : ""}`}
+                    data-testid="button-tab-cancellations"
+                  >
+                    <XCircle className="h-5 w-5" />
+                    إلغاءات البائعين
+                    {cancellations?.length ? (
+                      <Badge variant="secondary" className="mr-auto bg-red-100 text-red-800">
+                        {cancellations.length}
                       </Badge>
                     ) : null}
                   </button>
@@ -1061,6 +1097,67 @@ export default function AdminPage() {
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>لا توجد رسائل تواصل</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeTab === "cancellations" && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold">إلغاءات البائعين</h2>
+                <p className="text-muted-foreground">عرض جميع الطلبات الملغاة من قبل البائعين مع أسباب الإلغاء</p>
+                
+                {cancellationsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : cancellations && cancellations.length > 0 ? (
+                  <div className="space-y-4">
+                    {cancellations.map((cancellation) => (
+                      <Card key={cancellation.id} className="border-red-200" data-testid={`card-cancellation-${cancellation.id}`}>
+                        <CardContent className="py-4">
+                          <div className="flex flex-col md:flex-row md:items-start gap-4 justify-between">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <XCircle className="h-5 w-5 text-red-500" />
+                                <span className="font-bold text-lg">{cancellation.listingTitle}</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">البائع: </span>
+                                  <span className="font-medium">{cancellation.sellerName}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">المشتري: </span>
+                                  <span className="font-medium">{cancellation.buyerName}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">المبلغ: </span>
+                                  <span className="font-medium">{cancellation.amount.toLocaleString()} د.ع</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">تاريخ الإلغاء: </span>
+                                  <span className="font-medium">
+                                    {new Date(cancellation.cancelledAt).toLocaleDateString("ar-IQ")}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                                <span className="text-sm text-red-700 font-medium">سبب الإلغاء: </span>
+                                <span className="text-red-800">{cancellation.cancellationReason}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="py-12 text-center text-muted-foreground">
+                      <XCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>لا توجد إلغاءات من البائعين</p>
                     </CardContent>
                   </Card>
                 )}

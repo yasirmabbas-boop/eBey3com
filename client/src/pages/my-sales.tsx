@@ -67,6 +67,13 @@ const getStatusBadge = (status: string) => {
           تم التسليم
         </Badge>
       );
+    case "cancelled":
+      return (
+        <Badge className="bg-red-100 text-red-800 border-0">
+          <XCircle className="h-3 w-3 ml-1" />
+          ملغي
+        </Badge>
+      );
     case "pending":
       return (
         <Badge className="bg-yellow-100 text-yellow-800 border-0">
@@ -125,7 +132,7 @@ const getOfferStatusBadge = (status: string) => {
   }
 };
 
-type SalesStatusFilter = "all" | "pending" | "shipped" | "delivered" | "completed";
+type SalesStatusFilter = "all" | "pending" | "shipped" | "delivered" | "completed" | "cancelled";
 type OffersStatusFilter = "all" | "pending" | "accepted" | "rejected" | "countered";
 type TimelineFilter = "all" | "today" | "week" | "month";
 
@@ -436,6 +443,7 @@ export default function MySales() {
                         <SelectItem value="shipped">تم الشحن</SelectItem>
                         <SelectItem value="delivered">تم التسليم</SelectItem>
                         <SelectItem value="completed">مكتملة</SelectItem>
+                        <SelectItem value="cancelled">ملغية</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
