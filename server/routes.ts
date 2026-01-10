@@ -3513,8 +3513,8 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Access denied" });
       }
       const listings = await storage.getListings();
-      // Return lightweight version without images for fast loading
-      const lightListings = listings.map(l => ({
+      // Return listings with thumbnail for admin management
+      const adminListings = listings.map(l => ({
         id: l.id,
         productCode: l.productCode,
         title: l.title,
@@ -3529,8 +3529,10 @@ export async function registerRoutes(
         createdAt: l.createdAt,
         currentBid: l.currentBid,
         totalBids: l.totalBids,
+        image: l.images?.[0] || l.image,
+        views: l.views || 0,
       }));
-      res.json(lightListings);
+      res.json(adminListings);
     } catch (error) {
       console.error("Error fetching admin listings:", error);
       res.status(500).json({ error: "Failed to fetch listings" });

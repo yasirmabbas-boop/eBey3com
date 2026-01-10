@@ -771,20 +771,40 @@ export default function SwipePage() {
             {currentListing?.saleType === "auction" ? (
               <Button 
                 className="flex-1 bg-white text-black hover:bg-gray-200"
-                onClick={() => isAuthenticated ? setIsBidOpen(true) : null}
+                onClick={() => {
+                  if (isAuthenticated) {
+                    setIsBidOpen(true);
+                  } else {
+                    toast({
+                      title: language === "ar" ? "يجب تسجيل الدخول" : "دەبێت بچیتە ژوورەوە",
+                      description: language === "ar" ? "سجل دخولك للمشاركة في المزاد" : "بۆ بەشداریکردن لە مزایدە بچۆ ژوورەوە",
+                      variant: "destructive",
+                    });
+                  }
+                }}
                 data-testid="button-quick-bid"
               >
                 <Gavel className="w-4 h-4 ml-2" />
-                مزايدة
+                {language === "ar" ? "مزايدة" : "مزایدە"}
               </Button>
             ) : (
               <Button 
                 className="flex-1 bg-white text-black hover:bg-gray-200"
-                onClick={() => isAuthenticated ? setIsOfferOpen(true) : null}
+                onClick={() => {
+                  if (isAuthenticated) {
+                    setIsOfferOpen(true);
+                  } else {
+                    toast({
+                      title: language === "ar" ? "يجب تسجيل الدخول" : "دەبێت بچیتە ژوورەوە",
+                      description: language === "ar" ? "سجل دخولك لتقديم عرض سعر" : "بۆ پێشکەشکردنی نرخ بچۆ ژوورەوە",
+                      variant: "destructive",
+                    });
+                  }
+                }}
                 data-testid="button-quick-offer"
               >
                 <Tag className="w-4 h-4 ml-2" />
-                قدم عرض
+                {language === "ar" ? "قدم عرض" : "پێشنیار بکە"}
               </Button>
             )}
             <Link href={`/product/${currentListing?.id}`}>
@@ -793,15 +813,22 @@ export default function SwipePage() {
                 className="border-white/50 text-white hover:bg-white/20"
                 data-testid="button-view-details"
               >
-                التفاصيل
+                {language === "ar" ? "التفاصيل" : "وردەکاری"}
               </Button>
             </Link>
           </div>
 
-          {/* Not logged in message */}
+          {/* Not logged in - Auth prompt */}
           {!isAuthenticated && (
-            <Link href="/signin">
-              <p className="text-center text-white/70 text-xs mt-2 underline">سجل دخولك للمزايدة أو تقديم عرض</p>
+            <Link href={`/signin?redirect=${encodeURIComponent(`/swipe?id=${currentListing?.id}`)}`}>
+              <div className="mt-3 p-3 bg-white/10 backdrop-blur rounded-lg border border-white/20 text-center">
+                <p className="text-white font-medium text-sm mb-1">
+                  {language === "ar" ? "🔐 سجل دخولك للمشاركة" : "🔐 بۆ بەشداریکردن بچۆ ژوورەوە"}
+                </p>
+                <p className="text-white/70 text-xs">
+                  {language === "ar" ? "للمزايدة وتقديم العروض يجب تسجيل الدخول" : "بۆ مزایدە و پێشنیارکردن دەبێت بچیتە ژوورەوە"}
+                </p>
+              </div>
             </Link>
           )}
         </div>

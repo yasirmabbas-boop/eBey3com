@@ -72,6 +72,17 @@ interface AdminListing {
   createdAt: string;
   currentBid?: number;
   totalBids?: number;
+  image?: string;
+  views?: number;
+}
+
+interface RecentActivity {
+  id: string;
+  type: 'listing' | 'transaction' | 'user' | 'report';
+  title: string;
+  description: string;
+  link?: string;
+  createdAt: string;
 }
 
 interface ContactMessage {
@@ -812,6 +823,7 @@ export default function AdminPage() {
                             <TableHead className="text-right">البائع</TableHead>
                             <TableHead className="text-right">السعر</TableHead>
                             <TableHead className="text-right">النوع</TableHead>
+                            <TableHead className="text-right">المشاهدات</TableHead>
                             <TableHead className="text-right">الحالة</TableHead>
                             <TableHead className="text-right">الإجراءات</TableHead>
                           </TableRow>
@@ -824,9 +836,41 @@ export default function AdminPage() {
                               l.sellerName.toLowerCase().includes(listingSearch.toLowerCase())
                             )
                             .map((listing) => (
-                            <TableRow key={listing.id} data-testid={`row-listing-${listing.id}`}>
-                              <TableCell className="font-medium max-w-xs truncate">{listing.title}</TableCell>
-                              <TableCell>{listing.sellerName}</TableCell>
+                            <TableRow key={listing.id} data-testid={`row-listing-${listing.id}`} className="hover:bg-muted/50">
+                              <TableCell>
+                                <a 
+                                  href={`/product/${listing.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-3 group"
+                                >
+                                  <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                                    {listing.image && (
+                                      <img 
+                                        src={listing.image} 
+                                        alt={listing.title}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-medium truncate max-w-[200px] group-hover:text-primary transition-colors">
+                                      {listing.title}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground font-mono">{listing.productCode || `#${listing.id.slice(0, 8)}`}</p>
+                                  </div>
+                                </a>
+                              </TableCell>
+                              <TableCell>
+                                <a 
+                                  href={`/search?sellerId=${listing.sellerId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:text-primary hover:underline transition-colors"
+                                >
+                                  {listing.sellerName}
+                                </a>
+                              </TableCell>
                               <TableCell>{(listing.currentBid || listing.price).toLocaleString()} د.ع</TableCell>
                               <TableCell>
                                 {listing.saleType === "auction" ? (
@@ -834,6 +878,12 @@ export default function AdminPage() {
                                 ) : (
                                   <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">سعر ثابت</Badge>
                                 )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <Eye className="h-3.5 w-3.5" />
+                                  <span className="text-sm">{(listing.views || 0).toLocaleString()}</span>
+                                </div>
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
