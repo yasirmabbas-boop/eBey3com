@@ -2860,6 +2860,12 @@ export async function registerRoutes(
     }
 
     try {
+      // Check if user is banned
+      const buyer = await storage.getUser(userId);
+      if (buyer?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك تقديم عروض." });
+      }
+
       const { listingId, offerAmount, message } = req.body;
       
       if (!listingId || !offerAmount) {

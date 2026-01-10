@@ -486,10 +486,10 @@ export default function SwipePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex justify-center">
+    <div className="h-[100dvh] bg-black flex justify-center overflow-hidden">
       <div 
         ref={containerRef}
-        className="w-full max-w-md min-h-screen bg-black text-white flex flex-col overflow-hidden relative"
+        className="w-full max-w-md h-full bg-black text-white flex flex-col overflow-hidden relative"
         data-testid="swipe-container"
       >
       {/* Category filter bar - fixed at top */}
@@ -643,7 +643,7 @@ export default function SwipePage() {
         <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none z-10" />
 
         {/* Right side action buttons */}
-        <div className="absolute left-3 bottom-44 flex flex-col items-center gap-5 z-40">
+        <div className="absolute left-3 bottom-36 flex flex-col items-center gap-4 z-40">
           <FavoriteButton listingId={currentListing?.id || ""} />
           
           {/* Comments button */}
@@ -734,7 +734,7 @@ export default function SwipePage() {
         </div>
 
         {/* Bottom product info */}
-        <div className="absolute bottom-0 right-0 left-16 p-4 pb-20 z-30" dir="rtl">
+        <div className="absolute bottom-0 right-0 left-16 p-3 pb-16 z-30" dir="rtl">
           <Link href={`/search?sellerId=${currentListing?.sellerId}`}>
             <div className="flex items-center gap-2 mb-3">
               <Avatar className="w-9 h-9 border-2 border-white">
