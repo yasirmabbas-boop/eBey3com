@@ -1,12 +1,17 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 
-const NAV_STATE_KEY = "nav_section_paths";
+const NAV_STATE_KEY = "nav_section_state";
 
 type NavSection = "home" | "favorites" | "swipe" | "search" | "account";
 
+interface SectionState {
+  path: string;
+  scrollY: number;
+}
+
 interface NavState {
-  [key: string]: string;
+  [key: string]: SectionState;
 }
 
 function getSectionFromPath(path: string): NavSection | null {
@@ -35,32 +40,94 @@ function saveNavState(state: NavState): void {
 }
 
 export function useNavState() {
-  const [location] = useLocation();
-  
+  const [location, setLocation] = useLocation();
+  const currentSectionRef = useRef<NavSection | null>(null);
+  const isRestoringRef = useRef(false);
+
   useEffect(() => {
     const section = getSectionFromPath(location);
-    if (section) {
+    
+    if (isRestoringRef.current) {
+      isRestoringRef.current = false;
       const state = loadNavState();
-      state[section] = location;
+      const sectionState = state[section || ""];
+      if (sectionState?.scrollY) {
+        setTimeout(() => {
+          window.scrollTo(0, sectionState.scrollY);
+        }, 100);
+      }
+      currentSectionRef.current = section;
+      return;
+    }
+
+    if (section && currentSectionRef.current === section) {
+      const state = loadNavState();
+      state[section] = {
+        path: location,
+        scrollY: window.scrollY
+      };
       saveNavState(state);
     }
+    
+    currentSectionRef.current = section;
   }, [location]);
-  
-  const getLastPath = useCallback((section: string): string | null => {
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const section = getSectionFromPath(location);
+      if (section) {
+        const state = loadNavState();
+        state[section] = {
+          path: location,
+          scrollY: window.scrollY
+        };
+        saveNavState(state);
+      }
+    };
+
+    let timeout: NodeJS.Timeout;
+    const debouncedScroll = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(handleScroll, 200);
+    };
+
+    window.addEventListener("scroll", debouncedScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", debouncedScroll);
+      clearTimeout(timeout);
+    };
+  }, [location]);
+
+  const navigateToSection = useCallback((section: string, defaultPath: string) => {
     const currentSection = getSectionFromPath(location);
-    if (currentSection === section) {
-      return null;
+    
+    if (currentSection) {
+      const state = loadNavState();
+      state[currentSection] = {
+        path: location,
+        scrollY: window.scrollY
+      };
+      saveNavState(state);
     }
+
     const state = loadNavState();
-    const savedPath = state[section];
-    if (savedPath && savedPath !== location) {
-      return savedPath;
+    const sectionState = state[section];
+    
+    if (sectionState?.path && sectionState.path !== location) {
+      isRestoringRef.current = true;
+      setLocation(sectionState.path);
+    } else {
+      setLocation(defaultPath);
     }
-    return null;
-  }, [location]);
-  
-  const saveCurrentPath = useCallback((_path: string) => {
+  }, [location, setLocation]);
+
+  const getLastPath = useCallback((section: string): string | null => {
+    const state = loadNavState();
+    return state[section]?.path || null;
   }, []);
-  
-  return { getLastPath, saveCurrentPath };
+
+  const saveCurrentPath = useCallback(() => {
+  }, []);
+
+  return { getLastPath, saveCurrentPath, navigateToSection };
 }
