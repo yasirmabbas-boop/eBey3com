@@ -691,7 +691,7 @@ export default function SearchPage() {
                   </div>
                 </ScrollArea>
 
-                <SheetFooter className="p-4 border-t bg-gray-50">
+                <SheetFooter className="p-4 pb-20 border-t bg-gray-50">
                   <Button 
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6"
                     onClick={applyFilters}
