@@ -2233,6 +2233,7 @@ export async function registerRoutes(
       accountCode: user.accountCode,
       avatar: user.avatar,
       isVerified: user.isVerified,
+      isBanned: user.isBanned,
     });
   });
 

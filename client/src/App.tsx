@@ -12,6 +12,7 @@ import { InstallPWAPrompt } from "@/components/install-pwa-prompt";
 import { PushNotificationPrompt } from "@/components/push-notification-prompt";
 import { NavVisibilityProvider } from "@/hooks/use-nav-visibility";
 import { LanguageProvider } from "@/lib/i18n";
+import { BanBanner } from "@/components/ban-banner";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
@@ -99,6 +100,7 @@ function App() {
           <NavVisibilityProvider>
             <ScrollToTop />
             <Toaster />
+            <BanBanner />
             <SurveyManager />
             <OnboardingTutorial />
             <SwipeBackNavigation>
