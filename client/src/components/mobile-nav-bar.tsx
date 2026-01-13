@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useNavVisibility } from "@/hooks/use-nav-visibility";
 import { useLanguage } from "@/lib/i18n";
 import { useNavState } from "@/hooks/use-nav-state";
+import { hapticLight } from "@/lib/despia";
 
 const HIDDEN_NAV_PATHS: string[] = [];
 
@@ -42,7 +43,7 @@ export function MobileNavBar() {
       dir="rtl"
       style={{ 
         zIndex: 99999,
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        paddingBottom: "var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))",
         position: "fixed",
         display: "flex"
       }}
@@ -54,7 +55,10 @@ export function MobileNavBar() {
           return (
             <button
               key={item.section}
-              onClick={() => navigateToSection(item.section, item.href)}
+              onClick={() => {
+                hapticLight();
+                navigateToSection(item.section, item.href);
+              }}
               className={`flex flex-col items-center justify-center flex-1 py-2 relative transition-colors active:scale-95 ${
                 active ? "text-blue-600" : "text-gray-600"
               }`}

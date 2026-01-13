@@ -53,14 +53,14 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col font-sans" dir="rtl">
+    <div className="despia-app bg-background font-sans md:min-h-screen md:block" dir="rtl">
             
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 
       {/* Combined Top Bar */}
       {!hideHeader && (
-      <div className={`${isAuthenticated && user?.sellerApproved ? 'bg-gradient-to-l from-green-600 via-green-500 to-green-600' : 'bg-[#1E3A8A]'} text-white py-2.5 text-sm px-4 font-medium`}>
+      <div className={`despia-topbar ${isAuthenticated && user?.sellerApproved ? 'bg-gradient-to-l from-green-600 via-green-500 to-green-600' : 'bg-[#1E3A8A]'} text-white py-2.5 text-sm px-4 font-medium`}>
         <div className="container mx-auto flex justify-between items-center">
           {/* Navigation Links - Desktop only */}
           <div className="hidden md:flex items-center gap-5">
@@ -209,7 +209,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 pb-20 md:pb-0">
+      <main className="despia-content pb-20 md:pb-0 md:flex-1">
         {children}
       </main>
 

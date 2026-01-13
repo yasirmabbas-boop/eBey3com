@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./use-auth";
 import type { CartItem, Listing } from "@shared/schema";
+import { hapticSuccess } from "@/lib/despia";
 
 function getAuthHeaders(): HeadersInit {
   const headers: HeadersInit = {};
@@ -60,6 +61,7 @@ export function useCart() {
       return res.json();
     },
     onSuccess: () => {
+      hapticSuccess();
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
     },
   });
