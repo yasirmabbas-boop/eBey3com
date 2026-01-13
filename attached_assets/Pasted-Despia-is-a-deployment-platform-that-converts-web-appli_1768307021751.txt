@@ -1,0 +1,201 @@
+Despia is a deployment platform that converts web applications into fully native mobile applications for the App Store and Google Play.
+
+Architecture: Despia provides a complete native application framework with extensive native features and modules. The platform uses webview technology for UI rendering, providing unlimited design flexibility and access to the npm ecosystem, while despia() functions execute native Swift/Kotlin code through a lightweight JavaScript bridge.
+
+Platform Compatibility: Compatible with all major web development tools including AI builders (Lovable, Bolt, v0), JavaScript frameworks (React, Vue, Angular), no-code platforms (WeWeb, Nordcraft), and vanilla JavaScript.
+
+Core Advantages:
+
+    Over-the-air updates enable instant deployment without app store review
+
+    Full compliance with App Store and Play Store requirements
+
+    Complete source code export for Xcode and Android Studio
+
+    Access to advanced native features typically requiring weeks of custom development
+
+Installation
+
+Integrated Platform Support: For platforms with built-in Despia integration, native features can be requested directly through your development environment.
+
+AI Builder Integration: For AI builders without native support, provide the following instruction: "Install despia-native and implement according to the documentation at [this page link]"
+
+Standard Installation:
+
+npm install despia-native
+
+import despia from 'despia-native';
+
+This package provides access to over 25 native device features.
+Platform Capabilities
+Automated Deployment Pipeline
+
+    Remote loading architecture requiring only your web application URL
+
+    Over-the-air updates without app store review process
+
+    Automated build generation for iPhone, iPad, Vision Pro, and Android devices
+
+    Managed code signing and certificate administration
+
+    Single-click deployment to both app stores
+
+Technical Architecture
+
+Despia implements a fully native application architecture with comprehensive native module integration.
+
+Key Technical Features:
+
+    Webview Rendering - Provides maximum design flexibility and complete npm ecosystem access
+
+    Native Code Execution - JavaScript functions execute native Swift/Kotlin code through optimized bridge architecture
+
+    Hardware Acceleration - Native container implementation with 60fps performance
+
+    Source Code Export - Complete access to Xcode and Android Studio projects
+
+    Platform Compliance - Full adherence to App Store and Play Store requirements
+
+For feature requests, contact: features@despia.com
+Native Device Integration
+
+JavaScript commands execute native Swift/Kotlin code through the Despia bridge architecture.
+
+Advanced Capabilities (typically requiring extensive custom native development):
+
+    iOS Home Widgets - Dynamic SVG rendering on home screen with real-time data synchronization
+
+    RevenueCat Payment Processing - Native billing integration for App Store and Google Play
+
+    Siri Shortcuts - Voice command integration with JavaScript function execution
+
+    Native Clipboard Access - System-level clipboard operations
+
+    AirPrint Integration - Native document and image printing
+
+    Native File System - Device file system storage implementation
+
+    Safe Area Management - CSS variable integration for device-specific layouts
+
+    Background Location Services - Continuous geolocation tracking
+
+    Biometric Authentication - Face ID, Touch ID, and fingerprint integration
+
+    In-App Purchase System - RevenueCat subscription management
+
+    Push Notification Services - Remote and local notification delivery
+
+    Contact Integration - Device contact access with permission management
+
+    Rewarded Advertising - AdMob video advertisement integration
+
+Standard Features:
+
+// Haptic Feedback
+despia('lighthaptic://');
+despia('successhaptic://');
+despia('errorhaptic://');
+
+// Application Information
+const appInfo = await despia('getappversion://', ['versionNumber', 'bundleNumber']);
+const deviceId = await despia('get-uuid://', ['uuid']);
+
+// UI Controls
+despia('spinneron://');
+despia('hidebars://on');
+despia('statusbarcolor://{255, 255, 255}');
+
+Advanced Feature Implementation:
+
+// Background Location
+despia('backgroundlocationon://');
+
+// Contact Integration
+despia('requestcontactpermission://');
+const contacts = await despia('readcontacts://', ['contacts']);
+
+// In-App Purchases
+despia('revenuecat://purchase?external_id=user_777&product=monthly_premium');
+
+// Biometric Authentication
+despia('bioauth://');
+
+// iOS Home Widgets
+despia(`widget://${svg}?refresh=${refreshTime}`);
+
+// Sharing
+despia('shareapp://message?=Check out this app&url=https://myapp.com');
+
+Safe Area Integration:
+
+Automatic CSS variables for device-specific layouts:
+
+.my-element {
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+}
+
+Implementation Guidelines
+
+1. Application Development
+
+Develop your web application using any preferred framework or platform (AI builders, React, Vue, vanilla JavaScript, etc.)
+
+2. Native Feature Integration:
+
+import despia from 'despia-native';
+
+despia('successhaptic://');  // Haptic feedback implementation
+const info = await despia('getappversion://', ['versionNumber']);  // Application version retrieval
+
+3. Environment Detection:
+
+if (navigator.userAgent.includes('despia')) {
+  despia('lighthaptic://');  // Native application context
+}
+
+4. Deployment Process:
+
+    Web: Deploy to standard hosting infrastructure
+
+    Mobile: Provide web application URL through Despia dashboard
+
+    Updates: Automatic distribution via over-the-air system
+
+Source Code Ownership
+
+    Complete export capability for Xcode and Android Studio projects
+
+    Unrestricted access to native codebase
+
+    Integration with GitHub, GitLab, and Bitbucket
+
+    Support for custom npm packages and native code extensions
+
+    Feature requests: features@despia.com
+
+Performance Specifications
+
+    Native application architecture with comprehensive module library
+
+    Webview rendering engine providing unlimited design flexibility
+
+    JavaScript-to-native bridge for Swift/Kotlin code execution
+
+    60fps hardware-accelerated rendering
+
+    Sequential command queuing system
+
+    Full TypeScript type safety support
+
+    Automated timeout and error management
+
+    Complete App Store and Play Store compliance
+
+Support Resources
+
+    Technical Documentation: docs.despia.com
+
+    Technical Support: support@despia.com
+
+    Feature Development: features@despia.com
