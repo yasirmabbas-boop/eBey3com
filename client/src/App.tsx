@@ -43,6 +43,7 @@ import ForgotPassword from "@/pages/forgot-password";
 import SecuritySettings from "@/pages/security-settings";
 import FavoritesPage from "@/pages/favorites";
 import SwipePage from "@/pages/swipe";
+import AuctionsDashboard from "@/pages/auctions-dashboard";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -87,6 +88,7 @@ function Router() {
       <Route path="/favorites" component={FavoritesPage} />
       <Route path="/swipe" component={SwipePage} />
       <Route path="/admin" component={AdminPage} />
+      <Route path="/auctions" component={AuctionsDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
