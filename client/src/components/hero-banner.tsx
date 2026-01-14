@@ -85,7 +85,7 @@ export function HeroBanner() {
         <CarouselContent className="-mr-2 md:-mr-4">
           {heroListings.map((listing) => (
             <CarouselItem key={listing.id} className="pr-2 md:pr-4 basis-full md:basis-1/2 lg:basis-1/3">
-              <Link href={`/listing/${listing.id}`}>
+              <Link href={`/product/${listing.id}`}>
                 <div 
                   className="relative group cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
                   data-testid={`hero-item-${listing.id}`}

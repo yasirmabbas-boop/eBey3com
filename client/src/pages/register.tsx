@@ -436,26 +436,6 @@ export default function Register() {
               </Link>
             </div>
 
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  {language === "ar" ? "أو" : "یان"}
-                </span>
-              </div>
-            </div>
-
-            <a
-              href="/api/login"
-              className="flex items-center justify-center gap-2 w-full border rounded-lg py-2.5 hover:bg-gray-50 transition-colors"
-            >
-              <img src="https://www.google.com/favicon.ico" alt="Google" className="h-4 w-4" />
-              <span className="text-sm font-medium">
-                {language === "ar" ? "التسجيل عبر Google / Apple" : "تۆمارکردن لە ڕێگەی Google / Apple"}
-              </span>
-            </a>
           </CardContent>
         </Card>
       </div>

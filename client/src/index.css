@@ -4,13 +4,28 @@
 @custom-variant dark (&:is(.dark *));
 
 html, body {
-  overflow-x: hidden;
-  max-width: 100vw;
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
 }
 
 #root {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.container {
+  max-width: 100% !important;
   overflow-x: hidden;
-  max-width: 100vw;
+}
+
+img, video, iframe {
+  max-width: 100%;
 }
 
 @theme inline {
