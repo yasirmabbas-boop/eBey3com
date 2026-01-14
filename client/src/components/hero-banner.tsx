@@ -78,7 +78,7 @@ export function HeroBanner() {
     
     const interval = setInterval(() => {
       api.scrollNext();
-    }, 5000);
+    }, 4000);
     
     return () => clearInterval(interval);
   }, [api, heroListings, isPaused]);
@@ -105,7 +105,7 @@ export function HeroBanner() {
           align: "start",
           loop: true,
           direction: "rtl",
-          duration: 30,
+          duration: 20,
         }}
         setApi={setApi}
         className="w-full"
