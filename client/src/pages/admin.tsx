@@ -113,7 +113,7 @@ export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "messages" | "cancellations">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "deleted-listings" | "messages" | "cancellations">("stats");
   const [listingSearch, setListingSearch] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
 
@@ -161,6 +161,31 @@ export default function AdminPage() {
       return res.json();
     },
     enabled: !authLoading && (user as any)?.isAdmin && activeTab === "listings",
+  });
+
+  interface DeletedListing {
+    id: string;
+    productCode?: string;
+    title: string;
+    price: number;
+    category: string;
+    saleType: string;
+    sellerName: string;
+    sellerId?: string;
+    city: string;
+    deletedAt?: string;
+    createdAt: string;
+    image?: string;
+  }
+
+  const { data: deletedListings, isLoading: deletedListingsLoading } = useQuery<DeletedListing[]>({
+    queryKey: ["/api/admin/listings/deleted"],
+    queryFn: async () => {
+      const res = await fetchWithAuth("/api/admin/listings/deleted");
+      if (!res.ok) throw new Error("Failed to fetch deleted listings");
+      return res.json();
+    },
+    enabled: !authLoading && (user as any)?.isAdmin && activeTab === "deleted-listings",
   });
 
   const { data: contactMessages, isLoading: messagesLoading } = useQuery<ContactMessage[]>({
@@ -420,6 +445,14 @@ export default function AdminPage() {
                   >
                     <Package className="h-5 w-5" />
                     إدارة المنتجات
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("deleted-listings")}
+                    className={`flex items-center gap-3 px-4 py-3 text-right hover:bg-muted transition-colors ${activeTab === "deleted-listings" ? "bg-muted font-semibold border-r-4 border-primary" : ""}`}
+                    data-testid="button-tab-deleted-listings"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                    المنتجات المحذوفة
                   </button>
                   <button
                     onClick={() => setActiveTab("messages")}
@@ -1017,6 +1050,100 @@ export default function AdminPage() {
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>لا توجد منتجات</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeTab === "deleted-listings" && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold">المنتجات المحذوفة</h2>
+                <p className="text-muted-foreground">المنتجات التي حذفها البائعون - محفوظة للمراجعة</p>
+                {deletedListingsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : deletedListings && deletedListings.length > 0 ? (
+                  <Card>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">العنوان</TableHead>
+                            <TableHead className="text-right">البائع</TableHead>
+                            <TableHead className="text-right">السعر</TableHead>
+                            <TableHead className="text-right">النوع</TableHead>
+                            <TableHead className="text-right">تاريخ الحذف</TableHead>
+                            <TableHead className="text-right">الإجراءات</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {deletedListings.map((listing) => (
+                            <TableRow key={listing.id} data-testid={`row-deleted-listing-${listing.id}`} className="hover:bg-muted/50">
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                                    {listing.image && (
+                                      <img 
+                                        src={listing.image} 
+                                        alt={listing.title}
+                                        className="w-full h-full object-cover opacity-50"
+                                      />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-medium truncate max-w-[200px] text-muted-foreground line-through">
+                                      {listing.title}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground font-mono">{listing.productCode || `#${listing.id.slice(0, 8)}`}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <a 
+                                  href={`/search?sellerId=${listing.sellerId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:text-primary hover:underline transition-colors"
+                                >
+                                  {listing.sellerName}
+                                </a>
+                              </TableCell>
+                              <TableCell>{listing.price.toLocaleString()} د.ع</TableCell>
+                              <TableCell>
+                                {listing.saleType === "auction" ? (
+                                  <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">مزاد</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">سعر ثابت</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-muted-foreground">
+                                  {listing.deletedAt ? new Date(listing.deletedAt).toLocaleDateString("ar-IQ") : "-"}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => window.open(`/product/${listing.id}`, '_blank')}
+                                  data-testid={`button-view-deleted-listing-${listing.id}`}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="py-12 text-center text-muted-foreground">
+                      <Trash2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>لا توجد منتجات محذوفة</p>
                     </CardContent>
                   </Card>
                 )}
