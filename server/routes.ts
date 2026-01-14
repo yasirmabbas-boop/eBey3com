@@ -1476,9 +1476,9 @@ export async function registerRoutes(
         return res.status(403).json({ error: "غير مصرح لك بإلغاء هذا الطلب" });
       }
       
-      // Only allow cancellation for pending/pending_payment orders
-      if (!["pending", "pending_payment"].includes(transaction.status)) {
-        return res.status(400).json({ error: "لا يمكن إلغاء الطلب بعد الشحن" });
+      // Only allow cancellation for pending/pending_payment/pending_shipping orders
+      if (!["pending", "pending_payment", "pending_shipping"].includes(transaction.status)) {
+        return res.status(400).json({ error: "لا يمكن إلغاء الطلب بعد تأكيد الشحن" });
       }
       
       // Update transaction with cancellation info

@@ -503,6 +503,22 @@ export default function MySales() {
                                 {(sale.listing as any)?.views || 0}
                               </span>
                             </div>
+                            {["pending", "pending_payment", "pending_shipping"].includes(sale.status) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="mt-2 text-red-600 border-red-300 hover:bg-red-50 w-full gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedSale(sale);
+                                  setShowCancelDialog(true);
+                                }}
+                                data-testid={`button-cancel-sale-card-${sale.id}`}
+                              >
+                                <XCircle className="h-4 w-4" />
+                                إلغاء الطلب
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </Card>
@@ -695,8 +711,8 @@ export default function MySales() {
                         </Card>
                       )}
 
-                      {/* Cancel Sale Button - only for pending/pending_payment orders */}
-                      {(selectedSale.status === "pending" || selectedSale.status === "pending_payment") && (
+                      {/* Cancel Sale Button - only for pending/pending_payment/pending_shipping orders */}
+                      {["pending", "pending_payment", "pending_shipping"].includes(selectedSale.status) && (
                         <Card className="p-6 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-300">
                           <div className="flex items-center justify-between">
                             <div>
