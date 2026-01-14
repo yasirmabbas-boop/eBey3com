@@ -77,6 +77,140 @@ export function StarRating({
   );
 }
 
+type TierLevel = "standard" | "premium" | "elite";
+
+function getTierLevel(totalTransactions: number, rating: number): TierLevel {
+  if (totalTransactions >= 500 && rating >= 4) {
+    return "elite";
+  }
+  if (totalTransactions >= 100) {
+    return "premium";
+  }
+  return "standard";
+}
+
+function getTierColors(tier: TierLevel): { filled: string; empty: string } {
+  switch (tier) {
+    case "elite":
+      return { filled: "fill-fuchsia-500 text-fuchsia-500", empty: "fill-fuchsia-200 text-fuchsia-200" };
+    case "premium":
+      return { filled: "fill-blue-600 text-blue-600", empty: "fill-blue-200 text-blue-200" };
+    case "standard":
+    default:
+      return { filled: "fill-amber-400 text-amber-400", empty: "fill-amber-200 text-amber-200" };
+  }
+}
+
+interface TieredStarRatingProps {
+  rating: number;
+  ratingCount?: number;
+  totalTransactions?: number;
+  showCount?: boolean;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}
+
+const tieredSizeClasses = {
+  sm: "h-3.5 w-3.5",
+  md: "h-4 w-4",
+  lg: "h-5 w-5",
+};
+
+export function TieredStarRating({
+  rating,
+  ratingCount = 0,
+  totalTransactions = 0,
+  showCount = true,
+  size = "md",
+  className,
+}: TieredStarRatingProps) {
+  const tier = getTierLevel(totalTransactions, rating);
+  const colors = getTierColors(tier);
+  const starSize = tieredSizeClasses[size];
+
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating - fullStars >= 0.5;
+  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+  return (
+    <div className={cn("flex items-center gap-1", className)} dir="ltr">
+      <div className="flex items-center gap-0.5">
+        {[...Array(fullStars)].map((_, i) => (
+          <Star key={`full-${i}`} className={cn(starSize, colors.filled)} />
+        ))}
+        {hasHalfStar && (
+          <div className="relative">
+            <Star className={cn(starSize, colors.empty)} />
+            <div className="absolute inset-0 overflow-hidden w-1/2">
+              <Star className={cn(starSize, colors.filled)} />
+            </div>
+          </div>
+        )}
+        {[...Array(emptyStars)].map((_, i) => (
+          <Star key={`empty-${i}`} className={cn(starSize, colors.empty)} />
+        ))}
+      </div>
+      {showCount && ratingCount > 0 && (
+        <span className="text-xs text-muted-foreground">({ratingCount})</span>
+      )}
+    </div>
+  );
+}
+
+export function SellerTierRating({
+  rating,
+  ratingCount,
+  totalSales,
+  showCount = true,
+  size = "md",
+  className,
+}: {
+  rating: number;
+  ratingCount: number;
+  totalSales: number;
+  showCount?: boolean;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  return (
+    <TieredStarRating
+      rating={rating}
+      ratingCount={ratingCount}
+      totalTransactions={totalSales}
+      showCount={showCount}
+      size={size}
+      className={className}
+    />
+  );
+}
+
+export function BuyerTierRating({
+  rating,
+  ratingCount,
+  totalPurchases,
+  showCount = true,
+  size = "md",
+  className,
+}: {
+  rating: number;
+  ratingCount: number;
+  totalPurchases: number;
+  showCount?: boolean;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  return (
+    <TieredStarRating
+      rating={rating}
+      ratingCount={ratingCount}
+      totalTransactions={totalPurchases}
+      showCount={showCount}
+      size={size}
+      className={className}
+    />
+  );
+}
+
 export function RatingDisplay({ 
   rating, 
   count,
