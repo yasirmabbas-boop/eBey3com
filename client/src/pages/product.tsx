@@ -441,8 +441,11 @@ export default function ProductPage() {
         auctionEnded,
         isOwnProduct,
         userId: user?.id,
+        userIdType: typeof user?.id,
         sellerId: listing.sellerId,
-        userIdMatchesSellerId: user?.id === listing.sellerId,
+        sellerIdType: typeof listing.sellerId,
+        strictEqual: user?.id === listing.sellerId,
+        looseEqual: user?.id == listing.sellerId,
         isAuthLoading,
         isAuthenticated,
       });
