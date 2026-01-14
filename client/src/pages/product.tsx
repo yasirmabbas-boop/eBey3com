@@ -432,6 +432,23 @@ export default function ProductPage() {
   // While auth is loading, disable purchase actions for logged-in users to prevent race conditions
   const isPurchaseDisabled = isAuthLoading && listing?.sellerId;
 
+  // Debug logging for bidding window visibility
+  useEffect(() => {
+    if (listing) {
+      console.log("[DEBUG Product] Bidding window conditions:", {
+        saleType: listing.saleType,
+        isActive: listing.isActive,
+        auctionEnded,
+        isOwnProduct,
+        userId: user?.id,
+        sellerId: listing.sellerId,
+        userIdMatchesSellerId: user?.id === listing.sellerId,
+        isAuthLoading,
+        isAuthenticated,
+      });
+    }
+  }, [listing, auctionEnded, isOwnProduct, user?.id, isAuthLoading, isAuthenticated]);
+
   const requireAuth = (action: string) => {
     // If auth is still loading, don't show error - just return false to prevent action
     if (isAuthLoading) {
