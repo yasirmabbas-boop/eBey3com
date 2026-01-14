@@ -211,10 +211,9 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       {/* Main Content */}
       <main className="despia-content pb-20 md:pb-0 md:flex-1">
         {children}
-      </main>
-
-      {/* Footer - Panda Black */}
-      <footer className="bg-[#141414] text-gray-300 py-8 mt-20">
+        
+        {/* Footer - Panda Black (inside scrollable content) */}
+        <footer className="bg-[#141414] text-gray-300 py-8 mt-20">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div className="flex items-center gap-3 md:flex-col md:items-start">
@@ -261,6 +260,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
           </div>
         </div>
       </footer>
+      </main>
     </div>
   );
 }
