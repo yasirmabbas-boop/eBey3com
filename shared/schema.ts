@@ -328,6 +328,9 @@ export const listings = pgTable("listings", {
   removalReason: text("removal_reason"),
   isDeleted: boolean("is_deleted").notNull().default(false),
   deletedAt: timestamp("deleted_at"),
+  isFeatured: boolean("is_featured").notNull().default(false),
+  featuredOrder: integer("featured_order").default(0),
+  featuredAt: timestamp("featured_at"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
