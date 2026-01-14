@@ -1,5 +1,29 @@
 import type { Express } from "express";
-import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
+import multer from "multer";
+import { processImage } from "../../image-processor";
+import { randomUUID } from "crypto";
+
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/heic",
+      "image/heif",
+      "application/octet-stream",
+    ];
+    if (allowedTypes.includes(file.mimetype.toLowerCase()) || file.originalname.toLowerCase().endsWith(".heic")) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Unsupported file type: ${file.mimetype}`));
+    }
+  },
+});
 
 /**
  * Register object storage routes for file uploads.
@@ -82,5 +106,103 @@ export function registerObjectStorageRoutes(app: Express): void {
       return res.status(500).json({ error: "Failed to serve object" });
     }
   });
+
+  app.post("/api/uploads/optimized", imageUpload.array("images", 10), async (req, res) => {
+    try {
+      const files = req.files as Express.Multer.File[];
+      
+      if (!files || files.length === 0) {
+        return res.status(400).json({ error: "No images provided" });
+      }
+
+      console.log(`[optimized-upload] Processing ${files.length} image(s)`);
+
+      const privateObjectDir = process.env.PRIVATE_OBJECT_DIR || "";
+      if (!privateObjectDir) {
+        return res.status(500).json({ error: "Object storage not configured" });
+      }
+
+      const { bucketName } = parseObjectPath(privateObjectDir);
+      const bucket = objectStorageClient.bucket(bucketName);
+
+      const results: Array<{ main: string; thumbnail?: string }> = [];
+
+      for (const file of files) {
+        try {
+          console.log(`[optimized-upload] Processing: ${file.originalname} (${(file.size / 1024).toFixed(1)}KB)`);
+          
+          const { main, thumbnail } = await processImage(file.buffer, {
+            maxWidth: 1200,
+            maxHeight: 1200,
+            quality: 80,
+            format: "jpeg",
+            generateThumbnail: true,
+            thumbnailWidth: 400,
+          });
+
+          const mainId = randomUUID();
+          const mainPath = `${privateObjectDir}/uploads/${mainId}.jpg`.replace(/^\//, "");
+          const mainObjectName = mainPath.split("/").slice(1).join("/");
+          
+          const mainFile = bucket.file(mainObjectName);
+          await mainFile.save(main.buffer, {
+            contentType: "image/jpeg",
+            metadata: {
+              originalName: file.originalname,
+              processedAt: new Date().toISOString(),
+            },
+          });
+
+          const mainUrl = `/objects/uploads/${mainId}.jpg`;
+
+          let thumbnailUrl: string | undefined;
+          if (thumbnail) {
+            const thumbId = `${mainId}_thumb`;
+            const thumbPath = `${privateObjectDir}/uploads/${thumbId}.jpg`.replace(/^\//, "");
+            const thumbObjectName = thumbPath.split("/").slice(1).join("/");
+            
+            const thumbFile = bucket.file(thumbObjectName);
+            await thumbFile.save(thumbnail.buffer, {
+              contentType: "image/jpeg",
+              metadata: {
+                originalName: `${file.originalname}_thumb`,
+                processedAt: new Date().toISOString(),
+              },
+            });
+
+            thumbnailUrl = `/objects/uploads/${thumbId}.jpg`;
+          }
+
+          results.push({ main: mainUrl, thumbnail: thumbnailUrl });
+          console.log(`[optimized-upload] Uploaded: ${mainUrl}`);
+        } catch (err) {
+          console.error(`[optimized-upload] Failed to process ${file.originalname}:`, err);
+          return res.status(500).json({ error: `Failed to process image: ${file.originalname}` });
+        }
+      }
+
+      res.json({
+        success: true,
+        images: results,
+        count: results.length,
+      });
+    } catch (error) {
+      console.error("[optimized-upload] Error:", error);
+      res.status(500).json({ error: "Failed to upload images" });
+    }
+  });
+}
+
+function parseObjectPath(path: string): { bucketName: string; objectName: string } {
+  if (!path.startsWith("/")) {
+    path = `/${path}`;
+  }
+  const pathParts = path.split("/");
+  if (pathParts.length < 3) {
+    throw new Error("Invalid path: must contain at least a bucket name");
+  }
+  const bucketName = pathParts[1];
+  const objectName = pathParts.slice(2).join("/");
+  return { bucketName, objectName };
 }
 

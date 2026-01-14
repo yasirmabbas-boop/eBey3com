@@ -166,42 +166,28 @@ export default function SellWizardPage() {
     setIsUploadingImages(true);
     
     try {
-      const uploadPromises = filesToUpload.map(async (file) => {
-        const urlResponse = await fetch("/api/uploads/request-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: file.name,
-            size: file.size,
-            contentType: file.type || "image/jpeg",
-          }),
-        });
-
-        if (!urlResponse.ok) {
-          throw new Error(language === "ar" ? "فشل في الحصول على رابط الرفع" : "شکست لە وەرگرتنی بەستەری بارکردن");
-        }
-
-        const { uploadURL, objectPath } = await urlResponse.json();
-
-        const uploadResponse = await fetch(uploadURL, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": file.type || "image/jpeg" },
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error(language === "ar" ? "فشل في رفع الصورة" : "شکست لە بارکردنی وێنە");
-        }
-
-        return objectPath;
+      const formData = new FormData();
+      filesToUpload.forEach((file) => {
+        formData.append("images", file);
       });
-      
-      const uploadedPaths = await Promise.all(uploadPromises);
+
+      const response = await fetch("/api/uploads/optimized", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || (language === "ar" ? "فشل في رفع الصور" : "شکست لە بارکردنی وێنەکان"));
+      }
+
+      const result = await response.json();
+      const uploadedPaths = result.images.map((img: { main: string }) => img.main);
       setImages(prev => [...prev, ...uploadedPaths]);
       
       toast({
         title: language === "ar" ? "تم رفع الصور بنجاح" : "وێنەکان بە سەرکەوتوویی بارکران",
-        description: `${language === "ar" ? "تم رفع" : "بارکرا"} ${uploadedPaths.length} ${language === "ar" ? "صورة" : "وێنە"}`,
+        description: `${language === "ar" ? "تم رفع" : "بارکرا"} ${uploadedPaths.length} ${language === "ar" ? "صورة (محسّنة)" : "وێنە (باشتر کراو)"}`,
       });
     } catch (error) {
       console.error("Image upload error:", error);
