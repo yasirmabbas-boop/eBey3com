@@ -37,6 +37,7 @@ export interface IStorage {
   getListingsByCategory(category: string): Promise<Listing[]>;
   getListingsBySeller(sellerId: string): Promise<Listing[]>;
   getListing(id: string): Promise<Listing | undefined>;
+  getDeletedListings(): Promise<Listing[]>;
   getPurchasesWithDetails(buyerId: string): Promise<any[]>;
   getUserBidsWithDetails(userId: string): Promise<any[]>;
   createListing(listing: InsertListing): Promise<Listing>;
@@ -241,7 +242,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getListings(): Promise<Listing[]> {
-    return db.select().from(listings).where(eq(listings.isActive, true)).orderBy(desc(listings.createdAt));
+    return db.select().from(listings).where(and(eq(listings.isActive, true), eq(listings.isDeleted, false))).orderBy(desc(listings.createdAt));
   }
 
   async getListingsPaginated(options: { 
@@ -261,7 +262,8 @@ export class DatabaseStorage implements IStorage {
     
     // When fetching for a specific seller, show ALL their products (including ended auctions)
     // For public listing pages, only show active listings unless includeSold is true
-    const conditions: any[] = [];
+    // Always filter out deleted items
+    const conditions: any[] = [eq(listings.isDeleted, false)];
     if (!sellerId && !includeSold) {
       conditions.push(eq(listings.isActive, true));
     }
@@ -439,13 +441,19 @@ export class DatabaseStorage implements IStorage {
 
   async getListingsBySeller(sellerId: string): Promise<Listing[]> {
     return db.select().from(listings)
-      .where(eq(listings.sellerId, sellerId))
+      .where(and(eq(listings.sellerId, sellerId), eq(listings.isDeleted, false)))
       .orderBy(desc(listings.createdAt));
   }
 
   async getListing(id: string): Promise<Listing | undefined> {
     const [listing] = await db.select().from(listings).where(eq(listings.id, id));
     return listing;
+  }
+
+  async getDeletedListings(): Promise<Listing[]> {
+    return db.select().from(listings)
+      .where(eq(listings.isDeleted, true))
+      .orderBy(desc(listings.deletedAt));
   }
 
   private generateProductCode(): string {

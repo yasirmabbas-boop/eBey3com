@@ -3783,6 +3783,39 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Get deleted listings (soft-deleted by sellers)
+  app.get("/api/admin/listings/deleted", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const listings = await storage.getDeletedListings();
+      const deletedListings = listings.map(l => ({
+        id: l.id,
+        productCode: l.productCode,
+        title: l.title,
+        price: l.price,
+        category: l.category,
+        saleType: l.saleType,
+        sellerName: l.sellerName,
+        sellerId: l.sellerId,
+        city: l.city,
+        deletedAt: l.deletedAt,
+        createdAt: l.createdAt,
+        image: l.images?.[0],
+      }));
+      res.json(deletedListings);
+    } catch (error) {
+      console.error("Error fetching deleted listings:", error);
+      res.status(500).json({ error: "Failed to fetch deleted listings" });
+    }
+  });
+
   // Contact messages - public endpoint to submit
   app.post("/api/contact", async (req, res) => {
     try {
