@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, UserX, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy, BadgeCheck, Award } from "lucide-react";
+import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, UserX, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy, BadgeCheck, Award, Star, StarOff } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -77,6 +77,7 @@ interface AdminListing {
   city: string;
   isActive: boolean;
   isPaused: boolean;
+  isFeatured: boolean;
   createdAt: string;
   currentBid?: number;
   totalBids?: number;
@@ -341,6 +342,26 @@ export default function AdminPage() {
     },
     onError: () => {
       toast({ title: "فشل في حذف المنتج", variant: "destructive" });
+    },
+  });
+
+  const featureListingMutation = useMutation({
+    mutationFn: async ({ id, isFeatured }: { id: string; isFeatured: boolean }) => {
+      const res = await fetchWithAuth(`/api/admin/listings/${id}/feature`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isFeatured }),
+      });
+      if (!res.ok) throw new Error("Failed to feature listing");
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/listings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/hero-listings"] });
+      toast({ title: variables.isFeatured ? "تم ترقية المنتج للصفحة الرئيسية" : "تم إزالة المنتج من الصفحة الرئيسية" });
+    },
+    onError: () => {
+      toast({ title: "فشل في تحديث المنتج", variant: "destructive" });
     },
   });
 
@@ -1093,6 +1114,31 @@ export default function AdminPage() {
                                       data-testid={`button-activate-listing-${listing.id}`}
                                     >
                                       <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {listing.isFeatured ? (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-purple-600 border-purple-600 hover:bg-purple-50"
+                                      onClick={() => featureListingMutation.mutate({ id: listing.id, isFeatured: false })}
+                                      disabled={featureListingMutation.isPending}
+                                      title="إزالة من المميز"
+                                      data-testid={`button-unfeature-listing-${listing.id}`}
+                                    >
+                                      <StarOff className="h-4 w-4" />
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-yellow-600 border-yellow-600 hover:bg-yellow-50"
+                                      onClick={() => featureListingMutation.mutate({ id: listing.id, isFeatured: true })}
+                                      disabled={featureListingMutation.isPending}
+                                      title="ترقية للصفحة الرئيسية"
+                                      data-testid={`button-feature-listing-${listing.id}`}
+                                    >
+                                      <Star className="h-4 w-4" />
                                     </Button>
                                   )}
                                   <Button

@@ -3743,6 +3743,7 @@ export async function registerRoutes(
         city: l.city,
         isActive: l.isActive,
         isPaused: l.isPaused,
+        isFeatured: l.isFeatured || false,
         createdAt: l.createdAt,
         currentBid: l.currentBid,
         totalBids: l.totalBids,
