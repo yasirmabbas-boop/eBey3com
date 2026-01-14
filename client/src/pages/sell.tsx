@@ -322,44 +322,26 @@ export default function SellPage() {
     setIsUploadingImages(true);
 
     try {
-      // Upload all files in parallel using Promise.all
-      const uploadPromises = filesToUpload.map(async (file) => {
-        // Step 1: Request presigned URL from backend
-        const urlResponse = await fetch("/api/uploads/request-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: file.name,
-            size: file.size,
-            contentType: file.type || "image/jpeg",
-          }),
-        });
-
-        if (!urlResponse.ok) {
-          throw new Error("فشل في الحصول على رابط الرفع");
-        }
-
-        const { uploadURL, objectPath } = await urlResponse.json();
-
-        // Step 2: Upload file directly to object storage
-        const uploadResponse = await fetch(uploadURL, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": file.type || "image/jpeg" },
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error("فشل في رفع الصورة");
-        }
-
-        return objectPath;
+      const uploadFormData = new FormData();
+      filesToUpload.forEach((file) => {
+        uploadFormData.append("images", file);
       });
 
-      const uploadedPaths = await Promise.all(uploadPromises);
+      const response = await fetch("/api/uploads/optimized", {
+        method: "POST",
+        body: uploadFormData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || (language === "ar" ? "فشل في رفع الصور" : "شکست لە بارکردنی وێنەکان"));
+      }
+
+      const result = await response.json();
+      const uploadedPaths = result.images.map((img: { main: string }) => img.main);
 
       setImages(prev => [...prev, ...uploadedPaths]);
       
-      // Clear image validation error when images are added
       if (validationErrors.images) {
         setValidationErrors(prev => {
           const updated = { ...prev };
@@ -370,7 +352,7 @@ export default function SellPage() {
       
       toast({
         title: language === "ar" ? "تم رفع الصور بنجاح" : "وێنەکان بە سەرکەوتوویی بارکران",
-        description: `تم رفع ${uploadedPaths.length} صورة`,
+        description: `${language === "ar" ? "تم رفع" : "بارکرا"} ${uploadedPaths.length} ${language === "ar" ? "صورة (محسّنة)" : "وێنە (باشتر کراو)"}`,
       });
     } catch (error) {
       console.error("Image upload error:", error);
@@ -381,7 +363,6 @@ export default function SellPage() {
       });
     } finally {
       setIsUploadingImages(false);
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
