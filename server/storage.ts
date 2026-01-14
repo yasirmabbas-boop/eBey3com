@@ -44,6 +44,12 @@ export interface IStorage {
   updateListing(id: string, listing: Partial<InsertListing> & { auctionEndTime?: Date | string | null; isActive?: boolean }): Promise<Listing | undefined>;
   deleteListing(id: string): Promise<boolean>;
   
+  // Featured/Hero listings
+  getFeaturedListings(): Promise<Listing[]>;
+  getHotListings(limit?: number): Promise<Listing[]>;
+  getHeroListings(limit?: number): Promise<Listing[]>;
+  setListingFeatured(id: string, isFeatured: boolean, order?: number): Promise<Listing | undefined>;
+  
   getBidsForListing(listingId: string): Promise<Bid[]>;
   createBid(bid: InsertBid): Promise<Bid>;
   getHighestBid(listingId: string): Promise<Bid | undefined>;
@@ -498,6 +504,52 @@ export class DatabaseStorage implements IStorage {
       deletedAt: new Date()
     }).where(eq(listings.id, id)).returning();
     return !!listing;
+  }
+
+  async getFeaturedListings(): Promise<Listing[]> {
+    return db.select().from(listings)
+      .where(and(
+        eq(listings.isActive, true),
+        eq(listings.isDeleted, false),
+        eq(listings.isFeatured, true)
+      ))
+      .orderBy(listings.featuredOrder, desc(listings.featuredAt));
+  }
+
+  async getHotListings(limit: number = 10): Promise<Listing[]> {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    return db.select().from(listings)
+      .where(and(
+        eq(listings.isActive, true),
+        eq(listings.isDeleted, false)
+      ))
+      .orderBy(desc(listings.views), desc(listings.totalBids))
+      .limit(limit);
+  }
+
+  async getHeroListings(limit: number = 10): Promise<Listing[]> {
+    const featured = await this.getFeaturedListings();
+    if (featured.length >= limit) {
+      return featured.slice(0, limit);
+    }
+    const hot = await this.getHotListings(limit - featured.length);
+    const featuredIds = new Set(featured.map(f => f.id));
+    const uniqueHot = hot.filter(h => !featuredIds.has(h.id));
+    return [...featured, ...uniqueHot].slice(0, limit);
+  }
+
+  async setListingFeatured(id: string, isFeatured: boolean, order: number = 0): Promise<Listing | undefined> {
+    const [updated] = await db.update(listings)
+      .set({
+        isFeatured,
+        featuredOrder: order,
+        featuredAt: isFeatured ? new Date() : null
+      })
+      .where(eq(listings.id, id))
+      .returning();
+    return updated;
   }
 
   async getBidsForListing(listingId: string): Promise<Bid[]> {
