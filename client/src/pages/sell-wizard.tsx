@@ -72,6 +72,7 @@ export default function SellWizardPage() {
   const [tagInput, setTagInput] = useState("");
   const [saleType, setSaleType] = useState<"auction" | "fixed">("auction");
   const [isNegotiable, setIsNegotiable] = useState(false);
+  const [startTimeOption, setStartTimeOption] = useState<"now" | "schedule">("now");
   
   const [formData, setFormData] = useState({
     title: "",
@@ -221,7 +222,7 @@ export default function SellWizardPage() {
   const stepValidation = [
     images.length > 0,
     formData.title.trim().length >= 5 && formData.description.trim().length >= 10 && !!formData.category && !!formData.condition,
-    !!formData.price && parseInt(formData.price) >= 1000 && (saleType === "fixed" || (!!formData.startDate && !!formData.startHour && !!formData.endDate && !!formData.endHour)),
+    !!formData.price && parseInt(formData.price) >= 1000 && (saleType === "fixed" || (startTimeOption === "now" || (!!formData.startDate && !!formData.startHour)) && !!formData.endDate && !!formData.endHour),
     !!formData.city && !!formData.deliveryWindow && !!formData.returnPolicy,
     true,
   ];
@@ -244,7 +245,9 @@ export default function SellWizardPage() {
       let auctionStartTime: string | null = null;
       let auctionEndTime: string | null = null;
       if (saleType === "auction") {
-        if (formData.startDate) {
+        if (startTimeOption === "now") {
+          auctionStartTime = new Date().toISOString();
+        } else if (formData.startDate) {
           const startDateTime = new Date(`${formData.startDate}T${formData.startHour}:00:00`);
           auctionStartTime = startDateTime.toISOString();
         }
@@ -552,40 +555,89 @@ export default function SellWizardPage() {
             {saleType === "auction" && (
               <>
                 <Separator />
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{language === "ar" ? "تاريخ البداية" : "ڕێکەوتی دەستپێک"} *</Label>
-                    <Input 
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => handleInputChange("startDate", e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
-                      data-testid="input-start-date"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{language === "ar" ? "ساعة البداية" : "کاتژمێری دەستپێک"} *</Label>
-                    <Select value={formData.startHour} onValueChange={(v) => handleInputChange("startHour", v)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {HOURS.map(({ value, label }) => (
-                          <SelectItem key={value} value={value}>{label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <Label className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    {language === "ar" ? "موعد بدء المزاد" : "کاتی دەستپێکردنی مزایدە"}
+                  </Label>
+                  <RadioGroup 
+                    value={startTimeOption} 
+                    onValueChange={(v) => setStartTimeOption(v as "now" | "schedule")}
+                    className="grid grid-cols-2 gap-3"
+                  >
+                    <Label 
+                      htmlFor="start-now"
+                      className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                        startTimeOption === "now" ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <RadioGroupItem value="now" id="start-now" />
+                      <div>
+                        <div className="font-bold text-green-700">
+                          {language === "ar" ? "ابدأ فوراً" : "ئێستا دەستپێبکە"}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {language === "ar" ? "يبدأ المزاد عند النشر" : "مزایدە دەستپێدەکات کاتی بڵاوکردنەوە"}
+                        </p>
+                      </div>
+                    </Label>
+                    
+                    <Label 
+                      htmlFor="start-schedule"
+                      className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                        startTimeOption === "schedule" ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <RadioGroupItem value="schedule" id="start-schedule" />
+                      <div>
+                        <div className="font-bold text-blue-700">
+                          {language === "ar" ? "جدولة موعد" : "کاتی دیاریکراو"}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {language === "ar" ? "اختر تاريخ ووقت محدد" : "ڕێکەوت و کات هەڵبژێرە"}
+                        </p>
+                      </div>
+                    </Label>
+                  </RadioGroup>
+                </div>
+
+                {startTimeOption === "schedule" && (
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+                    <div className="space-y-2">
+                      <Label>{language === "ar" ? "تاريخ البداية" : "ڕێکەوتی دەستپێک"} *</Label>
+                      <Input 
+                        type="date"
+                        value={formData.startDate}
+                        onChange={(e) => handleInputChange("startDate", e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        data-testid="input-start-date"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{language === "ar" ? "ساعة البداية" : "کاتژمێری دەستپێک"} *</Label>
+                      <Select value={formData.startHour} onValueChange={(v) => handleInputChange("startHour", v)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {HOURS.map(({ value, label }) => (
+                            <SelectItem key={value} value={value}>{label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-4 p-4 bg-orange-50 rounded-lg">
                   <div className="space-y-2">
                     <Label>{language === "ar" ? "تاريخ الانتهاء" : "ڕێکەوتی کۆتایی"} *</Label>
                     <Input 
                       type="date"
                       value={formData.endDate}
                       onChange={(e) => handleInputChange("endDate", e.target.value)}
-                      min={formData.startDate || new Date().toISOString().split('T')[0]}
+                      min={startTimeOption === "now" ? new Date().toISOString().split('T')[0] : (formData.startDate || new Date().toISOString().split('T')[0])}
                       data-testid="input-end-date"
                     />
                   </div>
