@@ -403,16 +403,21 @@ export default function SellerDashboard() {
     );
     
     let status = "draft";
-    if (!l.isActive) {
-      status = "draft";
-    } else if (hasPendingShipment) {
+    if (hasPendingShipment) {
       status = "pending_shipment";
     } else if (hasShippedInTransit) {
       status = "shipped";
     } else if (quantitySold > 0 && remainingStock <= 0) {
       status = "sold";
-    } else if (quantitySold > 0 && hasDeliveredOrCompleted && remainingStock > 0) {
-      status = "active";
+    } else if (quantitySold > 0 && hasDeliveredOrCompleted) {
+      // Sold some items, delivered/completed, may have remaining stock
+      status = remainingStock > 0 ? "active" : "sold";
+    } else if (!l.isActive && quantitySold > 0) {
+      // Inactive but has sales - it's sold, not draft
+      status = "sold";
+    } else if (!l.isActive) {
+      // Inactive with no sales - actual draft
+      status = "draft";
     } else if (remainingStock > 0) {
       status = "active";
     } else {
