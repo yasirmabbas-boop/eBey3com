@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
-import { Flame, Clock, Star, ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Flame, Clock, Star } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
 
 interface Listing {
   id: string;
@@ -41,7 +41,9 @@ function formatPrice(price: number): string {
 }
 
 export function HeroBanner() {
+  const [api, setApi] = useState<CarouselApi>();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   
   const { data: heroListings, isLoading } = useQuery<Listing[]>({
     queryKey: ["/api/hero-listings"],
@@ -52,15 +54,34 @@ export function HeroBanner() {
     },
   });
 
+  const scrollTo = useCallback((index: number) => {
+    api?.scrollTo(index);
+  }, [api]);
+
   useEffect(() => {
-    if (!heroListings || heroListings.length <= 1) return;
+    if (!api) return;
+
+    const onSelect = () => {
+      setCurrentIndex(api.selectedScrollSnap());
+    };
+
+    api.on("select", onSelect);
+    onSelect();
+
+    return () => {
+      api.off("select", onSelect);
+    };
+  }, [api]);
+
+  useEffect(() => {
+    if (!api || !heroListings || heroListings.length <= 1 || isPaused) return;
     
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % heroListings.length);
+      api.scrollNext();
     }, 5000);
     
     return () => clearInterval(interval);
-  }, [heroListings]);
+  }, [api, heroListings, isPaused]);
 
   if (isLoading) {
     return (
@@ -73,13 +94,20 @@ export function HeroBanner() {
   }
 
   return (
-    <div className="w-full mb-6" data-testid="hero-banner">
+    <div 
+      className="w-full mb-6" 
+      data-testid="hero-banner"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       <Carousel
         opts={{
           align: "start",
           loop: true,
           direction: "rtl",
+          duration: 30,
         }}
+        setApi={setApi}
         className="w-full"
       >
         <CarouselContent className="-mr-2 md:-mr-4">
@@ -161,13 +189,13 @@ export function HeroBanner() {
       </Carousel>
       
       <div className="flex justify-center gap-2 mt-4">
-        {heroListings.slice(0, 5).map((_, index) => (
+        {heroListings.slice(0, Math.min(heroListings.length, 8)).map((_, index) => (
           <button
             key={index}
-            className={`w-2 h-2 rounded-full transition-all ${
-              index === currentIndex % 5 ? "bg-primary w-6" : "bg-muted-foreground/30"
+            className={`h-2 rounded-full transition-all duration-500 ease-in-out ${
+              index === currentIndex ? "bg-primary w-6" : "bg-muted-foreground/30 w-2 hover:bg-muted-foreground/50"
             }`}
-            onClick={() => setCurrentIndex(index)}
+            onClick={() => scrollTo(index)}
             data-testid={`hero-indicator-${index}`}
           />
         ))}

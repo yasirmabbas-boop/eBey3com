@@ -13,6 +13,7 @@ import { PushNotificationPrompt } from "@/components/push-notification-prompt";
 import { NavVisibilityProvider } from "@/hooks/use-nav-visibility";
 import { LanguageProvider } from "@/lib/i18n";
 import { BanBanner } from "@/components/ban-banner";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
@@ -98,25 +99,27 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <TooltipProvider>
-          <NavVisibilityProvider>
-            <ScrollToTop />
-            <Toaster />
-            <BanBanner />
-            <SurveyManager />
-            <OnboardingTutorial />
-            <SwipeBackNavigation>
-              <Router />
-            </SwipeBackNavigation>
-            <MobileNavBar />
-            <InstallPWAPrompt />
-            <PushNotificationPrompt />
-          </NavVisibilityProvider>
-        </TooltipProvider>
-      </LanguageProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
+          <TooltipProvider>
+            <NavVisibilityProvider>
+              <ScrollToTop />
+              <Toaster />
+              <BanBanner />
+              <SurveyManager />
+              <OnboardingTutorial />
+              <SwipeBackNavigation>
+                <Router />
+              </SwipeBackNavigation>
+              <MobileNavBar />
+              <InstallPWAPrompt />
+              <PushNotificationPrompt />
+            </NavVisibilityProvider>
+          </TooltipProvider>
+        </LanguageProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
