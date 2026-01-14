@@ -323,6 +323,8 @@ export const listings = pgTable("listings", {
   tags: text("tags").array().default(sql`ARRAY[]::text[]`),
   removedByAdmin: boolean("removed_by_admin").notNull().default(false),
   removalReason: text("removal_reason"),
+  isDeleted: boolean("is_deleted").notNull().default(false),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 

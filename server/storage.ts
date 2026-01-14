@@ -484,7 +484,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteListing(id: string): Promise<boolean> {
-    const [listing] = await db.update(listings).set({ isActive: false }).where(eq(listings.id, id)).returning();
+    const [listing] = await db.update(listings).set({ 
+      isActive: false,
+      isDeleted: true,
+      deletedAt: new Date()
+    }).where(eq(listings.id, id)).returning();
     return !!listing;
   }
 
