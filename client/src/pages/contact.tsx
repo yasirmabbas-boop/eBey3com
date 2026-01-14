@@ -190,6 +190,54 @@ export default function ContactUs() {
 
           {/* Contact Info & Live Chat */}
           <div className="space-y-6">
+            {/* Contact Information */}
+            <Card className="p-6">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <Phone className="h-5 w-5 text-primary" />
+                معلومات التواصل
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Mail className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">الاستفسارات العامة</p>
+                    <a 
+                      href="mailto:info@ebey3.com" 
+                      className="text-primary hover:underline text-sm"
+                      data-testid="link-email-info"
+                    >
+                      info@ebey3.com
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <HelpCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">الدعم الفني</p>
+                    <a 
+                      href="mailto:support@ebey3.com" 
+                      className="text-primary hover:underline text-sm"
+                      data-testid="link-email-support"
+                    >
+                      support@ebey3.com
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <MapPin className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">الموقع</p>
+                    <p className="text-sm text-gray-600">العراق</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
 
             {/* Live Chat Widget - Hidden for now, activate later by setting SHOW_LIVE_CHAT to true */}
             {false && <Card className="p-6 border-2 border-primary/20">

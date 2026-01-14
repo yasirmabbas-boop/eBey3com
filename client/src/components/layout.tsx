@@ -246,6 +246,13 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                   </li>
                 </ul>
               </div>
+              <div>
+                <h3 className="font-bold text-white text-sm mb-2">تواصل معنا</h3>
+                <ul className="space-y-1 text-xs">
+                  <li><a href="mailto:info@ebey3.com" className="hover:text-white" data-testid="footer-email-info">info@ebey3.com</a></li>
+                  <li><a href="mailto:support@ebey3.com" className="hover:text-white" data-testid="footer-email-support">support@ebey3.com</a></li>
+                </ul>
+              </div>
             </div>
           </div>
           
