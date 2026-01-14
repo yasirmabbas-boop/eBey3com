@@ -1982,6 +1982,95 @@ export async function registerRoutes(
     }
   });
 
+  // WhatsApp Authentication via WAuth
+  app.post("/api/auth/whatsapp", async (req, res) => {
+    try {
+      const { mobile, name } = req.body;
+      
+      if (!mobile) {
+        return res.status(400).json({ error: "رقم الهاتف مطلوب" });
+      }
+
+      // Normalize phone number - remove country code if present
+      let phone = mobile.replace(/\D/g, '');
+      if (phone.startsWith('964')) {
+        phone = '0' + phone.substring(3);
+      } else if (phone.startsWith('+964')) {
+        phone = '0' + phone.substring(4);
+      } else if (!phone.startsWith('0')) {
+        phone = '0' + phone;
+      }
+
+      // Check if user exists
+      let user = await storage.getUserByPhone(phone);
+      
+      if (user) {
+        // Check if user is banned
+        if (user.isBanned) {
+          return res.status(403).json({ 
+            error: "تم حظر حسابك من المنصة. لا يمكنك تسجيل الدخول.",
+            isBanned: true
+          });
+        }
+
+        // Existing user - log them in
+        (req.session as any).userId = user.id;
+
+        // Generate auth token
+        const crypto = await import("crypto");
+        const authToken = crypto.randomBytes(32).toString("hex");
+        await storage.updateUser(user.id, { authToken } as any);
+
+        return res.json({
+          success: true,
+          isNewUser: false,
+          authToken,
+          id: user.id,
+          phone: user.phone,
+          displayName: user.displayName,
+          sellerApproved: user.sellerApproved,
+          isVerified: user.isVerified,
+          accountCode: user.accountCode,
+        });
+      } else {
+        // New user - create account with WhatsApp-verified phone
+        const displayName = name || phone;
+        
+        user = await storage.createUser({
+          phone,
+          password: null, // No password for WhatsApp auth
+          displayName,
+          email: null,
+          authProvider: "whatsapp",
+          isVerified: true, // WhatsApp verified the phone number
+        });
+
+        // Set session
+        (req.session as any).userId = user.id;
+
+        // Generate auth token
+        const crypto = await import("crypto");
+        const authToken = crypto.randomBytes(32).toString("hex");
+        await storage.updateUser(user.id, { authToken } as any);
+
+        return res.status(201).json({
+          success: true,
+          isNewUser: true,
+          authToken,
+          id: user.id,
+          phone: user.phone,
+          displayName: user.displayName,
+          sellerApproved: user.sellerApproved,
+          isVerified: true,
+          accountCode: user.accountCode,
+        });
+      }
+    } catch (error) {
+      console.error("Error with WhatsApp auth:", error);
+      res.status(500).json({ error: "فشل في تسجيل الدخول عبر واتساب" });
+    }
+  });
+
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { phone, password } = req.body;
