@@ -42,10 +42,12 @@ interface Listing {
   currentBid?: number;
   images?: string[];
   auctionEndDate?: string;
+  auctionEndTime?: string;
   isActive: boolean;
   highestBidderId?: string;
   saleType: string;
   views?: number;
+  totalBids?: number;
   bids?: { id: string }[];
 }
 
@@ -117,7 +119,8 @@ function AuctionCard({
   const currentBid = listing.currentBid || listing.price;
   const minimumBid = currentBid + 1000;
   const isWinning = listing.highestBidderId === userId;
-  const bidCount = listing.bids?.length || 0;
+  const bidCount = listing.totalBids || listing.bids?.length || 0;
+  const auctionEnd = listing.auctionEndTime || listing.auctionEndDate;
 
   useEffect(() => {
     setBidAmount((currentBid + 5000).toString());
@@ -176,8 +179,8 @@ function AuctionCard({
               {formatCurrency(currentBid)}
             </p>
           </div>
-          {listing.auctionEndDate && (
-            <TimeRemaining endDate={listing.auctionEndDate} />
+          {auctionEnd && (
+            <TimeRemaining endDate={auctionEnd} />
           )}
         </div>
 
@@ -245,7 +248,8 @@ export default function AuctionsDashboard() {
     queryFn: async () => {
       const res = await fetch("/api/listings?saleType=auction&status=active");
       if (!res.ok) throw new Error("Failed to fetch auctions");
-      return res.json();
+      const data = await res.json();
+      return data.listings || data;
     },
     refetchInterval: 30000,
   });
@@ -331,16 +335,19 @@ export default function AuctionsDashboard() {
 
     const now = new Date();
     const activeAuctions = listings.filter(l => {
-      if (!l.auctionEndDate) return false;
-      return new Date(l.auctionEndDate) > now && l.isActive;
+      const endTime = l.auctionEndTime || l.auctionEndDate;
+      if (!endTime) return false;
+      return new Date(endTime) > now && l.isActive;
     });
 
     return [...activeAuctions].sort((a, b) => {
+      const aEnd = a.auctionEndTime || a.auctionEndDate;
+      const bEnd = b.auctionEndTime || b.auctionEndDate;
       switch (sortBy) {
         case "ending_soon":
-          return new Date(a.auctionEndDate!).getTime() - new Date(b.auctionEndDate!).getTime();
+          return new Date(aEnd!).getTime() - new Date(bEnd!).getTime();
         case "most_bids":
-          return (b.bids?.length || 0) - (a.bids?.length || 0);
+          return (b.totalBids || b.bids?.length || 0) - (a.totalBids || a.bids?.length || 0);
         case "price_low":
           return (a.currentBid || a.price) - (b.currentBid || b.price);
         case "price_high":
