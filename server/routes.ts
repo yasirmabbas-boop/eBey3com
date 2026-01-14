@@ -110,6 +110,32 @@ export async function registerRoutes(
     }
   });
 
+  // Hero banner listings (featured + hot items)
+  app.get("/api/hero-listings", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const heroListings = await storage.getHeroListings(limit);
+      res.set("Cache-Control", setCacheHeaders(60));
+      res.json(heroListings);
+    } catch (error) {
+      console.error("Error fetching hero listings:", error);
+      res.status(500).json({ error: "Failed to fetch hero listings" });
+    }
+  });
+
+  // Hot listings (most viewed/bid on)
+  app.get("/api/hot-listings", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const hotListings = await storage.getHotListings(limit);
+      res.set("Cache-Control", setCacheHeaders(60));
+      res.json(hotListings);
+    } catch (error) {
+      console.error("Error fetching hot listings:", error);
+      res.status(500).json({ error: "Failed to fetch hot listings" });
+    }
+  });
+
   // Check if user has bid on a listing and if they are the highest bidder
   app.get("/api/listings/:id/user-bid-status", async (req, res) => {
     try {
@@ -3780,6 +3806,33 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error deleting listing:", error);
       res.status(500).json({ error: "Failed to delete listing" });
+    }
+  });
+
+  // Admin: Promote/unpromote listing to hero banner
+  app.post("/api/admin/listings/:id/feature", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      const { isFeatured, featuredOrder } = req.body;
+      const updated = await storage.setListingFeatured(
+        req.params.id,
+        isFeatured !== false,
+        typeof featuredOrder === "number" ? featuredOrder : 0
+      );
+      if (!updated) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error featuring listing:", error);
+      res.status(500).json({ error: "Failed to feature listing" });
     }
   });
 
