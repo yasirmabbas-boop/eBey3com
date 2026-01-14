@@ -13,6 +13,7 @@ import { AuctionCountdown } from "@/components/auction-countdown";
 import { OptimizedImage, ProductGridSkeleton } from "@/components/optimized-image";
 import { CategoryCarousel } from "@/components/category-carousel";
 import { FavoriteButton } from "@/components/favorite-button";
+import { HeroBanner } from "@/components/hero-banner";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 import type { Listing } from "@shared/schema";
 
@@ -190,6 +191,19 @@ export default function Home() {
               )}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Featured/Hot Products Banner */}
+      <section className="py-4 sm:py-6 bg-gradient-to-b from-gray-50 to-white">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-orange-500" />
+              <h2 className="text-lg sm:text-xl font-bold text-primary">{language === "ar" ? "المنتجات المميزة والرائجة" : "بەرهەمە تایبەت و باوەکان"}</h2>
+            </div>
+          </div>
+          <HeroBanner />
         </div>
       </section>
 
