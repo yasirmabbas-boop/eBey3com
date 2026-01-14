@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, UserX, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy } from "lucide-react";
+import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, UserX, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy, BadgeCheck, Award } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -54,6 +54,14 @@ interface User {
   isAdmin: boolean;
   isVerified: boolean;
   isBanned: boolean;
+  isAuthenticated: boolean;
+  authenticityGuaranteed: boolean;
+  totalSales: number;
+  totalPurchases: number;
+  rating: number;
+  ratingCount: number;
+  buyerRating: number;
+  buyerRatingCount: number;
   createdAt: string;
 }
 
@@ -255,7 +263,7 @@ export default function AdminPage() {
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: { isVerified?: boolean; isBanned?: boolean; sellerApproved?: boolean; sellerRequestStatus?: string } }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: { isVerified?: boolean; isBanned?: boolean; sellerApproved?: boolean; sellerRequestStatus?: string; isAuthenticated?: boolean; authenticityGuaranteed?: boolean } }) => {
       const res = await fetchWithAuth(`/api/admin/users/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -685,14 +693,26 @@ export default function AdminPage() {
                                 )}
                               </TableCell>
                               <TableCell>
-                                <div className="flex gap-1">
+                                <div className="flex gap-1 flex-wrap">
                                   {u.isVerified && (
                                     <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">موثق</Badge>
                                   )}
                                   {u.isBanned && (
                                     <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">محظور</Badge>
                                   )}
-                                  {!u.isVerified && !u.isBanned && (
+                                  {u.isAuthenticated && (
+                                    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                                      <BadgeCheck className="h-3 w-3 ml-1" />
+                                      علامة زرقاء
+                                    </Badge>
+                                  )}
+                                  {u.authenticityGuaranteed && (
+                                    <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">
+                                      <Award className="h-3 w-3 ml-1" />
+                                      ضمان الأصالة
+                                    </Badge>
+                                  )}
+                                  {!u.isVerified && !u.isBanned && !u.isAuthenticated && !u.authenticityGuaranteed && (
                                     <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">عادي</Badge>
                                   )}
                                 </div>
@@ -775,6 +795,58 @@ export default function AdminPage() {
                                     >
                                       <Key className="h-4 w-4 ml-1" />
                                       إعادة كلمة المرور
+                                    </Button>
+                                  )}
+                                  {!u.isAuthenticated && !u.isAdmin && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-blue-500 border-blue-500 hover:bg-blue-50"
+                                      onClick={() => updateUserMutation.mutate({ id: u.id, updates: { isAuthenticated: true } })}
+                                      disabled={updateUserMutation.isPending}
+                                      data-testid={`button-authenticate-${u.id}`}
+                                    >
+                                      <BadgeCheck className="h-4 w-4 ml-1" />
+                                      منح العلامة الزرقاء
+                                    </Button>
+                                  )}
+                                  {u.isAuthenticated && !u.isAdmin && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-gray-500 border-gray-500 hover:bg-gray-50"
+                                      onClick={() => updateUserMutation.mutate({ id: u.id, updates: { isAuthenticated: false } })}
+                                      disabled={updateUserMutation.isPending}
+                                      data-testid={`button-unauthenticate-${u.id}`}
+                                    >
+                                      <BadgeCheck className="h-4 w-4 ml-1" />
+                                      إزالة العلامة الزرقاء
+                                    </Button>
+                                  )}
+                                  {!u.authenticityGuaranteed && !u.isAdmin && u.sellerApproved && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-purple-500 border-purple-500 hover:bg-purple-50"
+                                      onClick={() => updateUserMutation.mutate({ id: u.id, updates: { authenticityGuaranteed: true } })}
+                                      disabled={updateUserMutation.isPending}
+                                      data-testid={`button-grant-authenticity-${u.id}`}
+                                    >
+                                      <Award className="h-4 w-4 ml-1" />
+                                      منح شارة الأصالة
+                                    </Button>
+                                  )}
+                                  {u.authenticityGuaranteed && !u.isAdmin && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-gray-500 border-gray-500 hover:bg-gray-50"
+                                      onClick={() => updateUserMutation.mutate({ id: u.id, updates: { authenticityGuaranteed: false } })}
+                                      disabled={updateUserMutation.isPending}
+                                      data-testid={`button-revoke-authenticity-${u.id}`}
+                                    >
+                                      <Award className="h-4 w-4 ml-1" />
+                                      إزالة شارة الأصالة
                                     </Button>
                                   )}
                                 </div>

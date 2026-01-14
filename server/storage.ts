@@ -145,7 +145,7 @@ export interface IStorage {
   getAllReports(): Promise<Report[]>;
   updateReportStatus(id: string, status: string, adminNotes?: string, resolvedBy?: string): Promise<Report | undefined>;
   getAllUsers(): Promise<User[]>;
-  updateUserStatus(id: string, updates: { sellerApproved?: boolean; isVerified?: boolean; isBanned?: boolean; sellerRequestStatus?: string }): Promise<User | undefined>;
+  updateUserStatus(id: string, updates: { sellerApproved?: boolean; isVerified?: boolean; isBanned?: boolean; sellerRequestStatus?: string; isAuthenticated?: boolean; authenticityGuaranteed?: boolean }): Promise<User | undefined>;
   getAdminStats(): Promise<{ totalUsers: number; totalListings: number; activeListings: number; totalTransactions: number; pendingReports: number; totalRevenue: number }>;
   
   // Verification codes
@@ -1052,7 +1052,7 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(users).orderBy(desc(users.createdAt));
   }
 
-  async updateUserStatus(id: string, updates: { sellerApproved?: boolean; isVerified?: boolean; isBanned?: boolean; sellerRequestStatus?: string }): Promise<User | undefined> {
+  async updateUserStatus(id: string, updates: { sellerApproved?: boolean; isVerified?: boolean; isBanned?: boolean; sellerRequestStatus?: string; isAuthenticated?: boolean; authenticityGuaranteed?: boolean }): Promise<User | undefined> {
     const updateData: Record<string, unknown> = {};
     if (updates.sellerApproved !== undefined) {
       updateData.sellerApproved = updates.sellerApproved;
@@ -1068,6 +1068,8 @@ export class DatabaseStorage implements IStorage {
         updateData.bannedAt = new Date();
       }
     }
+    if (updates.isAuthenticated !== undefined) updateData.isAuthenticated = updates.isAuthenticated;
+    if (updates.authenticityGuaranteed !== undefined) updateData.authenticityGuaranteed = updates.authenticityGuaranteed;
     const [updated] = await db.update(users)
       .set(updateData)
       .where(eq(users.id, id))

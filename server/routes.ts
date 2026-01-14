@@ -3638,8 +3638,8 @@ export async function registerRoutes(
       if (!user || !user.isAdmin) {
         return res.status(403).json({ error: "Access denied" });
       }
-      const { sellerApproved, isVerified, isBanned, sellerRequestStatus } = req.body;
-      const updated = await storage.updateUserStatus(req.params.id, { sellerApproved, isVerified, isBanned, sellerRequestStatus });
+      const { sellerApproved, isVerified, isBanned, sellerRequestStatus, isAuthenticated, authenticityGuaranteed } = req.body;
+      const updated = await storage.updateUserStatus(req.params.id, { sellerApproved, isVerified, isBanned, sellerRequestStatus, isAuthenticated, authenticityGuaranteed });
       if (!updated) {
         return res.status(404).json({ error: "User not found" });
       }
