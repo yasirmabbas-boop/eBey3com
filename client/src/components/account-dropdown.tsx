@@ -21,6 +21,7 @@ import {
   RefreshCw,
   ChevronDown,
   Shield,
+  Star,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -105,6 +106,13 @@ export function AccountDropdown() {
           <DropdownMenuItem className="cursor-pointer" data-testid="menu-auctions-dashboard">
             <Gavel className="h-4 w-4 ml-2" />
             <span>لوحة المزادات</span>
+          </DropdownMenuItem>
+        </Link>
+
+        <Link href="/my-auctions">
+          <DropdownMenuItem className="cursor-pointer bg-amber-50 text-amber-700" data-testid="menu-my-auctions">
+            <Star className="h-4 w-4 ml-2 fill-amber-400 text-amber-400" />
+            <span>مزاداتي المراقبة</span>
           </DropdownMenuItem>
         </Link>
 

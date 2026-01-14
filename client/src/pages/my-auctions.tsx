@@ -96,10 +96,9 @@ function TimeRemaining({ endDate }: { endDate: string }) {
   );
 }
 
-interface AuctionListing extends Listing {
-  totalBids?: number;
+type AuctionListing = Listing & {
   auctionEndTime?: string;
-}
+};
 
 function AuctionCard({ 
   listing, 

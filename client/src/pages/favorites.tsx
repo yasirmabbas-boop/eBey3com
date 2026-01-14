@@ -5,7 +5,7 @@ import { Layout } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, Loader2, ShoppingBag, Trash2, Eye } from "lucide-react";
+import { Heart, Loader2, ShoppingBag, Trash2, Eye, Star, Gavel } from "lucide-react";
 import { ProductGridSkeleton } from "@/components/optimized-image";
 import { EmptyState } from "@/components/empty-state";
 import { useAuth } from "@/hooks/use-auth";
@@ -115,6 +115,21 @@ export default function FavoritesPage() {
             {favoriteListings.length} منتج
           </Badge>
         </div>
+
+        <Link href="/my-auctions">
+          <div className="mb-6 p-4 bg-gradient-to-l from-amber-50 to-amber-100 rounded-lg border border-amber-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer" data-testid="link-my-auctions">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-400 rounded-lg">
+                <Star className="h-5 w-5 text-white fill-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-amber-800">مزاداتي المراقبة</h3>
+                <p className="text-sm text-amber-600">تابع المزادات التي أضفتها للمفضلة وشارك فيها بسرعة</p>
+              </div>
+            </div>
+            <Gavel className="h-6 w-6 text-amber-500" />
+          </div>
+        </Link>
 
         {isLoading ? (
           <ProductGridSkeleton count={6} />
