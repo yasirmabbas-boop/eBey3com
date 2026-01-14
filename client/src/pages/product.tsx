@@ -16,6 +16,7 @@ import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Ta
 import { ProductDetailSkeleton } from "@/components/optimized-image";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
 import { useLanguage } from "@/lib/i18n";
@@ -438,12 +439,23 @@ export default function ProductPage() {
     }
     
     if (!isAuthenticated) {
+      const redirectUrl = `/signin?redirect=${encodeURIComponent(`/product/${params?.id}`)}`;
       toast({
         title: t("loginRequired"),
-        description: language === "ar" ? "يجب عليك تسجيل الدخول للمتابعة" : "دەبێت بچیتە ژوورەوە بۆ بەردەوامبوون",
+        description: language === "ar" 
+          ? "يجب عليك تسجيل الدخول أو إنشاء حساب للمتابعة" 
+          : "دەبێت بچیتە ژوورەوە یان هەژمار دروست بکەیت بۆ بەردەوامبوون",
         variant: "destructive",
+        duration: 8000,
+        action: (
+          <ToastAction 
+            altText={language === "ar" ? "تسجيل الدخول" : "چوونە ژوورەوە"}
+            onClick={() => navigate(redirectUrl)}
+          >
+            {language === "ar" ? "تسجيل الدخول" : "چوونە ژوورەوە"}
+          </ToastAction>
+        ),
       });
-      navigate(`/register?redirect=${encodeURIComponent(`/product/${params?.id}`)}&action=${action}`);
       return false;
     }
     return true;
