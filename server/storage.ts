@@ -435,7 +435,7 @@ export class DatabaseStorage implements IStorage {
 
   async getListingsByCategory(category: string): Promise<Listing[]> {
     return db.select().from(listings)
-      .where(and(eq(listings.isActive, true), eq(listings.category, category)))
+      .where(and(eq(listings.isActive, true), eq(listings.isDeleted, false), eq(listings.category, category)))
       .orderBy(desc(listings.createdAt));
   }
 

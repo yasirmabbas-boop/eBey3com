@@ -1,13 +1,101 @@
+import { useState } from "react";
 import { useLocation, Link } from "wouter";
+import { useMutation } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { KeyRound, Mail, Phone, ArrowLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { KeyRound, Mail, Phone, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ForgotPassword() {
   const [, navigate] = useLocation();
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
+  const { toast } = useToast();
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const submitMutation = useMutation({
+    mutationFn: async (data: { phone: string; email?: string }) => {
+      const res = await fetch("/api/password-reset-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to submit request");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setSubmitted(true);
+      toast({
+        title: language === "ar" ? "تم إرسال الطلب" : "داواکارییەکە نێردرا",
+        description: language === "ar" 
+          ? "سيتواصل معك فريق الدعم قريباً" 
+          : "تیمی پاڵپشتی زوو پەیوەندیت پێوە دەکات",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === "ar" ? "خطأ" : "هەڵە",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phone.trim()) {
+      toast({
+        title: language === "ar" ? "خطأ" : "هەڵە",
+        description: language === "ar" ? "رقم الهاتف مطلوب" : "ژمارەی مۆبایل پێویستە",
+        variant: "destructive",
+      });
+      return;
+    }
+    submitMutation.mutate({ 
+      phone: phone.trim(), 
+      email: email.trim() || undefined 
+    });
+  };
+
+  if (submitted) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 max-w-md">
+          <Card>
+            <CardContent className="pt-8 pb-8 text-center space-y-4">
+              <div className="mx-auto h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+              <h2 className="text-xl font-bold">
+                {language === "ar" ? "تم إرسال طلبك بنجاح" : "داواکارییەکەت بە سەرکەوتوویی نێردرا"}
+              </h2>
+              <p className="text-muted-foreground">
+                {language === "ar" 
+                  ? "سيقوم فريق الدعم بمراجعة طلبك والتواصل معك خلال 24 ساعة" 
+                  : "تیمی پاڵپشتی داواکارییەکەت پێداچوونەوە دەکات و لە ماوەی ٢٤ کاتژمێردا پەیوەندیت پێوە دەکات"}
+              </p>
+              <Button 
+                className="w-full mt-4" 
+                onClick={() => navigate("/signin")}
+                data-testid="button-back-signin-success"
+              >
+                <ArrowLeft className="h-4 w-4 ml-2" />
+                {language === "ar" ? "العودة لتسجيل الدخول" : "گەڕانەوە بۆ چوونەژوورەوە"}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -22,69 +110,71 @@ export default function ForgotPassword() {
             </CardTitle>
             <CardDescription>
               {language === "ar" 
-                ? "تواصل مع خدمة العملاء لإعادة تعيين كلمة المرور" 
-                : "پەیوەندی بە خزمەتگوزاری کڕیاران بکە بۆ ڕێکخستنەوەی وشەی نهێنی"}
+                ? "أدخل معلوماتك وسيتواصل معك فريق الدعم" 
+                : "زانیارییەکانت بنووسە و تیمی پاڵپشتی پەیوەندیت پێوە دەکات"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
-              <div className="flex items-start gap-3">
-                <Mail className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-blue-900">
-                    {language === "ar" ? "أرسل بريداً إلكترونياً إلى:" : "ئیمەیڵ بنێرە بۆ:"}
-                  </p>
-                  <a 
-                    href="mailto:support@ebey3.com" 
-                    className="text-blue-700 hover:underline font-bold text-lg"
-                  >
-                    support@ebey3.com
-                  </a>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <Phone className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-blue-900">
-                    {language === "ar" ? "أرفق رقم هاتفك المسجل في الحساب:" : "ژمارەی مۆبایلی تۆمارکراوت لەگەڵ بنێرە:"}
-                  </p>
-                  <p className="text-sm text-blue-700">
-                    {language === "ar" 
-                      ? "سيقوم فريق الدعم بإعادة تعيين كلمة المرور وإرسالها إلى هاتفك" 
-                      : "تیمی پاڵپشتی وشەی نهێنی نوێ دادەنێت و بۆ مۆبایلەکەت دەینێرێت"}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center text-sm text-muted-foreground">
-              <p>
-                {language === "ar" 
-                  ? "مثال على محتوى الرسالة:" 
-                  : "نموونەی ناوەڕۆکی نامە:"}
-              </p>
-              <div className="bg-gray-100 rounded-lg p-3 mt-2 text-right" dir="rtl">
-                <p className="text-gray-700">
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  {language === "ar" ? "رقم الهاتف" : "ژمارەی مۆبایل"}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder={language === "ar" ? "07XXXXXXXXX" : "07XXXXXXXXX"}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  dir="ltr"
+                  className="text-left"
+                  data-testid="input-phone"
+                />
+                <p className="text-xs text-muted-foreground">
                   {language === "ar" 
-                    ? "مرحباً، أريد إعادة تعيين كلمة المرور. رقم هاتفي: 07XXXXXXXXX" 
-                    : "سڵاو، دەمەوێت وشەی نهێنیم ڕێکبخەمەوە. ژمارەی مۆبایلم: 07XXXXXXXXX"}
+                    ? "أدخل رقم الهاتف المسجل في حسابك" 
+                    : "ژمارەی مۆبایلی تۆمارکراو لە هەژمارەکەت بنووسە"}
                 </p>
               </div>
-            </div>
 
-            <div className="space-y-3">
-              <a 
-                href="mailto:support@ebey3.com?subject=طلب إعادة تعيين كلمة المرور&body=مرحباً، أريد إعادة تعيين كلمة المرور. رقم هاتفي: "
-                className="block"
+              <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  {language === "ar" ? "البريد الإلكتروني (اختياري)" : "ئیمەیڵ (ئارەزوومەندانە)"}
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder={language === "ar" ? "example@email.com" : "example@email.com"}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  dir="ltr"
+                  className="text-left"
+                  data-testid="input-email"
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={submitMutation.isPending}
+                data-testid="button-submit-request"
               >
-                <Button className="w-full" data-testid="button-email-support">
-                  <Mail className="h-4 w-4 ml-2" />
-                  {language === "ar" ? "إرسال بريد إلكتروني" : "ئیمەیڵ بنێرە"}
-                </Button>
-              </a>
+                {submitMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                    {language === "ar" ? "جاري الإرسال..." : "دەنێردرێت..."}
+                  </>
+                ) : (
+                  language === "ar" ? "إرسال الطلب" : "داواکارییەکە بنێرە"
+                )}
+              </Button>
               
               <Button 
+                type="button"
                 variant="outline" 
                 className="w-full" 
                 onClick={() => navigate("/signin")}
@@ -93,7 +183,7 @@ export default function ForgotPassword() {
                 <ArrowLeft className="h-4 w-4 ml-2" />
                 {language === "ar" ? "العودة لتسجيل الدخول" : "گەڕانەوە بۆ چوونەژوورەوە"}
               </Button>
-            </div>
+            </form>
           </CardContent>
         </Card>
       </div>
