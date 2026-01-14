@@ -101,10 +101,10 @@ export function AccountDropdown() {
           </Link>
         )}
 
-        <Link href="/my-auctions">
-          <DropdownMenuItem className="cursor-pointer" data-testid="menu-my-auctions">
+        <Link href="/auctions">
+          <DropdownMenuItem className="cursor-pointer" data-testid="menu-auctions-dashboard">
             <Gavel className="h-4 w-4 ml-2" />
-            <span>مزاداتي</span>
+            <span>لوحة المزادات</span>
           </DropdownMenuItem>
         </Link>
 
