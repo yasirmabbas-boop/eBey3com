@@ -1,158 +1,13 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { Phone, KeyRound, ArrowRight, Loader2, CheckCircle } from "lucide-react";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-
-type Step = "phone" | "verify" | "reset" | "success";
+import { KeyRound, Mail, Phone, ArrowLeft } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 
 export default function ForgotPassword() {
   const [, navigate] = useLocation();
-  const { toast } = useToast();
-  const [step, setStep] = useState<Step>("phone");
-  const [isLoading, setIsLoading] = useState(false);
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [resetToken, setResetToken] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-
-  const handleSendCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!phone) {
-      toast({
-        title: "خطأ",
-        description: "يرجى إدخال رقم الهاتف",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/auth/send-verification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, type: "password_reset" }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "فشل إرسال رمز التحقق");
-      }
-
-      toast({
-        title: "تم الإرسال",
-        description: "تم إرسال رمز التحقق إلى هاتفك",
-      });
-
-      setStep("verify");
-    } catch (error: any) {
-      toast({
-        title: "خطأ",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (code.length !== 6) {
-      toast({
-        title: "خطأ",
-        description: "يرجى إدخال رمز التحقق المكون من 6 أرقام",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/auth/verify-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, code, type: "password_reset" }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "رمز التحقق غير صحيح");
-      }
-
-      setResetToken(data.resetToken);
-      setStep("reset");
-    } catch (error: any) {
-      toast({
-        title: "خطأ",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (newPassword.length < 6) {
-      toast({
-        title: "خطأ",
-        description: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "خطأ",
-        description: "كلمتا المرور غير متطابقتين",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, resetToken, newPassword }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "فشل إعادة تعيين كلمة المرور");
-      }
-
-      setStep("success");
-    } catch (error: any) {
-      toast({
-        title: "خطأ",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { language, t } = useLanguage();
 
   return (
     <Layout>
@@ -162,149 +17,83 @@ export default function ForgotPassword() {
             <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
               <KeyRound className="h-8 w-8 text-primary" />
             </div>
-            <CardTitle className="text-2xl">استعادة كلمة المرور</CardTitle>
+            <CardTitle className="text-2xl">
+              {language === "ar" ? "استعادة كلمة المرور" : "گەڕانەوەی وشەی نهێنی"}
+            </CardTitle>
             <CardDescription>
-              {step === "phone" && "أدخل رقم هاتفك لإرسال رمز التحقق"}
-              {step === "verify" && "أدخل رمز التحقق المرسل إلى هاتفك"}
-              {step === "reset" && "أدخل كلمة المرور الجديدة"}
-              {step === "success" && "تم تغيير كلمة المرور بنجاح"}
+              {language === "ar" 
+                ? "تواصل مع خدمة العملاء لإعادة تعيين كلمة المرور" 
+                : "پەیوەندی بە خزمەتگوزاری کڕیاران بکە بۆ ڕێکخستنەوەی وشەی نهێنی"}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            {step === "phone" && (
-              <form onSubmit={handleSendCode} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">رقم الهاتف</Label>
-                  <div className="relative">
-                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="07xxxxxxxxx"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="pr-10"
-                      dir="ltr"
-                      data-testid="input-phone"
-                    />
-                  </div>
+          <CardContent className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-blue-900">
+                    {language === "ar" ? "أرسل بريداً إلكترونياً إلى:" : "ئیمەیڵ بنێرە بۆ:"}
+                  </p>
+                  <a 
+                    href="mailto:support@ebey3.com" 
+                    className="text-blue-700 hover:underline font-bold text-lg"
+                  >
+                    support@ebey3.com
+                  </a>
                 </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-send-code">
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  ) : (
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  )}
-                  إرسال رمز التحقق
-                </Button>
-              </form>
-            )}
-
-            {step === "verify" && (
-              <form onSubmit={handleVerifyCode} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>رمز التحقق</Label>
-                  <div className="flex justify-center" dir="ltr">
-                    <InputOTP
-                      maxLength={6}
-                      value={code}
-                      onChange={(value) => setCode(value)}
-                      data-testid="input-otp"
-                    >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
-                  </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <Phone className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-blue-900">
+                    {language === "ar" ? "أرفق رقم هاتفك المسجل في الحساب:" : "ژمارەی مۆبایلی تۆمارکراوت لەگەڵ بنێرە:"}
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    {language === "ar" 
+                      ? "سيقوم فريق الدعم بإعادة تعيين كلمة المرور وإرسالها إلى هاتفك" 
+                      : "تیمی پاڵپشتی وشەی نهێنی نوێ دادەنێت و بۆ مۆبایلەکەت دەینێرێت"}
+                  </p>
                 </div>
+              </div>
+            </div>
 
-                <Button type="submit" className="w-full" disabled={isLoading || code.length !== 6} data-testid="button-verify-code">
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  ) : (
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  )}
-                  تحقق من الرمز
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full"
-                  onClick={handleSendCode}
-                  disabled={isLoading}
-                  data-testid="button-resend-code"
-                >
-                  إعادة إرسال الرمز
-                </Button>
-              </form>
-            )}
-
-            {step === "reset" && (
-              <form onSubmit={handleResetPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    data-testid="input-new-password"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    data-testid="input-confirm-password"
-                  />
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-reset-password">
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  ) : (
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  )}
-                  تغيير كلمة المرور
-                </Button>
-              </form>
-            )}
-
-            {step === "success" && (
-              <div className="text-center space-y-4">
-                <div className="mx-auto h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                </div>
-                <p className="text-muted-foreground">
-                  يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة
+            <div className="text-center text-sm text-muted-foreground">
+              <p>
+                {language === "ar" 
+                  ? "مثال على محتوى الرسالة:" 
+                  : "نموونەی ناوەڕۆکی نامە:"}
+              </p>
+              <div className="bg-gray-100 rounded-lg p-3 mt-2 text-right" dir="rtl">
+                <p className="text-gray-700">
+                  {language === "ar" 
+                    ? "مرحباً، أريد إعادة تعيين كلمة المرور. رقم هاتفي: 07XXXXXXXXX" 
+                    : "سڵاو، دەمەوێت وشەی نهێنیم ڕێکبخەمەوە. ژمارەی مۆبایلم: 07XXXXXXXXX"}
                 </p>
-                <Button onClick={() => navigate("/signin")} className="w-full" data-testid="button-go-signin">
-                  تسجيل الدخول
-                </Button>
               </div>
-            )}
+            </div>
 
-            {step !== "success" && (
-              <div className="mt-4 text-center text-sm text-muted-foreground">
-                تذكرت كلمة المرور؟{" "}
-                <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/signin")} data-testid="link-signin">
-                  تسجيل الدخول
+            <div className="space-y-3">
+              <a 
+                href="mailto:support@ebey3.com?subject=طلب إعادة تعيين كلمة المرور&body=مرحباً، أريد إعادة تعيين كلمة المرور. رقم هاتفي: "
+                className="block"
+              >
+                <Button className="w-full" data-testid="button-email-support">
+                  <Mail className="h-4 w-4 ml-2" />
+                  {language === "ar" ? "إرسال بريد إلكتروني" : "ئیمەیڵ بنێرە"}
                 </Button>
-              </div>
-            )}
+              </a>
+              
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={() => navigate("/signin")}
+                data-testid="button-back-signin"
+              >
+                <ArrowLeft className="h-4 w-4 ml-2" />
+                {language === "ar" ? "العودة لتسجيل الدخول" : "گەڕانەوە بۆ چوونەژوورەوە"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
