@@ -3831,6 +3831,32 @@ export async function registerRoutes(
     }
   });
 
+  // Password reset request - public endpoint
+  app.post("/api/password-reset-request", async (req, res) => {
+    try {
+      const { phone, email } = req.body;
+      
+      if (!phone || typeof phone !== "string" || !phone.trim()) {
+        return res.status(400).json({ error: "رقم الهاتف مطلوب" });
+      }
+      
+      // Create a contact message for the password reset request
+      const message = await storage.createContactMessage({
+        name: `طلب استعادة كلمة المرور - ${phone.trim()}`,
+        email: email?.trim() || "no-email@ebey3.com",
+        subject: "🔑 طلب إعادة تعيين كلمة المرور",
+        message: `رقم الهاتف: ${phone.trim()}\n${email?.trim() ? `البريد الإلكتروني: ${email.trim()}` : "البريد الإلكتروني: غير مذكور"}\n\nيرجى إعادة تعيين كلمة المرور لهذا المستخدم.`,
+      });
+      
+      console.log(`Password reset request submitted: phone=${phone.trim()}, email=${email?.trim() || 'none'}`);
+      
+      res.status(201).json({ success: true, id: message.id });
+    } catch (error) {
+      console.error("Error creating password reset request:", error);
+      res.status(500).json({ error: "فشل في إرسال الطلب" });
+    }
+  });
+
   // Admin: Get all contact messages
   app.get("/api/admin/contact-messages", async (req, res) => {
     try {
