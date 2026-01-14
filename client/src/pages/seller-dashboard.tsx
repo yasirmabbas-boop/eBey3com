@@ -668,15 +668,10 @@ export default function SellerDashboard() {
         variant: "destructive",
       });
       navigate("/signin?redirect=/seller-dashboard");
-    } else if (!authLoading && isAuthenticated && !(user as any)?.sellerApproved) {
-      toast({
-        title: "غير مصرح",
-        description: "يجب الحصول على موافقة المشرف للبيع",
-        variant: "destructive",
-      });
-      navigate("/sell");
     }
-  }, [authLoading, isAuthenticated, user, navigate, toast]);
+    // Note: Non-approved sellers will see a "become a seller" message in the render below
+    // instead of being redirected to /sell which was confusing for users
+  }, [authLoading, isAuthenticated, navigate, toast]);
 
   const filteredProducts = sellerProducts.filter(product => {
     const matchesSearch = product.title.includes(searchQuery) || 
