@@ -48,6 +48,11 @@ import {
   Upload,
   Download,
   FileSpreadsheet,
+  Wallet,
+  Calendar,
+  TrendingDown,
+  ArrowDownToLine,
+  ArrowUpFromLine,
 } from "lucide-react";
 import {
   Select,
@@ -331,6 +336,53 @@ export default function SellerDashboard() {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error("Failed to fetch return requests");
+      return res.json();
+    },
+    enabled: !!user?.id && (user as any)?.sellerApproved,
+  });
+
+  interface WalletBalance {
+    pending: number;
+    available: number;
+    paid: number;
+    total: number;
+    freeSalesRemaining: number;
+    nextPayoutDate: string;
+  }
+
+  interface WalletTransaction {
+    id: string;
+    transactionId: string;
+    type: string;
+    amount: number;
+    description: string;
+    status: string;
+    createdAt: string;
+  }
+
+  const { data: walletBalance, isLoading: walletLoading } = useQuery<WalletBalance>({
+    queryKey: ["/api/wallet/balance"],
+    queryFn: async () => {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch("/api/wallet/balance", {
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Failed to fetch wallet balance");
+      return res.json();
+    },
+    enabled: !!user?.id && (user as any)?.sellerApproved,
+  });
+
+  const { data: walletTransactions = [], isLoading: transactionsLoading } = useQuery<WalletTransaction[]>({
+    queryKey: ["/api/wallet/transactions"],
+    queryFn: async () => {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch("/api/wallet/transactions", {
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Failed to fetch transactions");
       return res.json();
     },
     enabled: !!user?.id && (user as any)?.sellerApproved,
@@ -950,7 +1002,7 @@ export default function SellerDashboard() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-5 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-6 w-full max-w-4xl">
             <TabsTrigger value="products" className="gap-2">
               <Package className="h-4 w-4" />
               {t("products")}
@@ -985,6 +1037,10 @@ export default function SellerDashboard() {
             <TabsTrigger value="sales" className="gap-2">
               <ShoppingBag className="h-4 w-4" />
               {t("sales")}
+            </TabsTrigger>
+            <TabsTrigger value="wallet" className="gap-2">
+              <Wallet className="h-4 w-4" />
+              {language === "ar" ? "المحفظة" : "جزدان"}
             </TabsTrigger>
           </TabsList>
 
@@ -1754,6 +1810,227 @@ export default function SellerDashboard() {
               </div>
               );
             })()}
+          </TabsContent>
+
+          <TabsContent value="wallet" className="space-y-6">
+            {walletLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-4 md:grid-cols-4">
+                  <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-yellow-200 p-2 rounded-lg">
+                          <Clock className="h-5 w-5 text-yellow-700" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-yellow-700">
+                            {language === "ar" ? "قيد الانتظار" : "چاوەڕوان"}
+                          </p>
+                          <p className="text-2xl font-bold text-yellow-800">
+                            {(walletBalance?.pending || 0).toLocaleString()} د.ع
+                          </p>
+                          <p className="text-xs text-yellow-600">
+                            {language === "ar" ? "خلال فترة الحجز 5 أيام" : "لە ماوەی 5 ڕۆژدا"}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-green-200 p-2 rounded-lg">
+                          <CheckCircle className="h-5 w-5 text-green-700" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-green-700">
+                            {language === "ar" ? "متاح للسحب" : "ئامادە بۆ کێشانەوە"}
+                          </p>
+                          <p className="text-2xl font-bold text-green-800">
+                            {(walletBalance?.available || 0).toLocaleString()} د.ع
+                          </p>
+                          <p className="text-xs text-green-600">
+                            {language === "ar" ? "جاهز للدفعة القادمة" : "ئامادەیە بۆ دفعی داهاتوو"}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-blue-200 p-2 rounded-lg">
+                          <Calendar className="h-5 w-5 text-blue-700" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-blue-700">
+                            {language === "ar" ? "الدفعة القادمة" : "دفعی داهاتوو"}
+                          </p>
+                          <p className="text-lg font-bold text-blue-800">
+                            {walletBalance?.nextPayoutDate
+                              ? new Date(walletBalance.nextPayoutDate).toLocaleDateString(language === "ar" ? "ar-IQ" : "ckb-IQ")
+                              : "-"}
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            {language === "ar" ? "يوم الأحد أسبوعياً" : "ڕۆژی یەکشەممە هەفتانە"}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-purple-200 p-2 rounded-lg">
+                          <TrendingDown className="h-5 w-5 text-purple-700" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-purple-700">
+                            {language === "ar" ? "مبيعات مجانية متبقية" : "فرۆشتنی بێبەرامبەر"}
+                          </p>
+                          <p className="text-2xl font-bold text-purple-800">
+                            {walletBalance?.freeSalesRemaining || 0} / 15
+                          </p>
+                          <p className="text-xs text-purple-600">
+                            {language === "ar" ? "بدون عمولة 5%" : "بێ کۆمیسیۆنی 5%"}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      {language === "ar" ? "كيف تعمل المدفوعات" : "چۆن پارەکان دەگوازرێنەوە"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4 md:grid-cols-4">
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                          <span className="text-lg font-bold text-primary">1</span>
+                        </div>
+                        <h4 className="font-semibold mb-1">
+                          {language === "ar" ? "البيع" : "فرۆشتن"}
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          {language === "ar" ? "المشتري يستلم المنتج" : "کڕیار بەرهەم وەردەگرێت"}
+                        </p>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                          <span className="text-lg font-bold text-primary">2</span>
+                        </div>
+                        <h4 className="font-semibold mb-1">
+                          {language === "ar" ? "فترة الانتظار" : "ماوەی چاوەڕوان"}
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          {language === "ar" ? "5 أيام حماية من الإرجاع" : "5 ڕۆژ پاراستن لە گەڕاندنەوە"}
+                        </p>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                          <span className="text-lg font-bold text-primary">3</span>
+                        </div>
+                        <h4 className="font-semibold mb-1">
+                          {language === "ar" ? "متاح للسحب" : "ئامادە"}
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          {language === "ar" ? "المبلغ جاهز" : "بڕەکە ئامادەیە"}
+                        </p>
+                      </div>
+                      <div className="text-center p-4 bg-gray-50 rounded-lg">
+                        <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                          <span className="text-lg font-bold text-primary">4</span>
+                        </div>
+                        <h4 className="font-semibold mb-1">
+                          {language === "ar" ? "الدفع" : "دفع"}
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          {language === "ar" ? "كل أحد أسبوعياً" : "هەر یەکشەممەیەک"}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Wallet className="h-5 w-5" />
+                      {language === "ar" ? "سجل المعاملات" : "تۆماری مامەڵەکان"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {transactionsLoading ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      </div>
+                    ) : walletTransactions.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Wallet className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-500">
+                          {language === "ar" ? "لا توجد معاملات بعد" : "هێشتا هیچ مامەڵەیەک نییە"}
+                        </p>
+                        <p className="text-sm text-gray-400 mt-1">
+                          {language === "ar" ? "ستظهر أرباحك هنا بعد إتمام المبيعات" : "قازانجەکانت لێرە دەردەکەون"}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {walletTransactions.map((txn) => (
+                          <div key={txn.id} className="py-3 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-lg ${
+                                txn.amount >= 0 ? "bg-green-100" : "bg-red-100"
+                              }`}>
+                                {txn.amount >= 0 ? (
+                                  <ArrowDownToLine className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <ArrowUpFromLine className="h-4 w-4 text-red-600" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">{txn.description}</p>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(txn.createdAt).toLocaleDateString(language === "ar" ? "ar-IQ" : "ckb-IQ")}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-left">
+                              <p className={`font-bold ${txn.amount >= 0 ? "text-green-600" : "text-red-600"}`}>
+                                {txn.amount >= 0 ? "+" : ""}{txn.amount.toLocaleString()} د.ع
+                              </p>
+                              <Badge variant="outline" className={`text-xs ${
+                                txn.status === "available" ? "border-green-300 text-green-600" :
+                                txn.status === "pending" ? "border-yellow-300 text-yellow-600" :
+                                txn.status === "paid" ? "border-blue-300 text-blue-600" :
+                                "border-gray-300 text-gray-600"
+                              }`}>
+                                {txn.status === "available" ? (language === "ar" ? "متاح" : "ئامادە") :
+                                 txn.status === "pending" ? (language === "ar" ? "قيد الانتظار" : "چاوەڕوان") :
+                                 txn.status === "paid" ? (language === "ar" ? "مدفوع" : "دراو") :
+                                 txn.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </TabsContent>
         </Tabs>
       </div>
