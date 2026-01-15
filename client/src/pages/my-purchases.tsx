@@ -312,11 +312,26 @@ function DeliveryTimeline({ purchase }: { purchase: Purchase }) {
   );
 }
 
+interface DeliveryTracking {
+  transactionId: string;
+  externalDeliveryId: string | null;
+  status: string;
+  currentLocation: { lat: number; lng: number } | null;
+  estimatedDeliveryTime: string | null;
+  statusHistory: Array<{
+    status: string;
+    timestamp: string;
+    location: { lat: number; lng: number } | null;
+    notes: string | null;
+  }>;
+}
+
 export default function MyPurchases() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<Purchase | null>(null);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
+  const [isTrackingDialogOpen, setIsTrackingDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
   const [returnReason, setReturnReason] = useState("");
@@ -432,6 +447,63 @@ export default function MyPurchases() {
     queryClient.invalidateQueries({ queryKey: ["/api/account/purchases"] });
   };
 
+  const { data: deliveryTracking, isLoading: trackingLoading, refetch: refetchTracking } = useQuery<DeliveryTracking>({
+    queryKey: ["/api/delivery/track", currentOrderId],
+    queryFn: async () => {
+      if (!currentOrderId) return null;
+      const token = localStorage.getItem("authToken");
+      const res = await fetch(`/api/delivery/track/${currentOrderId}`, {
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!currentOrderId && isTrackingDialogOpen,
+  });
+
+  const confirmDeliveryMutation = useMutation({
+    mutationFn: async (transactionId: string) => {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch(`/api/delivery/${transactionId}/accept`, {
+        method: "POST",
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Failed to confirm delivery");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم تأكيد الاستلام",
+        description: "شكراً لتأكيد استلام طلبك",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/account/purchases"] });
+      setIsTrackingDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "فشل في تأكيد الاستلام",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const getDeliveryStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      pending: "قيد التجهيز",
+      pickup_scheduled: "موعد الاستلام محدد",
+      picked_up: "تم الاستلام من البائع",
+      in_transit: "في الطريق",
+      out_for_delivery: "قيد التوصيل",
+      delivered: "تم التسليم",
+      failed: "فشل التوصيل",
+      returned: "تم الإرجاع",
+    };
+    return labels[status] || status;
+  };
+
   const isLoading = authLoading || purchasesLoading;
 
   if (isLoading) {
@@ -544,16 +616,15 @@ export default function MyPurchases() {
                 </Card>
 
                 {/* Track Package Button */}
-                {currentOrder.trackingNumber && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full py-6 text-lg border-2 border-blue-500 text-blue-600 hover:bg-blue-50"
-                    data-testid="button-track-package"
-                  >
-                    <Truck className="h-5 w-5 ml-2" />
-                    تتبع الشحنة
-                  </Button>
-                )}
+                <Button 
+                  variant="outline" 
+                  className="w-full py-6 text-lg border-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+                  onClick={() => setIsTrackingDialogOpen(true)}
+                  data-testid="button-track-package"
+                >
+                  <Truck className="h-5 w-5 ml-2" />
+                  تتبع الشحنة
+                </Button>
 
                 {/* Delivery Timeline */}
                 <Card className="p-6">
@@ -1014,6 +1085,137 @@ export default function MyPurchases() {
                 <Send className="h-4 w-4 ml-2" />
               )}
               إرسال طلب الإرجاع
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tracking Dialog */}
+      <Dialog open={isTrackingDialogOpen} onOpenChange={setIsTrackingDialogOpen}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-blue-600" />
+              تتبع الشحنة
+            </DialogTitle>
+            <DialogDescription>
+              متابعة حالة توصيل طلبك
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {trackingLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : deliveryTracking ? (
+              <>
+                {/* Current Status */}
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-blue-700">الحالة الحالية</p>
+                      <p className="text-lg font-bold text-blue-800">
+                        {getDeliveryStatusLabel(deliveryTracking.status)}
+                      </p>
+                    </div>
+                    {deliveryTracking.estimatedDeliveryTime && (
+                      <div className="text-left">
+                        <p className="text-sm text-blue-700">الوصول المتوقع</p>
+                        <p className="font-medium text-blue-800">
+                          {new Date(deliveryTracking.estimatedDeliveryTime).toLocaleDateString("ar-IQ", {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tracking Number */}
+                {deliveryTracking.externalDeliveryId && (
+                  <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <span className="text-sm text-gray-600">رقم التتبع</span>
+                    <span className="font-mono font-medium">{deliveryTracking.externalDeliveryId}</span>
+                  </div>
+                )}
+
+                {/* Status History */}
+                {deliveryTracking.statusHistory && deliveryTracking.statusHistory.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold">سجل الحالات</h4>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {deliveryTracking.statusHistory.map((item, index) => (
+                        <div 
+                          key={index} 
+                          className={`p-3 rounded-lg border ${
+                            index === 0 ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-200"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className={`font-medium ${index === 0 ? "text-blue-800" : "text-gray-800"}`}>
+                              {getDeliveryStatusLabel(item.status)}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(item.timestamp).toLocaleDateString("ar-IQ", {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                          {item.notes && (
+                            <p className="text-sm text-gray-600 mt-1">{item.notes}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Confirm Delivery Button */}
+                {deliveryTracking.status === "delivered" && (
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      const currentOrder = selectedOrder || purchases[0];
+                      if (currentOrder) {
+                        confirmDeliveryMutation.mutate(currentOrder.id);
+                      }
+                    }}
+                    disabled={confirmDeliveryMutation.isPending}
+                    data-testid="button-confirm-delivery"
+                  >
+                    {confirmDeliveryMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4 ml-2" />
+                    )}
+                    تأكيد استلام الطلب
+                  </Button>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <Truck className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">لا تتوفر معلومات تتبع حالياً</p>
+                <p className="text-sm text-gray-400 mt-1">سيتم تحديث حالة الشحن قريباً</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTrackingDialogOpen(false)}>
+              إغلاق
+            </Button>
+            <Button onClick={() => refetchTracking()} disabled={trackingLoading}>
+              {trackingLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+              ) : null}
+              تحديث
             </Button>
           </DialogFooter>
         </DialogContent>
