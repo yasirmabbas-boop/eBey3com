@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, UserX, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy, BadgeCheck, Award, Star, StarOff } from "lucide-react";
+import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, UserX, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy, BadgeCheck, Award, Star, StarOff, Wallet, BanknoteIcon, Clock, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -122,7 +122,7 @@ export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "deleted-listings" | "messages" | "cancellations">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "deleted-listings" | "messages" | "cancellations" | "payouts">("stats");
   const [listingSearch, setListingSearch] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
 
@@ -228,6 +228,87 @@ export default function AdminPage() {
       return res.json();
     },
     enabled: !authLoading && (user as any)?.isAdmin && activeTab === "cancellations",
+  });
+
+  interface AdminPayout {
+    id: string;
+    sellerId: string;
+    sellerName: string;
+    sellerPhone: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    totalEarnings: number;
+    totalCommission: number;
+    totalShipping: number;
+    totalReturns: number;
+    netPayout: number;
+    status: string;
+    paidAt?: string;
+    paidBy?: string;
+    paymentMethod?: string;
+    paymentReference?: string;
+  }
+
+  const { data: pendingPayouts, isLoading: payoutsLoading } = useQuery<AdminPayout[]>({
+    queryKey: ["/api/admin/payouts"],
+    queryFn: async () => {
+      const res = await fetchWithAuth("/api/admin/payouts");
+      if (!res.ok) throw new Error("Failed to fetch payouts");
+      return res.json();
+    },
+    enabled: !authLoading && (user as any)?.isAdmin && activeTab === "payouts",
+  });
+
+  const generatePayoutsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetchWithAuth("/api/admin/payouts/generate", {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to generate payouts");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/payouts"] });
+      toast({ title: `تم إنشاء ${data.payoutsCreated} دفعة جديدة` });
+    },
+    onError: () => {
+      toast({ title: "فشل في إنشاء الدفعات", variant: "destructive" });
+    },
+  });
+
+  const markPayoutPaidMutation = useMutation({
+    mutationFn: async ({ id, paymentMethod, paymentReference }: { id: string; paymentMethod: string; paymentReference?: string }) => {
+      const res = await fetchWithAuth(`/api/admin/payouts/${id}/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentMethod, paymentReference }),
+      });
+      if (!res.ok) throw new Error("Failed to mark payout as paid");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/payouts"] });
+      toast({ title: "تم تحديث حالة الدفع بنجاح" });
+    },
+    onError: () => {
+      toast({ title: "فشل في تحديث حالة الدفع", variant: "destructive" });
+    },
+  });
+
+  const processHoldsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetchWithAuth("/api/admin/financial/process-holds", {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to process holds");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: `تم تحرير ${data.releasedTransactions} معاملة من فترة الانتظار` });
+    },
+    onError: () => {
+      toast({ title: "فشل في معالجة فترات الانتظار", variant: "destructive" });
+    },
   });
 
   const markMessageReadMutation = useMutation({
@@ -506,6 +587,19 @@ export default function AdminPage() {
                     {cancellations?.length ? (
                       <Badge variant="secondary" className="mr-auto bg-red-100 text-red-800">
                         {cancellations.length}
+                      </Badge>
+                    ) : null}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("payouts")}
+                    className={`flex items-center gap-3 px-4 py-3 text-right hover:bg-muted transition-colors ${activeTab === "payouts" ? "bg-muted font-semibold border-r-4 border-primary" : ""}`}
+                    data-testid="button-tab-payouts"
+                  >
+                    <Wallet className="h-5 w-5" />
+                    المدفوعات الأسبوعية
+                    {pendingPayouts?.filter(p => p.status === "pending").length ? (
+                      <Badge variant="secondary" className="mr-auto bg-green-100 text-green-800">
+                        {pendingPayouts.filter(p => p.status === "pending").length}
                       </Badge>
                     ) : null}
                   </button>
@@ -1403,6 +1497,148 @@ export default function AdminPage() {
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <XCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>لا توجد إلغاءات من البائعين</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeTab === "payouts" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">المدفوعات الأسبوعية</h2>
+                    <p className="text-muted-foreground">إدارة دفعات البائعين الأسبوعية</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => processHoldsMutation.mutate()}
+                      disabled={processHoldsMutation.isPending}
+                      data-testid="button-process-holds"
+                    >
+                      {processHoldsMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                      ) : (
+                        <Clock className="h-4 w-4 ml-2" />
+                      )}
+                      معالجة فترات الانتظار
+                    </Button>
+                    <Button
+                      onClick={() => generatePayoutsMutation.mutate()}
+                      disabled={generatePayoutsMutation.isPending}
+                      data-testid="button-generate-payouts"
+                    >
+                      {generatePayoutsMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                      ) : (
+                        <BanknoteIcon className="h-4 w-4 ml-2" />
+                      )}
+                      إنشاء دفعات الأسبوع
+                    </Button>
+                  </div>
+                </div>
+
+                {payoutsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : pendingPayouts && pendingPayouts.length > 0 ? (
+                  <div className="space-y-4">
+                    {pendingPayouts.map((payout) => (
+                      <Card 
+                        key={payout.id} 
+                        className={payout.status === "pending" ? "border-green-200" : "border-gray-200"}
+                        data-testid={`card-payout-${payout.id}`}
+                      >
+                        <CardContent className="py-4">
+                          <div className="flex flex-col md:flex-row md:items-start gap-4 justify-between">
+                            <div className="flex-1 space-y-3">
+                              <div className="flex items-center gap-3">
+                                <Wallet className="h-5 w-5 text-green-600" />
+                                <span className="font-bold text-lg">{payout.sellerName}</span>
+                                <Badge className={payout.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"}>
+                                  {payout.status === "pending" ? "قيد الانتظار" : "مدفوع"}
+                                </Badge>
+                              </div>
+                              
+                              {payout.sellerPhone && (
+                                <p className="text-sm text-muted-foreground">
+                                  📱 {payout.sellerPhone}
+                                </p>
+                              )}
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                <div className="bg-gray-50 p-2 rounded">
+                                  <span className="text-muted-foreground block">الأرباح</span>
+                                  <span className="font-medium text-green-600">{payout.totalEarnings.toLocaleString()} د.ع</span>
+                                </div>
+                                <div className="bg-gray-50 p-2 rounded">
+                                  <span className="text-muted-foreground block">العمولة (5%)</span>
+                                  <span className="font-medium text-red-600">-{payout.totalCommission.toLocaleString()} د.ع</span>
+                                </div>
+                                <div className="bg-gray-50 p-2 rounded">
+                                  <span className="text-muted-foreground block">الشحن</span>
+                                  <span className="font-medium text-red-600">-{payout.totalShipping.toLocaleString()} د.ع</span>
+                                </div>
+                                <div className="bg-gray-50 p-2 rounded">
+                                  <span className="text-muted-foreground block">المرتجعات</span>
+                                  <span className="font-medium text-red-600">-{payout.totalReturns.toLocaleString()} د.ع</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-4 text-sm">
+                                <div>
+                                  <Calendar className="h-4 w-4 inline ml-1 text-muted-foreground" />
+                                  <span className="text-muted-foreground">فترة الدفع: </span>
+                                  <span>{new Date(payout.weekStartDate).toLocaleDateString("ar-IQ")} - {new Date(payout.weekEndDate).toLocaleDateString("ar-IQ")}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col items-end gap-3">
+                              <div className="text-left">
+                                <p className="text-sm text-muted-foreground">صافي الدفع</p>
+                                <p className="text-2xl font-bold text-green-600">{payout.netPayout.toLocaleString()} د.ع</p>
+                              </div>
+                              
+                              {payout.status === "pending" && (
+                                <Button
+                                  onClick={() => markPayoutPaidMutation.mutate({ 
+                                    id: payout.id, 
+                                    paymentMethod: "cash" 
+                                  })}
+                                  disabled={markPayoutPaidMutation.isPending}
+                                  className="bg-green-600 hover:bg-green-700"
+                                  data-testid={`button-mark-paid-${payout.id}`}
+                                >
+                                  {markPayoutPaidMutation.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                                  ) : (
+                                    <CheckCircle className="h-4 w-4 ml-2" />
+                                  )}
+                                  تأكيد الدفع
+                                </Button>
+                              )}
+
+                              {payout.status === "paid" && payout.paidAt && (
+                                <div className="text-sm text-muted-foreground text-left">
+                                  <p>تم الدفع: {new Date(payout.paidAt).toLocaleDateString("ar-IQ")}</p>
+                                  {payout.paymentMethod && <p>طريقة الدفع: {payout.paymentMethod}</p>}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="py-12 text-center text-muted-foreground">
+                      <Wallet className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>لا توجد دفعات معلقة</p>
+                      <p className="text-sm mt-2">اضغط على "إنشاء دفعات الأسبوع" لإنشاء دفعات جديدة للبائعين</p>
                     </CardContent>
                   </Card>
                 )}
