@@ -542,4 +542,151 @@ export const insertPushSubscriptionSchema = createInsertSchema(pushSubscriptions
 export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 
+// =====================================================
+// FINANCIAL SYSTEM TABLES
+// =====================================================
+
+// Wallet transactions - Every money movement for sellers
+export const walletTransactions = pgTable("wallet_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sellerId: varchar("seller_id").notNull(),
+  transactionId: varchar("transaction_id"), // Links to transactions table (order)
+  type: text("type").notNull(), // 'sale_earning', 'commission_fee', 'shipping_deduction', 'payout', 'return_reversal', 'adjustment'
+  amount: integer("amount").notNull(), // Positive for credit, negative for debit
+  description: text("description"),
+  status: text("status").notNull().default("pending"), // 'pending', 'available', 'paid', 'reversed'
+  holdUntil: timestamp("hold_until"), // 5-day hold period end
+  weeklyPayoutId: varchar("weekly_payout_id"), // Links to payout when paid
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  availableAt: timestamp("available_at"), // When funds became available
+});
+
+export const insertWalletTransactionSchema = createInsertSchema(walletTransactions).omit({
+  id: true,
+  createdAt: true,
+  availableAt: true,
+});
+
+export type InsertWalletTransaction = z.infer<typeof insertWalletTransactionSchema>;
+export type WalletTransaction = typeof walletTransactions.$inferSelect;
+
+// Weekly payouts - Settlement records per seller per week
+export const weeklyPayouts = pgTable("weekly_payouts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sellerId: varchar("seller_id").notNull(),
+  weekStartDate: timestamp("week_start_date").notNull(), // Start of the week (Sunday)
+  weekEndDate: timestamp("week_end_date").notNull(), // End of the week (Saturday)
+  totalEarnings: integer("total_earnings").notNull().default(0), // Gross earnings
+  totalCommission: integer("total_commission").notNull().default(0), // Total 5% fees
+  totalShipping: integer("total_shipping").notNull().default(0), // Total shipping deductions
+  totalReturns: integer("total_returns").notNull().default(0), // Return reversals
+  netPayout: integer("net_payout").notNull().default(0), // Final amount to pay
+  status: text("status").notNull().default("pending"), // 'pending', 'processing', 'paid', 'cancelled'
+  paymentMethod: text("payment_method"), // 'bank_transfer', 'cash', 'mobile_wallet'
+  paymentReference: text("payment_reference"), // Bank ref or receipt number
+  paidAt: timestamp("paid_at"),
+  paidBy: varchar("paid_by"), // Admin who marked as paid
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertWeeklyPayoutSchema = createInsertSchema(weeklyPayouts).omit({
+  id: true,
+  createdAt: true,
+  paidAt: true,
+});
+
+export type InsertWeeklyPayout = z.infer<typeof insertWeeklyPayoutSchema>;
+export type WeeklyPayout = typeof weeklyPayouts.$inferSelect;
+
+// Monthly commission tracker - Tracks 15 free sales per month per seller
+export const monthlyCommissionTracker = pgTable("monthly_commission_tracker", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sellerId: varchar("seller_id").notNull(),
+  month: integer("month").notNull(), // 1-12
+  year: integer("year").notNull(),
+  salesCount: integer("sales_count").notNull().default(0), // Total confirmed sales
+  freeSalesUsed: integer("free_sales_used").notNull().default(0), // Max 15
+  commissionPaidSales: integer("commission_paid_sales").notNull().default(0), // Sales with 5% fee
+  totalCommissionPaid: integer("total_commission_paid").notNull().default(0), // Total fees collected
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertMonthlyCommissionTrackerSchema = createInsertSchema(monthlyCommissionTracker).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertMonthlyCommissionTracker = z.infer<typeof insertMonthlyCommissionTrackerSchema>;
+export type MonthlyCommissionTracker = typeof monthlyCommissionTracker.$inferSelect;
+
+// Delivery orders - Links orders to delivery company system
+export const deliveryOrders = pgTable("delivery_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  transactionId: varchar("transaction_id").notNull(), // Links to transactions table
+  externalDeliveryId: text("external_delivery_id"), // ID in delivery company system
+  externalTrackingNumber: text("external_tracking_number"),
+  pickupAddress: text("pickup_address").notNull(),
+  pickupCity: text("pickup_city").notNull(),
+  pickupPhone: text("pickup_phone").notNull(),
+  pickupContactName: text("pickup_contact_name").notNull(),
+  deliveryAddress: text("delivery_address").notNull(),
+  deliveryCity: text("delivery_city").notNull(),
+  deliveryPhone: text("delivery_phone").notNull(),
+  deliveryContactName: text("delivery_contact_name").notNull(),
+  codAmount: integer("cod_amount").notNull(), // Cash on delivery amount
+  shippingCost: integer("shipping_cost").notNull().default(0),
+  itemDescription: text("item_description"),
+  itemWeight: real("item_weight"),
+  status: text("status").notNull().default("pending"), // 'pending', 'assigned', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'returned', 'cancelled'
+  driverName: text("driver_name"),
+  driverPhone: text("driver_phone"),
+  currentLat: real("current_lat"),
+  currentLng: real("current_lng"),
+  lastLocationUpdate: timestamp("last_location_update"),
+  estimatedDeliveryDate: timestamp("estimated_delivery_date"),
+  actualDeliveryDate: timestamp("actual_delivery_date"),
+  deliveryProofUrl: text("delivery_proof_url"), // Photo proof
+  signatureUrl: text("signature_url"),
+  returnReason: text("return_reason"),
+  cashCollected: boolean("cash_collected").default(false),
+  cashCollectedAt: timestamp("cash_collected_at"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertDeliveryOrderSchema = createInsertSchema(deliveryOrders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertDeliveryOrder = z.infer<typeof insertDeliveryOrderSchema>;
+export type DeliveryOrder = typeof deliveryOrders.$inferSelect;
+
+// Delivery status log - History of status updates from delivery API
+export const deliveryStatusLog = pgTable("delivery_status_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  deliveryOrderId: varchar("delivery_order_id").notNull(),
+  status: text("status").notNull(),
+  statusMessage: text("status_message"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  driverNotes: text("driver_notes"),
+  photoUrl: text("photo_url"),
+  receivedFromApi: boolean("received_from_api").notNull().default(true), // true = from webhook, false = manual
+  rawPayload: text("raw_payload"), // Store raw API response for debugging
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertDeliveryStatusLogSchema = createInsertSchema(deliveryStatusLog).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertDeliveryStatusLog = z.infer<typeof insertDeliveryStatusLogSchema>;
+export type DeliveryStatusLog = typeof deliveryStatusLog.$inferSelect;
+
 export * from "./models/auth";

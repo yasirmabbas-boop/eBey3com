@@ -8,6 +8,9 @@ import { broadcastBidUpdate } from "./websocket";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { analyzeImageForSearch } from "./replit_integrations/image";
 import multer from "multer";
+import { financialService } from "./services/financial-service";
+import { deliveryService } from "./services/delivery-service";
+import { deliveryApi, DeliveryWebhookPayload } from "./services/delivery-api";
 
 const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
@@ -4001,6 +4004,280 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching cancellations:", error);
       res.status(500).json({ error: "Failed to fetch cancellations" });
+    }
+  });
+
+  // =====================================================
+  // FINANCIAL SYSTEM ROUTES
+  // =====================================================
+
+  // Seller: Get wallet balance
+  app.get("/api/wallet/balance", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user?.sellerApproved) {
+        return res.status(403).json({ error: "Not a seller" });
+      }
+      
+      const balance = await financialService.getWalletBalance(userId);
+      const monthlyStats = await financialService.getMonthlyStats(userId);
+      const nextPayoutDate = financialService.getNextPayoutDate();
+      
+      res.json({
+        ...balance,
+        freeSalesRemaining: monthlyStats ? 15 - monthlyStats.freeSalesUsed : 15,
+        nextPayoutDate: nextPayoutDate.toISOString(),
+      });
+    } catch (error) {
+      console.error("Error fetching wallet balance:", error);
+      res.status(500).json({ error: "Failed to fetch balance" });
+    }
+  });
+
+  // Seller: Get wallet transactions
+  app.get("/api/wallet/transactions", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user?.sellerApproved) {
+        return res.status(403).json({ error: "Not a seller" });
+      }
+      
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const transactions = await financialService.getWalletTransactions(userId, limit, offset);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching wallet transactions:", error);
+      res.status(500).json({ error: "Failed to fetch transactions" });
+    }
+  });
+
+  // Seller: Get payout history
+  app.get("/api/wallet/payouts", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user?.sellerApproved) {
+        return res.status(403).json({ error: "Not a seller" });
+      }
+      
+      const payouts = await financialService.getSellerPayouts(userId);
+      res.json(payouts);
+    } catch (error) {
+      console.error("Error fetching payouts:", error);
+      res.status(500).json({ error: "Failed to fetch payouts" });
+    }
+  });
+
+  // Buyer: Get delivery tracking
+  app.get("/api/delivery/track/:transactionId", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const tracking = await deliveryService.getDeliveryTracking(req.params.transactionId);
+      if (!tracking) {
+        return res.status(404).json({ error: "Delivery not found" });
+      }
+      
+      res.json(tracking);
+    } catch (error) {
+      console.error("Error fetching tracking:", error);
+      res.status(500).json({ error: "Failed to fetch tracking" });
+    }
+  });
+
+  // Buyer: Confirm delivery acceptance
+  app.post("/api/delivery/:transactionId/accept", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const success = await deliveryService.confirmDeliveryAcceptance(req.params.transactionId);
+      if (!success) {
+        return res.status(400).json({ error: "Cannot accept delivery at this time" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error accepting delivery:", error);
+      res.status(500).json({ error: "Failed to accept delivery" });
+    }
+  });
+
+  // Webhook: Receive delivery status updates from delivery company
+  app.post("/api/webhooks/delivery", async (req, res) => {
+    try {
+      const signature = req.headers["x-delivery-signature"] as string;
+      
+      // Validate webhook signature (in production)
+      if (!deliveryApi.validateWebhookSignature(JSON.stringify(req.body), signature)) {
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+      
+      const payload: DeliveryWebhookPayload = req.body;
+      await deliveryService.processWebhook(payload);
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Error processing delivery webhook:", error);
+      res.status(500).json({ error: "Failed to process webhook" });
+    }
+  });
+
+  // Admin: Get all pending payouts
+  app.get("/api/admin/payouts", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const payouts = await financialService.getPendingPayouts();
+      
+      // Enrich with seller info
+      const enriched = await Promise.all(payouts.map(async (payout) => {
+        const seller = await storage.getUser(payout.sellerId);
+        return {
+          ...payout,
+          sellerName: seller?.displayName || "بائع",
+          sellerPhone: seller?.phone || "",
+        };
+      }));
+      
+      res.json(enriched);
+    } catch (error) {
+      console.error("Error fetching payouts:", error);
+      res.status(500).json({ error: "Failed to fetch payouts" });
+    }
+  });
+
+  // Admin: Generate weekly payout report
+  app.post("/api/admin/payouts/generate", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Get the start of the current week (Sunday)
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - dayOfWeek);
+      weekStart.setHours(0, 0, 0, 0);
+      
+      const summaries = await financialService.generateWeeklyPayoutReport(weekStart);
+      
+      // Create payout records for each seller
+      const payouts = [];
+      for (const summary of summaries) {
+        if (summary.netPayout > 0) {
+          const payout = await financialService.createWeeklyPayout(
+            summary.sellerId,
+            weekStart,
+            summary
+          );
+          payouts.push(payout);
+        }
+      }
+      
+      res.json({ payoutsCreated: payouts.length, summaries });
+    } catch (error) {
+      console.error("Error generating payouts:", error);
+      res.status(500).json({ error: "Failed to generate payouts" });
+    }
+  });
+
+  // Admin: Mark payout as paid
+  app.post("/api/admin/payouts/:id/pay", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const { paymentMethod, paymentReference } = req.body;
+      
+      await financialService.markPayoutAsPaid(
+        req.params.id,
+        userId,
+        paymentMethod || "cash",
+        paymentReference
+      );
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking payout as paid:", error);
+      res.status(500).json({ error: "Failed to update payout" });
+    }
+  });
+
+  // Admin: Process hold period expiry (can be called manually or by cron)
+  app.post("/api/admin/financial/process-holds", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const released = await financialService.processHoldPeriodExpiry();
+      res.json({ releasedTransactions: released });
+    } catch (error) {
+      console.error("Error processing holds:", error);
+      res.status(500).json({ error: "Failed to process holds" });
+    }
+  });
+
+  // Create delivery order when transaction is confirmed
+  app.post("/api/transactions/:id/create-delivery", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const deliveryOrder = await deliveryService.createDeliveryOrder(req.params.id);
+      if (!deliveryOrder) {
+        return res.status(400).json({ error: "Failed to create delivery order" });
+      }
+      
+      res.json(deliveryOrder);
+    } catch (error) {
+      console.error("Error creating delivery:", error);
+      res.status(500).json({ error: "Failed to create delivery" });
     }
   });
 
