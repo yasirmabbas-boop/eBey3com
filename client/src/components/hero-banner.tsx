@@ -105,7 +105,7 @@ export function HeroBanner() {
           align: "start",
           loop: true,
           direction: "rtl",
-          duration: 20,
+          duration: 0,
         }}
         setApi={setApi}
         className="w-full"
@@ -115,14 +115,14 @@ export function HeroBanner() {
             <CarouselItem key={listing.id} className="pr-2 md:pr-4 basis-full md:basis-1/2 lg:basis-1/3">
               <Link href={`/product/${listing.id}`}>
                 <div 
-                  className="relative group cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="relative group cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-xl"
                   data-testid={`hero-item-${listing.id}`}
                 >
                   <div className="relative h-[220px] md:h-[280px]">
                     <img
                       src={listing.images[0] || "/placeholder-image.jpg"}
                       alt={listing.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                     
