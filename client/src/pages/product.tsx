@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { CarouselApi } from "@/components/ui/carousel";
 import { FullscreenImageViewer } from "@/components/fullscreen-image-viewer";
 import { useRoute, useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -32,6 +31,7 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
 
 const SIMILAR_PRODUCTS = Array.from({ length: 20 }).map((_, i) => ({
