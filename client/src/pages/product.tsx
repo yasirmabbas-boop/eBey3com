@@ -604,6 +604,7 @@ export default function ProductPage() {
                   align: "start",
                   loop: images.length > 1,
                   direction: "rtl",
+                  duration: 0,
                 }}
                 className="w-full mb-3"
               >
