@@ -859,9 +859,34 @@ export async function registerRoutes(
         rating: user.rating,
         ratingCount: user.ratingCount,
         city: user.city,
+        createdAt: user.createdAt,
       });
     } catch (error) {
       console.error("Error fetching user:", error);
+      res.status(500).json({ error: "Failed to fetch user" });
+    }
+  });
+
+  // Public seller profile endpoint (alias)
+  app.get("/api/users/:userId/public", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json({
+        id: user.id,
+        displayName: user.displayName,
+        avatar: user.avatar,
+        isVerified: user.isVerified,
+        totalSales: user.totalSales,
+        rating: user.rating,
+        ratingCount: user.ratingCount,
+        city: user.city,
+        createdAt: user.createdAt,
+      });
+    } catch (error) {
+      console.error("Error fetching public user:", error);
       res.status(500).json({ error: "Failed to fetch user" });
     }
   });

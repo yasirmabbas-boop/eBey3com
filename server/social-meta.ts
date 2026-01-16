@@ -46,20 +46,79 @@ export async function socialMetaMiddleware(
     return next();
   }
 
+  // Handle product pages
   const productMatch = req.path.match(/^\/product\/([^/]+)$/);
-  if (!productMatch) {
+  // Handle seller profile pages
+  const sellerMatch = req.path.match(/^\/seller\/([^/]+)$/);
+  
+  if (!productMatch && !sellerMatch) {
     return next();
   }
 
-  const productId = productMatch[1];
-
   try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    
+    // Handle seller profile
+    if (sellerMatch) {
+      const sellerId = sellerMatch[1];
+      const seller = await storage.getUser(sellerId);
+      if (!seller) {
+        return next();
+      }
+      
+      const sellerUrl = `${baseUrl}/seller/${seller.id}`;
+      const sellerName = escapeHtml(seller.displayName || "بائع");
+      const rating = seller.rating || 0;
+      const ratingStars = "⭐".repeat(Math.round(rating));
+      const description = escapeHtml(
+        `${ratingStars} تقييم ${rating.toFixed(1)} | متجر ${sellerName} على E-بيع - منصة المزادات العراقية`
+      );
+      const imageUrl = seller.avatar || `${baseUrl}/favicon.png`;
+      
+      const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>متجر ${sellerName} - E-بيع</title>
+  
+  <!-- Open Graph -->
+  <meta property="og:type" content="profile" />
+  <meta property="og:title" content="متجر ${sellerName}" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:image" content="${imageUrl}" />
+  <meta property="og:url" content="${sellerUrl}" />
+  <meta property="og:site_name" content="E-بيع" />
+  <meta property="og:locale" content="ar_IQ" />
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="متجر ${sellerName}" />
+  <meta name="twitter:description" content="${description}" />
+  <meta name="twitter:image" content="${imageUrl}" />
+  
+  <meta name="description" content="${description}" />
+</head>
+<body>
+  <script>window.location.href = "${sellerUrl}";</script>
+  <noscript>
+    <meta http-equiv="refresh" content="0;url=${sellerUrl}" />
+  </noscript>
+  <p>جاري التحويل إلى صفحة البائع...</p>
+</body>
+</html>`;
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      return res.send(html);
+    }
+
+    // Handle product page
+    const productId = productMatch![1];
     const listing = await storage.getListing(productId);
     if (!listing) {
       return next();
     }
 
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
     const productUrl = `${baseUrl}/product/${listing.id}`;
     const images = listing.images || [];
     const imageUrl = images[0] || `${baseUrl}/favicon.png`;

@@ -46,6 +46,7 @@ import FavoritesPage from "@/pages/favorites";
 import SwipePage from "@/pages/swipe";
 import AuctionsDashboard from "@/pages/auctions-dashboard";
 import MyAuctions from "@/pages/my-auctions";
+import SellerProfile from "@/pages/seller-profile";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -92,6 +93,7 @@ function Router() {
       <Route path="/admin" component={AdminPage} />
       <Route path="/auctions" component={AuctionsDashboard} />
       <Route path="/my-auctions" component={MyAuctions} />
+      <Route path="/seller/:id" component={SellerProfile} />
       <Route component={NotFound} />
     </Switch>
   );

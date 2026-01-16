@@ -23,6 +23,7 @@ import { BiddingWindow } from "@/components/bidding-window";
 import { SellerTrustBadge } from "@/components/seller-trust-badge";
 import { ContactSeller } from "@/components/contact-seller";
 import { AuctionCountdown } from "@/components/auction-countdown";
+import { InstagramShareCard } from "@/components/instagram-share-card";
 import type { Listing } from "@shared/schema";
 
 import {
@@ -1033,6 +1034,16 @@ export default function ProductPage() {
           })()}
 
           {/* Share Buttons - Always visible including for sellers */}
+          <div className="mb-2">
+            <InstagramShareCard product={{ 
+              id: product.id, 
+              title: product.title, 
+              price: product.price, 
+              currentBid: product.currentBid ?? undefined, 
+              saleType: product.saleType, 
+              images: product.images 
+            }} />
+          </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
