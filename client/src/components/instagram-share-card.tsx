@@ -25,7 +25,6 @@ export function InstagramShareCard({ product }: InstagramShareCardProps) {
 
   const displayPrice = product.currentBid || product.price;
   const isAuction = product.saleType === "auction";
-  const shortUrl = `ebey3.com/p/${product.id.slice(0, 8)}`;
 
   const generateCard = async (): Promise<Blob | null> => {
     const canvas = canvasRef.current;
@@ -73,11 +72,14 @@ export function InstagramShareCard({ product }: InstagramShareCardProps) {
         ctx.restore();
       }
 
-      const saleTypeY = 1080;
+      // Position text higher to avoid Instagram story bars (top ~150px, bottom ~200px are covered)
+      // Image ends at ~1050px, so text area is from 1050 to 1150 (safe zone before bottom bar)
+      
+      const saleTypeY = 1060;
       const saleTypeText = isAuction ? "🔨 مزاد" : "🛒 شراء الآن";
       ctx.fillStyle = isAuction ? "#dc2626" : "#16a34a";
       ctx.beginPath();
-      ctx.roundRect(40, saleTypeY - 45, width - 80, 70, 15);
+      ctx.roundRect(80, saleTypeY - 35, width - 160, 60, 15);
       ctx.fill();
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 42px Arial, sans-serif";
@@ -85,10 +87,10 @@ export function InstagramShareCard({ product }: InstagramShareCardProps) {
       ctx.textBaseline = "middle";
       ctx.fillText(saleTypeText, width / 2, saleTypeY);
 
-      const priceY = 1160;
+      const priceY = 1130;
       ctx.fillStyle = "#2563eb";
       ctx.beginPath();
-      ctx.roundRect(40, priceY - 35, width - 80, 60, 15);
+      ctx.roundRect(80, priceY - 30, width - 160, 55, 15);
       ctx.fill();
 
       ctx.fillStyle = "#ffffff";
@@ -98,20 +100,18 @@ export function InstagramShareCard({ product }: InstagramShareCardProps) {
       const priceText = `${displayPrice.toLocaleString()} د.ع`;
       ctx.fillText(priceText, width / 2, priceY);
 
+      // Title and branding - positioned in safe zone
       ctx.fillStyle = "#1f2937";
-      ctx.font = "bold 48px Arial, sans-serif";
+      ctx.font = "bold 40px Arial, sans-serif";
       ctx.textAlign = "center";
-      const title = product.title.length > 35 ? product.title.slice(0, 35) + "..." : product.title;
-      ctx.fillText(title, width / 2, 1240);
+      const title = product.title.length > 30 ? product.title.slice(0, 30) + "..." : product.title;
+      ctx.fillText(title, width / 2, 1195);
 
-      ctx.fillStyle = "#6b7280";
-      ctx.font = "32px Arial, sans-serif";
-      ctx.fillText(shortUrl, width / 2, 1290);
-
+      // E-بيع branding only (no URL)
       ctx.fillStyle = "#2563eb";
-      ctx.font = "bold 36px Arial, sans-serif";
+      ctx.font = "bold 38px Arial, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("E-بيع", width / 2, 1330);
+      ctx.fillText("E-بيع", width / 2, 1240);
 
       return new Promise((resolve) => {
         canvas.toBlob((blob) => resolve(blob), "image/png", 1);
@@ -225,7 +225,6 @@ export function InstagramShareCard({ product }: InstagramShareCardProps) {
                 </div>
                 <div className="h-1/4 flex flex-col items-center justify-center p-2">
                   <p className="text-xs font-medium line-clamp-1">{product.title}</p>
-                  <p className="text-[10px] text-gray-500">{shortUrl}</p>
                   <p className="text-xs font-bold text-primary mt-1">E-بيع</p>
                 </div>
               </div>
@@ -262,8 +261,8 @@ export function InstagramShareCard({ product }: InstagramShareCardProps) {
 
             <p className="text-xs text-gray-500 text-center">
               {language === "ar" 
-                ? "الصورة تتضمن رابط المنتج للوصول السريع" 
-                : "Image includes product link for quick access"}
+                ? "حمّل الصورة وشاركها على Instagram Stories" 
+                : "Download and share on Instagram Stories"}
             </p>
           </div>
 
