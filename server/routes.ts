@@ -1386,6 +1386,30 @@ export async function registerRoutes(
         return res.status(500).json({ error: "فشل في تحديث حالة التسليم" });
       }
       
+      // Create wallet settlement for the seller (sale earnings minus commission and shipping)
+      try {
+        const listing = await storage.getListing(transaction.listingId);
+        const shippingCost = listing?.shippingCost || 0;
+        
+        const settlement = await financialService.createSaleSettlement(
+          transaction.sellerId,
+          transactionId,
+          transaction.amount,
+          shippingCost
+        );
+        
+        console.log(`[Wallet] Settlement created for transaction ${transactionId}:`, {
+          grossEarnings: settlement.grossEarnings,
+          commissionFee: settlement.commissionFee,
+          shippingDeduction: settlement.shippingDeduction,
+          netEarnings: settlement.netEarnings,
+          isCommissionFree: settlement.isCommissionFree,
+        });
+      } catch (walletError) {
+        console.error("Error creating wallet settlement:", walletError);
+        // Don't fail the delivery - wallet can be reconciled later
+      }
+      
       if (transaction.buyerId && transaction.buyerId !== "guest") {
         const listing = await storage.getListing(transaction.listingId);
         try {
@@ -1723,6 +1747,16 @@ export async function registerRoutes(
 
       if (status === "approved") {
         await storage.updateTransactionStatus(request.transactionId, "return_approved");
+        
+        // Reverse wallet settlement when return is approved
+        try {
+          const returnReason = request.reason || "طلب إرجاع مقبول";
+          await financialService.reverseSettlement(request.transactionId, returnReason);
+          console.log(`[Wallet] Settlement reversed for transaction ${request.transactionId} due to return approval`);
+        } catch (walletError) {
+          console.error("Error reversing wallet settlement:", walletError);
+          // Don't fail the return approval - wallet can be reconciled later
+        }
       }
 
       await storage.createNotification({
