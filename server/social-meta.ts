@@ -35,6 +35,17 @@ function escapeHtml(text: string): string {
     .replace(/'/g, "&#039;");
 }
 
+const PRODUCTION_URL = "https://ebey3.com";
+const LOGO_URL = "https://ebey3.com/logo.png";
+
+function getBaseUrl(req: Request): string {
+  const host = req.get("host") || "";
+  if (host.includes("ebey3.com")) {
+    return PRODUCTION_URL;
+  }
+  return `${req.protocol}://${host}`;
+}
+
 export async function socialMetaMiddleware(
   req: Request,
   res: Response,
@@ -56,7 +67,7 @@ export async function socialMetaMiddleware(
   }
 
   try {
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const baseUrl = getBaseUrl(req);
     
     // Handle seller profile
     if (sellerMatch) {
@@ -115,20 +126,24 @@ export async function socialMetaMiddleware(
     // Handle product page
     const productId = productMatch![1];
     const listing = await storage.getListing(productId);
-    if (!listing) {
+    if (!listing || !listing.sellerId) {
       return next();
     }
 
+    // Get seller info for better description
+    const seller = await storage.getUser(listing.sellerId);
+    const sellerName = seller?.displayName || "بائع";
+
     const productUrl = `${baseUrl}/product/${listing.id}`;
     const images = listing.images || [];
-    const imageUrl = images[0] || `${baseUrl}/favicon.png`;
+    const imageUrl = images[0] || LOGO_URL;
     const price = formatPrice(listing.currentBid || listing.price);
     const isAuction = listing.saleType === "auction";
+    const saleTypeText = isAuction ? "🔨 مزاد" : "💰 شراء الآن";
 
     const title = escapeHtml(listing.title);
     const description = escapeHtml(
-      listing.description?.substring(0, 200) ||
-        `${isAuction ? "مزاد على" : "للبيع:"} ${listing.title} - ${price}`
+      `${saleTypeText} | ${price} | بائع: ${sellerName} | E-بيع - منصة المزادات العراقية`
     );
 
     const html = `<!DOCTYPE html>

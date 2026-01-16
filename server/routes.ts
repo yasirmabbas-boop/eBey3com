@@ -2533,7 +2533,7 @@ export async function registerRoutes(
     }
 
     try {
-      const allowedFields = ["displayName", "phone", "city", "district", "addressLine1", "addressLine2", "ageBracket", "interests", "surveyCompleted"];
+      const allowedFields = ["displayName", "phone", "city", "district", "addressLine1", "addressLine2", "ageBracket", "interests", "surveyCompleted", "avatar"];
       const updates: Record<string, any> = {};
       
       for (const field of allowedFields) {
@@ -2562,6 +2562,7 @@ export async function registerRoutes(
         ageBracket: user.ageBracket,
         interests: user.interests,
         surveyCompleted: user.surveyCompleted,
+        avatar: user.avatar,
       });
     } catch (error) {
       console.error("Error updating profile:", error);

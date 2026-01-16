@@ -73,39 +73,45 @@ export function InstagramShareCard({ product }: InstagramShareCardProps) {
         ctx.restore();
       }
 
-      const priceY = 1100;
-      ctx.fillStyle = isAuction ? "#dc2626" : "#2563eb";
+      const saleTypeY = 1080;
+      const saleTypeText = isAuction ? "🔨 مزاد" : "🛒 شراء الآن";
+      ctx.fillStyle = isAuction ? "#dc2626" : "#16a34a";
       ctx.beginPath();
-      ctx.roundRect(40, priceY - 60, width - 80, 80, 15);
+      ctx.roundRect(40, saleTypeY - 45, width - 80, 70, 15);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 42px Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(saleTypeText, width / 2, saleTypeY);
+
+      const priceY = 1160;
+      ctx.fillStyle = "#2563eb";
+      ctx.beginPath();
+      ctx.roundRect(40, priceY - 35, width - 80, 60, 15);
       ctx.fill();
 
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 48px Arial, sans-serif";
+      ctx.font = "bold 44px Arial, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       const priceText = `${displayPrice.toLocaleString()} د.ع`;
       ctx.fillText(priceText, width / 2, priceY);
 
-      if (isAuction) {
-        ctx.fillStyle = "#fef2f2";
-        ctx.font = "24px Arial, sans-serif";
-        ctx.fillText("🔨 مزاد", width / 2, priceY - 35);
-      }
-
       ctx.fillStyle = "#1f2937";
-      ctx.font = "bold 36px Arial, sans-serif";
+      ctx.font = "bold 48px Arial, sans-serif";
       ctx.textAlign = "center";
-      const title = product.title.length > 40 ? product.title.slice(0, 40) + "..." : product.title;
-      ctx.fillText(title, width / 2, 1180);
+      const title = product.title.length > 35 ? product.title.slice(0, 35) + "..." : product.title;
+      ctx.fillText(title, width / 2, 1240);
 
       ctx.fillStyle = "#6b7280";
-      ctx.font = "28px Arial, sans-serif";
-      ctx.fillText(shortUrl, width / 2, 1230);
+      ctx.font = "32px Arial, sans-serif";
+      ctx.fillText(shortUrl, width / 2, 1290);
 
       ctx.fillStyle = "#2563eb";
-      ctx.font = "bold 32px Arial, sans-serif";
+      ctx.font = "bold 36px Arial, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("E-بيع", width / 2, 1300);
+      ctx.fillText("E-بيع", width / 2, 1330);
 
       return new Promise((resolve) => {
         canvas.toBlob((blob) => resolve(blob), "image/png", 1);

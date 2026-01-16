@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useUpload } from "@/hooks/use-upload";
 import {
   Heart,
   Package,
@@ -22,8 +23,11 @@ import {
   Loader2,
   Star,
   User,
+  Camera,
+  Share2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface AccountMenuItem {
   icon: React.ReactNode;
@@ -51,9 +55,60 @@ interface SellerSummary {
 }
 
 export default function MyAccount() {
-  const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { user, isLoading, isAuthenticated, logout, refetch } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const { uploadFile } = useUpload({
+    onSuccess: async (response) => {
+      try {
+        const avatarUrl = `${window.location.origin}/api/uploads/public/${response.objectPath}`;
+        const res = await fetch("/api/account/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ avatar: avatarUrl }),
+        });
+        if (res.ok) {
+          toast({ title: "تم تحديث الصورة بنجاح" });
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+          refetch?.();
+        }
+      } catch (error) {
+        toast({ title: "خطأ", description: "فشل في حفظ الصورة", variant: "destructive" });
+      } finally {
+        setIsUploadingAvatar(false);
+      }
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في رفع الصورة", variant: "destructive" });
+      setIsUploadingAvatar(false);
+    },
+  });
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: "الملف كبير جداً", description: "الحد الأقصى 5 ميغابايت", variant: "destructive" });
+        return;
+      }
+      setIsUploadingAvatar(true);
+      await uploadFile(file);
+    }
+  };
+
+  const handleShareProfile = () => {
+    const url = `${window.location.origin}/seller/${user?.id}`;
+    if (navigator.share) {
+      navigator.share({ title: `متجر ${user?.displayName}`, url });
+    } else {
+      navigator.clipboard.writeText(url);
+      toast({ title: "تم نسخ رابط المتجر" });
+    }
+  };
 
   const { data: buyerSummary } = useQuery<BuyerSummary>({
     queryKey: ["/api/account/buyer-summary"],
@@ -233,8 +288,43 @@ export default function MyAccount() {
           
           {/* Profile Header */}
           <div className="flex items-center gap-4 py-6 border-b bg-white rounded-t-xl px-4 -mx-4 md:mx-0 md:px-6">
-            <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl">
-              {user.displayName?.charAt(0) || user.phone?.charAt(0) || "م"}
+            <div className="relative">
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+                data-testid="input-avatar-upload"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="relative group"
+                disabled={isUploadingAvatar}
+                data-testid="button-change-avatar"
+              >
+                {user.avatar ? (
+                  <img 
+                    src={user.avatar} 
+                    alt={user.displayName || "صورة الملف الشخصي"} 
+                    className="w-16 h-16 rounded-full object-cover border-2 border-primary/20"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl">
+                    {user.displayName?.charAt(0) || user.phone?.charAt(0) || "م"}
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {isUploadingAvatar ? (
+                    <Loader2 className="h-5 w-5 text-white animate-spin" />
+                  ) : (
+                    <Camera className="h-5 w-5 text-white" />
+                  )}
+                </div>
+                <div className="absolute bottom-0 left-0 bg-primary rounded-full p-1">
+                  <Camera className="h-3 w-3 text-white" />
+                </div>
+              </button>
             </div>
             <div className="flex-1">
               <h1 className="font-bold text-lg text-gray-900">{user.displayName || user.phone}</h1>
@@ -250,6 +340,15 @@ export default function MyAccount() {
               )}
             </div>
             <div className="flex items-center gap-3">
+              {user.sellerApproved && (
+                <button 
+                  onClick={handleShareProfile}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                  data-testid="button-share-profile"
+                >
+                  <Share2 className="h-5 w-5 text-gray-600" />
+                </button>
+              )}
               <Link href="/messages">
                 <div className="relative">
                   <MessageSquare className="h-6 w-6 text-gray-600" />
