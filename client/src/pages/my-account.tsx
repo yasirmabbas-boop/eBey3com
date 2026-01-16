@@ -55,7 +55,7 @@ interface SellerSummary {
 }
 
 export default function MyAccount() {
-  const { user, isLoading, isAuthenticated, logout, refetch } = useAuth();
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -74,7 +74,6 @@ export default function MyAccount() {
         if (res.ok) {
           toast({ title: "تم تحديث الصورة بنجاح" });
           queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-          refetch?.();
         }
       } catch (error) {
         toast({ title: "خطأ", description: "فشل في حفظ الصورة", variant: "destructive" });

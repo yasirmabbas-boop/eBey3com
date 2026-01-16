@@ -9,6 +9,7 @@ import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { Star, MapPin, Calendar, Package, Share2, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
+import { shareToFacebook, shareToWhatsApp, shareToTelegram } from "@/lib/share-utils";
 
 interface SellerInfo {
   id: string;
@@ -59,25 +60,19 @@ export default function SellerProfile() {
   });
 
   const handleShare = (platform: string) => {
-    const url = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent(
-      language === "ar" 
-        ? `تصفح منتجات ${seller?.displayName || "البائع"} على E-بيع`
-        : `Check out ${seller?.displayName || "seller"}'s products on E-بيع`
-    );
+    const shareText = language === "ar" 
+      ? `تصفح منتجات ${seller?.displayName || "البائع"} على E-بيع`
+      : `Check out ${seller?.displayName || "seller"}'s products on E-بيع`;
 
     switch (platform) {
       case "whatsapp":
-        window.open(`https://wa.me/?text=${text}%20${url}`, "_blank");
+        shareToWhatsApp(window.location.href, shareText);
         break;
       case "facebook":
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank", "width=600,height=400");
-        break;
-      case "twitter":
-        window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank", "width=600,height=400");
+        shareToFacebook(window.location.href);
         break;
       case "telegram":
-        window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank");
+        shareToTelegram(window.location.href, shareText);
         break;
       case "copy":
         navigator.clipboard.writeText(window.location.href);

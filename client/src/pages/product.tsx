@@ -24,6 +24,7 @@ import { SellerTrustBadge } from "@/components/seller-trust-badge";
 import { ContactSeller } from "@/components/contact-seller";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { InstagramShareCard } from "@/components/instagram-share-card";
+import { shareToFacebook, shareToWhatsApp, shareToTelegram, shareToTwitter } from "@/lib/share-utils";
 import type { Listing } from "@shared/schema";
 
 import {
@@ -1049,11 +1050,7 @@ export default function ProductPage() {
               variant="outline"
               size="lg"
               className="flex-1 h-12 bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
-              onClick={() => {
-                const url = encodeURIComponent(window.location.href);
-                const text = encodeURIComponent(`${product.title} - ${product.price.toLocaleString()} د.ع`);
-                window.open(`https://wa.me/?text=${text}%20${url}`, "_blank");
-              }}
+              onClick={() => shareToWhatsApp(window.location.href, `${product.title} - ${product.price.toLocaleString()} د.ع`)}
               data-testid="button-share-whatsapp-main"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -1064,10 +1061,7 @@ export default function ProductPage() {
               variant="outline"
               size="lg"
               className="flex-1 h-12 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-600"
-              onClick={() => {
-                const url = encodeURIComponent(window.location.href);
-                window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank", "width=600,height=400");
-              }}
+              onClick={() => shareToFacebook(window.location.href)}
               data-testid="button-share-facebook-main"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -1078,11 +1072,7 @@ export default function ProductPage() {
               variant="outline"
               size="lg"
               className="flex-1 h-12 bg-sky-50 hover:bg-sky-100 border-sky-200 text-sky-500"
-              onClick={() => {
-                const url = encodeURIComponent(window.location.href);
-                const text = encodeURIComponent(`${product.title} - ${product.price.toLocaleString()} د.ع`);
-                window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank", "width=600,height=400");
-              }}
+              onClick={() => shareToTwitter(window.location.href, `${product.title} - ${product.price.toLocaleString()} د.ع`)}
               data-testid="button-share-twitter-main"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -1093,11 +1083,7 @@ export default function ProductPage() {
               variant="outline"
               size="lg"
               className="flex-1 h-12 bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-500"
-              onClick={() => {
-                const url = encodeURIComponent(window.location.href);
-                const text = encodeURIComponent(`${product.title} - ${product.price.toLocaleString()} د.ع`);
-                window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank");
-              }}
+              onClick={() => shareToTelegram(window.location.href, `${product.title} - ${product.price.toLocaleString()} د.ع`)}
               data-testid="button-share-telegram-main"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
