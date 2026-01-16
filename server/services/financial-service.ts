@@ -124,7 +124,7 @@ class FinancialService {
         transactionId,
         type: "commission_fee",
         amount: -settlement.commissionFee,
-        description: `عمولة 5% - طلب #${transactionId.slice(0, 8)}`,
+        description: `عمولة 8% - طلب #${transactionId.slice(0, 8)}`,
         status: "pending",
         holdUntil,
       });

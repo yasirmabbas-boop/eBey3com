@@ -3750,7 +3750,7 @@ export async function registerRoutes(
         createdAt: l.createdAt,
         currentBid: l.currentBid,
         totalBids: l.totalBids,
-        image: l.images?.[0] || l.image,
+        image: l.images?.[0] || "",
         views: l.views || 0,
       }));
       res.json(adminListings);
@@ -3994,8 +3994,8 @@ export async function registerRoutes(
         const listing = await storage.getListing(tx.listingId);
         return {
           ...tx,
-          sellerName: seller?.displayName || seller?.username || "بائع",
-          buyerName: buyer?.displayName || buyer?.username || "ضيف",
+          sellerName: seller?.displayName || "بائع",
+          buyerName: buyer?.displayName || "ضيف",
           listingTitle: listing?.title || "منتج محذوف",
         };
       }));
