@@ -13,6 +13,27 @@ export interface CreateDeliveryRequest {
   transactionId: string;
 }
 
+export type DriverCancellationReason = 
+  | "no_show"           // العميل غير موجود
+  | "no_answer"         // لا يرد على الهاتف
+  | "customer_refused"  // العميل رفض الاستلام
+  | "customer_return"   // العميل طلب الإرجاع
+  | "wrong_address"     // العنوان خاطئ
+  | "inaccessible"      // لا يمكن الوصول
+  | "damaged_package"   // الطرد تالف
+  | "other";            // سبب آخر
+
+export const CANCELLATION_REASON_LABELS: Record<DriverCancellationReason, { ar: string; en: string }> = {
+  no_show: { ar: "العميل غير موجود", en: "Customer Not Present" },
+  no_answer: { ar: "لا يرد على الهاتف", en: "No Answer" },
+  customer_refused: { ar: "العميل رفض الاستلام", en: "Customer Refused" },
+  customer_return: { ar: "العميل طلب الإرجاع", en: "Customer Requested Return" },
+  wrong_address: { ar: "العنوان خاطئ", en: "Wrong Address" },
+  inaccessible: { ar: "لا يمكن الوصول للموقع", en: "Location Inaccessible" },
+  damaged_package: { ar: "الطرد تالف", en: "Package Damaged" },
+  other: { ar: "سبب آخر", en: "Other" },
+};
+
 class DeliveryService {
 
   async createDeliveryOrder(transactionId: string): Promise<typeof deliveryOrders.$inferSelect | null> {
@@ -320,6 +341,97 @@ class DeliveryService {
     return { order, statusLog: log };
   }
 
+  async processDriverCancellation(
+    externalDeliveryId: string,
+    reason: DriverCancellationReason,
+    driverNotes?: string,
+    latitude?: number,
+    longitude?: number
+  ): Promise<{ success: boolean; error?: string }> {
+    console.log(`[DeliveryService] Processing driver cancellation for: ${externalDeliveryId}, reason: ${reason}`);
+
+    const [deliveryOrder] = await db
+      .select()
+      .from(deliveryOrders)
+      .where(eq(deliveryOrders.externalDeliveryId, externalDeliveryId))
+      .limit(1);
+
+    if (!deliveryOrder) {
+      console.error(`[DeliveryService] Delivery order not found for external ID: ${externalDeliveryId}`);
+      return { success: false, error: "Delivery order not found" };
+    }
+
+    if (deliveryOrder.status === "delivered" || deliveryOrder.status === "completed") {
+      return { success: false, error: "Cannot cancel a delivered order" };
+    }
+
+    const reasonLabel = CANCELLATION_REASON_LABELS[reason]?.ar || reason;
+    const statusMessage = `إلغاء من السائق: ${reasonLabel}${driverNotes ? ` - ${driverNotes}` : ""}`;
+
+    await this.logStatus(
+      deliveryOrder.id,
+      "cancelled",
+      statusMessage,
+      true,
+      latitude,
+      longitude,
+      driverNotes,
+      undefined,
+      JSON.stringify({ reason, driverNotes, latitude, longitude })
+    );
+
+    await db
+      .update(deliveryOrders)
+      .set({
+        status: "cancelled",
+        returnReason: reasonLabel,
+        updatedAt: new Date(),
+        currentLat: latitude,
+        currentLng: longitude,
+        lastLocationUpdate: latitude || longitude ? new Date() : undefined,
+      })
+      .where(eq(deliveryOrders.id, deliveryOrder.id));
+
+    await db
+      .update(transactions)
+      .set({
+        status: "cancelled",
+        deliveryStatus: "cancelled",
+        issueType: `driver_cancellation:${reason}`,
+      })
+      .where(eq(transactions.id, deliveryOrder.transactionId));
+
+    await financialService.reverseSettlement(deliveryOrder.transactionId, `إلغاء من السائق: ${reasonLabel}`);
+
+    console.log(`[DeliveryService] Driver cancellation processed for order: ${deliveryOrder.id}`);
+    return { success: true };
+  }
+
+  async processCancellationWebhook(payload: {
+    deliveryId: string;
+    reason: DriverCancellationReason;
+    driverNotes?: string;
+    latitude?: number;
+    longitude?: number;
+    timestamp: string;
+  }): Promise<boolean> {
+    const result = await this.processDriverCancellation(
+      payload.deliveryId,
+      payload.reason,
+      payload.driverNotes,
+      payload.latitude,
+      payload.longitude
+    );
+    return result.success;
+  }
+
+  getCancellationReasons(): { value: DriverCancellationReason; label: { ar: string; en: string } }[] {
+    return Object.entries(CANCELLATION_REASON_LABELS).map(([value, label]) => ({
+      value: value as DriverCancellationReason,
+      label,
+    }));
+  }
+
   private async logStatus(
     deliveryOrderId: string,
     status: string,
@@ -346,3 +458,4 @@ class DeliveryService {
 }
 
 export const deliveryService = new DeliveryService();
+export type { DriverCancellationReason };

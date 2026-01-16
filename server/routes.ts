@@ -4141,6 +4141,52 @@ export async function registerRoutes(
     }
   });
 
+  // Webhook: Receive driver cancellation from delivery company
+  app.post("/api/webhooks/delivery/cancellation", async (req, res) => {
+    try {
+      const signature = req.headers["x-delivery-signature"] as string;
+      
+      if (!deliveryApi.validateWebhookSignature(JSON.stringify(req.body), signature)) {
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+      
+      const { deliveryId, reason, driverNotes, latitude, longitude, timestamp } = req.body;
+      
+      if (!deliveryId || !reason) {
+        return res.status(400).json({ error: "Missing required fields: deliveryId, reason" });
+      }
+      
+      const success = await deliveryService.processCancellationWebhook({
+        deliveryId,
+        reason,
+        driverNotes,
+        latitude,
+        longitude,
+        timestamp: timestamp || new Date().toISOString(),
+      });
+      
+      if (success) {
+        res.json({ received: true, processed: true });
+      } else {
+        res.status(400).json({ received: true, processed: false, error: "Failed to process cancellation" });
+      }
+    } catch (error) {
+      console.error("Error processing cancellation webhook:", error);
+      res.status(500).json({ error: "Failed to process cancellation webhook" });
+    }
+  });
+
+  // Get cancellation reasons (for delivery app)
+  app.get("/api/delivery/cancellation-reasons", async (req, res) => {
+    try {
+      const reasons = deliveryService.getCancellationReasons();
+      res.json(reasons);
+    } catch (error) {
+      console.error("Error fetching cancellation reasons:", error);
+      res.status(500).json({ error: "Failed to fetch cancellation reasons" });
+    }
+  });
+
   // Admin: Get all pending payouts
   app.get("/api/admin/payouts", async (req, res) => {
     try {

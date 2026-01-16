@@ -7,9 +7,9 @@ import { db } from "../db";
 import { walletTransactions, weeklyPayouts, monthlyCommissionTracker, deliveryOrders, transactions } from "@shared/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 
-const COMMISSION_RATE = 0.05; // 5%
+const COMMISSION_RATE = 0.08; // 8% commission after free sales
 const FREE_SALES_PER_MONTH = 15;
-const HOLD_DAYS = 5;
+const HOLD_DAYS = 2; // 48 hours hold period
 
 export interface SettlementResult {
   grossEarnings: number;
