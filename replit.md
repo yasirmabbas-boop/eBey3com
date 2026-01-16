@@ -98,6 +98,29 @@ Access the admin panel at `/admin` (admin accounts only):
 - **البلاغات** - Report management
 - **المستخدمين** - User management
 
+### Financial System
+The platform includes a comprehensive financial system (`server/services/financial-service.ts`):
+- **Commission Structure**: 15 free sales per month, then 8% on subsequent sales
+- **Hold Period**: 48 hours (2 days) from delivery confirmation before funds are available
+- **Wallet Transactions**: Tracks sale earnings, commission fees, shipping deductions
+- **Weekly Payouts**: Automated payout summaries for sellers
+- **Settlement**: Creates 3 transactions per sale: sale_earning (+), commission_fee (-), shipping_deduction (-)
+
+### Delivery System
+Delivery integration with driver cancellation support (`server/services/delivery-service.ts`):
+- **Cancellation Reasons**:
+  - `no_show` - العميل غير موجود
+  - `no_answer` - لا يرد على الهاتف
+  - `customer_refused` - العميل رفض الاستلام
+  - `customer_return` - العميل طلب الإرجاع
+  - `wrong_address` - العنوان خاطئ
+  - `inaccessible` - لا يمكن الوصول
+  - `damaged_package` - الطرد تالف
+- **Webhook Endpoints**:
+  - `POST /api/webhooks/delivery` - Status updates from delivery company
+  - `POST /api/webhooks/delivery/cancellation` - Driver cancellation events
+  - `GET /api/delivery/cancellation-reasons` - Get available cancellation reasons
+
 ## External Dependencies
 
 ### Database
