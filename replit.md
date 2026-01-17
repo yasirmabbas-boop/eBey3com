@@ -148,3 +148,45 @@ Delivery integration with driver cancellation support (`server/services/delivery
 - **@replit/vite-plugin-runtime-error-modal**: Development error overlay
 - **@replit/vite-plugin-cartographer**: Development tooling
 - **Custom meta-images plugin**: OpenGraph image handling for deployments
+
+### Despia Native App Integration
+The app is built for deployment as a native iOS/Android app via Despia. Key native features implemented:
+
+**Platform Detection** (`client/src/lib/despia.ts`):
+- `isDespia()` - Check if running in native app
+- `isIOS()` / `isAndroid()` - Platform-specific detection
+- `usePlatform()` hook for React components
+
+**Native Features Available**:
+- **Haptic Feedback**: `hapticLight()`, `hapticSuccess()`, `hapticError()` - for user interactions
+- **Biometric Auth**: `requestBiometricAuth()` - Face ID / Touch ID / Fingerprint
+- **Camera Roll**: `saveToPhotos(imageUrl)` - Save images to device
+- **Screenshots**: `takeScreenshot()` - Programmatic screenshot
+- **Native Share**: `nativeShare({ message, url, title })` - iOS/Android share sheet
+- **Local Push**: `scheduleLocalPush(seconds, message, title, url)` - Schedule notifications
+- **OneSignal**: `getOneSignalPlayerId()` - Push notification registration
+- **Screen Brightness**: `setScreenBrightness('auto' | 'on' | 'off')`
+- **Status Bar**: `setStatusBarColor(r, g, b)` - Customize status bar color
+- **Spinner**: `showSpinner()` / `hideSpinner()` - Native loading indicator
+- **Device Info**: `getDeviceId()`, `getAppVersion()`
+- **Settings**: `openAppSettings()` - Open device settings
+
+**Safe Areas** (`client/src/index.css`):
+- CSS classes: `.safe-area-top`, `.safe-area-bottom`, `.safe-area-padding`
+- CSS variables: `--safe-area-top`, `--safe-area-bottom`, etc.
+
+**Usage Pattern**:
+```typescript
+import { isDespia, hapticSuccess, saveToPhotos } from '@/lib/despia';
+import { usePlatform } from '@/hooks/use-platform';
+
+// In component
+const { isNative, platform } = usePlatform();
+
+const handleAction = () => {
+  hapticSuccess(); // Triggers haptic on native, no-op on web
+  if (isDespia()) {
+    saveToPhotos(imageUrl); // Only available in native
+  }
+};
+```
