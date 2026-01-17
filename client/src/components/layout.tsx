@@ -17,6 +17,7 @@ import { SmartSearch } from "@/components/smart-search";
 import { BackButton } from "@/components/back-button";
 import { TutorialTrigger } from "@/components/onboarding-tutorial";
 import { useLanguage } from "@/lib/i18n";
+import { nativeShare, isDespia } from "@/lib/despia";
 
 // Feature flag for exchange option - set to true to enable
 const ENABLE_EXCHANGE_FEATURE = false;
@@ -35,13 +36,16 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
   const handleShareSite = async () => {
     const shareData = {
       title: "E-بيع - سوق العراق الإلكتروني",
-      text: "تسوق واشتري أفضل المنتجات في العراق",
+      message: "تسوق واشتري أفضل المنتجات في العراق",
       url: window.location.origin,
     };
     
-    if (navigator.share) {
+    // Use native sharing when in Despia
+    if (isDespia()) {
+      await nativeShare(shareData);
+    } else if (navigator.share) {
       try {
-        await navigator.share(shareData);
+        await navigator.share({ title: shareData.title, text: shareData.message, url: shareData.url });
       } catch (err) {
         // User cancelled or error
       }
@@ -53,7 +57,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
   };
 
   return (
-    <div className="despia-app bg-background font-sans md:min-h-screen md:block overflow-x-hidden max-w-full" dir="rtl">
+    <div className="despia-app bg-background font-sans md:min-h-screen md:block overflow-x-hidden max-w-full safe-area-top" dir="rtl">
             
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />

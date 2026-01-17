@@ -1,8 +1,11 @@
+import { isDespia, nativeShare, hapticLight } from './despia';
+
 export function isMobile(): boolean {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
 export function shareToFacebook(url: string): void {
+  hapticLight();
   const encodedUrl = encodeURIComponent(url);
   
   if (isMobile()) {
@@ -24,8 +27,15 @@ export function shareToFacebook(url: string): void {
 }
 
 export function shareToWhatsApp(url: string, text: string): void {
+  hapticLight();
   const encodedText = encodeURIComponent(text);
   const encodedUrl = encodeURIComponent(url);
+  
+  // Use native share in Despia for better UX
+  if (isDespia()) {
+    nativeShare({ message: text, url });
+    return;
+  }
   
   if (isMobile()) {
     window.location.href = `whatsapp://send?text=${encodedText}%20${encodedUrl}`;
@@ -35,6 +45,7 @@ export function shareToWhatsApp(url: string, text: string): void {
 }
 
 export function shareToTelegram(url: string, text: string): void {
+  hapticLight();
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(text);
   
@@ -49,6 +60,7 @@ export function shareToTelegram(url: string, text: string): void {
 }
 
 export function shareToTwitter(url: string, text: string): void {
+  hapticLight();
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(text);
   window.open(`https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`, "_blank", "width=600,height=400");

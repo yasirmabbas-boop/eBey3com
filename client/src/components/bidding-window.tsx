@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useBidWebSocket } from "@/hooks/use-bid-websocket";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AddressSelectionModal } from "./address-selection-modal";
+import { hapticSuccess, hapticError, hapticLight } from "@/lib/despia";
 
 type BidUpdateEvent = {
   currentBid: number;
@@ -137,6 +138,7 @@ export function BiddingWindow({
   }, [suggestedBid, bidAmount]);
 
   const handleBidSuccess = useCallback((amount: number) => {
+    hapticSuccess();
     toast({
       title: "تم تقديم سومتك بنجاح! ✅",
       description: `سومتك: ${formatCurrency(amount)}`,
@@ -147,6 +149,7 @@ export function BiddingWindow({
   }, [toast, onBidSuccess]);
 
   const handleBidError = useCallback((error: Error) => {
+    hapticError();
     toast({
       title: "فشل في تقديم المزايدة",
       description: error.message,
@@ -157,6 +160,7 @@ export function BiddingWindow({
   const bidMutation = useBidMutation(listingId, userId, handleBidSuccess, handleBidError);
 
   const handleBidUpdate = useCallback((update: BidUpdateEvent) => {
+    hapticLight();
     setCurrentBid(update.currentBid);
     setTotalBids(update.totalBids);
     setLastBidder(update.bidderName);

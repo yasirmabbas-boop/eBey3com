@@ -25,6 +25,7 @@ import { ContactSeller } from "@/components/contact-seller";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { InstagramShareCard } from "@/components/instagram-share-card";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram, shareToTwitter } from "@/lib/share-utils";
+import { hapticSuccess, hapticError, hapticLight, saveToPhotos, isDespia } from "@/lib/despia";
 import type { Listing } from "@shared/schema";
 
 import {
@@ -520,18 +521,21 @@ export default function ProductPage() {
   };
 
   const handleBuyNowDirect = async () => {
+    hapticLight();
     if (isAuthenticated) {
       // Logged in user - add to cart and redirect to checkout
       if (!listing) return;
       
       try {
         await addToCart({ listingId: listing.id, quantity: 1 });
+        hapticSuccess();
         toast({
           title: language === "ar" ? "تم إضافة المنتج للسلة" : "بەرهەم زیادکرا بۆ سەبەتە",
           description: language === "ar" ? "سيتم توجيهك لإتمام الشراء..." : "دەگوازرێیتەوە بۆ تەواوکردنی کڕین...",
         });
         navigate("/checkout");
       } catch (error: any) {
+        hapticError();
         toast({
           title: t("error"),
           description: error.message || (language === "ar" ? "فشل في إضافة المنتج للسلة" : "زیادکردنی بەرهەم بۆ سەبەتە شکستی هێنا"),
@@ -541,6 +545,19 @@ export default function ProductPage() {
     } else {
       // Guest user - open checkout dialog
       setGuestCheckoutOpen(true);
+    }
+  };
+
+  const handleSaveToPhotos = async () => {
+    if (product?.images?.[0]) {
+      hapticLight();
+      const saved = await saveToPhotos(product.images[0]);
+      if (saved) {
+        toast({
+          title: language === "ar" ? "تم حفظ الصورة" : "وێنە پاشەکەوت کرا",
+          description: language === "ar" ? "تم حفظ الصورة في ألبوم الكاميرا" : "وێنە پاشەکەوت کرا لە ئەلبومی کامێرا",
+        });
+      }
     }
   };
 
@@ -698,6 +715,19 @@ export default function ProductPage() {
                     </div>
                   ))}
                 </div>
+              )}
+
+              {/* Save to Photos button - shows only in Despia native app */}
+              {isDespia() && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2"
+                  onClick={handleSaveToPhotos}
+                  data-testid="button-save-to-photos"
+                >
+                  {language === "ar" ? "حفظ الصورة في الهاتف" : "وێنە پاشەکەوت بکە"}
+                </Button>
               )}
             </div>
           );
