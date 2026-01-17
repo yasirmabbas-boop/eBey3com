@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { ListSkeleton } from "@/components/optimized-image";
 import { EmptyState } from "@/components/empty-state";
-import type { Listing, Watchlist } from "@shared/schema";
+import type { Listing } from "@shared/schema";
 
 type SortOption = "ending_soon" | "most_bids" | "price_low" | "price_high";
 
@@ -242,11 +242,11 @@ export default function MyAuctions() {
   const [pendingBid, setPendingBid] = useState<{ listingId: string; amount: number } | null>(null);
   const [submittingListingId, setSubmittingListingId] = useState<string | null>(null);
 
-  const { data: watchlistItems = [], isLoading: watchlistLoading } = useQuery<Watchlist[]>({
-    queryKey: ["/api/watchlist", user?.id],
+  const { data: watchlistListings = [], isLoading: watchlistLoading } = useQuery<AuctionListing[]>({
+    queryKey: ["/api/watchlist/listings"],
     queryFn: async () => {
       if (!user?.id) return [];
-      const res = await fetch(`/api/users/${user.id}/watchlist`, {
+      const res = await fetch("/api/watchlist/listings", {
         credentials: "include",
         headers: getAuthHeaders(),
       });
@@ -254,38 +254,24 @@ export default function MyAuctions() {
       return res.json();
     },
     enabled: !!user?.id,
-  });
-
-  const { data: listingsData, isLoading: listingsLoading } = useQuery({
-    queryKey: ["/api/listings"],
-    queryFn: async () => {
-      const res = await fetch("/api/listings");
-      if (!res.ok) return [];
-      return res.json();
-    },
     refetchInterval: 30000,
   });
 
-  const allListings: AuctionListing[] = Array.isArray(listingsData) ? listingsData : (listingsData as any)?.listings || [];
-
   const watchedAuctions = useMemo(() => {
-    if (!watchlistItems.length || !allListings.length) return [];
+    if (!watchlistListings.length) return [];
 
     const now = new Date();
-    const watchedIds = new Set(watchlistItems.map(w => w.listingId));
-    
-    return allListings.filter(listing => {
-      if (!watchedIds.has(listing.id)) return false;
+    return watchlistListings.filter(listing => {
       if (listing.saleType !== "auction") return false;
-      
+
       const endTime = listing.auctionEndTime || (listing as any).auctionEndDate;
       if (!endTime) return false;
       if (new Date(endTime) <= now) return false;
       if (!listing.isActive) return false;
-      
+
       return true;
     });
-  }, [watchlistItems, allListings]);
+  }, [watchlistListings]);
 
   const sortedAuctions = useMemo(() => {
     return [...watchedAuctions].sort((a, b) => {
@@ -326,7 +312,7 @@ export default function MyAuctions() {
       return res.json();
     },
     onSuccess: (_, { amount }) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/watchlist/listings"] });
       toast({
         title: "تم تقديم سومتك بنجاح! ✅",
         description: `سومتك: ${formatCurrency(amount)}`,
@@ -376,7 +362,7 @@ export default function MyAuctions() {
     setSubmittingListingId(null);
   }, []);
 
-  const isLoading = authLoading || watchlistLoading || listingsLoading;
+  const isLoading = authLoading || watchlistLoading;
 
   if (authLoading) {
     return (
@@ -427,7 +413,7 @@ export default function MyAuctions() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/listings"] })}
+            onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/watchlist/listings"] })}
             className="gap-1"
             data-testid="button-refresh"
           >

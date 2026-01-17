@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, Suspense, lazy } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -15,38 +15,38 @@ import { LanguageProvider } from "@/lib/i18n";
 import { BanBanner } from "@/components/ban-banner";
 import { ErrorBoundary } from "@/components/error-boundary";
 
-import NotFound from "@/pages/not-found";
-import Home from "@/pages/home";
-import ProductPage from "@/pages/product";
-import Register from "@/pages/register";
-import SignIn from "@/pages/signin";
-import SearchPage from "@/pages/search";
-import Privacy from "@/pages/privacy";
-import Terms from "@/pages/terms";
-import ContactUs from "@/pages/contact";
-import SecurityGuide from "@/pages/security-guide";
-import Security from "@/pages/security";
-import Settings from "@/pages/settings";
-import MyPurchases from "@/pages/my-purchases";
-import MySales from "@/pages/my-sales";
-import SellerDashboard from "@/pages/seller-dashboard";
-import BuyerDashboard from "@/pages/buyer-dashboard";
-import SellPage from "@/pages/sell";
-import SellWizardPage from "@/pages/sell-wizard";
-import DealsGuide from "@/pages/deals-guide";
-import CartPage from "@/pages/cart";
-import CheckoutPage from "@/pages/checkout";
-import MessagesPage from "@/pages/messages";
-import MyAccount from "@/pages/my-account";
-import MyBids from "@/pages/my-bids";
-import AdminPage from "@/pages/admin";
-import ForgotPassword from "@/pages/forgot-password";
-import SecuritySettings from "@/pages/security-settings";
-import FavoritesPage from "@/pages/favorites";
-import SwipePage from "@/pages/swipe";
-import AuctionsDashboard from "@/pages/auctions-dashboard";
-import MyAuctions from "@/pages/my-auctions";
-import SellerProfile from "@/pages/seller-profile";
+const NotFound = lazy(() => import("@/pages/not-found"));
+const Home = lazy(() => import("@/pages/home"));
+const ProductPage = lazy(() => import("@/pages/product"));
+const Register = lazy(() => import("@/pages/register"));
+const SignIn = lazy(() => import("@/pages/signin"));
+const SearchPage = lazy(() => import("@/pages/search"));
+const Privacy = lazy(() => import("@/pages/privacy"));
+const Terms = lazy(() => import("@/pages/terms"));
+const ContactUs = lazy(() => import("@/pages/contact"));
+const SecurityGuide = lazy(() => import("@/pages/security-guide"));
+const Security = lazy(() => import("@/pages/security"));
+const Settings = lazy(() => import("@/pages/settings"));
+const MyPurchases = lazy(() => import("@/pages/my-purchases"));
+const MySales = lazy(() => import("@/pages/my-sales"));
+const SellerDashboard = lazy(() => import("@/pages/seller-dashboard"));
+const BuyerDashboard = lazy(() => import("@/pages/buyer-dashboard"));
+const SellPage = lazy(() => import("@/pages/sell"));
+const SellWizardPage = lazy(() => import("@/pages/sell-wizard"));
+const DealsGuide = lazy(() => import("@/pages/deals-guide"));
+const CartPage = lazy(() => import("@/pages/cart"));
+const CheckoutPage = lazy(() => import("@/pages/checkout"));
+const MessagesPage = lazy(() => import("@/pages/messages"));
+const MyAccount = lazy(() => import("@/pages/my-account"));
+const MyBids = lazy(() => import("@/pages/my-bids"));
+const AdminPage = lazy(() => import("@/pages/admin"));
+const ForgotPassword = lazy(() => import("@/pages/forgot-password"));
+const SecuritySettings = lazy(() => import("@/pages/security-settings"));
+const FavoritesPage = lazy(() => import("@/pages/favorites"));
+const SwipePage = lazy(() => import("@/pages/swipe"));
+const AuctionsDashboard = lazy(() => import("@/pages/auctions-dashboard"));
+const MyAuctions = lazy(() => import("@/pages/my-auctions"));
+const SellerProfile = lazy(() => import("@/pages/seller-profile"));
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -112,7 +112,15 @@ function App() {
               <SurveyManager />
               <OnboardingTutorial />
               <SwipeBackNavigation>
-                <Router />
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center py-12 text-muted-foreground">
+                      Loading...
+                    </div>
+                  }
+                >
+                  <Router />
+                </Suspense>
               </SwipeBackNavigation>
               <MobileNavBar />
               <InstallPWAPrompt />

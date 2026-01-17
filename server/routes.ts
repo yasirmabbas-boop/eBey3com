@@ -911,6 +911,20 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/watchlist/listings", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+      const listings = await storage.getWatchlistListings(userId);
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching watchlist listings:", error);
+      res.status(500).json({ error: "Failed to fetch watchlist listings" });
+    }
+  });
+
   app.post("/api/watchlist", async (req, res) => {
     try {
       const validatedData = insertWatchlistSchema.parse(req.body);

@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/empty-state";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { AuctionCountdown } from "@/components/auction-countdown";
-import type { Listing, Watchlist } from "@shared/schema";
+import type { Listing } from "@shared/schema";
 
 function getAuthHeaders(): HeadersInit {
   const headers: HeadersInit = { "Content-Type": "application/json" };
@@ -27,11 +27,11 @@ export default function FavoritesPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: watchlistItems = [], isLoading } = useQuery<Watchlist[]>({
-    queryKey: ["/api/watchlist", user?.id],
+  const { data: favoriteListings = [], isLoading } = useQuery<Listing[]>({
+    queryKey: ["/api/watchlist/listings"],
     queryFn: async () => {
       if (!user?.id) return [];
-      const res = await fetch(`/api/users/${user.id}/watchlist`, {
+      const res = await fetch("/api/watchlist/listings", {
         credentials: "include",
         headers: getAuthHeaders(),
       });
@@ -40,21 +40,6 @@ export default function FavoritesPage() {
     },
     enabled: !!user?.id,
   });
-
-  const { data: listingsData } = useQuery({
-    queryKey: ["/api/listings"],
-    queryFn: async () => {
-      const res = await fetch("/api/listings");
-      if (!res.ok) return [];
-      return res.json();
-    },
-  });
-
-  const listings: Listing[] = Array.isArray(listingsData) ? listingsData : (listingsData as any)?.listings || [];
-
-  const favoriteListings = listings.filter(listing => 
-    watchlistItems.some(w => w.listingId === listing.id)
-  );
 
   const removeMutation = useMutation({
     mutationFn: async (listingId: string) => {
@@ -67,7 +52,7 @@ export default function FavoritesPage() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/watchlist/listings"] });
       toast({ title: "تمت إزالة المنتج من المفضلة" });
     },
   });

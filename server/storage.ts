@@ -21,7 +21,7 @@ import {
   users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, sql, lt } from "drizzle-orm";
+import { eq, desc, and, or, sql, lt, inArray } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -56,6 +56,7 @@ export interface IStorage {
   getUserBids(userId: string): Promise<Bid[]>;
   
   getWatchlist(userId: string): Promise<Watchlist[]>;
+  getWatchlistListings(userId: string): Promise<Listing[]>;
   addToWatchlist(item: InsertWatchlist): Promise<Watchlist>;
   removeFromWatchlist(userId: string, listingId: string): Promise<boolean>;
   isInWatchlist(userId: string, listingId: string): Promise<boolean>;
@@ -581,6 +582,24 @@ export class DatabaseStorage implements IStorage {
 
   async getWatchlist(userId: string): Promise<Watchlist[]> {
     return db.select().from(watchlist).where(eq(watchlist.userId, userId)).orderBy(desc(watchlist.createdAt));
+  }
+
+  async getWatchlistListings(userId: string): Promise<Listing[]> {
+    const ids = await db.select({ listingId: watchlist.listingId })
+      .from(watchlist)
+      .where(eq(watchlist.userId, userId));
+
+    if (ids.length === 0) {
+      return [];
+    }
+
+    return db.select().from(listings)
+      .where(and(
+        inArray(listings.id, ids.map((item) => item.listingId)),
+        eq(listings.isActive, true),
+        eq(listings.isDeleted, false),
+      ))
+      .orderBy(desc(listings.createdAt));
   }
 
   async addToWatchlist(item: InsertWatchlist): Promise<Watchlist> {
