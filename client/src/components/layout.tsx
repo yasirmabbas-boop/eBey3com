@@ -64,10 +64,10 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
 
       {/* Combined Top Bar */}
       {!hideHeader && (
-      <div className={`despia-topbar ${isAuthenticated && user?.sellerApproved ? 'bg-gradient-to-l from-green-600 via-green-500 to-green-600' : 'bg-[#1E3A8A]'} text-white py-2.5 text-sm px-4 font-medium`}>
+      <div className={`despia-topbar ${isAuthenticated && user?.sellerApproved ? 'bg-emerald-600/95' : 'bg-primary'} text-white py-2 px-4 text-[13px] font-semibold shadow-[var(--shadow-1)]`}>
         <div className="container mx-auto flex justify-between items-center">
           {/* Navigation Links - Desktop only */}
-          <div className="hidden md:flex items-center gap-5">
+          <div className="hidden md:flex items-center gap-6">
             <Link href="/" className="hover:opacity-80 transition-colors font-medium">{t("home")}</Link>
             <Link href="/search?saleType=auction" className="hover:opacity-80 transition-colors font-medium">{t("auctions")}</Link>
             <Link href="/search?saleType=fixed" className="hover:opacity-80 transition-colors font-medium">{t("buyNow")}</Link>
@@ -76,10 +76,10 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
           </div>
           
           {/* User Actions */}
-          <div className="flex items-center gap-3 mr-auto">
+          <div className="flex items-center gap-3.5 mr-auto">
             {isAuthenticated ? (
               <>
-                <span className="hidden sm:flex items-center gap-1.5 font-bold text-base">
+                <span className="hidden sm:flex items-center gap-2 font-bold text-base">
                   {user?.sellerApproved ? <Store className="h-4 w-4" /> : <User className="h-4 w-4" />}
                   {user?.displayName || user?.phone}
                 </span>
@@ -91,7 +91,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                 )}
                 <button 
                   onClick={() => logout()}
-                  className="hover:opacity-80 font-medium flex items-center gap-1.5 text-base"
+                  className="hover:opacity-80 font-medium flex items-center gap-2 text-base"
                   data-testid="button-logout"
                 >
                   <LogOut className="h-4 w-4" />
@@ -100,7 +100,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                 {user?.sellerApproved && (
                   <Link 
                     href="/sell" 
-                    className="bg-white text-[#1E3A8A] hover:bg-gray-100 px-4 py-1.5 rounded-full font-bold flex items-center gap-1.5 transition-colors text-sm shadow-md"
+                    className="bg-white/95 text-primary hover:bg-white px-4 py-1.5 rounded-full font-bold flex items-center gap-2 transition-colors text-sm shadow-[var(--shadow-1)]"
                     data-testid="button-sell-item"
                   >
                     <Plus className="h-4 w-4" />
@@ -118,7 +118,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
             )}
             <button
               onClick={() => setLanguage(language === "ar" ? "ku" : "ar")}
-              className="hover:opacity-80 transition-colors flex items-center gap-1.5 bg-white text-[#1E3A8A] px-3 py-1 rounded-full text-sm font-bold shadow-md"
+              className="hover:opacity-80 transition-colors flex items-center gap-2 bg-white/95 text-primary px-3 py-1 rounded-full text-sm font-bold shadow-[var(--shadow-1)]"
               data-testid="button-language-toggle"
               title={language === "ar" ? "کوردی" : "عربي"}
             >
@@ -127,14 +127,14 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
             </button>
             <button
               onClick={handleShareSite}
-              className="hover:opacity-80 transition-colors flex items-center gap-1"
+              className="hover:opacity-80 transition-colors flex items-center gap-2"
               data-testid="button-share-site"
               title={t("shareSite")}
             >
               <Share2 className="h-4 w-4" />
             </button>
             <NotificationsButton />
-            <Link href="/cart" className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-colors" data-testid="link-cart">
+            <Link href="/cart" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-colors" data-testid="link-cart">
               <ShoppingCart className="h-4 w-4" />
               {totalItems > 0 && (
                 <span className="bg-red-500 text-white text-[10px] rounded-full px-1.5 h-4 flex items-center justify-center font-bold">{totalItems > 99 ? '99+' : totalItems}</span>
@@ -147,8 +147,8 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
 
       {/* Main Header */}
       {!hideHeader && (
-      <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50 shadow-sm">
-        <div className="container mx-auto px-4 py-3">
+      <header className="sticky top-0 z-50 glass-surface border-b border-border/60 shadow-[var(--shadow-1)]">
+        <div className="container mx-auto px-4 py-3.5">
           {/* Top Row: Menu/Back on right, Logo, Search on left */}
           <div className="flex items-center gap-3 md:gap-4">
             {/* Back Button - Mobile, Right side */}

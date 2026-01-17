@@ -277,14 +277,14 @@ export function NotificationsButton({ variant = "default" }: NotificationsButton
         {triggerButton}
       </PopoverTrigger>
       <PopoverContent 
-        className="w-96 p-0" 
+        className="w-96 p-0 soft-border bg-card/95 backdrop-blur" 
         align="end" 
         dir="rtl"
         data-testid="notifications-panel"
       >
-        <div className="flex items-center justify-between p-4 border-b bg-gradient-to-l from-blue-50 to-white">
+        <div className="flex items-center justify-between p-4 border-b border-border/60 bg-muted/50">
           <h3 className="font-bold text-lg flex items-center gap-2">
-            <Bell className="h-5 w-5 text-blue-600" />
+            <Bell className="h-5 w-5 text-primary" />
             الإشعارات
           </h3>
           {unreadCount > 0 && (
@@ -292,7 +292,7 @@ export function NotificationsButton({ variant = "default" }: NotificationsButton
               variant="ghost"
               size="sm"
               onClick={markAllAsRead}
-              className="text-blue-600 hover:text-blue-700 text-xs"
+              className="text-primary hover:text-foreground text-xs"
               data-testid="button-mark-all-read"
             >
               <Check className="h-4 w-4 ml-1" />
@@ -314,9 +314,9 @@ export function NotificationsButton({ variant = "default" }: NotificationsButton
                 <div
                   key={notification.id}
                   className={cn(
-                    "p-4 hover:bg-gray-50 transition-colors cursor-pointer relative group",
-                    !notification.read && "bg-blue-50/50",
-                    notification.type === "outbid" && !notification.read && "bg-red-50 border-r-4 border-red-500"
+                    "p-4 hover:bg-muted/40 transition-colors cursor-pointer relative group",
+                    !notification.read && "bg-primary/5",
+                    notification.type === "outbid" && !notification.read && "bg-rose-50 border-r-4 border-rose-500"
                   )}
                   onClick={() => {
                     markAsRead(notification);
@@ -369,28 +369,28 @@ export function NotificationsButton({ variant = "default" }: NotificationsButton
                   data-testid={`notification-${notification.id}`}
                 >
                   <div className="flex gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border">
+                    <div className="flex-shrink-0 w-10 h-10 bg-muted/40 rounded-full flex items-center justify-center shadow-[var(--shadow-1)] border border-border/60">
                       {getNotificationIcon(notification.type)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <p className={cn(
                           "font-semibold text-sm",
-                          !notification.read && "text-blue-900"
+                          !notification.read && "text-foreground"
                         )}>
                           {notification.title}
                         </p>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                         {notification.message}
                       </p>
-                      <p className="text-xs text-gray-400 mt-2">
+                      <p className="text-xs text-muted-foreground/70 mt-2">
                         {formatTimeAgo(notification.timestamp)}
                       </p>
                     </div>
                   </div>
                   {!notification.read && (
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-600 rounded-full" />
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 bg-primary rounded-full" />
                   )}
                 </div>
               ))}
@@ -398,7 +398,7 @@ export function NotificationsButton({ variant = "default" }: NotificationsButton
           )}
         </ScrollArea>
 
-        <div className="p-3 border-t bg-gray-50">
+        <div className="p-3 border-t border-border/60 bg-muted/40">
           <Button
             variant="outline"
             className="w-full text-sm"

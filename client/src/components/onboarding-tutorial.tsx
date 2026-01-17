@@ -142,12 +142,12 @@ export function OnboardingTutorial() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto bg-white rounded-2xl shadow-2xl z-[101] overflow-hidden"
+            className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto bg-card rounded-2xl shadow-[var(--shadow-3)] z-[101] overflow-hidden soft-border"
             dir="rtl"
           >
-            <div className="h-1 bg-gray-200">
+            <div className="h-1 bg-muted/60">
               <motion.div
-                className="h-full bg-blue-500"
+                className="h-full bg-primary"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.3 }}
@@ -156,10 +156,10 @@ export function OnboardingTutorial() {
 
             <button
               onClick={handleSkip}
-              className="absolute top-3 left-3 p-2 rounded-full hover:bg-gray-100 transition-colors"
+              className="absolute top-3 left-3 p-2 rounded-full hover:bg-muted/60 transition-colors"
               data-testid="button-skip-tutorial"
             >
-              <X className="h-5 w-5 text-gray-500" />
+              <X className="h-5 w-5 text-muted-foreground" />
             </button>
 
             <div className="p-6 pt-8">
@@ -169,7 +169,7 @@ export function OnboardingTutorial() {
                   initial={{ scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: "spring", damping: 15 }}
-                  className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center"
+                  className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center"
                 >
                   {step.icon}
                 </motion.div>
@@ -181,10 +181,10 @@ export function OnboardingTutorial() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
+                <h3 className="text-xl font-bold text-center text-foreground mb-2">
                   {step.title}
                 </h3>
-                <p className="text-gray-600 text-center leading-relaxed mb-6">
+                <p className="text-muted-foreground text-center leading-relaxed mb-6">
                   {step.description}
                 </p>
               </motion.div>
@@ -196,10 +196,10 @@ export function OnboardingTutorial() {
                     onClick={() => setCurrentStep(index)}
                     className={`w-2 h-2 rounded-full transition-all ${
                       index === currentStep
-                        ? "bg-blue-500 w-4"
+                        ? "bg-primary w-4"
                         : index < currentStep
-                        ? "bg-blue-300"
-                        : "bg-gray-300"
+                        ? "bg-primary/40"
+                        : "bg-muted-foreground/30"
                     }`}
                     data-testid={`button-step-${index}`}
                   />
@@ -237,7 +237,7 @@ export function OnboardingTutorial() {
               {currentStep === 0 && (
                 <button
                   onClick={handleSkip}
-                  className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   data-testid="button-skip-intro"
                 >
                   تخطي الدليل
@@ -260,7 +260,7 @@ export function TutorialTrigger() {
   return (
     <button
       onClick={handleRestart}
-      className="text-xs text-blue-500 hover:text-blue-700 underline"
+      className="text-xs text-primary hover:text-foreground underline"
       data-testid="button-restart-tutorial"
     >
       عرض الدليل الإرشادي

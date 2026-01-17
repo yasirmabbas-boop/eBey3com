@@ -631,7 +631,7 @@ export default function ProductPage() {
                   {images.map((img, index) => (
                     <CarouselItem key={index} className="pr-0">
                       <div 
-                        className="relative aspect-[4/3] md:aspect-[16/9] bg-gray-100 rounded-xl overflow-hidden group"
+                        className="relative aspect-[4/3] md:aspect-[16/9] bg-muted/40 rounded-xl overflow-hidden group soft-border elev-1"
                         onClick={() => setFullscreenOpen(true)}
                       >
                         <img 
@@ -685,7 +685,7 @@ export default function ProductPage() {
                       className={`w-2 h-2 rounded-full transition-all ${
                         selectedImageIndex === i 
                           ? 'bg-primary w-4' 
-                          : 'bg-gray-300'
+                          : 'bg-muted-foreground/30'
                       }`}
                       data-testid={`dot-${i}`}
                     />
@@ -700,10 +700,10 @@ export default function ProductPage() {
                     <div 
                       key={i} 
                       onClick={() => scrollToImage(i)}
-                      className={`w-16 h-16 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
+                      className={`w-16 h-16 flex-shrink-0 bg-muted/40 rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
                         selectedImageIndex === i 
                           ? 'border-primary ring-2 ring-primary/30' 
-                          : 'border-gray-200 hover:border-gray-400'
+                          : 'border-border/70 hover:border-primary/40'
                       }`}
                       data-testid={`thumbnail-${i}`}
                     >
@@ -734,7 +734,7 @@ export default function ProductPage() {
         })()}
 
         {/* Product Title */}
-        <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight mb-4" data-testid="text-product-title">
+        <h1 className="text-xl md:text-2xl font-bold text-foreground leading-tight mb-4" data-testid="text-product-title">
           {product.title}
         </h1>
 

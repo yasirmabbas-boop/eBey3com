@@ -58,7 +58,7 @@ img, video, iframe {
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   
-  /* Brand Colors: Deep Teal & Amber */
+  /* Premium brand tokens */
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   
@@ -105,106 +105,114 @@ img, video, iframe {
   --font-sans: 'Almarai', sans-serif;
   
   --radius: 0.5rem;
+
+  /* Elevation scale */
+  --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-2: 0 4px 10px rgba(15, 23, 42, 0.08);
+  --shadow-3: 0 12px 24px rgba(15, 23, 42, 0.12);
+
+  /* Focus ring */
+  --focus-ring: 0 0 0 2px hsl(var(--ring) / 0.35), 0 0 0 4px hsl(var(--background));
 }
 
-/* Light Mode (Default) - Seiko Panda/Pepsi Inspired */
+/* Light Mode (Default) - Premium */
 :root {
-  --background: 0 0% 100%;       /* Pure White - Panda Dial */
-  --foreground: 0 0% 8%;         /* Deep Black - Panda Subdials */
+  --background: 0 0% 100%;
+  --foreground: 222 20% 12%;
   
   --card: 0 0% 100%;
-  --card-foreground: 0 0% 8%;
+  --card-foreground: 222 20% 12%;
   
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 8%;
+  --popover-foreground: 222 20% 12%;
   
-  /* Primary: Pepsi Blue - Deep blue from bezel */
-  --primary: 224 76% 33%;        /* #1E3A8A */
+  /* Primary: Deep Navy */
+  --primary: 222 47% 27%;
   --primary-foreground: 0 0% 100%;
   
-  /* Secondary: Silver/Metallic - Watch case */
-  --secondary: 215 20% 95%;
-  --secondary-foreground: 0 0% 8%;
+  /* Secondary: Cool Pearl */
+  --secondary: 220 18% 96%;
+  --secondary-foreground: 222 20% 18%;
   
-  /* Muted: Soft silver gray */
-  --muted: 210 15% 93%;
-  --muted-foreground: 215 16% 47%;
+  /* Muted */
+  --muted: 220 14% 95%;
+  --muted-foreground: 220 10% 42%;
   
-  /* Accent: Pepsi Red - Red from bezel */
-  --accent: 0 84% 50%;           /* #DC2626 */
+  /* Accent: Warm Gold */
+  --accent: 38 92% 50%;
   --accent-foreground: 0 0% 100%;
   
-  --destructive: 0 84% 50%;
+  --destructive: 0 72% 50%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 215 20% 88%;
-  --input: 215 20% 88%;
-  --ring: 224 76% 33%;
+  --border: 220 16% 90%;
+  --input: 220 16% 90%;
+  --ring: 222 47% 27%;
   
   --radius: 0.5rem;
   
-  --chart-1: 224 76% 33%;
-  --chart-2: 0 84% 50%;
-  --chart-3: 0 0% 8%;
-  --chart-4: 215 16% 47%;
+  --chart-1: 222 47% 27%;
+  --chart-2: 38 92% 50%;
+  --chart-3: 222 20% 12%;
+  --chart-4: 220 10% 42%;
   --chart-5: 38 92% 50%;
   
   --sidebar: 0 0% 98%;
-  --sidebar-foreground: 0 0% 8%;
-  --sidebar-primary: 224 76% 33%;
+  --sidebar-foreground: 222 20% 12%;
+  --sidebar-primary: 222 47% 27%;
   --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 215 20% 95%;
-  --sidebar-accent-foreground: 0 0% 8%;
-  --sidebar-border: 215 20% 88%;
-  --sidebar-ring: 224 76% 33%;
+  --sidebar-accent: 220 18% 96%;
+  --sidebar-accent-foreground: 222 20% 12%;
+  --sidebar-border: 220 16% 90%;
+  --sidebar-ring: 222 47% 27%;
 }
 
-/* Dark Mode - Seiko Panda/Pepsi Inspired */
+/* Dark Mode - Premium */
 .dark {
-  --background: 0 0% 8%;         /* Deep Black - Panda */
-  --foreground: 0 0% 98%;        /* Off-white */
+  --background: 222 20% 10%;
+  --foreground: 0 0% 98%;
   
-  --card: 0 0% 12%;
+  --card: 222 20% 12%;
   --card-foreground: 0 0% 98%;
   
-  --popover: 0 0% 12%;
+  --popover: 222 20% 12%;
   --popover-foreground: 0 0% 98%;
   
-  /* Primary: Lighter Pepsi Blue for dark mode */
-  --primary: 224 76% 50%;
+  /* Primary: Brighter Navy */
+  --primary: 222 70% 58%;
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 0 0% 18%;
+  --secondary: 222 16% 18%;
   --secondary-foreground: 0 0% 98%;
   
-  --muted: 0 0% 18%;
-  --muted-foreground: 0 0% 65%;
+  --muted: 222 16% 18%;
+  --muted-foreground: 220 10% 65%;
   
-  /* Accent: Pepsi Red */
-  --accent: 0 84% 55%;
+  /* Accent: Warm Gold */
+  --accent: 38 92% 55%;
   --accent-foreground: 0 0% 100%;
   
-  --destructive: 0 62% 40%;
+  --destructive: 0 62% 46%;
   --destructive-foreground: 0 0% 98%;
   
-  --border: 0 0% 20%;
-  --input: 0 0% 20%;
-  --ring: 224 76% 50%;
+  --border: 222 16% 22%;
+  --input: 222 16% 22%;
+  --ring: 222 70% 58%;
   
-  --chart-1: 224 76% 50%;
-  --chart-2: 0 84% 55%;
+  --chart-1: 222 70% 58%;
+  --chart-2: 38 92% 55%;
   --chart-3: 0 0% 90%;
   --chart-4: 0 0% 50%;
   --chart-5: 38 92% 50%;
   
-  --sidebar: 0 0% 10%;
+  --sidebar: 222 20% 10%;
   --sidebar-foreground: 0 0% 95%;
-  --sidebar-primary: 224 76% 50%;
+  --sidebar-primary: 222 70% 58%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 0 0% 18%;
+  --sidebar-accent: 222 16% 18%;
   --sidebar-accent-foreground: 0 0% 95%;
-  --sidebar-border: 0 0% 20%;
-  --sidebar-ring: 224 76% 50%;
+  --sidebar-border: 222 16% 22%;
+  --sidebar-ring: 222 70% 58%;
 }
 
 @layer base {
@@ -213,6 +221,10 @@ img, video, iframe {
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
+  }
+  *:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
   }
 }
 
@@ -267,4 +279,26 @@ img, video, iframe {
   position: relative;
   flex-shrink: 0;
   padding-bottom: var(--safe-area-bottom);
+}
+
+/* Premium utilities */
+.elev-1 {
+  box-shadow: var(--shadow-1);
+}
+
+.elev-2 {
+  box-shadow: var(--shadow-2);
+}
+
+.elev-3 {
+  box-shadow: var(--shadow-3);
+}
+
+.soft-border {
+  border: 1px solid hsl(var(--border) / 0.6);
+}
+
+.glass-surface {
+  background: hsl(var(--background) / 0.85);
+  backdrop-filter: blur(12px);
 }

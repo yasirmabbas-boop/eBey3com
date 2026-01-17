@@ -387,7 +387,7 @@ export default function SearchPage() {
       <div className="container mx-auto px-4 py-6">
         {/* Seller Store Header */}
         {sellerIdParam && sellerInfo && (
-          <div className="bg-gradient-to-l from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-6 shadow-md">
+          <div className="bg-gradient-to-l from-primary via-[#1b2b5a] to-[#0f172a] text-white rounded-xl p-6 mb-6 shadow-[var(--shadow-2)]">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
                 {sellerInfo.displayName?.charAt(0) || sellerInfo.username?.charAt(0) || (language === "ar" ? "م" : "د")}
@@ -409,7 +409,7 @@ export default function SearchPage() {
         )}
 
         {/* Quick Filters Bar */}
-        <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b">
+        <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-border/60">
           <span className="text-sm font-medium text-muted-foreground ml-2">{t("quickFilter")}</span>
           <Button
             variant={appliedFilters.saleTypes.includes("auction") ? "default" : "outline"}
@@ -431,7 +431,7 @@ export default function SearchPage() {
             <ShoppingBag className="h-3.5 w-3.5" />
             {t("buyNow")}
           </Button>
-          <div className="h-4 w-px bg-border mx-1" />
+          <div className="h-4 w-px bg-border/70 mx-1" />
           {CATEGORIES.slice(0, 4).map((cat) => (
             <Button
               key={cat.id}
@@ -449,7 +449,7 @@ export default function SearchPage() {
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900" data-testid="search-title">
+            <h1 className="text-2xl font-bold text-foreground" data-testid="search-title">
               {getPageTitle()}
             </h1>
             <p className="text-muted-foreground text-sm">
@@ -471,7 +471,7 @@ export default function SearchPage() {
             </Link>
             
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-44 text-sm" data-testid="select-sort">
+              <SelectTrigger className="w-44 text-sm soft-border" data-testid="select-sort">
                 <ArrowUpDown className="h-3.5 w-3.5 ml-1" />
                 <SelectValue placeholder={t("sortBy")} />
               </SelectTrigger>
@@ -500,9 +500,9 @@ export default function SearchPage() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-full sm:w-96 p-0 flex flex-col" dir="rtl">
-                <SheetHeader className="p-4 border-b bg-blue-50">
+                <SheetHeader className="p-4 border-b border-border/60 bg-muted/60">
                   <SheetTitle className="flex items-center gap-2 text-xl">
-                    <Filter className="h-5 w-5 text-blue-600" />
+                    <Filter className="h-5 w-5 text-primary" />
                     {t("filters")}
                   </SheetTitle>
                   <p className="text-sm text-muted-foreground">
@@ -524,7 +524,7 @@ export default function SearchPage() {
                       </Button>
                     )}
 
-                    <div className="bg-white p-4 rounded-lg border">
+                    <div className="bg-card p-4 rounded-lg soft-border elev-1">
                       <h3 className="font-bold mb-4 flex items-center gap-2">
                         <Search className="h-4 w-4" />
                         {t("categoriesLabel")}
@@ -557,7 +557,7 @@ export default function SearchPage() {
                       </div>
                     </div>
 
-                    <div className="bg-white p-4 rounded-lg border">
+                    <div className="bg-card p-4 rounded-lg soft-border elev-1">
                       <h3 className="font-bold mb-4 flex items-center gap-2">
                         <Gavel className="h-4 w-4" />
                         {t("saleTypeLabel")}

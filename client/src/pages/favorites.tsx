@@ -102,7 +102,7 @@ export default function FavoritesPage() {
         </div>
 
         <Link href="/my-auctions">
-          <div className="mb-6 p-4 bg-gradient-to-l from-amber-50 to-amber-100 rounded-lg border border-amber-200 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer" data-testid="link-my-auctions">
+          <div className="mb-6 p-4 bg-gradient-to-l from-amber-50 to-amber-100 rounded-lg soft-border hover-elevate flex items-center justify-between cursor-pointer" data-testid="link-my-auctions">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-400 rounded-lg">
                 <Star className="h-5 w-5 text-white fill-white" />
@@ -131,11 +131,11 @@ export default function FavoritesPage() {
             {favoriteListings.map((listing) => (
               <Card 
                 key={listing.id} 
-                className="overflow-hidden hover:shadow-lg transition-shadow group"
+                className="overflow-hidden soft-border hover-elevate transition-shadow group"
                 data-testid={`favorite-item-${listing.id}`}
               >
                 <Link href={`/product/${listing.id}`}>
-                  <div className="relative aspect-square overflow-hidden bg-gray-100">
+                  <div className="relative aspect-square overflow-hidden bg-muted/40">
                     <img
                       src={listing.images?.[0] || "https://via.placeholder.com/300"}
                       alt={listing.title}

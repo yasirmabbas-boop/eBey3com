@@ -67,31 +67,31 @@ const getStatusBadge = (status: string) => {
   switch (status) {
     case "delivered":
     case "completed":
-      return <Badge className="bg-green-100 text-green-800 border-0"><CheckCircle className="h-3 w-3 ml-1" />تم التسليم</Badge>;
+      return <Badge className="bg-emerald-50 text-emerald-700 border-0"><CheckCircle className="h-3 w-3 ml-1" />تم التسليم</Badge>;
     case "in_transit":
-      return <Badge className="bg-blue-100 text-blue-800 border-0"><Truck className="h-3 w-3 ml-1" />قيد التوصيل</Badge>;
+      return <Badge className="bg-blue-50 text-blue-700 border-0"><Truck className="h-3 w-3 ml-1" />قيد التوصيل</Badge>;
     case "processing":
     case "pending":
-      return <Badge className="bg-yellow-100 text-yellow-800 border-0"><Clock className="h-3 w-3 ml-1" />قيد التجهيز</Badge>;
+      return <Badge className="bg-amber-50 text-amber-700 border-0"><Clock className="h-3 w-3 ml-1" />قيد التجهيز</Badge>;
     default:
-      return <Badge className="bg-gray-100 text-gray-800 border-0">{status}</Badge>;
+      return <Badge className="bg-muted text-muted-foreground border-0">{status}</Badge>;
   }
 };
 
 const getOfferStatusBadge = (status: string) => {
   switch (status) {
     case "pending":
-      return <Badge className="bg-yellow-100 text-yellow-800 border-0"><Clock className="h-3 w-3 ml-1" />قيد الانتظار</Badge>;
+      return <Badge className="bg-amber-50 text-amber-700 border-0"><Clock className="h-3 w-3 ml-1" />قيد الانتظار</Badge>;
     case "accepted":
-      return <Badge className="bg-green-100 text-green-800 border-0"><CheckCircle className="h-3 w-3 ml-1" />مقبول</Badge>;
+      return <Badge className="bg-emerald-50 text-emerald-700 border-0"><CheckCircle className="h-3 w-3 ml-1" />مقبول</Badge>;
     case "rejected":
-      return <Badge className="bg-red-100 text-red-800 border-0"><XCircle className="h-3 w-3 ml-1" />مرفوض</Badge>;
+      return <Badge className="bg-rose-50 text-rose-700 border-0"><XCircle className="h-3 w-3 ml-1" />مرفوض</Badge>;
     case "countered":
-      return <Badge className="bg-purple-100 text-purple-800 border-0"><ArrowLeftRight className="h-3 w-3 ml-1" />عرض مقابل</Badge>;
+      return <Badge className="bg-violet-50 text-violet-700 border-0"><ArrowLeftRight className="h-3 w-3 ml-1" />عرض مقابل</Badge>;
     case "expired":
-      return <Badge className="bg-gray-100 text-gray-800 border-0"><Clock className="h-3 w-3 ml-1" />منتهي</Badge>;
+      return <Badge className="bg-muted text-muted-foreground border-0"><Clock className="h-3 w-3 ml-1" />منتهي</Badge>;
     default:
-      return <Badge className="bg-gray-100 text-gray-800 border-0">{status}</Badge>;
+      return <Badge className="bg-muted text-muted-foreground border-0">{status}</Badge>;
   }
 };
 
@@ -141,7 +141,7 @@ export default function BuyerDashboard() {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 max-w-md text-center">
-          <Card className="border-amber-200 bg-amber-50">
+          <Card className="soft-border bg-amber-50/70">
             <CardContent className="pt-6">
               <Lock className="h-16 w-16 text-amber-500 mx-auto mb-4" />
               <h2 className="text-2xl font-bold mb-2">يجب تسجيل الدخول</h2>
@@ -162,13 +162,13 @@ export default function BuyerDashboard() {
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">لوحة تحكم المشتري</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">لوحة تحكم المشتري</h1>
           <p className="text-muted-foreground">مرحباً {user?.displayName}، تابع طلباتك ومشترياتك من هنا</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card>
+          <Card className="soft-border elev-1">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -183,7 +183,7 @@ export default function BuyerDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="soft-border elev-1">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -198,7 +198,7 @@ export default function BuyerDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="soft-border elev-1">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -213,7 +213,7 @@ export default function BuyerDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="soft-border elev-1">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -233,19 +233,19 @@ export default function BuyerDashboard() {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Link href="/my-purchases">
-            <Button variant="outline" className="w-full h-20 flex flex-col gap-2" data-testid="button-my-purchases">
+            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 soft-border" data-testid="button-my-purchases">
               <Package className="h-6 w-6" />
               <span>مشترياتي</span>
             </Button>
           </Link>
           <Link href="/search">
-            <Button variant="outline" className="w-full h-20 flex flex-col gap-2" data-testid="button-browse">
+            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 soft-border" data-testid="button-browse">
               <ShoppingBag className="h-6 w-6" />
               <span>تصفح المنتجات</span>
             </Button>
           </Link>
           <Link href="/settings">
-            <Button variant="outline" className="w-full h-20 flex flex-col gap-2" data-testid="button-settings">
+            <Button variant="outline" className="w-full h-20 flex flex-col gap-2 soft-border" data-testid="button-settings">
               <Star className="h-6 w-6" />
               <span>الإعدادات</span>
             </Button>
@@ -253,7 +253,7 @@ export default function BuyerDashboard() {
         </div>
 
         {/* Recent Orders */}
-        <Card>
+        <Card className="soft-border elev-1">
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle>آخر الطلبات</CardTitle>
@@ -269,16 +269,16 @@ export default function BuyerDashboard() {
               </div>
             ) : recentPurchases.length === 0 ? (
               <div className="text-center py-8">
-                <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">لا توجد طلبات حتى الآن</p>
+                <Package className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+                <p className="text-muted-foreground">لا توجد طلبات حتى الآن</p>
                 <Link href="/search">
-                  <Button className="mt-4">تصفح المنتجات</Button>
+                  <Button className="mt-4 elev-1">تصفح المنتجات</Button>
                 </Link>
               </div>
             ) : (
               <div className="space-y-4">
                 {recentPurchases.map((purchase) => (
-                  <div key={purchase.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div key={purchase.id} className="flex items-center gap-4 p-4 soft-border rounded-lg bg-card/60 hover:bg-muted/40 transition-colors">
                     {purchase.listing?.images?.[0] ? (
                       <img
                         src={purchase.listing.images[0]}
@@ -288,8 +288,8 @@ export default function BuyerDashboard() {
                         style={{ imageRendering: "auto" }}
                       />
                     ) : (
-                      <div className="w-20 h-20 rounded-lg bg-gray-200 flex items-center justify-center">
-                        <Package className="h-8 w-8 text-gray-400" />
+                      <div className="w-20 h-20 rounded-lg bg-muted/60 flex items-center justify-center">
+                        <Package className="h-8 w-8 text-muted-foreground/60" />
                       </div>
                     )}
                     <div className="flex-1">
@@ -310,7 +310,7 @@ export default function BuyerDashboard() {
         </Card>
 
         {/* My Offers */}
-        <Card className="mt-8">
+        <Card className="mt-8 soft-border elev-1">
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle className="flex items-center gap-2">
@@ -326,14 +326,14 @@ export default function BuyerDashboard() {
               </div>
             ) : myOffers.length === 0 ? (
               <div className="text-center py-8">
-                <HandCoins className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">لم تقدم أي عروض بعد</p>
-                <p className="text-sm text-gray-400 mt-1">عندما تقدم عروض على منتجات قابلة للتفاوض، ستظهر هنا</p>
+                <HandCoins className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+                <p className="text-muted-foreground">لم تقدم أي عروض بعد</p>
+                <p className="text-sm text-muted-foreground/70 mt-1">عندما تقدم عروض على منتجات قابلة للتفاوض، ستظهر هنا</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {myOffers.map((offer) => (
-                  <div key={offer.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors" data-testid={`card-offer-${offer.id}`}>
+                  <div key={offer.id} className="flex items-center gap-4 p-4 soft-border rounded-lg bg-card/60 hover:bg-muted/40 transition-colors" data-testid={`card-offer-${offer.id}`}>
                     {offer.listing?.images?.[0] ? (
                       <img
                         src={offer.listing.images[0]}

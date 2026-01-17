@@ -152,10 +152,10 @@ export default function Home() {
   return (
     <Layout>
       {/* Hero Banner */}
-      <section className="relative bg-gradient-to-l from-blue-600 via-blue-700 to-blue-900 text-white py-12 md:py-20 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-10 w-32 h-32 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 left-10 w-48 h-48 bg-green-400 rounded-full blur-3xl"></div>
+      <section className="relative bg-gradient-to-l from-primary via-[#1b2b5a] to-[#0f172a] text-white py-12 md:py-20 overflow-hidden">
+        <div className="absolute inset-0 opacity-15">
+          <div className="absolute top-8 right-10 w-32 h-32 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-8 left-10 w-48 h-48 bg-amber-400 rounded-full blur-3xl"></div>
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
@@ -170,20 +170,20 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="/search">
-                <Button size="lg" className="bg-white text-blue-700 hover:bg-blue-50 font-bold px-8">
+                <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-bold px-8 shadow-[var(--shadow-2)]">
                   <Search className="h-5 w-5 ml-2" />
                   {language === "ar" ? "تصفح المنتجات" : "بەرهەمەکان ببینە"}
                 </Button>
               </Link>
               <Link href="/sell">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 font-bold px-8">
+                <Button size="lg" variant="outline" className="border-white/70 text-white hover:bg-white/10 font-bold px-8">
                   <Tag className="h-5 w-5 ml-2" />
                   {language === "ar" ? "ابدأ البيع" : "دەست بە فرۆشتن بکە"}
                 </Button>
               </Link>
               {user && (
                 <Link href="/favorites">
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 font-bold px-8">
+                  <Button size="lg" variant="outline" className="border-white/70 text-white hover:bg-white/10 font-bold px-8">
                     <Heart className="h-5 w-5 ml-2" />
                     {t("favorites") || (language === "ar" ? "المفضلة" : "دڵخوازەکان")}
                   </Button>
@@ -195,7 +195,7 @@ export default function Home() {
       </section>
 
       {/* Featured/Hot Products Banner */}
-      <section className="py-4 sm:py-6 bg-gradient-to-b from-gray-50 to-white">
+      <section className="py-4 sm:py-6 bg-gradient-to-b from-muted/60 to-background">
         <div className="container mx-auto px-3 sm:px-4">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-2">
@@ -209,7 +209,7 @@ export default function Home() {
 
       {/* Recommended Items Section */}
       {recommendedProducts.length > 0 && (
-        <section className="py-4 sm:py-8 bg-white border-b">
+        <section className="py-4 sm:py-8 bg-background border-b border-border/60">
           <div className="container mx-auto px-3 sm:px-4">
             <div className="flex justify-between items-center mb-3 sm:mb-6">
               <div className="flex items-center gap-2">
@@ -221,7 +221,7 @@ export default function Home() {
             <div className="grid grid-cols-3 gap-2 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {recommendedProducts.map((product) => (
                 <Link key={product.id} href={`/product/${product.id}`}>
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 active:scale-[0.98]" data-testid={`card-recommended-${product.id}`}>
+                  <Card className="overflow-hidden cursor-pointer group soft-border hover-elevate active:scale-[0.98]" data-testid={`card-recommended-${product.id}`}>
                     <div className="relative aspect-square overflow-hidden bg-gray-100">
                       <img 
                         src={product.image} 
@@ -231,7 +231,7 @@ export default function Home() {
                         style={{ imageRendering: "auto" }}
                       />
                       {product.currentBid && (
-                        <Badge className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-primary text-white text-[9px] sm:text-xs px-1 sm:px-1.5">
+                      <Badge className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-primary text-white text-[9px] sm:text-xs px-1 sm:px-1.5 shadow-[var(--shadow-1)]">
                           مزاد
                         </Badge>
                       )}
@@ -262,7 +262,7 @@ export default function Home() {
       )}
 
       {/* Categories - Quick Access */}
-      <section className="py-4 sm:py-6 bg-gray-100">
+      <section className="py-4 sm:py-6 bg-muted/40">
         <div className="container mx-auto px-3 sm:px-4">
           <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
@@ -271,7 +271,7 @@ export default function Home() {
           <div className="grid grid-cols-4 gap-2 sm:gap-3 md:grid-cols-8">
             {CATEGORIES.map((cat, i) => (
               <Link key={i} href={`/search?category=${encodeURIComponent(cat.id)}`}>
-                <div className="group cursor-pointer bg-white p-2 sm:p-3 rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-primary text-center active:scale-95" data-testid={`category-${cat.id}`}>
+                <div className="group cursor-pointer bg-card p-2 sm:p-3 rounded-lg soft-border hover-elevate transition-all text-center active:scale-95" data-testid={`category-${cat.id}`}>
                   <div className={`h-8 w-8 sm:h-10 sm:w-10 ${
                     cat.nameEn === "watches" ? "bg-blue-50" :
                     cat.nameEn === "electronics" ? "bg-amber-50" :
@@ -298,7 +298,7 @@ export default function Home() {
       </section>
 
       {/* Featured Items - New Arrivals */}
-      <section className="py-6 sm:py-12 bg-gray-50">
+      <section className="py-6 sm:py-12 bg-muted/40">
         <div className="container mx-auto px-3 sm:px-4">
           <div className="flex justify-between items-center mb-4 sm:mb-8">
             <h2 className="text-lg sm:text-2xl font-bold text-primary">{language === "ar" ? "وصل حديثاً" : "تازە گەیشتوو"}</h2>
@@ -311,7 +311,7 @@ export default function Home() {
             <div className="grid grid-cols-2 gap-2 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {displayProducts.map((product) => (
                 <Link key={product.id} href={`/product/${product.id}`}>
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 active:scale-[0.98]" data-testid={`card-product-${product.id}`}>
+                  <Card className="overflow-hidden cursor-pointer group soft-border hover-elevate active:scale-[0.98]" data-testid={`card-product-${product.id}`}>
                     <div className="relative aspect-square overflow-hidden bg-gray-100">
                       <OptimizedImage 
                         src={product.image} 

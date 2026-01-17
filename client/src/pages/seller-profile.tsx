@@ -117,7 +117,7 @@ export default function SellerProfile() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card className="mb-6">
+        <Card className="mb-6 soft-border elev-1">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row items-center gap-6">
               <div className="relative">
@@ -125,7 +125,7 @@ export default function SellerProfile() {
                   <img
                     src={seller.avatar}
                     alt={seller.displayName}
-                    className="w-24 h-24 rounded-full object-cover border-4 border-primary/20"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-primary/20"
                   />
                 ) : (
                   <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-4xl font-bold text-primary">
@@ -141,7 +141,7 @@ export default function SellerProfile() {
                 <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
                   <h1 className="text-2xl font-bold">{seller.displayName}</h1>
                   {seller.isVerified && (
-                    <Badge className="bg-green-100 text-green-800 border-0">
+                    <Badge className="bg-emerald-50 text-emerald-700 border-0">
                       {language === "ar" ? "موثق" : "Verified"}
                     </Badge>
                   )}
@@ -182,7 +182,7 @@ export default function SellerProfile() {
               </div>
             </div>
 
-            <div className="mt-6 pt-6 border-t">
+            <div className="mt-6 pt-6 border-t border-border/60">
               <p className="text-sm text-gray-500 mb-3 text-center md:text-right">
                 {language === "ar" ? "شارك المتجر:" : "Share this shop:"}
               </p>
@@ -190,7 +190,7 @@ export default function SellerProfile() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="bg-green-50 hover:bg-green-100 border-green-200 text-green-600"
+                  className="bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-600"
                   onClick={() => handleShare("whatsapp")}
                   data-testid="button-share-whatsapp-seller"
                 >
@@ -255,7 +255,7 @@ export default function SellerProfile() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {activeListings.map((listing) => (
               <Link key={listing.id} href={`/product/${listing.id}`}>
-                <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                <Card className="overflow-hidden soft-border hover-elevate transition-shadow cursor-pointer">
                   <div className="aspect-square relative">
                     <img
                       src={listing.images?.[0] || "/placeholder.png"}

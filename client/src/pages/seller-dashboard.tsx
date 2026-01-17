@@ -184,15 +184,15 @@ const getStatusBadge = (status: string, language: "ar" | "ku") => {
   };
   switch (status) {
     case "active":
-      return <Badge className="bg-green-100 text-green-800 border-0">{labels.active[language]}</Badge>;
+      return <Badge className="bg-emerald-50 text-emerald-700 border-0">{labels.active[language]}</Badge>;
     case "sold":
-      return <Badge className="bg-blue-100 text-blue-800 border-0">{labels.sold[language]}</Badge>;
+      return <Badge className="bg-blue-50 text-blue-700 border-0">{labels.sold[language]}</Badge>;
     case "pending_shipment":
-      return <Badge className="bg-yellow-100 text-yellow-800 border-0">{labels.pending_shipment[language]}</Badge>;
+      return <Badge className="bg-amber-50 text-amber-700 border-0">{labels.pending_shipment[language]}</Badge>;
     case "shipped":
-      return <Badge className="bg-purple-100 text-purple-800 border-0">{labels.shipped[language]}</Badge>;
+      return <Badge className="bg-violet-50 text-violet-700 border-0">{labels.shipped[language]}</Badge>;
     case "draft":
-      return <Badge className="bg-gray-100 text-gray-800 border-0">{labels.draft[language]}</Badge>;
+      return <Badge className="bg-muted text-muted-foreground border-0">{labels.draft[language]}</Badge>;
     default:
       return null;
   }
@@ -207,17 +207,17 @@ const getDeliveryBadge = (status: string, language: "ar" | "ku") => {
   };
   switch (status) {
     case "pending_payment":
-      return <Badge className="bg-orange-100 text-orange-800 border-0">{labels.pending_payment[language]}</Badge>;
+      return <Badge className="bg-amber-50 text-amber-700 border-0">{labels.pending_payment[language]}</Badge>;
     case "pending":
     case "processing":
-      return <Badge className="bg-yellow-100 text-yellow-800 border-0">{labels.pending_shipment[language]}</Badge>;
+      return <Badge className="bg-amber-50 text-amber-700 border-0">{labels.pending_shipment[language]}</Badge>;
     case "shipped":
-      return <Badge className="bg-blue-100 text-blue-800 border-0">{labels.shipped[language]}</Badge>;
+      return <Badge className="bg-blue-50 text-blue-700 border-0">{labels.shipped[language]}</Badge>;
     case "delivered":
     case "completed":
-      return <Badge className="bg-green-100 text-green-800 border-0">{labels.delivered[language]}</Badge>;
+      return <Badge className="bg-emerald-50 text-emerald-700 border-0">{labels.delivered[language]}</Badge>;
     default:
-      return <Badge className="bg-gray-100 text-gray-800 border-0">{status}</Badge>;
+      return <Badge className="bg-muted text-muted-foreground border-0">{status}</Badge>;
   }
 };
 
@@ -232,7 +232,7 @@ const getTypeBadge = (type: string, language: "ar" | "ku") => {
       {labels.auction[language]}
     </Badge>
   ) : (
-    <Badge variant="outline" className="border-green-600 text-green-600">
+    <Badge variant="outline" className="border-emerald-600 text-emerald-600">
       <ShoppingBag className="h-3 w-3 ml-1" />
       {labels.fixed[language]}
     </Badge>
@@ -828,7 +828,7 @@ export default function SellerDashboard() {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 max-w-md text-center">
-          <Card className="border-amber-200 bg-amber-50">
+          <Card className="soft-border bg-amber-50/70">
             <CardContent className="pt-6">
               <Lock className="h-16 w-16 text-amber-500 mx-auto mb-4" />
               <h2 className="text-2xl font-bold mb-2">للبائعين المعتمدين فقط</h2>
@@ -845,9 +845,9 @@ export default function SellerDashboard() {
 
   return (
     <Layout hideHeader>
-      {/* Black Top Bar */}
-      <div className="bg-black text-white sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+      {/* Top Bar */}
+      <div className="bg-primary text-white sticky top-0 z-50 shadow-[var(--shadow-1)]">
+        <div className="container mx-auto px-4 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/">
               <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" data-testid="button-back">
@@ -878,17 +878,17 @@ export default function SellerDashboard() {
       </div>
 
       {/* Secondary Bar with Notifications */}
-      <div className="bg-gray-100 border-b sticky top-[52px] z-40">
-        <div className="container mx-auto px-4 py-2 flex items-center justify-between">
+      <div className="bg-muted/60 border-b border-border/60 sticky top-[52px] z-40">
+        <div className="container mx-auto px-4 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-gray-600" />
-            <span className="text-sm text-gray-600">{t("notifications")}</span>
+            <Bell className="h-5 w-5 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">{t("notifications")}</span>
             {pendingOrders.length > 0 && (
               <Badge className="bg-red-500 text-white text-xs">{pendingOrders.length} {language === "ar" ? "طلب جديد" : "داواکاری نوێ"}</Badge>
             )}
           </div>
           <Link href="/sell">
-            <Button size="lg" className="gap-3 bg-primary hover:bg-primary/90 text-lg font-bold px-8 py-6 shadow-lg" data-testid="button-add-product">
+            <Button size="lg" className="gap-3 bg-primary hover:bg-primary/90 text-lg font-bold px-8 py-6 shadow-[var(--shadow-2)]" data-testid="button-add-product">
               <Plus className="h-6 w-6" />
               {t("addProduct")}
             </Button>
@@ -898,13 +898,13 @@ export default function SellerDashboard() {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">📊 {t("sellerDashboard")}</h1>
-          <p className="text-gray-600">{language === "ar" ? "إدارة منتجاتك ومبيعاتك وتتبع أدائك" : "بەڕێوەبردنی بەرهەمەکانت و فرۆشتنەکانت و شوێنکەوتنی کارەکەت"}</p>
+          <h1 className="text-4xl font-bold text-foreground mb-2">📊 {t("sellerDashboard")}</h1>
+          <p className="text-muted-foreground">{language === "ar" ? "إدارة منتجاتك ومبيعاتك وتتبع أدائك" : "بەڕێوەبردنی بەرهەمەکانت و فرۆشتنەکانت و شوێنکەوتنی کارەکەت"}</p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card 
-            className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 cursor-pointer hover:shadow-lg transition-shadow"
+            className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 cursor-pointer hover-elevate soft-border"
             onClick={() => setActiveTab("products")}
           >
             <CardContent className="p-4">
@@ -919,7 +919,7 @@ export default function SellerDashboard() {
           </Card>
 
           <Card 
-            className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 cursor-pointer hover:shadow-lg transition-shadow"
+            className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 cursor-pointer hover-elevate soft-border"
             onClick={() => setActiveTab("orders")}
           >
             <CardContent className="p-4">
@@ -933,7 +933,7 @@ export default function SellerDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <Card className="bg-gradient-to-br from-violet-50 to-violet-100 border-violet-200 soft-border">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -947,7 +947,7 @@ export default function SellerDashboard() {
           </Card>
 
           <Card 
-            className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 cursor-pointer hover:shadow-lg transition-shadow"
+            className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 cursor-pointer hover-elevate soft-border"
             onClick={() => setActiveTab("orders")}
           >
             <CardContent className="p-4">
@@ -963,22 +963,22 @@ export default function SellerDashboard() {
         </div>
 
         {/* Share My Shop Section */}
-        <Card className="mb-8 bg-gradient-to-r from-primary/5 to-blue-50 border-primary/20">
+        <Card className="mb-8 bg-gradient-to-r from-primary/5 to-blue-50 border-primary/20 soft-border">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row items-center gap-4">
               <div className="flex-1 text-center md:text-right">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 justify-center md:justify-start">
+                <h3 className="text-lg font-bold text-foreground flex items-center gap-2 justify-center md:justify-start">
                   <Share2 className="h-5 w-5 text-primary" />
                   {language === "ar" ? "شارك متجرك" : "فرۆشگاکەت هاوبەش بکە"}
                 </h3>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   {language === "ar" 
                     ? "انشر رابط متجرك على وسائل التواصل لجذب المزيد من المشترين"
                     : "لینکی فرۆشگاکەت لە تۆڕە کۆمەڵایەتییەکان بڵاوبکەرەوە"
                   }
                 </p>
                 <div className="flex items-center gap-2 mt-2 justify-center md:justify-start">
-                  <code className="bg-white px-3 py-1 rounded border text-sm">
+                  <code className="bg-background/80 px-3 py-1 rounded border border-border/60 text-sm">
                     ebey3.com/seller/{user?.id?.slice(0, 8)}
                   </code>
                   <Button

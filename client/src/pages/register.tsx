@@ -240,22 +240,31 @@ export default function Register() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12 flex justify-center items-center min-h-[60vh]">
-        <Card className="w-full max-w-md shadow-lg border-muted">
-          <CardHeader className="text-center space-y-2">
-            <div className="mx-auto mb-2 h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <UserPlus className="h-7 w-7 text-primary" />
+        <div className="w-full max-w-md">
+          <div className="mb-6 text-center">
+            <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="h-px w-8 bg-border/70" />
+              {language === "ar" ? "إنشاء حساب" : "هەژمار دروست بکە"}
+              <span className="h-px w-8 bg-border/70" />
             </div>
-            <CardTitle className="text-2xl font-bold text-primary">{t("createAccount")}</CardTitle>
-            <CardDescription>
-              {language === "ar" 
-                ? "انضم إلى مجتمع اي بيع للبيع والشراء الآمن"
-                : "بەشداربە لە کۆمەڵگەی ئی بیع بۆ کڕین و فرۆشتنی سەلامەت"
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
+            <h1 className="mt-2 text-2xl font-bold text-foreground">{t("createAccount")}</h1>
+          </div>
+          <Card className="soft-border elev-2">
+            <CardHeader className="text-center space-y-2">
+              <div className="mx-auto mb-2 h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <UserPlus className="h-7 w-7 text-primary" />
+              </div>
+              <CardTitle className="text-xl font-bold text-foreground">{t("createAccount")}</CardTitle>
+              <CardDescription>
+                {language === "ar" 
+                  ? "انضم إلى مجتمع اي بيع للبيع والشراء الآمن"
+                  : "بەشداربە لە کۆمەڵگەی ئی بیع بۆ کڕین و فرۆشتنی سەلامەت"
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
                 <Label htmlFor="phone">{t("phone")}</Label>
                 <div className="relative">
                   <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -320,7 +329,7 @@ export default function Register() {
                   value={formData.ageBracket}
                   onValueChange={(v) => setFormData(prev => ({ ...prev, ageBracket: v }))}
                 >
-                  <SelectTrigger data-testid="select-age-bracket">
+                  <SelectTrigger className="soft-border" data-testid="select-age-bracket">
                     <SelectValue placeholder={language === "ar" ? "اختر الفئة العمرية" : "گروپی تەمەن هەڵبژێرە"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -338,7 +347,7 @@ export default function Register() {
                   value={formData.gender}
                   onValueChange={(v) => setFormData(prev => ({ ...prev, gender: v }))}
                 >
-                  <SelectTrigger data-testid="select-gender">
+                  <SelectTrigger className="soft-border" data-testid="select-gender">
                     <SelectValue placeholder={language === "ar" ? "اختر الجنس" : "ڕەگەز هەڵبژێرە"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -412,12 +421,12 @@ export default function Register() {
               </div>
               {errors.terms && <p className="text-red-500 text-xs">{errors.terms}</p>}
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-                data-testid="button-register"
-              >
+                <Button
+                  type="submit"
+                  className="w-full elev-1"
+                  disabled={isLoading}
+                  data-testid="button-register"
+                >
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin ml-2" />
@@ -427,17 +436,17 @@ export default function Register() {
                   t("signUp")
                 )}
               </Button>
-            </form>
+              </form>
 
-            <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">{t("alreadyHaveAccount")} </span>
-              <Link href="/signin" className="text-primary hover:underline font-medium">
-                {t("signIn")}
-              </Link>
-            </div>
-
-          </CardContent>
-        </Card>
+              <div className="mt-6 text-center text-sm">
+                <span className="text-muted-foreground">{t("alreadyHaveAccount")} </span>
+                <Link href="/signin" className="text-primary hover:underline font-medium">
+                  {t("signIn")}
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </Layout>
   );

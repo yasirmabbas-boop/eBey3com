@@ -223,7 +223,17 @@ export default function SignIn() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-16 max-w-md">
-        <Card>
+        <div className="mb-6 text-center">
+          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="h-px w-8 bg-border/70" />
+            {language === "ar" ? "تسجيل الدخول" : "چوونە ژوورەوە"}
+            <span className="h-px w-8 bg-border/70" />
+          </div>
+          <h1 className="mt-2 text-2xl font-bold text-foreground">
+            {step === "credentials" ? t("signIn") : (language === "ar" ? "المصادقة الثنائية" : "دووچەشنە پشتڕاستکردنەوە")}
+          </h1>
+        </div>
+        <Card className="soft-border elev-2">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
               {step === "credentials" ? (
@@ -232,7 +242,7 @@ export default function SignIn() {
                 <Shield className="h-8 w-8 text-primary" />
               )}
             </div>
-            <CardTitle className="text-2xl">
+            <CardTitle className="text-xl">
               {step === "credentials" ? t("signIn") : (language === "ar" ? "المصادقة الثنائية" : "دووچەشنە پشتڕاستکردنەوە")}
             </CardTitle>
             <CardDescription>
@@ -242,7 +252,7 @@ export default function SignIn() {
               }
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {step === "credentials" ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
@@ -284,7 +294,7 @@ export default function SignIn() {
 
                 <Button 
                   type="submit" 
-                  className="w-full" 
+                  className="w-full elev-1" 
                   disabled={isLoading}
                   data-testid="button-signin"
                 >
@@ -335,7 +345,7 @@ export default function SignIn() {
 
                 <Button 
                   type="submit" 
-                  className="w-full" 
+                  className="w-full elev-1" 
                   disabled={isLoading || twoFactorCode.length !== 6}
                   data-testid="button-verify-2fa"
                 >

@@ -185,11 +185,11 @@ export default function MessagesPage() {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 text-center">
-          <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <MessageSquare className="h-16 w-16 text-muted-foreground/40 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">تسجيل الدخول مطلوب</h2>
           <p className="text-muted-foreground mb-4">يجب تسجيل الدخول لعرض رسائلك</p>
           <Link href="/signin">
-            <Button>تسجيل الدخول</Button>
+            <Button className="elev-1">تسجيل الدخول</Button>
           </Link>
         </div>
       </Layout>
@@ -217,7 +217,7 @@ export default function MessagesPage() {
             </div>
           </div>
 
-          <Card className="h-[60vh] flex flex-col">
+          <Card className="h-[60vh] flex flex-col soft-border elev-1">
             <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
               {conversationLoading ? (
                 <div className="flex items-center justify-center h-full">
@@ -225,9 +225,9 @@ export default function MessagesPage() {
                 </div>
               ) : conversation.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center">
-                  <MessageSquare className="h-12 w-12 text-gray-300 mb-4" />
-                  <p className="text-gray-500">لا توجد رسائل بعد</p>
-                  <p className="text-sm text-gray-400">ابدأ المحادثة بإرسال رسالة</p>
+                  <MessageSquare className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                  <p className="text-muted-foreground">لا توجد رسائل بعد</p>
+                  <p className="text-sm text-muted-foreground/70">ابدأ المحادثة بإرسال رسالة</p>
                 </div>
               ) : (
                 <>
@@ -240,12 +240,12 @@ export default function MessagesPage() {
                       <div
                         className={`max-w-[70%] p-3 rounded-lg ${
                           msg.senderId === user?.id
-                            ? "bg-primary text-white rounded-bl-none"
-                            : "bg-gray-100 text-gray-800 rounded-br-none"
+                            ? "bg-primary text-primary-foreground rounded-bl-none"
+                            : "bg-muted/60 text-foreground rounded-br-none"
                         }`}
                       >
                         <p className="text-sm">{msg.content}</p>
-                        <p className={`text-xs mt-1 ${msg.senderId === user?.id ? "text-primary-foreground/70" : "text-gray-500"}`}>
+                        <p className={`text-xs mt-1 ${msg.senderId === user?.id ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                           {new Date(msg.createdAt).toLocaleTimeString("ar-IQ", {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -259,13 +259,13 @@ export default function MessagesPage() {
               )}
             </CardContent>
 
-            <div className="p-4 border-t">
+            <div className="p-4 border-t border-border/60">
               <div className="flex gap-2">
                 <Textarea
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="اكتب رسالتك..."
-                  className="min-h-[50px] max-h-[100px] text-right"
+                  className="min-h-[50px] max-h-[100px] text-right soft-border"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -277,6 +277,7 @@ export default function MessagesPage() {
                 <Button
                   onClick={handleSend}
                   disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                  className="elev-1"
                   data-testid="button-send"
                 >
                   {sendMessageMutation.isPending ? (
@@ -301,7 +302,7 @@ export default function MessagesPage() {
           رسائلي
         </h1>
 
-        <Card>
+        <Card className="soft-border elev-1">
           <CardContent className="p-0">
             {messagesLoading ? (
               <div className="flex items-center justify-center py-16">
@@ -309,9 +310,9 @@ export default function MessagesPage() {
               </div>
             ) : conversations.length === 0 ? (
               <div className="text-center py-16">
-                <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg">لا توجد رسائل</p>
-                <p className="text-sm text-gray-400 mt-2">عندما تتواصل مع البائعين أو المشترين، ستظهر محادثاتك هنا</p>
+                <MessageSquare className="h-16 w-16 text-muted-foreground/40 mx-auto mb-4" />
+                <p className="text-muted-foreground text-lg">لا توجد رسائل</p>
+                <p className="text-sm text-muted-foreground/70 mt-2">عندما تتواصل مع البائعين أو المشترين، ستظهر محادثاتك هنا</p>
               </div>
             ) : (
               <div className="divide-y">
@@ -319,7 +320,7 @@ export default function MessagesPage() {
                   <div
                     key={conv.id}
                     onClick={() => navigate(`/messages/${conv.id}`)}
-                    className="p-4 hover:bg-gray-50 cursor-pointer transition-colors flex items-center gap-4"
+                    className="p-4 hover:bg-muted/40 cursor-pointer transition-colors flex items-center gap-4"
                     data-testid={`conversation-${conv.id}`}
                   >
                     <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -329,17 +330,17 @@ export default function MessagesPage() {
                       <div className="flex items-center justify-between">
                         <p className="font-semibold">{conv.name}</p>
                         {conv.lastMessageTime && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-muted-foreground">
                             {new Date(conv.lastMessageTime).toLocaleDateString("ar-IQ")}
                           </span>
                         )}
                       </div>
                       {conv.lastMessage && (
-                        <p className="text-sm text-gray-500 truncate">{conv.lastMessage}</p>
+                        <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
                       )}
                     </div>
                     {conv.unreadCount && conv.unreadCount > 0 && (
-                      <Badge className="bg-red-500 text-white">{conv.unreadCount}</Badge>
+                      <Badge className="bg-rose-500 text-white">{conv.unreadCount}</Badge>
                     )}
                   </div>
                 ))}

@@ -137,7 +137,7 @@ function AuctionCard({
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow" data-testid={`watched-auction-card-${listing.id}`}>
+    <Card className="overflow-hidden soft-border hover-elevate transition-shadow" data-testid={`watched-auction-card-${listing.id}`}>
       <Link href={`/product/${listing.id}`}>
         <div className="relative aspect-square">
           <img
@@ -151,13 +151,13 @@ function AuctionCard({
             مراقب
           </Badge>
           {isWinning && (
-            <Badge className="absolute top-2 right-2 bg-green-500 text-white gap-1">
+            <Badge className="absolute top-2 right-2 bg-emerald-500 text-white gap-1">
               <Trophy className="h-3 w-3" />
               أعلى مزايد
             </Badge>
           )}
           {!isWinning && userId && listing.highestBidderId && (
-            <Badge className="absolute top-2 right-2 bg-orange-500 text-white gap-1">
+            <Badge className="absolute top-2 right-2 bg-amber-500 text-white gap-1">
               <AlertTriangle className="h-3 w-3" />
               تم تجاوزك
             </Badge>
@@ -195,7 +195,7 @@ function AuctionCard({
           </span>
         </div>
 
-        <div className="space-y-2 pt-2 border-t">
+        <div className="space-y-2 pt-2 border-t border-border/60">
           <div className="flex gap-2">
             <Input
               type="text"
@@ -423,7 +423,7 @@ export default function MyAuctions() {
         </div>
 
         {sortedAuctions.length > 0 && (
-          <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-4 mb-6 p-4 bg-muted/50 rounded-lg soft-border">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-gray-500" />
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
@@ -478,7 +478,7 @@ export default function MyAuctions() {
           </div>
         )}
 
-        <div className="mt-8 p-4 bg-amber-50 rounded-lg border border-amber-200">
+        <div className="mt-8 p-4 bg-amber-50/70 rounded-lg soft-border">
           <h3 className="font-bold text-amber-800 mb-2 flex items-center gap-2">
             <Star className="h-5 w-5" />
             كيف تضيف مزادات للمراقبة؟
