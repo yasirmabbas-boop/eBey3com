@@ -259,33 +259,6 @@ export const insertCartItemSchema = createInsertSchema(cartItems).omit({
 export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
 export type CartItem = typeof cartItems.$inferSelect;
 
-// Price offers for negotiable items
-export const offers = pgTable("offers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  listingId: varchar("listing_id").notNull(),
-  buyerId: varchar("buyer_id").notNull(),
-  sellerId: varchar("seller_id").notNull(),
-  offerAmount: integer("offer_amount").notNull(),
-  message: text("message"),
-  status: text("status").notNull().default("pending"), // pending, accepted, rejected, countered, expired
-  counterAmount: integer("counter_amount"),
-  counterMessage: text("counter_message"),
-  expiresAt: timestamp("expires_at"),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-  respondedAt: timestamp("responded_at"),
-});
-
-export const insertOfferSchema = createInsertSchema(offers).omit({
-  id: true,
-  createdAt: true,
-  respondedAt: true,
-  status: true,
-  counterAmount: true,
-  counterMessage: true,
-});
-
-export type InsertOffer = z.infer<typeof insertOfferSchema>;
-export type Offer = typeof offers.$inferSelect;
 
 export const listings = pgTable("listings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -318,8 +291,6 @@ export const listings = pgTable("listings", {
   sku: text("sku"),
   isActive: boolean("is_active").notNull().default(true),
   isPaused: boolean("is_paused").notNull().default(false),
-  isNegotiable: boolean("is_negotiable").notNull().default(false),
-  isExchangeable: boolean("is_exchangeable").notNull().default(false),
   serialNumber: text("serial_number"),
   quantityAvailable: integer("quantity_available").notNull().default(1),
   quantitySold: integer("quantity_sold").notNull().default(0),
@@ -332,6 +303,7 @@ export const listings = pgTable("listings", {
   isFeatured: boolean("is_featured").notNull().default(false),
   featuredOrder: integer("featured_order").default(0),
   featuredAt: timestamp("featured_at"),
+  searchVector: text("search_vector"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -341,33 +313,12 @@ export const insertListingSchema = createInsertSchema(listings).omit({
   totalBids: true,
   currentBid: true,
   isActive: true,
+  searchVector: true,
 });
 
 export type InsertListing = z.infer<typeof insertListingSchema>;
 export type Listing = typeof listings.$inferSelect;
 
-// Exchange offers (مراوس)
-export const exchangeOffers = pgTable("exchange_offers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  offeredListingId: varchar("offered_listing_id").notNull(),
-  requestedListingId: varchar("requested_listing_id").notNull(),
-  offererId: varchar("offerer_id").notNull(),
-  receiverId: varchar("receiver_id").notNull(),
-  message: text("message"),
-  status: text("status").notNull().default("pending"),
-  respondedAt: timestamp("responded_at"),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-});
-
-export const insertExchangeOfferSchema = createInsertSchema(exchangeOffers).omit({
-  id: true,
-  createdAt: true,
-  respondedAt: true,
-  status: true,
-});
-
-export type InsertExchangeOffer = z.infer<typeof insertExchangeOfferSchema>;
-export type ExchangeOffer = typeof exchangeOffers.$inferSelect;
 
 // Reports system
 export const reports = pgTable("reports", {
@@ -423,25 +374,6 @@ export const insertReturnRequestSchema = createInsertSchema(returnRequests).omit
 export type InsertReturnRequest = z.infer<typeof insertReturnRequestSchema>;
 export type ReturnRequest = typeof returnRequests.$inferSelect;
 
-// Mutual ratings (buyer rates seller, seller rates buyer)
-export const mutualRatings = pgTable("mutual_ratings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  transactionId: varchar("transaction_id").notNull(),
-  raterId: varchar("rater_id").notNull(),
-  ratedId: varchar("rated_id").notNull(),
-  raterRole: text("rater_role").notNull(),
-  rating: integer("rating").notNull(),
-  comment: text("comment"),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-});
-
-export const insertMutualRatingSchema = createInsertSchema(mutualRatings).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type InsertMutualRating = z.infer<typeof insertMutualRatingSchema>;
-export type MutualRating = typeof mutualRatings.$inferSelect;
 
 // Notifications system
 export const notifications = pgTable("notifications", {

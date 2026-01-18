@@ -58,7 +58,7 @@ export function InstallPWAPrompt() {
 
   return (
     <div 
-      className="fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:bottom-4 md:w-80 bg-blue-600 text-white rounded-xl shadow-2xl p-4 z-[9998]"
+      className="fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:bottom-4 md:w-80 bg-blue-600 text-white rounded-xl shadow-2xl p-4 z-[10000]"
       dir="rtl"
     >
       <button

@@ -10,7 +10,6 @@ import {
   type Category, type InsertCategory,
   type BuyerAddress, type InsertBuyerAddress,
   type CartItem, type InsertCartItem,
-  type Offer, type InsertOffer,
   type Notification, type InsertNotification,
   type Report, type InsertReport,
   type VerificationCode,
@@ -18,7 +17,7 @@ import {
   type ContactMessage, type InsertContactMessage,
   type ProductComment, type InsertProductComment,
   type PushSubscription, type InsertPushSubscription,
-  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments, pushSubscriptions
+  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, lt, inArray, ne } from "drizzle-orm";
@@ -46,6 +45,7 @@ export interface IStorage {
     conditions?: string[];
     cities?: string[];
   }): Promise<{ listings: Listing[]; total: number }>;
+  getSearchSuggestions(query: string, limit?: number): Promise<Array<{ term: string; category: string; type: "category" | "product" }>>;
   getListingsByCategory(category: string): Promise<Listing[]>;
   getListingsBySeller(sellerId: string): Promise<Listing[]>;
   getListing(id: string): Promise<Listing | undefined>;
@@ -128,14 +128,6 @@ export interface IStorage {
   updateCartItemQuantity(id: string, quantity: number): Promise<CartItem | undefined>;
   removeFromCart(id: string): Promise<boolean>;
   clearCart(userId: string): Promise<boolean>;
-  
-  // Offer operations
-  createOffer(offer: InsertOffer): Promise<Offer>;
-  getOffer(id: string): Promise<Offer | undefined>;
-  getOffersForListing(listingId: string): Promise<Offer[]>;
-  getOffersByBuyer(buyerId: string): Promise<Offer[]>;
-  getOffersBySeller(sellerId: string): Promise<Offer[]>;
-  updateOfferStatus(id: string, status: string, counterAmount?: number, counterMessage?: string): Promise<Offer | undefined>;
   
   // View tracking
   incrementListingViews(listingId: string): Promise<number>;
@@ -293,17 +285,40 @@ export class DatabaseStorage implements IStorage {
     }
     if (sellerId) conditions.push(eq(listings.sellerId, sellerId));
     
-    // Search query - search in title, description, and tags
+    // Enhanced search with full-text search and fuzzy matching
+    let searchRankSql = null;
     if (searchQuery && searchQuery.trim()) {
-      const searchTerm = `%${searchQuery.trim().toLowerCase()}%`;
+      const query = searchQuery.trim();
+      const searchTerm = `%${query.toLowerCase()}%`;
+      
+      // Use full-text search with tsvector for better performance and relevance
+      // Combine with fuzzy matching for typo tolerance
       conditions.push(
         or(
+          // Full-text search using tsvector (fastest, weighted by field importance)
+          sql`${listings.searchVector} @@ plainto_tsquery('english', ${query})`,
+          // Fuzzy matching on title using trigrams (handles typos)
+          sql`similarity(${listings.title}, ${query}) > 0.3`,
+          // Fuzzy matching on brand (critical for "watches" etc)
+          sql`similarity(COALESCE(${listings.brand}, ''), ${query}) > 0.3`,
+          // Fallback LIKE search for exact partial matches
           sql`LOWER(${listings.title}) LIKE ${searchTerm}`,
+          sql`LOWER(COALESCE(${listings.brand}, '')) LIKE ${searchTerm}`,
           sql`LOWER(${listings.description}) LIKE ${searchTerm}`,
           sql`LOWER(${listings.category}) LIKE ${searchTerm}`,
+          sql`LOWER(COALESCE(${listings.serialNumber}, '')) LIKE ${searchTerm}`,
+          sql`LOWER(COALESCE(${listings.sku}, '')) LIKE ${searchTerm}`,
+          sql`LOWER(COALESCE(${listings.productCode}, '')) LIKE ${searchTerm}`,
           sql`EXISTS (SELECT 1 FROM unnest(${listings.tags}) AS tag WHERE LOWER(tag) LIKE ${searchTerm})`
         )
       );
+      
+      // Calculate relevance score combining full-text rank and fuzzy similarity
+      searchRankSql = sql`(
+        ts_rank_cd(${listings.searchVector}, plainto_tsquery('english', ${query})) * 10 +
+        similarity(${listings.title}, ${query}) * 5 +
+        similarity(COALESCE(${listings.brand}, ''), ${query}) * 5
+      )`;
     }
     
     // Price filters
@@ -336,7 +351,8 @@ export class DatabaseStorage implements IStorage {
       .from(listings)
       .where(whereClause);
     
-    const results = await db.select({
+    // Build select with optional relevance score
+    const selectFields: any = {
       id: listings.id,
       title: listings.title,
       price: listings.price,
@@ -358,14 +374,93 @@ export class DatabaseStorage implements IStorage {
       productCode: listings.productCode,
       quantityAvailable: listings.quantityAvailable,
       quantitySold: listings.quantitySold,
-    })
+    };
+    
+    // Add relevance score when searching
+    if (searchRankSql) {
+      selectFields.relevanceScore = searchRankSql;
+    }
+    
+    let query = db.select(selectFields)
       .from(listings)
-      .where(whereClause)
-      .orderBy(desc(listings.createdAt))
+      .where(whereClause);
+    
+    // Order by relevance when searching, otherwise by created date
+    if (searchRankSql) {
+      query = query.orderBy(desc(searchRankSql), desc(listings.createdAt));
+    } else {
+      query = query.orderBy(desc(listings.createdAt));
+    }
+    
+    const results = await query
       .limit(limit)
       .offset(offset);
     
     return { listings: results as Listing[], total: countResult?.count || 0 };
+  }
+
+  async getSearchSuggestions(query: string, limit: number = 10): Promise<Array<{ term: string; category: string; type: "category" | "product" }>> {
+    if (!query || !query.trim()) {
+      return [];
+    }
+    
+    const searchTerm = query.trim().toLowerCase();
+    const suggestions: Array<{ term: string; category: string; type: "category" | "product" }> = [];
+    
+    // Get category suggestions using DISTINCT
+    const categoryResults = await db.selectDistinct({
+      category: listings.category,
+    })
+      .from(listings)
+      .where(and(
+        eq(listings.isDeleted, false),
+        eq(listings.isActive, true),
+        or(
+          sql`LOWER(${listings.category}) LIKE ${`%${searchTerm}%`}`,
+          sql`similarity(${listings.category}, ${query}) > 0.3`
+        )
+      ))
+      .limit(5);
+    
+    categoryResults.forEach(row => {
+      if (row.category) {
+        suggestions.push({ term: row.category, category: row.category, type: "category" });
+      }
+    });
+    
+    // Get product title suggestions using full-text search and fuzzy matching
+    const productResults = await db.select({
+      title: listings.title,
+      category: listings.category,
+    })
+      .from(listings)
+      .where(and(
+        eq(listings.isDeleted, false),
+        eq(listings.isActive, true),
+        or(
+          sql`${listings.searchVector} @@ plainto_tsquery('english', ${query})`,
+          sql`similarity(${listings.title}, ${query}) > 0.3`,
+          sql`LOWER(${listings.title}) LIKE ${`%${searchTerm}%`}`,
+          sql`LOWER(COALESCE(${listings.brand}, '')) LIKE ${`%${searchTerm}%`}`
+        )
+      ))
+      .orderBy(
+        desc(sql`(
+          ts_rank_cd(${listings.searchVector}, plainto_tsquery('english', ${query})) * 10 +
+          similarity(${listings.title}, ${query}) * 5
+        )`)
+      )
+      .limit(limit - suggestions.length);
+    
+    productResults.forEach(row => {
+      suggestions.push({ 
+        term: row.title, 
+        category: row.category || "", 
+        type: "product" 
+      });
+    });
+    
+    return suggestions.slice(0, limit);
   }
 
   async getPurchasesWithDetails(buyerId: string): Promise<any[]> {
@@ -976,46 +1071,6 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
-  // Offer operations
-  async createOffer(offer: InsertOffer): Promise<Offer> {
-    const [newOffer] = await db.insert(offers).values(offer).returning();
-    return newOffer;
-  }
-
-  async getOffer(id: string): Promise<Offer | undefined> {
-    const [offer] = await db.select().from(offers).where(eq(offers.id, id));
-    return offer;
-  }
-
-  async getOffersForListing(listingId: string): Promise<Offer[]> {
-    return db.select().from(offers)
-      .where(eq(offers.listingId, listingId))
-      .orderBy(desc(offers.createdAt));
-  }
-
-  async getOffersByBuyer(buyerId: string): Promise<Offer[]> {
-    return db.select().from(offers)
-      .where(eq(offers.buyerId, buyerId))
-      .orderBy(desc(offers.createdAt));
-  }
-
-  async getOffersBySeller(sellerId: string): Promise<Offer[]> {
-    return db.select().from(offers)
-      .where(eq(offers.sellerId, sellerId))
-      .orderBy(desc(offers.createdAt));
-  }
-
-  async updateOfferStatus(id: string, status: string, counterAmount?: number, counterMessage?: string): Promise<Offer | undefined> {
-    const updateData: any = { status, respondedAt: new Date() };
-    if (counterAmount !== undefined) updateData.counterAmount = counterAmount;
-    if (counterMessage !== undefined) updateData.counterMessage = counterMessage;
-    
-    const [updated] = await db.update(offers)
-      .set(updateData)
-      .where(eq(offers.id, id))
-      .returning();
-    return updated;
-  }
 
   async incrementListingViews(listingId: string): Promise<number> {
     const [updated] = await db.update(listings)

@@ -79,8 +79,6 @@ export default function SellPage() {
   const [saleType, setSaleType] = useState<"auction" | "fixed">("auction");
   const [hasBuyNow, setHasBuyNow] = useState(false);
   const [hasReservePrice, setHasReservePrice] = useState(false);
-  const [allowOffers, setAllowOffers] = useState(false);
-  const [allowExchange, setAllowExchange] = useState(false);
   const [internationalShipping, setInternationalShipping] = useState(false);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [images, setImages] = useState<string[]>([]);
@@ -167,8 +165,6 @@ export default function SellPage() {
         if (draft.formData) setFormData(draft.formData);
         if (draft.images) setImages(draft.images);
         if (draft.saleType) setSaleType(draft.saleType);
-        if (draft.allowOffers !== undefined) setAllowOffers(draft.allowOffers);
-        if (draft.allowExchange !== undefined) setAllowExchange(draft.allowExchange);
         if (draft.internationalShipping !== undefined) setInternationalShipping(draft.internationalShipping);
         if (draft.hasBuyNow !== undefined) setHasBuyNow(draft.hasBuyNow);
         if (draft.hasReservePrice !== undefined) setHasReservePrice(draft.hasReservePrice);
@@ -195,7 +191,7 @@ export default function SellPage() {
     
     const timeoutId = setTimeout(() => {
       try {
-        const draft = { formData, images: images.slice(0, 4), saleType, allowOffers, allowExchange, internationalShipping, hasBuyNow, hasReservePrice, tags, savedAt: new Date().toISOString() };
+        const draft = { formData, images: images.slice(0, 4), saleType, internationalShipping, hasBuyNow, hasReservePrice, tags, savedAt: new Date().toISOString() };
         localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
       } catch (e) {
         console.warn("Failed to save draft to localStorage:", e);
@@ -203,7 +199,7 @@ export default function SellPage() {
     }, 1000); // 1 second debounce
     
     return () => clearTimeout(timeoutId);
-  }, [formData, images, saleType, allowOffers, allowExchange, internationalShipping, hasBuyNow, hasReservePrice, tags, isNewListing, draftLoaded, showDraftBanner]);
+  }, [formData, images, saleType, internationalShipping, hasBuyNow, hasReservePrice, tags, isNewListing, draftLoaded, showDraftBanner]);
 
   // Populate form when editing, relisting, or using as template
   useEffect(() => {
@@ -254,8 +250,6 @@ export default function SellPage() {
       });
       setImages(sourceListing.images ?? []);
       setSaleType((sourceListing.saleType as "auction" | "fixed") ?? "fixed");
-      setAllowOffers(sourceListing.isNegotiable ?? false);
-      setAllowExchange(sourceListing.isExchangeable ?? false);
       setInternationalShipping(sourceListing.internationalShipping ?? false);
       setSelectedCountries(sourceListing.internationalCountries ?? []);
       setTags(sourceListing.tags ?? []);
@@ -487,8 +481,6 @@ export default function SellPage() {
         city: formData.city,
         area: formData.area || null,
         sku: formData.sku || null,
-        isNegotiable: allowOffers,
-        isExchangeable: allowExchange,
         internationalShipping: internationalShipping || selectedCountries.length > 0,
         internationalCountries: selectedCountries.length > 0 ? selectedCountries : null,
         serialNumber: formData.serialNumber || null,
@@ -1243,41 +1235,6 @@ export default function SellPage() {
                     </div>
                   </div>
 
-                  {/* Allow Offers Checkbox */}
-                  <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
-                    <Checkbox 
-                      id="offersToggle" 
-                      checked={allowOffers}
-                      onCheckedChange={(checked) => setAllowOffers(checked === true)}
-                      className="h-5 w-5 border-2"
-                      data-testid="checkbox-allow-offers"
-                    />
-                    <div className="space-y-1 flex-1">
-                      <Label htmlFor="offersToggle" className="font-bold cursor-pointer">السماح بالعروض</Label>
-                      <p className="text-xs text-muted-foreground">
-                        السماح للمشترين بتقديم عروض أقل من السعر المحدد
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Allow Exchange Checkbox (مراوس) - Feature flagged */}
-                  {ENABLE_EXCHANGE_FEATURE && (
-                    <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
-                      <Checkbox 
-                        id="exchangeToggle" 
-                        checked={allowExchange}
-                        onCheckedChange={(checked) => setAllowExchange(checked === true)}
-                        className="h-5 w-5 border-2"
-                        data-testid="checkbox-allow-exchange"
-                      />
-                      <div className="space-y-1 flex-1">
-                        <Label htmlFor="exchangeToggle" className="font-bold cursor-pointer">قابل للمراوس</Label>
-                        <p className="text-xs text-muted-foreground">
-                          السماح للمشترين بتقديم عروض تبادل مع منتجاتهم المعروضة
-                        </p>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
             </CardContent>
@@ -1719,22 +1676,6 @@ export default function SellPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
-                <Checkbox 
-                  id="negotiableToggle"
-                  checked={allowOffers}
-                  onCheckedChange={(checked) => setAllowOffers(checked === true)}
-                  className="h-5 w-5 border-2"
-                  data-testid="checkbox-negotiable" 
-                />
-                <div className="space-y-1 flex-1">
-                  <Label htmlFor="negotiableToggle" className="font-bold cursor-pointer">قابل للتفاوض</Label>
-                  <p className="text-xs text-muted-foreground">
-                    السماح للمشترين بتقديم عروض سعر مختلفة
-                  </p>
-                </div>
-              </div>
-
               <div className="flex items-center gap-3 p-4 bg-yellow-50 rounded-lg">
                 <Checkbox 
                   id="featuredToggle"
@@ -1927,16 +1868,6 @@ export default function SellPage() {
 
               {/* Options */}
               <div className="flex flex-wrap gap-2">
-                {allowOffers && (
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                    قابل للتفاوض
-                  </Badge>
-                )}
-                {ENABLE_EXCHANGE_FEATURE && allowExchange && (
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                    قابل للمراوس
-                  </Badge>
-                )}
                 {saleType === "auction" && formData.endDate && (
                   <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
                     ينتهي: {formData.endDate} {formData.endHour}:00
@@ -2018,8 +1949,6 @@ export default function SellPage() {
                       formData, 
                       images: images.slice(0, 4), 
                       saleType, 
-                      allowOffers, 
-                      allowExchange, 
                       hasBuyNow, 
                       hasReservePrice, 
                       tags, 
