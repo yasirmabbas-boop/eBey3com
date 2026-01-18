@@ -21,7 +21,7 @@ import {
   users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, offers, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, sql, lt, inArray } from "drizzle-orm";
+import { eq, desc, and, or, sql, lt, inArray, ne } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -393,7 +393,7 @@ export class DatabaseStorage implements IStorage {
       .from(transactions)
       .leftJoin(listings, eq(transactions.listingId, listings.id))
       .leftJoin(users, eq(transactions.sellerId, users.id))
-      .where(sql`${transactions.buyerId} = ${buyerId} AND ${transactions.sellerId} != ${buyerId}`)
+      .where(and(eq(transactions.buyerId, buyerId), ne(transactions.sellerId, buyerId)))
       .orderBy(desc(transactions.createdAt));
     
     return results.map(r => ({
@@ -717,7 +717,7 @@ export class DatabaseStorage implements IStorage {
   async getPurchasesForBuyer(buyerId: string): Promise<Transaction[]> {
     // Only return purchases where the buyer is NOT also the seller (exclude self-purchases)
     return db.select().from(transactions)
-      .where(sql`${transactions.buyerId} = ${buyerId} AND ${transactions.sellerId} != ${buyerId}`)
+      .where(and(eq(transactions.buyerId, buyerId), ne(transactions.sellerId, buyerId)))
       .orderBy(desc(transactions.createdAt));
   }
 
