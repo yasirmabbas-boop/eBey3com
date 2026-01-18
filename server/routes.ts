@@ -1166,6 +1166,9 @@ export async function registerRoutes(
 
   app.post("/api/reviews", async (req, res) => {
     try {
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/routes.ts:1167',message:'review_create_enter',data:{bodyKeys:req.body?Object.keys(req.body):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'sale-flow',hypothesisId:'H4'})}).catch(()=>{});
+      // #endregion
       const validatedData = insertReviewSchema.parse(req.body);
       
       // Check if user already reviewed this listing
@@ -1681,6 +1684,9 @@ export async function registerRoutes(
   // Rate buyer (seller rating for buyer)
   app.patch("/api/transactions/:id/rate-buyer", async (req, res) => {
     try {
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/routes.ts:1682',message:'rate_buyer_enter',data:{transactionId:req.params.id,body:req.body?Object.keys(req.body):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'sale-flow',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
       const userId = await getUserIdFromRequest(req);
       const transactionId = req.params.id;
       const { rating, feedback } = req.body;
@@ -3119,6 +3125,9 @@ export async function registerRoutes(
 
   // ===== CHECKOUT API =====
   app.post("/api/checkout", async (req, res) => {
+    // #region agent log
+    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/routes.ts:3121',message:'checkout_enter',data:{hasBody:!!req.body,bodyKeys:req.body?Object.keys(req.body):[],userIdPresent:!!(req.session as any)?.userId},timestamp:Date.now(),sessionId:'debug-session',runId:'sale-flow',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "يجب تسجيل الدخول لإتمام الشراء" });
@@ -3139,6 +3148,9 @@ export async function registerRoutes(
 
       // Get cart items
       const cartItems = await storage.getCartItems(userId);
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/routes.ts:3141',message:'checkout_cart_loaded',data:{userId,cartCount:cartItems.length},timestamp:Date.now(),sessionId:'debug-session',runId:'sale-flow',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       if (cartItems.length === 0) {
         return res.status(400).json({ error: "سلة التسوق فارغة" });
       }
@@ -3147,6 +3159,9 @@ export async function registerRoutes(
       const transactions = [];
       for (const item of cartItems) {
         const listing = await storage.getListing(item.listingId);
+        // #region agent log
+        fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/routes.ts:3149',message:'checkout_item_listing',data:{listingId:item.listingId,found:!!listing,quantity:item.quantity,priceSnapshot:item.priceSnapshot},timestamp:Date.now(),sessionId:'debug-session',runId:'sale-flow',hypothesisId:'H2'})}).catch(()=>{});
+        // #endregion
         if (!listing) {
           continue; // Skip unavailable listings
         }
@@ -3177,6 +3192,9 @@ export async function registerRoutes(
           paymentMethod: "cash",
           deliveryAddress,
         });
+        // #region agent log
+        fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/routes.ts:3171',message:'checkout_transaction_created',data:{transactionId:transaction?.id,listingId:item.listingId,amount:transaction?.amount,status:transaction?.status},timestamp:Date.now(),sessionId:'debug-session',runId:'sale-flow',hypothesisId:'H1'})}).catch(()=>{});
+        // #endregion
         transactions.push(transaction);
 
         // Update listing quantitySold
@@ -3185,6 +3203,9 @@ export async function registerRoutes(
           quantitySold: newQuantitySold,
           isActive: newQuantitySold < (listing.quantityAvailable || 1),
         });
+        // #region agent log
+        fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/routes.ts:3183',message:'checkout_listing_updated',data:{listingId:item.listingId,newQuantitySold,isActive:newQuantitySold < (listing.quantityAvailable || 1)},timestamp:Date.now(),sessionId:'debug-session',runId:'sale-flow',hypothesisId:'H2'})}).catch(()=>{});
+        // #endregion
 
         // Notify seller via message system
         if (listing.sellerId) {
@@ -3212,6 +3233,9 @@ export async function registerRoutes(
 
       // Clear cart after successful checkout
       await storage.clearCart(userId);
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'server/routes.ts:3214',message:'checkout_cart_cleared',data:{userId,transactionCount:transactions.length},timestamp:Date.now(),sessionId:'debug-session',runId:'sale-flow',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
 
       res.json({ success: true, transactions });
     } catch (error) {
