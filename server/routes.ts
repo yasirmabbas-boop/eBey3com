@@ -61,17 +61,17 @@ export async function registerRoutes(
     try {
       const { category, sellerId, page, limit: limitParam, saleType, includeSold, q, minPrice, maxPrice, condition, city } = req.query;
       const saleTypes = Array.isArray(saleType)
-        ? saleType
+        ? saleType.map(s => String(s))
         : typeof saleType === "string"
           ? [saleType]
           : undefined;
       const conditions = Array.isArray(condition)
-        ? condition
+        ? condition.map(c => String(c))
         : typeof condition === "string"
           ? [condition]
           : undefined;
       const cities = Array.isArray(city)
-        ? city
+        ? city.map(c => String(c))
         : typeof city === "string"
           ? [city]
           : undefined;
