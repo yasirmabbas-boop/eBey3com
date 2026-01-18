@@ -28,6 +28,15 @@ import { shareToFacebook, shareToWhatsApp, shareToTelegram, shareToTwitter } fro
 import { hapticSuccess, hapticError, hapticLight, saveToPhotos, isDespia } from "@/lib/despia";
 import type { Listing } from "@shared/schema";
 
+function getAuthHeaders(): HeadersInit {
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  const authToken = localStorage.getItem("authToken");
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+  return headers;
+}
+
 import {
   Carousel,
   CarouselContent,
@@ -198,7 +207,7 @@ export default function ProductPage() {
     mutationFn: async (data: { reportType: string; targetId: string; targetType: string; reason: string; details?: string }) => {
       const res = await fetch("/api/reports", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         credentials: "include",
         body: JSON.stringify(data),
       });
