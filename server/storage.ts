@@ -710,7 +710,7 @@ export class DatabaseStorage implements IStorage {
 
   async getTransactionsForUser(userId: string): Promise<Transaction[]> {
     return db.select().from(transactions)
-      .where(sql`${transactions.sellerId} = ${userId} OR ${transactions.buyerId} = ${userId}`)
+      .where(or(eq(transactions.sellerId, userId), eq(transactions.buyerId, userId)))
       .orderBy(desc(transactions.createdAt));
   }
 
@@ -1185,7 +1185,7 @@ export class DatabaseStorage implements IStorage {
     const [activeListingsCount] = await db.select({ count: sql<number>`count(*)::int` }).from(listings).where(eq(listings.isActive, true));
     const [transactionsCount] = await db.select({ count: sql<number>`count(*)::int` }).from(transactions);
     const [pendingReportsCount] = await db.select({ count: sql<number>`count(*)::int` }).from(reports).where(eq(reports.status, "pending"));
-    const [revenueResult] = await db.select({ total: sql<number>`COALESCE(SUM(amount), 0)::int` }).from(transactions).where(sql`${transactions.status} IN ('completed', 'delivered')`);
+    const [revenueResult] = await db.select({ total: sql<number>`COALESCE(SUM(amount), 0)::int` }).from(transactions).where(inArray(transactions.status, ['completed', 'delivered']));
     
     return {
       totalUsers: usersCount?.count || 0,
