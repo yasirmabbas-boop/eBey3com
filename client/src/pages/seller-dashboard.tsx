@@ -249,6 +249,7 @@ export default function SellerDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [salesFilter, setSalesFilter] = useState("all");
+  const [quickFilter, setQuickFilter] = useState<"pending_shipment" | "needs_reply" | "ending_soon" | "none">("none");
   const [showShippingLabel, setShowShippingLabel] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<SellerProduct | null>(null);
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
@@ -738,8 +739,15 @@ export default function SellerDashboard() {
     const matchesSearch = product.title.includes(searchQuery) || 
                           product.productCode.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || product.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesQuick =
+      quickFilter === "none" ||
+      (quickFilter === "pending_shipment" && product.status === "pending_shipment") ||
+      (quickFilter === "ending_soon" && !!product.auctionEndTime);
+    return matchesSearch && matchesStatus && matchesQuick;
   });
+  const filteredMessages = quickFilter === "needs_reply"
+    ? sellerMessages.filter(message => !message.isRead)
+    : sellerMessages;
 
   const handleDeleteProduct = (productId: string) => {
     deleteMutation.mutate(productId);
@@ -897,12 +905,29 @@ export default function SellerDashboard() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">📊 {t("sellerDashboard")}</h1>
-          <p className="text-muted-foreground">{language === "ar" ? "إدارة منتجاتك ومبيعاتك وتتبع أدائك" : "بەڕێوەبردنی بەرهەمەکانت و فرۆشتنەکانت و شوێنکەوتنی کارەکەت"}</p>
+        <div className="mb-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-4xl font-bold text-foreground mb-2">📊 {t("sellerDashboard")}</h1>
+              <p className="text-muted-foreground">
+                {language === "ar"
+                  ? "إدارة منتجاتك ومبيعاتك وتتبع أدائك"
+                  : "بەڕێوەبردنی بەرهەمەکانت و فرۆشتنەکانت و شوێنکەوتنی کارەکەت"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="rounded-full px-4">
+                7d
+              </Button>
+              <Button variant="outline" size="sm" className="rounded-full px-4">
+                30d
+              </Button>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="sticky top-[112px] z-30 rounded-2xl bg-background/95 backdrop-blur border border-border/60 shadow-[var(--shadow-1)] mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4">
           <Card 
             className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 cursor-pointer hover-elevate soft-border"
             onClick={() => setActiveTab("products")}
@@ -960,6 +985,7 @@ export default function SellerDashboard() {
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
 
         {/* Share My Shop Section */}
@@ -1162,6 +1188,32 @@ export default function SellerDashboard() {
                 </Select>
               </div>
             </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant={quickFilter === "pending_shipment" ? "default" : "outline"}
+                className="rounded-full"
+                onClick={() => setQuickFilter(prev => prev === "pending_shipment" ? "none" : "pending_shipment")}
+              >
+                {language === "ar" ? "بانتظار الشحن" : "چاوەڕێی ناردن"}
+              </Button>
+              <Button
+                size="sm"
+                variant={quickFilter === "ending_soon" ? "default" : "outline"}
+                className="rounded-full"
+                onClick={() => setQuickFilter(prev => prev === "ending_soon" ? "none" : "ending_soon")}
+              >
+                {language === "ar" ? "ينتهي قريباً" : "بە زووی تەواو دەبێت"}
+              </Button>
+              <Button
+                size="sm"
+                variant={quickFilter === "needs_reply" ? "default" : "outline"}
+                className="rounded-full"
+                onClick={() => setQuickFilter(prev => prev === "needs_reply" ? "none" : "needs_reply")}
+              >
+                {language === "ar" ? "بحاجة لرد" : "پێویستی بە وەڵام"}
+              </Button>
+            </div>
 
             <div className="grid gap-4">
               {filteredProducts.map(product => (
@@ -1199,6 +1251,16 @@ export default function SellerDashboard() {
                             {product.bids} {t("auction")}
                           </span>
                         )}
+                        {product.auctionEndTime && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {language === "ar" ? "ينتهي قريباً" : "بە زووی تەواو دەبێت"}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Package className="h-4 w-4" />
+                          {product.quantityAvailable} {language === "ar" ? "متاح" : "بەردەست"}
+                        </span>
                         {product.soldDate && (
                           <span className="flex items-center gap-1">
                             <CheckCircle className="h-4 w-4 text-green-500" />
@@ -1215,6 +1277,18 @@ export default function SellerDashboard() {
                           </p>
                         </div>
                         <div className="flex gap-2">
+                          {product.buyer?.id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(`/messages/${product.buyer?.id}`)}
+                              className="gap-1"
+                              data-testid={`button-message-buyer-${product.id}`}
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                              {language === "ar" ? "مراسلة" : "پەیوەندی"}
+                            </Button>
+                          )}
                           {(product.status === "sold" || product.status === "pending_shipment") && product.buyer && (
                             <Button 
                               size="sm" 
@@ -1337,7 +1411,7 @@ export default function SellerDashboard() {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                ) : sellerMessages.length === 0 ? (
+                ) : filteredMessages.length === 0 ? (
                   <div className="text-center py-8">
                     <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-500">لا توجد رسائل من العملاء حالياً</p>
@@ -1345,7 +1419,7 @@ export default function SellerDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {sellerMessages.map(message => (
+                    {filteredMessages.map(message => (
                       <div 
                         key={message.id} 
                         className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors ${!message.isRead ? 'bg-blue-50 border-blue-200' : ''}`}
@@ -1768,6 +1842,24 @@ export default function SellerDashboard() {
                              order.status === "cancelled" ? "ملغي" :
                              order.status}
                           </Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-3 text-xs text-gray-600 mb-3">
+                          <span className="flex items-center gap-1">
+                            <Wallet className="h-3.5 w-3.5" />
+                            {order.amount.toLocaleString()} د.ع
+                          </span>
+                          {order.deliveryStatus && (
+                            <span className="flex items-center gap-1">
+                              <Truck className="h-3.5 w-3.5" />
+                              {order.deliveryStatus}
+                            </span>
+                          )}
+                          {order.buyer?.city && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3.5 w-3.5" />
+                              {order.buyer.city}
+                            </span>
+                          )}
                         </div>
 
                         {order.buyer && (
