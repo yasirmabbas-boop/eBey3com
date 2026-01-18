@@ -147,7 +147,8 @@ export default function SearchPage() {
   const [draftFilters, setDraftFilters] = useState<FilterState>(appliedFilters);
   const [sortBy, setSortBy] = useState(searchQuery ? "relevance" : "newest");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [displayLimit, setDisplayLimit] = useState(20);
+  const [page, setPage] = useState(1);
+  const [mergedListings, setMergedListings] = useState<Listing[]>([]);
 
   useEffect(() => {
     const freshFilters: FilterState = {
@@ -162,14 +163,16 @@ export default function SearchPage() {
     setAppliedFilters(freshFilters);
     setDraftFilters(freshFilters);
     setSortBy(searchQuery ? "relevance" : "newest");
-    setDisplayLimit(20);
+    setPage(1);
+    setMergedListings([]);
   }, [searchQuery, categoryParam]);
 
   const ITEMS_PER_PAGE = 20;
 
   const buildApiUrl = useCallback(() => {
     const apiParams = new URLSearchParams();
-    apiParams.set("limit", "500");
+    apiParams.set("limit", String(ITEMS_PER_PAGE));
+    apiParams.set("page", String(page));
     
     if (sellerIdParam) apiParams.set("sellerId", sellerIdParam);
     if (appliedFilters.includeSold) apiParams.set("includeSold", "true");
@@ -177,16 +180,20 @@ export default function SearchPage() {
     if (appliedFilters.category) apiParams.set("category", appliedFilters.category);
     if (appliedFilters.priceMin) apiParams.set("minPrice", appliedFilters.priceMin);
     if (appliedFilters.priceMax) apiParams.set("maxPrice", appliedFilters.priceMax);
-    if (saleTypeParam) apiParams.set("saleType", saleTypeParam);
-    if (appliedFilters.saleTypes.length === 1) apiParams.set("saleType", appliedFilters.saleTypes[0]);
-    if (appliedFilters.conditions.length === 1) apiParams.set("condition", appliedFilters.conditions[0]);
-    if (appliedFilters.cities.length === 1) apiParams.set("city", appliedFilters.cities[0]);
+    const saleTypes = appliedFilters.saleTypes.length
+      ? appliedFilters.saleTypes
+      : saleTypeParam
+        ? [saleTypeParam]
+        : [];
+    saleTypes.forEach((value) => apiParams.append("saleType", value));
+    appliedFilters.conditions.forEach((value) => apiParams.append("condition", value));
+    appliedFilters.cities.forEach((value) => apiParams.append("city", value));
     
     return `/api/listings?${apiParams.toString()}`;
-  }, [sellerIdParam, appliedFilters, searchQuery, saleTypeParam]);
+  }, [sellerIdParam, appliedFilters, searchQuery, saleTypeParam, page]);
 
   const { data: listingsData, isLoading } = useQuery({
-    queryKey: ["/api/listings", sellerIdParam, appliedFilters, searchQuery, saleTypeParam],
+    queryKey: ["/api/listings", sellerIdParam, appliedFilters, searchQuery, saleTypeParam, page],
     queryFn: async () => {
       const url = buildApiUrl();
       const res = await fetch(url);
@@ -195,8 +202,13 @@ export default function SearchPage() {
     },
   });
 
+  useEffect(() => {
+    if (!listingsData?.listings) return;
+    setMergedListings((prev) => (page === 1 ? listingsData.listings : [...prev, ...listingsData.listings]));
+  }, [listingsData, page]);
+
   const handleLoadMore = useCallback(() => {
-    setDisplayLimit(prev => prev + ITEMS_PER_PAGE);
+    setPage((prev) => prev + 1);
   }, []);
   
   const { data: sellerInfo } = useQuery({
@@ -212,7 +224,7 @@ export default function SearchPage() {
   
   const listings: Listing[] = Array.isArray(listingsData) 
     ? listingsData 
-    : (listingsData?.listings || []);
+    : mergedListings;
 
   const allProducts = useMemo(() => {
     return listings;
@@ -263,11 +275,12 @@ export default function SearchPage() {
     return sortedProducts;
   }, [allProducts, searchQuery, sortBy]);
 
-  const displayedProducts = useMemo(() => {
-    return filteredProducts.slice(0, displayLimit);
-  }, [filteredProducts, displayLimit]);
-
-  const hasMoreProducts = displayLimit < filteredProducts.length;
+  const displayedProducts = filteredProducts;
+  const hasMoreProducts = listingsData?.pagination?.hasMore ?? false;
+  const remainingCount = Math.max(
+    0,
+    (listingsData?.pagination?.total ?? filteredProducts.length) - filteredProducts.length
+  );
 
   const draftFilteredProducts = useMemo(() => {
     return allProducts;
@@ -323,12 +336,12 @@ export default function SearchPage() {
 
   const applyFilters = () => {
     setAppliedFilters(draftFilters);
-    setDisplayLimit(ITEMS_PER_PAGE);
+    setPage(1);
     setIsFilterOpen(false);
   };
 
   useEffect(() => {
-    setDisplayLimit(ITEMS_PER_PAGE);
+    setPage(1);
   }, [searchQuery, sortBy]);
 
   const clearAllFilters = () => {
@@ -343,6 +356,11 @@ export default function SearchPage() {
     };
     setDraftFilters(cleared);
   };
+
+  useEffect(() => {
+    setPage(1);
+    setMergedListings([]);
+  }, [appliedFilters, searchQuery, saleTypeParam, sellerIdParam]);
 
   const openFilters = () => {
     setDraftFilters(appliedFilters);
@@ -868,6 +886,19 @@ export default function SearchPage() {
                               <h3 className="font-semibold text-[10px] sm:text-sm text-gray-900 line-clamp-1 group-hover:text-primary transition-colors leading-tight mb-1">
                                 {product.title}
                               </h3>
+                              {product.tags && product.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mb-1">
+                                  {product.tags.slice(0, 3).map((tag) => (
+                                    <Badge
+                                      key={tag}
+                                      variant="outline"
+                                      className="text-[8px] sm:text-[10px] px-1.5 py-0.5 text-muted-foreground border-border/60"
+                                    >
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
                               <p className="font-bold text-sm sm:text-base text-primary">
                                 {(product.currentBid || product.price).toLocaleString()} <span className="text-[9px] sm:text-xs font-normal text-gray-600">د.ع</span>
                               </p>
@@ -904,7 +935,7 @@ export default function SearchPage() {
                 className="px-8"
                 data-testid="button-load-more"
               >
-                {t("showMore")} ({filteredProducts.length - displayLimit} {t("anotherProduct")})
+                {t("showMore")} {remainingCount > 0 ? `(${remainingCount} ${t("anotherProduct")})` : ""}
               </Button>
             </div>
           )}

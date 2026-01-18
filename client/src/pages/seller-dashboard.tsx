@@ -174,7 +174,7 @@ interface SellerReturnRequest {
   };
 }
 
-const getStatusBadge = (status: string, language: "ar" | "ku") => {
+const getStatusBadge = (status: string, language: "ar" | "ku" | "en") => {
   const labels = {
     active: { ar: "نشط", ku: "چالاک" },
     sold: { ar: "مباع", ku: "فرۆشرا" },
@@ -198,7 +198,7 @@ const getStatusBadge = (status: string, language: "ar" | "ku") => {
   }
 };
 
-const getDeliveryBadge = (status: string, language: "ar" | "ku") => {
+const getDeliveryBadge = (status: string, language: "ar" | "ku" | "en") => {
   const labels = {
     pending_payment: { ar: "بانتظار الدفع", ku: "چاوەڕێی پارەدان" },
     pending_shipment: { ar: "بانتظار الشحن", ku: "چاوەڕێی ناردن" },
@@ -221,7 +221,7 @@ const getDeliveryBadge = (status: string, language: "ar" | "ku") => {
   }
 };
 
-const getTypeBadge = (type: string, language: "ar" | "ku") => {
+const getTypeBadge = (type: string, language: "ar" | "ku" | "en") => {
   const labels = {
     auction: { ar: "مزاد", ku: "مزایدە" },
     fixed: { ar: "سعر ثابت", ku: "نرخی جێگیر" },

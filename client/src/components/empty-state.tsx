@@ -14,6 +14,7 @@ import {
   Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Language } from "@/lib/i18n";
 
 type EmptyStateType = 
   | "favorites"
@@ -36,6 +37,7 @@ interface EmptyStateProps {
   actionHref?: string;
   onAction?: () => void;
   className?: string;
+  language?: "ar" | "ku" | "en";
 }
 
 const iconMap: Record<EmptyStateType, React.ComponentType<{ className?: string }>> = {
@@ -123,7 +125,7 @@ export function EmptySearchState({
 }: { 
   query?: string;
   onClearFilters?: () => void;
-  language?: "ar" | "ku";
+  language?: Language;
 }) {
   const texts = {
     ar: {
@@ -142,7 +144,7 @@ export function EmptySearchState({
     }
   };
   
-  const t = texts[language];
+  const t = texts[language as keyof typeof texts] || texts.ar;
 
   return (
     <div className="text-center py-12 px-4 bg-gray-50 rounded-xl">

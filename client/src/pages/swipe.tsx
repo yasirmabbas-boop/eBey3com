@@ -49,22 +49,22 @@ interface ProductComment {
   userAvatar: string | null;
 }
 
-const getCategoriesForLang = (lang: "ar" | "ku") => [
-  { id: null, name: lang === "ar" ? "الكل" : "هەموو", icon: Grid3X3 },
-  { id: "ساعات", name: lang === "ar" ? "ساعات" : "کاتژمێر", icon: Watch },
-  { id: "إلكترونيات", name: lang === "ar" ? "إلكترونيات" : "ئەلیکترۆنی", icon: Smartphone },
-  { id: "ملابس", name: lang === "ar" ? "ملابس" : "جلوبەرگ", icon: Shirt },
-  { id: "تحف وأثاث", name: lang === "ar" ? "أثاث" : "کەلوپەل", icon: Armchair },
-  { id: "سيارات", name: lang === "ar" ? "سيارات" : "ئۆتۆمبێل", icon: Car },
-  { id: "عقارات", name: lang === "ar" ? "عقارات" : "خانوبەرە", icon: Home },
-  { id: "أخرى", name: lang === "ar" ? "أخرى" : "تر", icon: Package },
+const getCategoriesForLang = (lang: "ar" | "ku" | "en") => [
+  { id: null, name: lang === "ar" ? "الكل" : lang === "ku" ? "هەموو" : "All", icon: Grid3X3 },
+  { id: "ساعات", name: lang === "ar" ? "ساعات" : lang === "ku" ? "کاتژمێر" : "Watches", icon: Watch },
+  { id: "إلكترونيات", name: lang === "ar" ? "إلكترونيات" : lang === "ku" ? "ئەلیکترۆنی" : "Electronics", icon: Smartphone },
+  { id: "ملابس", name: lang === "ar" ? "ملابس" : lang === "ku" ? "جلوبەرگ" : "Clothing", icon: Shirt },
+  { id: "تحف وأثاث", name: lang === "ar" ? "أثاث" : lang === "ku" ? "کەلوپەل" : "Furniture", icon: Armchair },
+  { id: "سيارات", name: lang === "ar" ? "سيارات" : lang === "ku" ? "ئۆتۆمبێل" : "Vehicles", icon: Car },
+  { id: "عقارات", name: lang === "ar" ? "عقارات" : lang === "ku" ? "خانوبەرە" : "Real Estate", icon: Home },
+  { id: "أخرى", name: lang === "ar" ? "أخرى" : lang === "ku" ? "تر" : "Other", icon: Package },
 ];
 
-const getSaleFiltersForLang = (lang: "ar" | "ku") => [
-  { id: null, name: lang === "ar" ? "الكل" : "هەموو" },
-  { id: "auction", name: lang === "ar" ? "مزادات" : "مزایدە" },
-  { id: "fixed", name: lang === "ar" ? "شراء فوري" : "کڕینی یەکجار" },
-  { id: "new", name: lang === "ar" ? "جديد" : "نوێ" },
+const getSaleFiltersForLang = (lang: "ar" | "ku" | "en") => [
+  { id: null, name: lang === "ar" ? "الكل" : lang === "ku" ? "هەموو" : "All" },
+  { id: "auction", name: lang === "ar" ? "مزادات" : lang === "ku" ? "مزایدە" : "Auctions" },
+  { id: "fixed", name: lang === "ar" ? "شراء فوري" : lang === "ku" ? "کڕینی یەکجار" : "Buy Now" },
+  { id: "new", name: lang === "ar" ? "جديد" : lang === "ku" ? "نوێ" : "New" },
 ];
 
 export default function SwipePage() {

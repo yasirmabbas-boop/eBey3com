@@ -14,6 +14,7 @@ export default function ForgotPassword() {
   const [, navigate] = useLocation();
   const { language } = useLanguage();
   const { toast } = useToast();
+  const tr = (ar: string, ku: string, en: string) => (language === "ar" ? ar : language === "ku" ? ku : en);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -34,15 +35,17 @@ export default function ForgotPassword() {
     onSuccess: () => {
       setSubmitted(true);
       toast({
-        title: language === "ar" ? "تم إرسال الطلب" : "داواکارییەکە نێردرا",
-        description: language === "ar" 
-          ? "سيتواصل معك فريق الدعم قريباً" 
-          : "تیمی پاڵپشتی زوو پەیوەندیت پێوە دەکات",
+        title: tr("تم إرسال الطلب", "داواکارییەکە نێردرا", "Request sent"),
+        description: tr(
+          "سيتواصل معك فريق الدعم قريباً",
+          "تیمی پاڵپشتی زوو پەیوەندیت پێوە دەکات",
+          "Support will contact you soon"
+        ),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: language === "ar" ? "خطأ" : "هەڵە",
+        title: tr("خطأ", "هەڵە", "Error"),
         description: error.message,
         variant: "destructive",
       });
@@ -53,8 +56,8 @@ export default function ForgotPassword() {
     e.preventDefault();
     if (!phone.trim()) {
       toast({
-        title: language === "ar" ? "خطأ" : "هەڵە",
-        description: language === "ar" ? "رقم الهاتف مطلوب" : "ژمارەی مۆبایل پێویستە",
+        title: tr("خطأ", "هەڵە", "Error"),
+        description: tr("رقم الهاتف مطلوب", "ژمارەی مۆبایل پێویستە", "Phone number is required"),
         variant: "destructive",
       });
       return;
@@ -75,7 +78,11 @@ export default function ForgotPassword() {
                 <CheckCircle className="h-8 w-8 text-green-600" />
               </div>
               <h2 className="text-xl font-bold">
-                {language === "ar" ? "تم إرسال طلبك بنجاح" : "داواکارییەکەت بە سەرکەوتوویی نێردرا"}
+                {tr(
+                  "تم إرسال طلبك بنجاح",
+                  "داواکارییەکەت بە سەرکەوتوویی نێردرا",
+                  "Your request was sent successfully"
+                )}
               </h2>
               <p className="text-muted-foreground">
                 {language === "ar" 
@@ -88,7 +95,7 @@ export default function ForgotPassword() {
                 data-testid="button-back-signin-success"
               >
                 <ArrowLeft className="h-4 w-4 ml-2" />
-                {language === "ar" ? "العودة لتسجيل الدخول" : "گەڕانەوە بۆ چوونەژوورەوە"}
+                {tr("العودة لتسجيل الدخول", "گەڕانەوە بۆ چوونەژوورەوە", "Back to sign in")}
               </Button>
             </CardContent>
           </Card>
@@ -106,12 +113,14 @@ export default function ForgotPassword() {
               <KeyRound className="h-8 w-8 text-primary" />
             </div>
             <CardTitle className="text-2xl">
-              {language === "ar" ? "استعادة كلمة المرور" : "گەڕانەوەی وشەی نهێنی"}
+              {tr("استعادة كلمة المرور", "گەڕانەوەی وشەی نهێنی", "Reset password")}
             </CardTitle>
             <CardDescription>
-              {language === "ar" 
-                ? "أدخل معلوماتك وسيتواصل معك فريق الدعم" 
-                : "زانیارییەکانت بنووسە و تیمی پاڵپشتی پەیوەندیت پێوە دەکات"}
+              {tr(
+                "أدخل معلوماتك وسيتواصل معك فريق الدعم",
+                "زانیارییەکانت بنووسە و تیمی پاڵپشتی پەیوەندیت پێوە دەکات",
+                "Enter your details and support will contact you"
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -119,13 +128,13 @@ export default function ForgotPassword() {
               <div className="space-y-2">
                 <Label htmlFor="phone" className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
-                  {language === "ar" ? "رقم الهاتف" : "ژمارەی مۆبایل"}
+                  {tr("رقم الهاتف", "ژمارەی مۆبایل", "Phone number")}
                   <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder={language === "ar" ? "07XXXXXXXXX" : "07XXXXXXXXX"}
+                  placeholder={tr("07XXXXXXXXX", "07XXXXXXXXX", "07XXXXXXXXX")}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
@@ -134,21 +143,23 @@ export default function ForgotPassword() {
                   data-testid="input-phone"
                 />
                 <p className="text-xs text-muted-foreground">
-                  {language === "ar" 
-                    ? "أدخل رقم الهاتف المسجل في حسابك" 
-                    : "ژمارەی مۆبایلی تۆمارکراو لە هەژمارەکەت بنووسە"}
+                  {tr(
+                    "أدخل رقم الهاتف المسجل في حسابك",
+                    "ژمارەی مۆبایلی تۆمارکراو لە هەژمارەکەت بنووسە",
+                    "Enter the phone number registered to your account"
+                  )}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="email" className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  {language === "ar" ? "البريد الإلكتروني (اختياري)" : "ئیمەیڵ (ئارەزوومەندانە)"}
+                  {tr("البريد الإلكتروني (اختياري)", "ئیمەیڵ (ئارەزوومەندانە)", "Email (optional)")}
                 </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder={language === "ar" ? "example@email.com" : "example@email.com"}
+                  placeholder={tr("example@email.com", "example@email.com", "example@email.com")}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   dir="ltr"
@@ -166,10 +177,10 @@ export default function ForgotPassword() {
                 {submitMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                    {language === "ar" ? "جاري الإرسال..." : "دەنێردرێت..."}
+                    {tr("جاري الإرسال...", "دەنێردرێت...", "Sending...")}
                   </>
                 ) : (
-                  language === "ar" ? "إرسال الطلب" : "داواکارییەکە بنێرە"
+                  tr("إرسال الطلب", "داواکارییەکە بنێرە", "Send request")
                 )}
               </Button>
               
@@ -181,7 +192,7 @@ export default function ForgotPassword() {
                 data-testid="button-back-signin"
               >
                 <ArrowLeft className="h-4 w-4 ml-2" />
-                {language === "ar" ? "العودة لتسجيل الدخول" : "گەڕانەوە بۆ چوونەژوورەوە"}
+                {tr("العودة لتسجيل الدخول", "گەڕانەوە بۆ چوونەژوورەوە", "Back to sign in")}
               </Button>
             </form>
           </CardContent>

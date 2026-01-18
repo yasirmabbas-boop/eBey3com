@@ -33,7 +33,19 @@ export interface IStorage {
   updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   
   getListings(): Promise<Listing[]>;
-  getListingsPaginated(options: { limit: number; offset: number; category?: string; saleType?: string; sellerId?: string }): Promise<{ listings: Listing[]; total: number }>;
+  getListingsPaginated(options: {
+    limit: number;
+    offset: number;
+    category?: string;
+    saleTypes?: string[];
+    sellerId?: string;
+    includeSold?: boolean;
+    searchQuery?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    conditions?: string[];
+    cities?: string[];
+  }): Promise<{ listings: Listing[]; total: number }>;
   getListingsByCategory(category: string): Promise<Listing[]>;
   getListingsBySeller(sellerId: string): Promise<Listing[]>;
   getListing(id: string): Promise<Listing | undefined>;
@@ -256,16 +268,16 @@ export class DatabaseStorage implements IStorage {
     limit: number; 
     offset: number; 
     category?: string; 
-    saleType?: string; 
+    saleTypes?: string[]; 
     sellerId?: string; 
     includeSold?: boolean;
     searchQuery?: string;
     minPrice?: number;
     maxPrice?: number;
-    condition?: string;
-    city?: string;
+    conditions?: string[];
+    cities?: string[];
   }): Promise<{ listings: Listing[]; total: number }> {
-    const { limit, offset, category, saleType, sellerId, includeSold, searchQuery, minPrice, maxPrice, condition, city } = options;
+    const { limit, offset, category, saleTypes, sellerId, includeSold, searchQuery, minPrice, maxPrice, conditions: conditionFilters, cities } = options;
     
     // When fetching for a specific seller, show ALL their products (including ended auctions)
     // For public listing pages, only show active listings unless includeSold is true
@@ -275,7 +287,9 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(listings.isActive, true));
     }
     if (category) conditions.push(eq(listings.category, category));
-    if (saleType) conditions.push(eq(listings.saleType, saleType));
+    if (saleTypes && saleTypes.length > 0) {
+      conditions.push(inArray(listings.saleType, saleTypes));
+    }
     if (sellerId) conditions.push(eq(listings.sellerId, sellerId));
     
     // Search query - search in title, description, and tags
@@ -300,13 +314,19 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Condition filter
-    if (condition) {
-      conditions.push(sql`LOWER(${listings.condition}) LIKE ${`%${condition.toLowerCase()}%`}`);
+    if (conditionFilters && conditionFilters.length > 0) {
+      const conditionClauses = conditionFilters.map((condition) =>
+        sql`LOWER(${listings.condition}) LIKE ${`%${condition.toLowerCase()}%`}`
+      );
+      conditions.push(or(...conditionClauses));
     }
     
     // City filter
-    if (city) {
-      conditions.push(sql`LOWER(${listings.city}) LIKE ${`%${city.toLowerCase()}%`}`);
+    if (cities && cities.length > 0) {
+      const cityClauses = cities.map((city) =>
+        sql`LOWER(${listings.city}) LIKE ${`%${city.toLowerCase()}%`}`
+      );
+      conditions.push(or(...cityClauses));
     }
     
     const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];

@@ -28,6 +28,7 @@ export default function SignIn() {
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading } = useAuth();
   const { language, t } = useLanguage();
+  const tr = (ar: string, ku: string, en: string) => (language === "ar" ? ar : language === "ku" ? ku : en);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<Step>("credentials");
   const [pendingToken, setPendingToken] = useState("");
@@ -53,7 +54,14 @@ export default function SignIn() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || (language === "ar" ? "فشل تسجيل الدخول عبر واتساب" : "چوونە ژوورەوە لە ڕێگەی واتسئاپ سەرکەوتوو نەبوو"));
+        throw new Error(
+          data.error ||
+            tr(
+              "فشل تسجيل الدخول عبر واتساب",
+              "چوونە ژوورەوە لە ڕێگەی واتسئاپ سەرکەوتوو نەبوو",
+              "WhatsApp sign-in failed"
+            )
+        );
       }
 
       if (data.authToken) {
@@ -61,9 +69,9 @@ export default function SignIn() {
       }
 
       toast({
-        title: data.isNewUser 
-          ? (language === "ar" ? "تم إنشاء حسابك بنجاح!" : "هەژمارەکەت دروستکرا!")
-          : (language === "ar" ? "تم تسجيل الدخول بنجاح" : "بە سەرکەوتوویی چوویتە ژوورەوە"),
+        title: data.isNewUser
+          ? tr("تم إنشاء حسابك بنجاح!", "هەژمارەکەت دروستکرا!", "Account created successfully!")
+          : tr("تم تسجيل الدخول بنجاح", "بە سەرکەوتوویی چوویتە ژوورەوە", "Signed in successfully"),
         description: `${t("welcome")} ${data.displayName}`,
       });
 
@@ -73,7 +81,7 @@ export default function SignIn() {
       navigate("/");
     } catch (error: any) {
       toast({
-        title: language === "ar" ? "خطأ في تسجيل الدخول" : "هەڵە لە چوونە ژوورەوە",
+        title: tr("خطأ في تسجيل الدخول", "هەڵە لە چوونە ژوورەوە", "Sign-in error"),
         description: error.message,
         variant: "destructive",
       });
@@ -108,7 +116,11 @@ export default function SignIn() {
     if (!formData.phone || !formData.password) {
       toast({
         title: t("error"),
-        description: language === "ar" ? "يرجى إدخال رقم الهاتف وكلمة المرور" : "تکایە ژمارەی مۆبایل و وشەی نهێنی بنووسە",
+        description: tr(
+          "يرجى إدخال رقم الهاتف وكلمة المرور",
+          "تکایە ژمارەی مۆبایل و وشەی نهێنی بنووسە",
+          "Please enter your phone number and password"
+        ),
         variant: "destructive",
       });
       return;
@@ -127,15 +139,19 @@ export default function SignIn() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || (language === "ar" ? "فشل تسجيل الدخول" : "چوونە ژوورەوە سەرکەوتوو نەبوو"));
+        throw new Error(data.error || tr("فشل تسجيل الدخول", "چوونە ژوورەوە سەرکەوتوو نەبوو", "Sign-in failed"));
       }
 
       if (data.requires2FA) {
         setPendingToken(data.pendingToken);
         setStep("2fa");
         toast({
-          title: language === "ar" ? "المصادقة الثنائية" : "دووچەشنە پشتڕاستکردنەوە",
-          description: language === "ar" ? "يرجى إدخال رمز التحقق من تطبيق المصادقة" : "تکایە کۆدی پشتڕاستکردنەوە لە ئەپی پشتڕاستکردنەوە بنووسە",
+          title: tr("المصادقة الثنائية", "دووچەشنە پشتڕاستکردنەوە", "Two-factor authentication"),
+          description: tr(
+            "يرجى إدخال رمز التحقق من تطبيق المصادقة",
+            "تکایە کۆدی پشتڕاستکردنەوە لە ئەپی پشتڕاستکردنەوە بنووسە",
+            "Enter the verification code from your authenticator app"
+          ),
         });
         return;
       }
@@ -145,7 +161,7 @@ export default function SignIn() {
       }
       
       toast({
-        title: language === "ar" ? "تم تسجيل الدخول بنجاح" : "بە سەرکەوتوویی چوویتە ژوورەوە",
+        title: tr("تم تسجيل الدخول بنجاح", "بە سەرکەوتوویی چوویتە ژوورەوە", "Signed in successfully"),
         description: `${t("welcome")} ${data.displayName}`,
       });
 
@@ -155,7 +171,7 @@ export default function SignIn() {
       navigate("/");
     } catch (error: any) {
       toast({
-        title: language === "ar" ? "خطأ في تسجيل الدخول" : "هەڵە لە چوونە ژوورەوە",
+        title: tr("خطأ في تسجيل الدخول", "هەڵە لە چوونە ژوورەوە", "Sign-in error"),
         description: error.message,
         variant: "destructive",
       });
@@ -170,7 +186,11 @@ export default function SignIn() {
     if (twoFactorCode.length !== 6) {
       toast({
         title: t("error"),
-        description: language === "ar" ? "يرجى إدخال رمز التحقق المكون من 6 أرقام" : "تکایە کۆدی پشتڕاستکردنەوەی ٦ ژمارە بنووسە",
+        description: tr(
+          "يرجى إدخال رمز التحقق المكون من 6 أرقام",
+          "تکایە کۆدی پشتڕاستکردنەوەی ٦ ژمارە بنووسە",
+          "Please enter the 6-digit verification code"
+        ),
         variant: "destructive",
       });
       return;
@@ -193,7 +213,7 @@ export default function SignIn() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || (language === "ar" ? "رمز التحقق غير صحيح" : "کۆدی پشتڕاستکردنەوە هەڵەیە"));
+        throw new Error(data.error || tr("رمز التحقق غير صحيح", "کۆدی پشتڕاستکردنەوە هەڵەیە", "Invalid verification code"));
       }
 
       if (data.authToken) {
@@ -201,7 +221,7 @@ export default function SignIn() {
       }
       
       toast({
-        title: language === "ar" ? "تم تسجيل الدخول بنجاح" : "بە سەرکەوتوویی چوویتە ژوورەوە",
+        title: tr("تم تسجيل الدخول بنجاح", "بە سەرکەوتوویی چوویتە ژوورەوە", "Signed in successfully"),
         description: `${t("welcome")} ${data.displayName}`,
       });
 
@@ -211,7 +231,7 @@ export default function SignIn() {
       navigate("/");
     } catch (error: any) {
       toast({
-        title: language === "ar" ? "خطأ في التحقق" : "هەڵە لە پشتڕاستکردنەوە",
+        title: tr("خطأ في التحقق", "هەڵە لە پشتڕاستکردنەوە", "Verification error"),
         description: error.message,
         variant: "destructive",
       });
@@ -226,11 +246,11 @@ export default function SignIn() {
         <div className="mb-6 text-center">
           <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
             <span className="h-px w-8 bg-border/70" />
-            {language === "ar" ? "تسجيل الدخول" : "چوونە ژوورەوە"}
+            {tr("تسجيل الدخول", "چوونە ژوورەوە", "Sign In")}
             <span className="h-px w-8 bg-border/70" />
           </div>
           <h1 className="mt-2 text-2xl font-bold text-foreground">
-            {step === "credentials" ? t("signIn") : (language === "ar" ? "المصادقة الثنائية" : "دووچەشنە پشتڕاستکردنەوە")}
+            {step === "credentials" ? t("signIn") : tr("المصادقة الثنائية", "دووچەشنە پشتڕاستکردنەوە", "Two-factor authentication")}
           </h1>
         </div>
         <Card className="soft-border elev-2">
@@ -243,12 +263,20 @@ export default function SignIn() {
               )}
             </div>
             <CardTitle className="text-xl">
-              {step === "credentials" ? t("signIn") : (language === "ar" ? "المصادقة الثنائية" : "دووچەشنە پشتڕاستکردنەوە")}
+              {step === "credentials" ? t("signIn") : tr("المصادقة الثنائية", "دووچەشنە پشتڕاستکردنەوە", "Two-factor authentication")}
             </CardTitle>
             <CardDescription>
               {step === "credentials" 
-                ? (language === "ar" ? "أدخل رقم هاتفك وكلمة المرور للمتابعة" : "ژمارەی مۆبایل و وشەی نهێنیت بنووسە بۆ بەردەوامبوون")
-                : (language === "ar" ? "أدخل رمز التحقق من تطبيق المصادقة" : "کۆدی پشتڕاستکردنەوە لە ئەپی پشتڕاستکردنەوە بنووسە")
+                ? tr(
+                    "أدخل رقم هاتفك وكلمة المرور للمتابعة",
+                    "ژمارەی مۆبایل و وشەی نهێنیت بنووسە بۆ بەردەوامبوون",
+                    "Enter your phone number and password to continue"
+                  )
+                : tr(
+                    "أدخل رمز التحقق من تطبيق المصادقة",
+                    "کۆدی پشتڕاستکردنەوە لە ئەپی پشتڕاستکردنەوە بنووسە",
+                    "Enter the verification code from your authenticator app"
+                  )
               }
             </CardDescription>
           </CardHeader>
@@ -301,7 +329,7 @@ export default function SignIn() {
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                      {language === "ar" ? "جاري تسجيل الدخول..." : "چوونە ژوورەوە..."}
+                      {tr("جاري تسجيل الدخول...", "چوونە ژوورەوە...", "Signing in...")}
                     </>
                   ) : (
                     t("signIn")
@@ -317,7 +345,7 @@ export default function SignIn() {
             ) : (
               <form onSubmit={handleVerify2FA} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>{language === "ar" ? "رمز التحقق" : "کۆدی پشتڕاستکردنەوە"}</Label>
+                  <Label>{tr("رمز التحقق", "کۆدی پشتڕاستکردنەوە", "Verification code")}</Label>
                   <div className="flex justify-center" dir="ltr">
                     <InputOTP
                       maxLength={6}
@@ -352,7 +380,7 @@ export default function SignIn() {
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                      {language === "ar" ? "جاري التحقق..." : "پشتڕاستکردنەوە..."}
+                      {tr("جاري التحقق...", "پشتڕاستکردنەوە...", "Verifying...")}
                     </>
                   ) : (
                     t("confirm")
@@ -370,7 +398,7 @@ export default function SignIn() {
                   }}
                   data-testid="button-back-to-login"
                 >
-                  {language === "ar" ? "العودة لتسجيل الدخول" : "گەڕانەوە بۆ چوونە ژوورەوە"}
+                  {tr("العودة لتسجيل الدخول", "گەڕانەوە بۆ چوونە ژوورەوە", "Back to sign in")}
                 </Button>
               </form>
             )}
@@ -390,7 +418,7 @@ export default function SignIn() {
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-background px-2 text-muted-foreground">
-                      {language === "ar" ? "أو" : "یان"}
+                      {tr("أو", "یان", "or")}
                     </span>
                   </div>
                 </div>

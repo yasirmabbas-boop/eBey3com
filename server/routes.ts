@@ -60,6 +60,21 @@ export async function registerRoutes(
   app.get("/api/listings", async (req, res) => {
     try {
       const { category, sellerId, page, limit: limitParam, saleType, includeSold, q, minPrice, maxPrice, condition, city } = req.query;
+      const saleTypes = Array.isArray(saleType)
+        ? saleType
+        : typeof saleType === "string"
+          ? [saleType]
+          : undefined;
+      const conditions = Array.isArray(condition)
+        ? condition
+        : typeof condition === "string"
+          ? [condition]
+          : undefined;
+      const cities = Array.isArray(city)
+        ? city
+        : typeof city === "string"
+          ? [city]
+          : undefined;
       const pageNum = parseInt(page as string) || 1;
       const limit = Math.min(parseInt(limitParam as string) || 20, 100);
       const offset = (pageNum - 1) * limit;
@@ -69,14 +84,14 @@ export async function registerRoutes(
         limit,
         offset,
         category: typeof category === "string" ? category : undefined,
-        saleType: typeof saleType === "string" ? saleType : undefined,
+        saleTypes,
         sellerId: typeof sellerId === "string" ? sellerId : undefined,
         includeSold: includeSold === "true",
         searchQuery: typeof q === "string" ? q : undefined,
         minPrice: typeof minPrice === "string" ? parseInt(minPrice) : undefined,
         maxPrice: typeof maxPrice === "string" ? parseInt(maxPrice) : undefined,
-        condition: typeof condition === "string" ? condition : undefined,
-        city: typeof city === "string" ? city : undefined,
+        conditions,
+        cities,
       });
       
       // Cache listing responses for 30 seconds to reduce repeat requests

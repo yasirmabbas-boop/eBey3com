@@ -67,6 +67,12 @@ export default function Home() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const { language, t } = useLanguage();
+  const debugHeroLabel = language === "ar" ? "بيع واشتري بأمان" : "بە پارێزراوی بکڕە و بفرۆشە";
+  if (language === "en") {
+    // #region agent log
+    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H3',location:'pages/home.tsx:Home',message:'home ternary label for hero',data:{language,label:debugHeroLabel},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion agent log
+  }
   const currentAd = ADS[currentAdIndex];
 
   useEffect(() => {

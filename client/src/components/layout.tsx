@@ -9,6 +9,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
 import { ImageSearchModal } from "@/components/image-search-modal";
@@ -56,8 +57,10 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
     }
   };
 
+  const isRtl = language === "ar" || language === "ku";
+
   return (
-    <div className="despia-app bg-background font-sans md:min-h-screen md:block overflow-x-hidden max-w-full safe-area-top" dir="rtl">
+    <div className="despia-app bg-background font-sans md:min-h-screen md:block overflow-x-hidden max-w-full safe-area-top" dir={isRtl ? "rtl" : "ltr"}>
             
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
@@ -116,15 +119,29 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                 </Link>
               )
             )}
-            <button
-              onClick={() => setLanguage(language === "ar" ? "ku" : "ar")}
-              className="hover:opacity-80 transition-colors flex items-center gap-2 bg-white/95 text-primary px-3 py-1 rounded-full text-sm font-bold shadow-[var(--shadow-1)]"
-              data-testid="button-language-toggle"
-              title={language === "ar" ? "کوردی" : "عربي"}
-            >
-              <Languages className="h-4 w-4" />
-              {language === "ar" ? "کوردی" : "عربي"}
-            </button>
+            <div className="flex items-center gap-2">
+              <Languages className="h-4 w-4 text-white/90" />
+              <Select
+                value={language}
+                onValueChange={(value) => {
+                  // #region agent log
+                  fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H4',location:'components/layout.tsx:languageSelect',message:'language select changed',data:{value},timestamp:Date.now()})}).catch(()=>{});
+                  // #endregion agent log
+                  setLanguage(value as typeof language);
+                }}
+              >
+                <SelectTrigger
+                  className="h-8 w-[130px] bg-white/95 text-primary border-0 shadow-[var(--shadow-1)] text-xs font-bold"
+                  data-testid="select-language"
+                >
+                  <SelectValue placeholder={t("language")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ar">{t("arabic")}</SelectItem>
+                  <SelectItem value="ku">{t("kurdish")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <button
               onClick={handleShareSite}
               className="hover:opacity-80 transition-colors flex items-center gap-2"
