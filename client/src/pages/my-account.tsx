@@ -65,7 +65,7 @@ export default function MyAccount() {
   const { uploadFile } = useUpload({
     onSuccess: async (response) => {
       try {
-        const avatarUrl = `${window.location.origin}/api/uploads/public/${response.objectPath}`;
+        const avatarUrl = `${window.location.origin}${response.objectPath}`;
         const res = await fetch("/api/account/profile", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
