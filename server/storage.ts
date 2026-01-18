@@ -295,13 +295,7 @@ export class DatabaseStorage implements IStorage {
       // Combine with fuzzy matching for typo tolerance
       conditions.push(
         or(
-          // Full-text search using tsvector (fastest, weighted by field importance)
-          sql`${listings.searchVector} @@ plainto_tsquery('english', ${query})`,
-          // Fuzzy matching on title using trigrams (handles typos)
-          sql`similarity(${listings.title}, ${query}) > 0.3`,
-          // Fuzzy matching on brand (critical for "watches" etc)
-          sql`similarity(COALESCE(${listings.brand}, ''), ${query}) > 0.3`,
-          // Fallback LIKE search for exact partial matches
+          // LIKE search for partial matches
           sql`LOWER(${listings.title}) LIKE ${searchTerm}`,
           sql`LOWER(COALESCE(${listings.brand}, '')) LIKE ${searchTerm}`,
           sql`LOWER(${listings.description}) LIKE ${searchTerm}`,
@@ -313,11 +307,11 @@ export class DatabaseStorage implements IStorage {
         )
       );
       
-      // Calculate relevance score combining full-text rank and fuzzy similarity
+      // Calculate relevance score based on title match priority
       searchRankSql = sql`(
-        ts_rank_cd(${listings.searchVector}, plainto_tsquery('english', ${query})) * 10 +
-        similarity(${listings.title}, ${query}) * 5 +
-        similarity(COALESCE(${listings.brand}, ''), ${query}) * 5
+        CASE WHEN LOWER(${listings.title}) LIKE ${searchTerm} THEN 10 ELSE 0 END +
+        CASE WHEN LOWER(COALESCE(${listings.brand}, '')) LIKE ${searchTerm} THEN 5 ELSE 0 END +
+        CASE WHEN LOWER(${listings.category}) LIKE ${searchTerm} THEN 3 ELSE 0 END
       )`;
     }
     
@@ -415,10 +409,7 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(listings.isDeleted, false),
         eq(listings.isActive, true),
-        or(
-          sql`LOWER(${listings.category}) LIKE ${`%${searchTerm}%`}`,
-          sql`similarity(${listings.category}, ${query}) > 0.3`
-        )
+        sql`LOWER(${listings.category}) LIKE ${`%${searchTerm}%`}`
       ))
       .limit(5);
     
@@ -438,18 +429,11 @@ export class DatabaseStorage implements IStorage {
         eq(listings.isDeleted, false),
         eq(listings.isActive, true),
         or(
-          sql`${listings.searchVector} @@ plainto_tsquery('english', ${query})`,
-          sql`similarity(${listings.title}, ${query}) > 0.3`,
           sql`LOWER(${listings.title}) LIKE ${`%${searchTerm}%`}`,
           sql`LOWER(COALESCE(${listings.brand}, '')) LIKE ${`%${searchTerm}%`}`
         )
       ))
-      .orderBy(
-        desc(sql`(
-          ts_rank_cd(${listings.searchVector}, plainto_tsquery('english', ${query})) * 10 +
-          similarity(${listings.title}, ${query}) * 5
-        )`)
-      )
+      .orderBy(desc(listings.createdAt))
       .limit(limit - suggestions.length);
     
     productResults.forEach(row => {
