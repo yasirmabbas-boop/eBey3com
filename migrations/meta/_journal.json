@@ -11,3 +11,7 @@
     }
   ]
 }
+npm run db:migrate
+
+
+
