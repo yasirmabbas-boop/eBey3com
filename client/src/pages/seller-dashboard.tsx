@@ -51,6 +51,7 @@ import {
   Wallet,
   Calendar,
   TrendingDown,
+  BanknoteIcon,
   ArrowDownToLine,
   ArrowUpFromLine,
   Share2,
@@ -353,6 +354,7 @@ export default function SellerDashboard() {
     total: number;
     freeSalesRemaining: number;
     nextPayoutDate: string;
+    holdDays?: number;
   }
 
   interface WalletTransaction {
@@ -363,6 +365,17 @@ export default function SellerDashboard() {
     description: string;
     status: string;
     createdAt: string;
+  }
+
+  interface WeeklyPayout {
+    id: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    netPayout: number;
+    status: string;
+    paymentMethod?: string;
+    paymentReference?: string;
+    paidAt?: string;
   }
 
   const { data: walletBalance, isLoading: walletLoading } = useQuery<WalletBalance>({
@@ -388,6 +401,20 @@ export default function SellerDashboard() {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error("Failed to fetch transactions");
+      return res.json();
+    },
+    enabled: !!user?.id && (user as any)?.sellerApproved,
+  });
+
+  const { data: payouts = [], isLoading: payoutsLoading } = useQuery<WeeklyPayout[]>({
+    queryKey: ["/api/wallet/payouts"],
+    queryFn: async () => {
+      const token = localStorage.getItem("authToken");
+      const res = await fetch("/api/wallet/payouts", {
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Failed to fetch payouts");
       return res.json();
     },
     enabled: !!user?.id && (user as any)?.sellerApproved,
@@ -1992,7 +2019,7 @@ export default function SellerDashboard() {
               </div>
             ) : (
               <>
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-5">
                   <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
@@ -2007,7 +2034,9 @@ export default function SellerDashboard() {
                             {(walletBalance?.pending || 0).toLocaleString()} د.ع
                           </p>
                           <p className="text-xs text-yellow-600">
-                            {language === "ar" ? "خلال فترة الحجز 5 أيام" : "لە ماوەی 5 ڕۆژدا"}
+                            {language === "ar"
+                              ? `خلال فترة الحجز ${walletBalance?.holdDays ?? 2} أيام`
+                              : `لە ماوەی ${walletBalance?.holdDays ?? 2} ڕۆژدا`}
                           </p>
                         </div>
                       </div>
@@ -2029,6 +2058,27 @@ export default function SellerDashboard() {
                           </p>
                           <p className="text-xs text-green-600">
                             {language === "ar" ? "جاهز للدفعة القادمة" : "ئامادەیە بۆ دفعی داهاتوو"}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-slate-200 p-2 rounded-lg">
+                          <BanknoteIcon className="h-5 w-5 text-slate-700" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-700">
+                            {language === "ar" ? "مدفوع سابقاً" : "پێشووتر دراو"}
+                          </p>
+                          <p className="text-2xl font-bold text-slate-800">
+                            {(walletBalance?.paid || 0).toLocaleString()} د.ع
+                          </p>
+                          <p className="text-xs text-slate-600">
+                            {language === "ar" ? "إجمالي الدفعات السابقة" : "کۆی دفعەکانی پێشوو"}
                           </p>
                         </div>
                       </div>
@@ -2194,6 +2244,61 @@ export default function SellerDashboard() {
                                  txn.status === "pending" ? (language === "ar" ? "قيد الانتظار" : "چاوەڕوان") :
                                  txn.status === "paid" ? (language === "ar" ? "مدفوع" : "دراو") :
                                  txn.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      {language === "ar" ? "سجل الدفعات" : "تۆماری دفعەکان"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {payoutsLoading ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      </div>
+                    ) : payouts.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Wallet className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-500">
+                          {language === "ar" ? "لا توجد دفعات بعد" : "هێشتا هیچ دفعەیەک نییە"}
+                        </p>
+                        <p className="text-sm text-gray-400 mt-1">
+                          {language === "ar" ? "ستظهر الدفعات هنا بعد الجدولة الأسبوعية" : "دفعەکان لێرە دەردەکەون لە دوای دەربهێنانی هەفتانە"}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {payouts.map((payout) => (
+                          <div key={payout.id} className="py-3 flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">
+                                {new Date(payout.weekStartDate).toLocaleDateString(language === "ar" ? "ar-IQ" : "ckb-IQ")}{" "}
+                                -{" "}
+                                {new Date(payout.weekEndDate).toLocaleDateString(language === "ar" ? "ar-IQ" : "ckb-IQ")}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {payout.paymentMethod || "-"}
+                              </p>
+                            </div>
+                            <div className="text-left">
+                              <p className="font-bold">
+                                {payout.netPayout.toLocaleString()} د.ع
+                              </p>
+                              <Badge variant="outline" className="text-xs">
+                                {payout.status === "paid"
+                                  ? (language === "ar" ? "مدفوع" : "دراو")
+                                  : payout.status === "pending"
+                                  ? (language === "ar" ? "قيد الانتظار" : "چاوەڕوان")
+                                  : payout.status}
                               </Badge>
                             </div>
                           </div>

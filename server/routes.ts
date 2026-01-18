@@ -1602,6 +1602,82 @@ export async function registerRoutes(
     }
   });
 
+  // Buyer cancellation - cancel a purchase with reason
+  app.patch("/api/transactions/:id/buyer-cancel", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      const transactionId = req.params.id;
+      const { reason } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول لإلغاء الطلب" });
+      }
+
+      if (!reason || reason.trim().length < 5) {
+        return res.status(400).json({ error: "يجب تقديم سبب الإلغاء (5 أحرف على الأقل)" });
+      }
+
+      const transaction = await storage.getTransactionById(transactionId);
+
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+
+      if (transaction.buyerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بإلغاء هذا الطلب" });
+      }
+
+      if (!["pending", "pending_payment", "pending_shipping"].includes(transaction.status)) {
+        return res.status(400).json({ error: "لا يمكن إلغاء الطلب بعد تأكيد الشحن" });
+      }
+
+      const updated = await storage.cancelTransactionByBuyer(transactionId, reason.trim());
+
+      if (!updated) {
+        return res.status(500).json({ error: "فشل في إلغاء الطلب" });
+      }
+
+      const listing = await storage.getListing(transaction.listingId);
+      if (listing) {
+        const newQuantitySold = Math.max(0, (listing.quantitySold || 0) - 1);
+        await storage.updateListing(transaction.listingId, {
+          quantitySold: newQuantitySold,
+          isActive: newQuantitySold < (listing.quantityAvailable || 1),
+        });
+      }
+
+      // Notify seller about cancellation
+      if (transaction.sellerId) {
+        try {
+          await storage.createNotification({
+            userId: transaction.sellerId,
+            type: "order_cancelled",
+            title: "تم إلغاء الطلب من قبل المشتري",
+            message: `تم إلغاء طلب "${listing?.title || 'منتج'}" من قبل المشتري. السبب: ${reason}`,
+            relatedId: transaction.listingId,
+          });
+          await storage.sendMessage({
+            senderId: transaction.buyerId,
+            receiverId: transaction.sellerId,
+            content: `تم إلغاء الطلب ❌\n\nالمنتج: ${listing?.title || 'منتج'}\nرقم الطلب: ${transactionId.slice(0, 8).toUpperCase()}\n\nسبب الإلغاء: ${reason}\n\nنعتذر عن أي إزعاج.`,
+            listingId: transaction.listingId,
+          });
+        } catch (e) {
+          console.log("Could not send cancellation notification:", e);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: "تم إلغاء الطلب بنجاح",
+        transaction: updated,
+      });
+    } catch (error) {
+      console.error("Error cancelling transaction (buyer):", error);
+      res.status(500).json({ error: "فشل في إلغاء الطلب" });
+    }
+  });
+
   // Rate buyer (seller rating for buyer)
   app.patch("/api/transactions/:id/rate-buyer", async (req, res) => {
     try {
@@ -1809,6 +1885,23 @@ export async function registerRoutes(
           console.log(`[Wallet] Settlement reversed for transaction ${request.transactionId} due to return approval`);
         } catch (walletError) {
           console.error("Error reversing wallet settlement:", walletError);
+          // Don't fail the return approval - wallet can be reconciled later
+        }
+
+        // Credit buyer wallet for refund
+        try {
+          const transaction = await storage.getTransactionById(request.transactionId);
+          if (transaction?.amount) {
+            await financialService.createBuyerWalletTransaction(
+              request.buyerId,
+              transaction.amount,
+              `استرجاع مبلغ الطلب #${request.transactionId.slice(0, 8)}`,
+              "refund",
+              "available"
+            );
+          }
+        } catch (walletError) {
+          console.error("Error crediting buyer wallet:", walletError);
           // Don't fail the return approval - wallet can be reconciled later
         }
       }
@@ -4120,6 +4213,7 @@ export async function registerRoutes(
         ...balance,
         freeSalesRemaining: monthlyStats ? 15 - monthlyStats.freeSalesUsed : 15,
         nextPayoutDate: nextPayoutDate.toISOString(),
+        holdDays: financialService.getHoldDays(),
       });
     } catch (error) {
       console.error("Error fetching wallet balance:", error);
@@ -4167,6 +4261,41 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching payouts:", error);
       res.status(500).json({ error: "Failed to fetch payouts" });
+    }
+  });
+
+  // Buyer: Get wallet balance
+  app.get("/api/buyer/wallet/balance", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const balance = await financialService.getBuyerWalletBalance(userId);
+      res.json(balance);
+    } catch (error) {
+      console.error("Error fetching buyer wallet balance:", error);
+      res.status(500).json({ error: "Failed to fetch balance" });
+    }
+  });
+
+  // Buyer: Get wallet transactions
+  app.get("/api/buyer/wallet/transactions", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const transactions = await financialService.getBuyerWalletTransactions(userId, limit, offset);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching buyer wallet transactions:", error);
+      res.status(500).json({ error: "Failed to fetch transactions" });
     }
   });
 
@@ -4393,6 +4522,52 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error processing holds:", error);
       res.status(500).json({ error: "Failed to process holds" });
+    }
+  });
+
+  // Admin: Adjust seller or buyer wallet balance
+  app.post("/api/admin/wallet/adjust", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { targetUserId, accountType, amount, description } = req.body as {
+        targetUserId?: string;
+        accountType?: "seller" | "buyer";
+        amount?: number;
+        description?: string;
+      };
+
+      if (!targetUserId || !accountType || typeof amount !== "number") {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      if (accountType === "seller") {
+        await financialService.createSellerWalletAdjustment(
+          targetUserId,
+          amount,
+          description || "Admin adjustment"
+        );
+      } else if (accountType === "buyer") {
+        await financialService.createBuyerWalletAdjustment(
+          targetUserId,
+          amount,
+          description || "Admin adjustment"
+        );
+      } else {
+        return res.status(400).json({ error: "Invalid account type" });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error adjusting wallet:", error);
+      res.status(500).json({ error: "Failed to adjust wallet" });
     }
   });
 

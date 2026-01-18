@@ -183,6 +183,7 @@ export const transactions = pgTable("transactions", {
   issueType: text("issue_type"),
   issueNote: text("issue_note"),
   cancelledBySeller: boolean("cancelled_by_seller").default(false),
+  cancelledByBuyer: boolean("cancelled_by_buyer").default(false),
   cancellationReason: text("cancellation_reason"),
   cancelledAt: timestamp("cancelled_at"),
 });
@@ -561,6 +562,18 @@ export const walletTransactions = pgTable("wallet_transactions", {
   availableAt: timestamp("available_at"), // When funds became available
 });
 
+// Buyer wallet transactions - Credits/debits for buyers
+export const buyerWalletTransactions = pgTable("buyer_wallet_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  buyerId: varchar("buyer_id").notNull(),
+  transactionId: varchar("transaction_id"), // Links to transactions table (order/return)
+  type: text("type").notNull(), // 'refund', 'credit', 'adjustment', 'debit'
+  amount: integer("amount").notNull(), // Positive for credit, negative for debit
+  description: text("description"),
+  status: text("status").notNull().default("available"), // 'pending', 'available', 'reversed'
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 export const insertWalletTransactionSchema = createInsertSchema(walletTransactions).omit({
   id: true,
   createdAt: true,
@@ -569,6 +582,14 @@ export const insertWalletTransactionSchema = createInsertSchema(walletTransactio
 
 export type InsertWalletTransaction = z.infer<typeof insertWalletTransactionSchema>;
 export type WalletTransaction = typeof walletTransactions.$inferSelect;
+
+export const insertBuyerWalletTransactionSchema = createInsertSchema(buyerWalletTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertBuyerWalletTransaction = z.infer<typeof insertBuyerWalletTransactionSchema>;
+export type BuyerWalletTransaction = typeof buyerWalletTransactions.$inferSelect;
 
 // Weekly payouts - Settlement records per seller per week
 export const weeklyPayouts = pgTable("weekly_payouts", {

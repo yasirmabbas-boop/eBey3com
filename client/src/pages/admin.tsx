@@ -125,6 +125,12 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "deleted-listings" | "messages" | "cancellations" | "payouts">("stats");
   const [listingSearch, setListingSearch] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [walletAdjustment, setWalletAdjustment] = useState({
+    targetUserId: "",
+    accountType: "seller",
+    amount: "",
+    description: "",
+  });
 
   useEffect(() => {
     if (!authLoading && (!user || !(user as any).isAdmin)) {
@@ -308,6 +314,36 @@ export default function AdminPage() {
     },
     onError: () => {
       toast({ title: "فشل في معالجة فترات الانتظار", variant: "destructive" });
+    },
+  });
+
+  const walletAdjustmentMutation = useMutation({
+    mutationFn: async () => {
+      const amount = Number(walletAdjustment.amount);
+      const res = await fetchWithAuth("/api/admin/wallet/adjust", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetUserId: walletAdjustment.targetUserId,
+          accountType: walletAdjustment.accountType,
+          amount,
+          description: walletAdjustment.description,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to adjust wallet");
+      return res.json();
+    },
+    onSuccess: () => {
+      setWalletAdjustment({
+        targetUserId: "",
+        accountType: "seller",
+        amount: "",
+        description: "",
+      });
+      toast({ title: "تم تحديث الرصيد بنجاح" });
+    },
+    onError: () => {
+      toast({ title: "فشل في تعديل الرصيد", variant: "destructive" });
     },
   });
 
@@ -1538,6 +1574,66 @@ export default function AdminPage() {
                     </Button>
                   </div>
                 </div>
+
+                <Card className="soft-border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Wallet className="h-5 w-5" />
+                      تعديل رصيد المحفظة
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <Input
+                        placeholder="معرف المستخدم"
+                        value={walletAdjustment.targetUserId}
+                        onChange={(e) => setWalletAdjustment(prev => ({ ...prev, targetUserId: e.target.value }))}
+                        data-testid="input-wallet-target-user"
+                      />
+                      <select
+                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        value={walletAdjustment.accountType}
+                        onChange={(e) => setWalletAdjustment(prev => ({ ...prev, accountType: e.target.value }))}
+                        data-testid="select-wallet-account-type"
+                      >
+                        <option value="seller">بائع</option>
+                        <option value="buyer">مشتري</option>
+                      </select>
+                      <Input
+                        type="number"
+                        placeholder="المبلغ (سالب للخصم)"
+                        value={walletAdjustment.amount}
+                        onChange={(e) => setWalletAdjustment(prev => ({ ...prev, amount: e.target.value }))}
+                        data-testid="input-wallet-amount"
+                      />
+                      <Input
+                        placeholder="وصف مختصر"
+                        value={walletAdjustment.description}
+                        onChange={(e) => setWalletAdjustment(prev => ({ ...prev, description: e.target.value }))}
+                        data-testid="input-wallet-description"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={() => walletAdjustmentMutation.mutate()}
+                        disabled={
+                          walletAdjustmentMutation.isPending ||
+                          !walletAdjustment.targetUserId ||
+                          walletAdjustment.amount.trim() === "" ||
+                          Number.isNaN(Number(walletAdjustment.amount))
+                        }
+                        data-testid="button-wallet-adjust"
+                      >
+                        {walletAdjustmentMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4 ml-2" />
+                        )}
+                        تطبيق التعديل
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {payoutsLoading ? (
                   <div className="flex justify-center py-12">

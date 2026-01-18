@@ -4,7 +4,7 @@
  */
 
 import { db } from "../db";
-import { walletTransactions, weeklyPayouts, monthlyCommissionTracker, deliveryOrders, transactions } from "@shared/schema";
+import { walletTransactions, buyerWalletTransactions, weeklyPayouts, monthlyCommissionTracker, deliveryOrders, transactions } from "@shared/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 
 const COMMISSION_RATE = 0.08; // 8% commission after free sales
@@ -24,6 +24,12 @@ export interface WalletBalance {
   pending: number;
   available: number;
   paid: number;
+  total: number;
+}
+
+export interface BuyerWalletBalance {
+  pending: number;
+  available: number;
   total: number;
 }
 
@@ -239,6 +245,33 @@ class FinancialService {
     };
   }
 
+  async getBuyerWalletBalance(buyerId: string): Promise<BuyerWalletBalance> {
+    const txns = await db
+      .select()
+      .from(buyerWalletTransactions)
+      .where(eq(buyerWalletTransactions.buyerId, buyerId));
+
+    let pending = 0;
+    let available = 0;
+
+    for (const txn of txns) {
+      switch (txn.status) {
+        case "pending":
+          pending += txn.amount;
+          break;
+        case "available":
+          available += txn.amount;
+          break;
+      }
+    }
+
+    return {
+      pending,
+      available,
+      total: pending + available,
+    };
+  }
+
   async getWalletTransactions(
     sellerId: string,
     limit = 50,
@@ -251,6 +284,50 @@ class FinancialService {
       .orderBy(sql`${walletTransactions.createdAt} DESC`)
       .limit(limit)
       .offset(offset);
+  }
+
+  async getBuyerWalletTransactions(
+    buyerId: string,
+    limit = 50,
+    offset = 0
+  ): Promise<typeof buyerWalletTransactions.$inferSelect[]> {
+    return db
+      .select()
+      .from(buyerWalletTransactions)
+      .where(eq(buyerWalletTransactions.buyerId, buyerId))
+      .orderBy(sql`${buyerWalletTransactions.createdAt} DESC`)
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async createBuyerWalletTransaction(
+    buyerId: string,
+    amount: number,
+    description: string,
+    type: "refund" | "credit" | "adjustment" | "debit",
+    status: "pending" | "available" | "reversed" = "available"
+  ): Promise<void> {
+    await db.insert(buyerWalletTransactions).values({
+      buyerId,
+      type,
+      amount,
+      description,
+      status,
+    });
+  }
+
+  async createBuyerWalletAdjustment(buyerId: string, amount: number, description: string): Promise<void> {
+    await this.createBuyerWalletTransaction(buyerId, amount, description, "adjustment", "available");
+  }
+
+  async createSellerWalletAdjustment(sellerId: string, amount: number, description: string): Promise<void> {
+    await db.insert(walletTransactions).values({
+      sellerId,
+      type: "adjustment",
+      amount,
+      description,
+      status: "available",
+    });
   }
 
   async getMonthlyStats(sellerId: string): Promise<typeof monthlyCommissionTracker.$inferSelect | null> {
@@ -400,6 +477,10 @@ class FinancialService {
     nextSunday.setDate(now.getDate() + daysUntilSunday);
     nextSunday.setHours(0, 0, 0, 0);
     return nextSunday;
+  }
+
+  getHoldDays(): number {
+    return HOLD_DAYS;
   }
 }
 

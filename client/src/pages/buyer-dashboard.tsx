@@ -63,6 +63,21 @@ interface BuyerOffer {
   };
 }
 
+interface BuyerWalletBalance {
+  pending: number;
+  available: number;
+  total: number;
+}
+
+interface BuyerWalletTransaction {
+  id: string;
+  type: string;
+  amount: number;
+  description?: string;
+  status: string;
+  createdAt: string;
+}
+
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "delivered":
@@ -112,6 +127,16 @@ export default function BuyerDashboard() {
 
   const { data: myOffers = [], isLoading: offersLoading } = useQuery<BuyerOffer[]>({
     queryKey: ["/api/my-offers"],
+    enabled: !!user?.id,
+  });
+
+  const { data: buyerWalletBalance, isLoading: walletLoading } = useQuery<BuyerWalletBalance>({
+    queryKey: ["/api/buyer/wallet/balance"],
+    enabled: !!user?.id,
+  });
+
+  const { data: buyerWalletTransactions = [], isLoading: walletTxLoading } = useQuery<BuyerWalletTransaction[]>({
+    queryKey: ["/api/buyer/wallet/transactions"],
     enabled: !!user?.id,
   });
 
@@ -229,6 +254,91 @@ export default function BuyerDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Buyer Wallet */}
+        <Card className="soft-border elev-1 mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HandCoins className="h-5 w-5" />
+              محفظتي
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-100">
+                <p className="text-sm text-emerald-700">الرصيد المتاح</p>
+                {walletLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mt-2 text-emerald-700" />
+                ) : (
+                  <p className="text-2xl font-bold text-emerald-800">
+                    {(buyerWalletBalance?.available || 0).toLocaleString()} د.ع
+                  </p>
+                )}
+              </div>
+              <div className="p-4 rounded-lg bg-amber-50 border border-amber-100">
+                <p className="text-sm text-amber-700">رصيد قيد الانتظار</p>
+                {walletLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mt-2 text-amber-700" />
+                ) : (
+                  <p className="text-2xl font-bold text-amber-800">
+                    {(buyerWalletBalance?.pending || 0).toLocaleString()} د.ع
+                  </p>
+                )}
+              </div>
+              <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
+                <p className="text-sm text-blue-700">إجمالي الرصيد</p>
+                {walletLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mt-2 text-blue-700" />
+                ) : (
+                  <p className="text-2xl font-bold text-blue-800">
+                    {(buyerWalletBalance?.total || 0).toLocaleString()} د.ع
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <h4 className="text-sm font-semibold mb-2">آخر الحركات</h4>
+              {walletTxLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+              ) : buyerWalletTransactions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">لا توجد حركات مالية حتى الآن</p>
+              ) : (
+                <div className="divide-y">
+                  {buyerWalletTransactions.slice(0, 5).map((txn) => (
+                    <div key={txn.id} className="py-2 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${txn.amount >= 0 ? "bg-emerald-100" : "bg-rose-100"}`}>
+                          {txn.amount >= 0 ? (
+                            <CheckCircle className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-rose-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{txn.description || "حركة مالية"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(txn.createdAt).toLocaleDateString("ar-IQ")}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-left">
+                        <p className={`font-bold ${txn.amount >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                          {txn.amount >= 0 ? "+" : ""}{txn.amount.toLocaleString()} د.ع
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          {txn.status === "available" ? "متاح" : txn.status === "pending" ? "قيد الانتظار" : txn.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
