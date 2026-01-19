@@ -8,6 +8,7 @@ import { useBidWebSocket } from "@/hooks/use-bid-websocket";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AddressSelectionModal } from "./address-selection-modal";
 import { hapticSuccess, hapticError, hapticLight } from "@/lib/despia";
+import { Link } from "wouter";
 
 type BidUpdateEvent = {
   currentBid: number;
@@ -310,9 +311,11 @@ export function BiddingWindow({
       )}
 
       {!!userId && needsVerification && (
-        <div className="bg-yellow-50 border border-yellow-300 p-3 rounded-lg mb-6 text-sm text-yellow-700 font-medium text-center">
-          ⚠️ يجب توثيق حسابك للمزايدة في هذا المزاد. يرجى توثيق رقم هاتفك أولاً.
-        </div>
+        <Link href="/my-account">
+          <div className="bg-yellow-50 border border-yellow-300 p-3 rounded-lg mb-6 text-sm text-yellow-700 font-medium text-center cursor-pointer hover:bg-yellow-100 transition-colors">
+            ⚠️ يجب توثيق حسابك للمزايدة في هذا المزاد. <span className="underline">اضغط هنا لطلب التوثيق</span>
+          </div>
+        </Link>
       )}
 
       <div className="space-y-4 mb-6">

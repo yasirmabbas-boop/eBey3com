@@ -133,7 +133,7 @@ export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "deleted-listings" | "messages" | "cancellations" | "payouts">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "verification-requests" | "listings" | "deleted-listings" | "messages" | "cancellations" | "payouts">("stats");
   const [listingSearch, setListingSearch] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [walletAdjustment, setWalletAdjustment] = useState({
@@ -280,6 +280,47 @@ export default function AdminPage() {
       return res.json();
     },
     enabled: !authLoading && (user as any)?.isAdmin && activeTab === "payouts",
+  });
+
+  interface VerificationRequest {
+    id: number;
+    userId: string;
+    userName: string;
+    userPhone?: string;
+    status: string;
+    createdAt: string;
+    reviewedAt?: string;
+    reviewedBy?: string;
+  }
+
+  const { data: verificationRequests, isLoading: verificationRequestsLoading } = useQuery<VerificationRequest[]>({
+    queryKey: ["/api/admin/verification-requests"],
+    queryFn: async () => {
+      const res = await fetchWithAuth("/api/admin/verification-requests");
+      if (!res.ok) throw new Error("Failed to fetch verification requests");
+      return res.json();
+    },
+    enabled: !authLoading && (user as any)?.isAdmin && activeTab === "verification-requests",
+  });
+
+  const verificationMutation = useMutation({
+    mutationFn: async ({ id, status, adminNotes }: { id: number; status: "approved" | "rejected"; adminNotes?: string }) => {
+      const res = await fetchWithAuth(`/api/admin/verification-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, adminNotes }),
+      });
+      if (!res.ok) throw new Error("Failed to update verification request");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/verification-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "تم تحديث حالة التوثيق بنجاح" });
+    },
+    onError: () => {
+      toast({ title: "فشل في تحديث حالة التوثيق", variant: "destructive" });
+    },
   });
 
   const generatePayoutsMutation = useMutation({
@@ -600,6 +641,19 @@ export default function AdminPage() {
                     {users?.filter(u => u.sellerRequestStatus === "pending").length ? (
                       <Badge variant="secondary" className="mr-auto bg-amber-100 text-amber-800">
                         {users.filter(u => u.sellerRequestStatus === "pending").length}
+                      </Badge>
+                    ) : null}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("verification-requests")}
+                    className={`flex items-center gap-3 px-4 py-3 text-right hover:bg-muted transition-colors ${activeTab === "verification-requests" ? "bg-muted font-semibold border-r-4 border-primary" : ""}`}
+                    data-testid="button-tab-verification-requests"
+                  >
+                    <BadgeCheck className="h-5 w-5" />
+                    طلبات التوثيق
+                    {verificationRequests?.filter(r => r.status === "pending").length ? (
+                      <Badge variant="secondary" className="mr-auto bg-blue-100 text-blue-800">
+                        {verificationRequests.filter(r => r.status === "pending").length}
                       </Badge>
                     ) : null}
                   </button>
@@ -1188,6 +1242,76 @@ export default function AdminPage() {
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>لا توجد طلبات جديدة للتسجيل كبائع</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeTab === "verification-requests" && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold">طلبات توثيق الحسابات</h2>
+                {verificationRequestsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : verificationRequests && verificationRequests.filter(r => r.status === "pending").length > 0 ? (
+                  <Card>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">المستخدم</TableHead>
+                            <TableHead className="text-right">رقم الهاتف</TableHead>
+                            <TableHead className="text-right">تاريخ الطلب</TableHead>
+                            <TableHead className="text-right">الإجراءات</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {verificationRequests.filter(r => r.status === "pending").map((req) => (
+                            <TableRow key={req.id} data-testid={`row-verification-request-${req.id}`}>
+                              <TableCell className="font-medium">{req.userName}</TableCell>
+                              <TableCell dir="ltr">{req.userPhone || "-"}</TableCell>
+                              <TableCell>{new Date(req.createdAt).toLocaleDateString("ar-IQ")}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700"
+                                    onClick={() => verificationMutation.mutate({ id: req.id, status: "approved" })}
+                                    disabled={verificationMutation.isPending}
+                                    data-testid={`button-approve-verification-${req.id}`}
+                                  >
+                                    <CheckCircle className="h-4 w-4 ml-1" />
+                                    توثيق
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 border-red-600 hover:bg-red-50"
+                                    onClick={() => {
+                                      const notes = prompt("سبب الرفض (اختياري):");
+                                      verificationMutation.mutate({ id: req.id, status: "rejected", adminNotes: notes || undefined });
+                                    }}
+                                    disabled={verificationMutation.isPending}
+                                    data-testid={`button-reject-verification-${req.id}`}
+                                  >
+                                    <XCircle className="h-4 w-4 ml-1" />
+                                    رفض
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="py-12 text-center text-muted-foreground">
+                      <BadgeCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>لا توجد طلبات توثيق جديدة</p>
                     </CardContent>
                   </Card>
                 )}

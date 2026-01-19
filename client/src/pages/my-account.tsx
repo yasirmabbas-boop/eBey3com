@@ -25,6 +25,8 @@ import {
   User,
   Camera,
   Share2,
+  BadgeCheck,
+  AlertCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -129,6 +131,34 @@ export default function MyAccount() {
   const { data: unreadMessages = 0 } = useQuery<number>({
     queryKey: ["/api/messages/unread-count"],
     enabled: !!user?.id,
+  });
+
+  const { data: verificationRequest } = useQuery<{
+    id: number;
+    status: string;
+    createdAt: string;
+    adminNotes?: string;
+  }>({
+    queryKey: ["/api/verification-request"],
+    enabled: !!user?.id && !user?.isVerified,
+  });
+
+  const verificationMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/verification-request", { method: "POST" });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "فشل في إرسال الطلب");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/verification-request"] });
+      toast({ title: "تم إرسال طلب التوثيق بنجاح", description: "سيتم مراجعة طلبك قريباً" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
   });
 
   useEffect(() => {
@@ -374,6 +404,67 @@ export default function MyAccount() {
               </Link>
             </div>
           </div>
+
+          {/* Verification Section - Show for unverified users */}
+          {!user.isVerified && (
+            <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
+              <h2 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+                <BadgeCheck className="h-5 w-5 text-blue-500" />
+                توثيق الحساب
+              </h2>
+              {verificationRequest?.status === "pending" ? (
+                <div className="flex items-center gap-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-yellow-800">طلبك قيد المراجعة</p>
+                    <p className="text-sm text-yellow-600">سيتم إشعارك عند الموافقة على طلبك</p>
+                  </div>
+                </div>
+              ) : verificationRequest?.status === "rejected" ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg border border-red-200">
+                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-red-800">تم رفض طلب التوثيق</p>
+                      {verificationRequest.adminNotes && (
+                        <p className="text-sm text-red-600">{verificationRequest.adminNotes}</p>
+                      )}
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={() => verificationMutation.mutate()}
+                    disabled={verificationMutation.isPending}
+                    className="w-full"
+                    data-testid="button-retry-verification"
+                  >
+                    {verificationMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                    ) : null}
+                    إعادة طلب التوثيق
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600">
+                    وثّق حسابك للمزايدة في المزادات المخصصة للمستخدمين الموثقين وزيادة ثقة البائعين بك.
+                  </p>
+                  <Button 
+                    onClick={() => verificationMutation.mutate()}
+                    disabled={verificationMutation.isPending}
+                    className="w-full"
+                    data-testid="button-request-verification"
+                  >
+                    {verificationMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                    ) : (
+                      <BadgeCheck className="h-4 w-4 ml-2" />
+                    )}
+                    طلب توثيق الحساب
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Shopping Section */}
           <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
