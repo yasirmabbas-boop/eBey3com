@@ -5,6 +5,7 @@ import {
   type Watchlist, type InsertWatchlist,
   type Analytics, type InsertAnalytics,
   type Message, type InsertMessage,
+  type Offer, type InsertOffer,
   type Review, type InsertReview,
   type Transaction, type InsertTransaction,
   type Category, type InsertCategory,
@@ -17,10 +18,42 @@ import {
   type ContactMessage, type InsertContactMessage,
   type ProductComment, type InsertProductComment,
   type PushSubscription, type InsertPushSubscription,
-  users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, buyerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments, pushSubscriptions
+  users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, lt, inArray, ne } from "drizzle-orm";
+
+// Extended report type with related entity details for admin view
+export interface ReportWithDetails {
+  id: string;
+  reporterId: string;
+  reportType: string;
+  targetId: string;
+  targetType: string;
+  reason: string;
+  details: string | null;
+  status: string;
+  adminNotes: string | null;
+  resolvedBy: string | null;
+  resolvedAt: Date | null;
+  createdAt: Date;
+  // Reporter info
+  reporterName: string | null;
+  reporterPhone: string | null;
+  // Listing info (when targetType = 'listing')
+  listingTitle: string | null;
+  listingImage: string | null;
+  listingPrice: number | null;
+  sellerId: string | null;
+  sellerName: string | null;
+  // Report count for this target
+  totalReportsOnTarget: number;
+}
+
+const availableListingCondition = and(
+  eq(listings.isActive, true),
+  sql`${listings.quantitySold} < ${listings.quantityAvailable}`
+);
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -81,6 +114,14 @@ export interface IStorage {
   getConversation(userId1: string, userId2: string): Promise<Message[]>;
   sendMessage(message: InsertMessage): Promise<Message>;
   markMessageAsRead(id: string): Promise<boolean>;
+
+  // Offers
+  createOffer(offer: InsertOffer): Promise<Offer>;
+  getOffer(id: string): Promise<Offer | undefined>;
+  getOffersByBuyer(buyerId: string): Promise<Offer[]>;
+  getOffersBySeller(sellerId: string): Promise<Offer[]>;
+  getOffersForListing(listingId: string): Promise<Offer[]>;
+  updateOfferStatus(id: string, status: string, counterAmount?: number, counterMessage?: string): Promise<Offer | undefined>;
   
   getReviewsForSeller(sellerId: string): Promise<Review[]>;
   hasReviewForListing(reviewerId: string, listingId: string): Promise<boolean>;
@@ -155,6 +196,7 @@ export interface IStorage {
   
   // Admin functions
   getAllReports(): Promise<Report[]>;
+  getAllReportsWithDetails(): Promise<ReportWithDetails[]>;
   updateReportStatus(id: string, status: string, adminNotes?: string, resolvedBy?: string): Promise<Report | undefined>;
   getAllUsers(): Promise<User[]>;
   updateUserStatus(id: string, updates: { sellerApproved?: boolean; isVerified?: boolean; isBanned?: boolean; sellerRequestStatus?: string; isAuthenticated?: boolean; authenticityGuaranteed?: boolean }): Promise<User | undefined>;
@@ -254,7 +296,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getListings(): Promise<Listing[]> {
-    return db.select().from(listings).where(and(eq(listings.isActive, true), eq(listings.isDeleted, false))).orderBy(desc(listings.createdAt));
+    return db.select().from(listings)
+      .where(and(eq(listings.isDeleted, false), availableListingCondition))
+      .orderBy(desc(listings.createdAt));
   }
 
   async getListingsPaginated(options: { 
@@ -272,12 +316,12 @@ export class DatabaseStorage implements IStorage {
   }): Promise<{ listings: Listing[]; total: number }> {
     const { limit, offset, category, saleTypes, sellerId, includeSold, searchQuery, minPrice, maxPrice, conditions: conditionFilters, cities } = options;
     
-    // When fetching for a specific seller, show ALL their products (including ended auctions)
-    // For public listing pages, only show active listings unless includeSold is true
+    // Only show available (non-sold) listings unless includeSold is true
+    // The route layer handles checking if user is viewing their own profile
     // Always filter out deleted items
     const conditions: any[] = [eq(listings.isDeleted, false)];
-    if (!sellerId && !includeSold) {
-      conditions.push(eq(listings.isActive, true));
+    if (!includeSold) {
+      conditions.push(availableListingCondition);
     }
     if (category) conditions.push(eq(listings.category, category));
     if (saleTypes && saleTypes.length > 0) {
@@ -408,7 +452,7 @@ export class DatabaseStorage implements IStorage {
       .from(listings)
       .where(and(
         eq(listings.isDeleted, false),
-        eq(listings.isActive, true),
+        availableListingCondition,
         sql`LOWER(${listings.category}) LIKE ${`%${searchTerm}%`}`
       ))
       .limit(5);
@@ -427,7 +471,7 @@ export class DatabaseStorage implements IStorage {
       .from(listings)
       .where(and(
         eq(listings.isDeleted, false),
-        eq(listings.isActive, true),
+        availableListingCondition,
         or(
           sql`LOWER(${listings.title}) LIKE ${`%${searchTerm}%`}`,
           sql`LOWER(COALESCE(${listings.brand}, '')) LIKE ${`%${searchTerm}%`}`
@@ -542,7 +586,7 @@ export class DatabaseStorage implements IStorage {
 
   async getListingsByCategory(category: string): Promise<Listing[]> {
     return db.select().from(listings)
-      .where(and(eq(listings.isActive, true), eq(listings.isDeleted, false), eq(listings.category, category)))
+      .where(and(availableListingCondition, eq(listings.isDeleted, false), eq(listings.category, category)))
       .orderBy(desc(listings.createdAt));
   }
 
@@ -610,7 +654,7 @@ export class DatabaseStorage implements IStorage {
   async getFeaturedListings(): Promise<Listing[]> {
     return db.select().from(listings)
       .where(and(
-        eq(listings.isActive, true),
+        availableListingCondition,
         eq(listings.isDeleted, false),
         eq(listings.isFeatured, true)
       ))
@@ -623,7 +667,7 @@ export class DatabaseStorage implements IStorage {
     
     return db.select().from(listings)
       .where(and(
-        eq(listings.isActive, true),
+        availableListingCondition,
         eq(listings.isDeleted, false)
       ))
       .orderBy(desc(listings.views), desc(listings.totalBids))
@@ -696,7 +740,7 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(listings)
       .where(and(
         inArray(listings.id, ids.map((item) => item.listingId)),
-        eq(listings.isActive, true),
+        availableListingCondition,
         eq(listings.isDeleted, false),
       ))
       .orderBy(desc(listings.createdAt));
@@ -752,6 +796,55 @@ export class DatabaseStorage implements IStorage {
   async markMessageAsRead(id: string): Promise<boolean> {
     const [msg] = await db.update(messages).set({ isRead: true }).where(eq(messages.id, id)).returning();
     return !!msg;
+  }
+
+  async createOffer(offer: InsertOffer): Promise<Offer> {
+    const [created] = await db.insert(offers).values(offer).returning();
+    return created;
+  }
+
+  async getOffer(id: string): Promise<Offer | undefined> {
+    const [offer] = await db.select().from(offers).where(eq(offers.id, id));
+    return offer;
+  }
+
+  async getOffersByBuyer(buyerId: string): Promise<Offer[]> {
+    return db.select().from(offers)
+      .where(eq(offers.buyerId, buyerId))
+      .orderBy(desc(offers.createdAt));
+  }
+
+  async getOffersBySeller(sellerId: string): Promise<Offer[]> {
+    return db.select().from(offers)
+      .where(eq(offers.sellerId, sellerId))
+      .orderBy(desc(offers.createdAt));
+  }
+
+  async getOffersForListing(listingId: string): Promise<Offer[]> {
+    return db.select().from(offers)
+      .where(eq(offers.listingId, listingId))
+      .orderBy(desc(offers.createdAt));
+  }
+
+  async updateOfferStatus(id: string, status: string, counterAmount?: number, counterMessage?: string): Promise<Offer | undefined> {
+    const updateData: Record<string, unknown> = {
+      status,
+      respondedAt: new Date(),
+    };
+
+    if (status === "countered") {
+      updateData.counterAmount = counterAmount ?? null;
+      updateData.counterMessage = counterMessage ?? null;
+    } else {
+      updateData.counterAmount = null;
+      updateData.counterMessage = null;
+    }
+
+    const [updated] = await db.update(offers)
+      .set(updateData)
+      .where(eq(offers.id, id))
+      .returning();
+    return updated;
   }
 
   async getMessagesForSeller(sellerId: string): Promise<Message[]> {
@@ -1173,6 +1266,59 @@ export class DatabaseStorage implements IStorage {
   // Admin functions
   async getAllReports(): Promise<Report[]> {
     return db.select().from(reports).orderBy(desc(reports.createdAt));
+  }
+
+  async getAllReportsWithDetails(): Promise<ReportWithDetails[]> {
+    // Get all reports with reporter info, listing info, and seller info
+    const results = await db.select({
+      // Report fields
+      id: reports.id,
+      reporterId: reports.reporterId,
+      reportType: reports.reportType,
+      targetId: reports.targetId,
+      targetType: reports.targetType,
+      reason: reports.reason,
+      details: reports.details,
+      status: reports.status,
+      adminNotes: reports.adminNotes,
+      resolvedBy: reports.resolvedBy,
+      resolvedAt: reports.resolvedAt,
+      createdAt: reports.createdAt,
+      // Reporter info (join with users)
+      reporterName: sql<string>`reporter.display_name`,
+      reporterPhone: sql<string>`reporter.phone`,
+      // Listing info (join with listings when targetType = 'listing')
+      listingTitle: listings.title,
+      listingImage: sql<string>`(${listings.images})[1]`,
+      listingPrice: listings.price,
+      sellerId: listings.sellerId,
+      // Seller name (join with users as seller)
+      sellerName: sql<string>`seller.display_name`,
+    })
+    .from(reports)
+    .leftJoin(sql`users as reporter`, sql`reporter.id = ${reports.reporterId}`)
+    .leftJoin(listings, and(
+      eq(reports.targetId, listings.id),
+      eq(reports.targetType, 'listing')
+    ))
+    .leftJoin(sql`users as seller`, sql`seller.id = ${listings.sellerId}`)
+    .orderBy(desc(reports.createdAt));
+
+    // Get report counts for each target to help prioritize
+    const reportCounts = await db.select({
+      targetId: reports.targetId,
+      count: sql<number>`COUNT(*)::int`,
+    })
+    .from(reports)
+    .where(eq(reports.status, 'pending'))
+    .groupBy(reports.targetId);
+
+    const countMap = new Map(reportCounts.map(r => [r.targetId, r.count]));
+
+    return results.map(r => ({
+      ...r,
+      totalReportsOnTarget: countMap.get(r.targetId) || 1,
+    }));
   }
 
   async updateReportStatus(id: string, status: string, adminNotes?: string, resolvedBy?: string): Promise<Report | undefined> {

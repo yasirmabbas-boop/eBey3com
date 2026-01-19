@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Layout } from "@/components/layout";
@@ -41,6 +41,15 @@ interface Report {
   resolvedBy?: string;
   resolvedAt?: string;
   createdAt: string;
+  // Enhanced fields from joined data
+  reporterName?: string;
+  reporterPhone?: string;
+  listingTitle?: string;
+  listingImage?: string;
+  listingPrice?: number;
+  sellerId?: string;
+  sellerName?: string;
+  totalReportsOnTarget: number;
 }
 
 interface User {
@@ -727,8 +736,11 @@ export default function AdminPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead className="text-right">المنتج المُبلَّغ عنه</TableHead>
                             <TableHead className="text-right">نوع البلاغ</TableHead>
-                            <TableHead className="text-right">السبب</TableHead>
+                            <TableHead className="text-right">السبب والتفاصيل</TableHead>
+                            <TableHead className="text-right">المُبلِّغ</TableHead>
+                            <TableHead className="text-right">البائع</TableHead>
                             <TableHead className="text-right">الحالة</TableHead>
                             <TableHead className="text-right">التاريخ</TableHead>
                             <TableHead className="text-right">الإجراءات</TableHead>
@@ -736,38 +748,109 @@ export default function AdminPage() {
                         </TableHeader>
                         <TableBody>
                           {reports.map((report) => (
-                            <TableRow key={report.id} data-testid={`row-report-${report.id}`}>
-                              <TableCell>{getReportTypeLabel(report.reportType)}</TableCell>
-                              <TableCell className="max-w-xs truncate">{report.reason}</TableCell>
-                              <TableCell>{getStatusBadge(report.status)}</TableCell>
-                              <TableCell>{new Date(report.createdAt).toLocaleDateString("ar-IQ")}</TableCell>
+                            <TableRow key={report.id} data-testid={`row-report-${report.id}`} className={report.totalReportsOnTarget >= 3 ? "bg-red-50" : ""}>
                               <TableCell>
-                                {report.status === "pending" && (
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-green-600 border-green-600 hover:bg-green-50"
-                                      onClick={() => updateReportMutation.mutate({ id: report.id, status: "resolved" })}
-                                      disabled={updateReportMutation.isPending}
-                                      data-testid={`button-resolve-report-${report.id}`}
-                                    >
-                                      <CheckCircle className="h-4 w-4 ml-1" />
-                                      حل
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-red-600 border-red-600 hover:bg-red-50"
-                                      onClick={() => updateReportMutation.mutate({ id: report.id, status: "rejected" })}
-                                      disabled={updateReportMutation.isPending}
-                                      data-testid={`button-reject-report-${report.id}`}
-                                    >
-                                      <XCircle className="h-4 w-4 ml-1" />
-                                      رفض
-                                    </Button>
-                                  </div>
+                                {report.targetType === "listing" && report.listingTitle ? (
+                                  <Link href={`/product/${report.targetId}`}>
+                                    <div className="flex items-center gap-3 cursor-pointer hover:opacity-80">
+                                      {report.listingImage && (
+                                        <img 
+                                          src={report.listingImage} 
+                                          alt={report.listingTitle}
+                                          className="w-12 h-12 object-cover rounded border"
+                                        />
+                                      )}
+                                      <div>
+                                        <p className="font-medium text-sm max-w-[150px] truncate">{report.listingTitle}</p>
+                                        {report.listingPrice && (
+                                          <p className="text-xs text-muted-foreground">{report.listingPrice.toLocaleString()} د.ع</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </Link>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">
+                                    {report.targetType === "user" ? "مستخدم" : report.targetType}
+                                    <br />
+                                    <span className="text-xs">{report.targetId.slice(0, 8)}...</span>
+                                  </span>
                                 )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col gap-1">
+                                  {getReportTypeLabel(report.reportType)}
+                                  {report.totalReportsOnTarget > 1 && (
+                                    <Badge variant="destructive" className="text-xs w-fit">
+                                      {report.totalReportsOnTarget} بلاغات
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="max-w-xs">
+                                <p className="text-sm">{report.reason}</p>
+                                {report.details && (
+                                  <p className="text-xs text-muted-foreground mt-1 truncate">{report.details}</p>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  <p className="font-medium">{report.reporterName || "مجهول"}</p>
+                                  {report.reporterPhone && (
+                                    <p className="text-xs text-muted-foreground" dir="ltr">{report.reporterPhone}</p>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {report.sellerId ? (
+                                  <div className="text-sm">
+                                    <p className="font-medium">{report.sellerName || "غير معروف"}</p>
+                                    <Link href={`/search?sellerId=${report.sellerId}`}>
+                                      <span className="text-xs text-primary hover:underline cursor-pointer">عرض منتجاته</span>
+                                    </Link>
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>{getStatusBadge(report.status)}</TableCell>
+                              <TableCell className="text-sm">{new Date(report.createdAt).toLocaleDateString("ar-IQ")}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-col gap-2">
+                                  {report.targetType === "listing" && (
+                                    <Link href={`/product/${report.targetId}`}>
+                                      <Button size="sm" variant="outline" className="w-full">
+                                        <Eye className="h-4 w-4 ml-1" />
+                                        عرض
+                                      </Button>
+                                    </Link>
+                                  )}
+                                  {report.status === "pending" && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-green-600 border-green-600 hover:bg-green-50"
+                                        onClick={() => updateReportMutation.mutate({ id: report.id, status: "resolved" })}
+                                        disabled={updateReportMutation.isPending}
+                                        data-testid={`button-resolve-report-${report.id}`}
+                                      >
+                                        <CheckCircle className="h-4 w-4 ml-1" />
+                                        حل
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-red-600 border-red-600 hover:bg-red-50"
+                                        onClick={() => updateReportMutation.mutate({ id: report.id, status: "rejected" })}
+                                        disabled={updateReportMutation.isPending}
+                                        data-testid={`button-reject-report-${report.id}`}
+                                      >
+                                        <XCircle className="h-4 w-4 ml-1" />
+                                        رفض
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}

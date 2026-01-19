@@ -79,6 +79,11 @@ export async function registerRoutes(
       const limit = Math.min(parseInt(limitParam as string) || 20, 100);
       const offset = (pageNum - 1) * limit;
       
+      // Check if user is viewing their own seller profile
+      const viewerId = await getUserIdFromRequest(req);
+      const sellerIdStr = typeof sellerId === "string" ? sellerId : undefined;
+      const isOwnProfile = !!(viewerId && sellerIdStr && viewerId === sellerIdStr);
+      
       // Use optimized paginated query with SQL-level filtering
       const searchQuery = typeof q === "string" ? q : undefined;
       const { listings: paginatedListings, total } = await storage.getListingsPaginated({
@@ -86,8 +91,9 @@ export async function registerRoutes(
         offset,
         category: typeof category === "string" ? category : undefined,
         saleTypes,
-        sellerId: typeof sellerId === "string" ? sellerId : undefined,
-        includeSold: includeSold === "true",
+        sellerId: sellerIdStr,
+        // Only include sold items if: explicitly requested via filter OR viewing own profile
+        includeSold: includeSold === "true" || isOwnProfile,
         searchQuery,
         minPrice: typeof minPrice === "string" ? parseInt(minPrice) : undefined,
         maxPrice: typeof maxPrice === "string" ? parseInt(maxPrice) : undefined,
@@ -146,7 +152,7 @@ export async function registerRoutes(
   app.get("/api/listings/:id", async (req, res) => {
     try {
       const listing = await storage.getListing(req.params.id);
-      if (!listing) {
+      if (!listing || listing.isDeleted) {
         return res.status(404).json({ error: "Listing not found" });
       }
       // Cache individual listing for 60 seconds
@@ -3792,7 +3798,8 @@ export async function registerRoutes(
       if (!user || !user.isAdmin) {
         return res.status(403).json({ error: "Access denied" });
       }
-      const allReports = await storage.getAllReports();
+      // Use the new method that includes full details
+      const allReports = await storage.getAllReportsWithDetails();
       res.json(allReports);
     } catch (error) {
       console.error("Error fetching admin reports:", error);

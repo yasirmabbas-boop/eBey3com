@@ -143,6 +143,31 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
 
+// Offers system
+export const offers = pgTable("offers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  listingId: varchar("listing_id").notNull(),
+  buyerId: varchar("buyer_id").notNull(),
+  sellerId: varchar("seller_id").notNull(),
+  offerAmount: integer("offer_amount").notNull(),
+  message: text("message"),
+  status: text("status").notNull().default("pending"),
+  counterAmount: integer("counter_amount"),
+  counterMessage: text("counter_message"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  respondedAt: timestamp("responded_at"),
+});
+
+export const insertOfferSchema = createInsertSchema(offers).omit({
+  id: true,
+  createdAt: true,
+  respondedAt: true,
+});
+
+export type InsertOffer = z.infer<typeof insertOfferSchema>;
+export type Offer = typeof offers.$inferSelect;
+
 export const reviews = pgTable("reviews", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   reviewerId: varchar("reviewer_id").notNull(),
@@ -291,6 +316,7 @@ export const listings = pgTable("listings", {
   sku: text("sku"),
   isActive: boolean("is_active").notNull().default(true),
   isPaused: boolean("is_paused").notNull().default(false),
+  isNegotiable: boolean("is_negotiable").notNull().default(false),
   serialNumber: text("serial_number"),
   quantityAvailable: integer("quantity_available").notNull().default(1),
   quantitySold: integer("quantity_sold").notNull().default(0),
