@@ -1,0 +1,25 @@
+Recent Changes (git-based)
+Recent commits touching admin/reporting-related files:
+8966328 — Added offers system and enhanced admin report view detail; modified admin report UI and report aggregation (client/src/pages/admin.tsx, server/storage.ts, server/routes.ts).
+0289239 — “Published your App” with changes in server/routes.ts (includes admin routes in the commit diff).
+2b4f542 — “Published your App” with changes in server/routes.ts and server/storage.ts.
+dc9d86d — Added debug logs to server/routes.ts.
+If you want a deeper diff-specific breakdown for each of those commits, I can provide it.
+Suggested Changes (prioritized)
+High priority (workflow correctness / safety)
+Add admin notes in Reports UI: The backend supports adminNotes but UI does not capture it. Add a notes field in the report action flow, and store notes with each resolve/reject.
+Files: client/src/pages/admin.tsx, server/routes.ts
+Revisit auto-deactivation threshold logic: Auto-disabling listings + revoking seller approval at 10 reports risks abuse. Consider a “soft hold” state that requires admin review before enforcement.
+Files: server/routes.ts, server/storage.ts
+Expose both pending and total report counts: Report list currently uses pending-only count. Provide pendingCount + totalCount so admins can judge historical severity.
+Files: server/storage.ts, client/src/pages/admin.tsx
+Medium priority (operational efficiency)
+Filters + sorting in Reports tab: add filter by status, report type, target type, date range; allow sorting by created date or count.
+Files: client/src/pages/admin.tsx, server/routes.ts (new query params)
+Pagination for heavy lists (reports/users/listings/messages): current approach fetches all data; will degrade at scale.
+Files: server/routes.ts, client/src/pages/admin.tsx, server/storage.ts
+Lower priority (quality of life)
+Bulk actions for reports and listings (multi-select resolve/reject/pause).
+Files: client/src/pages/admin.tsx, server/routes.ts
+Audit trail for admin actions (report status changes, bans, listing changes, wallet adjustments) to track “who did what.”
+Files: server/routes.ts, server/storage.ts, shared/schema.ts (audit table)

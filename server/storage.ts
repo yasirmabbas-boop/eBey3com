@@ -48,6 +48,7 @@ export interface ReportWithDetails {
   sellerName: string | null;
   // Report count for this target
   totalReportsOnTarget: number;
+  pendingReportsOnTarget: number;
 }
 
 const availableListingCondition = and(
@@ -1305,19 +1306,28 @@ export class DatabaseStorage implements IStorage {
     .orderBy(desc(reports.createdAt));
 
     // Get report counts for each target to help prioritize
-    const reportCounts = await db.select({
+    const pendingReportCounts = await db.select({
       targetId: reports.targetId,
       count: sql<number>`COUNT(*)::int`,
     })
     .from(reports)
-    .where(eq(reports.status, 'pending'))
+    .where(eq(reports.status, "pending"))
     .groupBy(reports.targetId);
 
-    const countMap = new Map(reportCounts.map(r => [r.targetId, r.count]));
+    const totalReportCounts = await db.select({
+      targetId: reports.targetId,
+      count: sql<number>`COUNT(*)::int`,
+    })
+    .from(reports)
+    .groupBy(reports.targetId);
+
+    const pendingMap = new Map(pendingReportCounts.map(r => [r.targetId, r.count]));
+    const totalMap = new Map(totalReportCounts.map(r => [r.targetId, r.count]));
 
     return results.map(r => ({
       ...r,
-      totalReportsOnTarget: countMap.get(r.targetId) || 1,
+      totalReportsOnTarget: totalMap.get(r.targetId) || 1,
+      pendingReportsOnTarget: pendingMap.get(r.targetId) || 0,
     }));
   }
 

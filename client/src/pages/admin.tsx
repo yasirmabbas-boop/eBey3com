@@ -17,6 +17,7 @@ import {
 import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, UserX, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy, BadgeCheck, Award, Star, StarOff, Wallet, BanknoteIcon, Clock, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
 interface AdminStats {
@@ -50,6 +51,7 @@ interface Report {
   sellerId?: string;
   sellerName?: string;
   totalReportsOnTarget: number;
+  pendingReportsOnTarget: number;
 }
 
 interface User {
@@ -140,6 +142,12 @@ export default function AdminPage() {
     amount: "",
     description: "",
   });
+  const [reportAction, setReportAction] = useState<{
+    id: string;
+    status: "resolved" | "rejected";
+    adminNotes: string;
+    targetLabel: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !(user as any).isAdmin)) {
@@ -383,11 +391,13 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({ title: "تم تحديث البلاغ بنجاح" });
+      setReportAction(null);
     },
     onError: () => {
       toast({ title: "فشل في تحديث البلاغ", variant: "destructive" });
     },
   });
+
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: { isVerified?: boolean; isBanned?: boolean; sellerApproved?: boolean; sellerRequestStatus?: string; isAuthenticated?: boolean; authenticityGuaranteed?: boolean } }) => {
@@ -748,7 +758,7 @@ export default function AdminPage() {
                         </TableHeader>
                         <TableBody>
                           {reports.map((report) => (
-                            <TableRow key={report.id} data-testid={`row-report-${report.id}`} className={report.totalReportsOnTarget >= 3 ? "bg-red-50" : ""}>
+                            <TableRow key={report.id} data-testid={`row-report-${report.id}`} className={report.pendingReportsOnTarget >= 3 ? "bg-red-50" : ""}>
                               <TableCell>
                                 {report.targetType === "listing" && report.listingTitle ? (
                                   <Link href={`/product/${report.targetId}`}>
@@ -779,9 +789,14 @@ export default function AdminPage() {
                               <TableCell>
                                 <div className="flex flex-col gap-1">
                                   {getReportTypeLabel(report.reportType)}
-                                  {report.totalReportsOnTarget > 1 && (
+                                  {report.pendingReportsOnTarget > 1 && (
                                     <Badge variant="destructive" className="text-xs w-fit">
-                                      {report.totalReportsOnTarget} بلاغات
+                                      {report.pendingReportsOnTarget} بلاغات معلقة
+                                    </Badge>
+                                  )}
+                                  {report.totalReportsOnTarget > report.pendingReportsOnTarget && (
+                                    <Badge variant="outline" className="text-xs w-fit">
+                                      إجمالي {report.totalReportsOnTarget}
                                     </Badge>
                                   )}
                                 </div>
@@ -830,7 +845,12 @@ export default function AdminPage() {
                                         size="sm"
                                         variant="outline"
                                         className="text-green-600 border-green-600 hover:bg-green-50"
-                                        onClick={() => updateReportMutation.mutate({ id: report.id, status: "resolved" })}
+                                        onClick={() => setReportAction({
+                                          id: report.id,
+                                          status: "resolved",
+                                          adminNotes: "",
+                                          targetLabel: report.listingTitle || report.targetId.slice(0, 8),
+                                        })}
                                         disabled={updateReportMutation.isPending}
                                         data-testid={`button-resolve-report-${report.id}`}
                                       >
@@ -841,7 +861,12 @@ export default function AdminPage() {
                                         size="sm"
                                         variant="outline"
                                         className="text-red-600 border-red-600 hover:bg-red-50"
-                                        onClick={() => updateReportMutation.mutate({ id: report.id, status: "rejected" })}
+                                        onClick={() => setReportAction({
+                                          id: report.id,
+                                          status: "rejected",
+                                          adminNotes: "",
+                                          targetLabel: report.listingTitle || report.targetId.slice(0, 8),
+                                        })}
                                         disabled={updateReportMutation.isPending}
                                         data-testid={`button-reject-report-${report.id}`}
                                       >
@@ -1826,6 +1851,54 @@ export default function AdminPage() {
           </main>
         </div>
       </div>
+
+      <Dialog open={!!reportAction} onOpenChange={(open) => { if (!open) setReportAction(null); }}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-right">
+              {reportAction?.status === "resolved" ? "تأكيد حل البلاغ" : "تأكيد رفض البلاغ"}
+            </DialogTitle>
+            <DialogDescription className="text-right">
+              {reportAction?.targetLabel ? `العنصر: ${reportAction.targetLabel}` : "يرجى تأكيد الإجراء"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea
+              placeholder="ملاحظات الإدارة (اختياري)"
+              value={reportAction?.adminNotes ?? ""}
+              onChange={(e) => setReportAction(prev => prev ? { ...prev, adminNotes: e.target.value } : prev)}
+              data-testid="textarea-report-admin-notes"
+            />
+            <p className="text-xs text-muted-foreground">
+              ستُحفظ هذه الملاحظات مع البلاغ.
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setReportAction(null)} data-testid="button-cancel-report-action">
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => {
+                if (!reportAction) return;
+                updateReportMutation.mutate({
+                  id: reportAction.id,
+                  status: reportAction.status,
+                  adminNotes: reportAction.adminNotes.trim() || undefined,
+                });
+              }}
+              disabled={updateReportMutation.isPending}
+              data-testid="button-confirm-report-action"
+            >
+              {updateReportMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+              ) : (
+                <CheckCircle className="h-4 w-4 ml-2" />
+              )}
+              {reportAction?.status === "resolved" ? "حل البلاغ" : "رفض البلاغ"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Reset Password Result Dialog */}
       <Dialog open={!!resetPasswordResult} onOpenChange={() => setResetPasswordResult(null)}>

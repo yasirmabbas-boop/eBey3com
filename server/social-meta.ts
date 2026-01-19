@@ -157,7 +157,11 @@ export async function socialMetaMiddleware(
 
     const productUrl = `${baseUrl}/product/${listing.id}`;
     const images = listing.images || [];
-    const ogImageUrl = `${baseUrl}/api/og/product/${listing.id}`;
+    const listingImageUrl = images[0]
+      ? ensureAbsoluteUrl(images[0], baseUrl)
+      : "";
+    const ogImageUrl = listingImageUrl || `${baseUrl}/api/og/product/${listing.id}`;
+    const ogImageType = listingImageUrl ? "" : "image/png";
     const domain = new URL(baseUrl).hostname;
     const price = formatPrice(listing.currentBid || listing.price);
     const isAuction = listing.saleType === "auction";
@@ -183,7 +187,7 @@ export async function socialMetaMiddleware(
   <meta property="og:description" content="${description}" />
   <meta property="og:image" content="${ogImageUrl}" />
   <meta property="og:image:secure_url" content="${ogImageUrl}" />
-  <meta property="og:image:type" content="image/png" />
+  ${ogImageType ? `<meta property="og:image:type" content="${ogImageType}" />` : ""}
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="${title}" />

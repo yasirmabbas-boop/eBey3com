@@ -57,6 +57,24 @@ function truncateText(text: string, maxLength: number): string {
   return `${text.slice(0, Math.max(0, maxLength - 3))}...`;
 }
 
+function buildBaseUrl(req: Request): string {
+  const host = req.get("host");
+  if (!host) {
+    return "";
+  }
+  return `${req.protocol}://${host}`;
+}
+
+function resolveAbsoluteUrl(rawUrl: string, baseUrl: string): string {
+  if (!rawUrl || !baseUrl) return rawUrl;
+  try {
+    return new URL(rawUrl, baseUrl).toString();
+  } catch (error) {
+    console.error("Failed to normalize OG image URL:", error);
+    return rawUrl;
+  }
+}
+
 async function fetchImageBuffer(url: string): Promise<Buffer | null> {
   try {
     const response = await fetch(url);
@@ -110,7 +128,9 @@ export async function registerRoutes(
       let imageBase64: string | null = null;
       const imageUrl = listing.images?.[0];
       if (imageUrl) {
-        const imageBuffer = await fetchImageBuffer(imageUrl);
+        const baseUrl = buildBaseUrl(req);
+        const normalizedImageUrl = resolveAbsoluteUrl(imageUrl, baseUrl);
+        const imageBuffer = await fetchImageBuffer(normalizedImageUrl);
         if (imageBuffer) {
           const resized = await sharp(imageBuffer)
             .resize(1080, 360, { fit: "cover" })
@@ -3709,22 +3729,14 @@ export async function registerRoutes(
         
         if (reportCount >= 10) {
           const listing = await storage.getListing(targetId);
-          if (listing && listing.isActive) {
-            await storage.updateListing(targetId, { isActive: false });
-            
-            if (listing.sellerId) {
-              await storage.updateUserStatus(listing.sellerId, {
-                sellerApproved: false,
-              });
-              
-              await storage.createNotification({
-                userId: listing.sellerId,
-                type: "warning",
-                title: "تم إيقاف منتجك",
-                message: `تم إيقاف منتجك "${listing.title}" بسبب تلقيه عدد كبير من البلاغات. تم تعليق صلاحيات البيع الخاصة بك.`,
-                linkUrl: `/product/${targetId}`,
-              });
-            }
+          if (listing?.sellerId) {
+            await storage.createNotification({
+              userId: listing.sellerId,
+              type: "warning",
+              title: "بلاغات على منتجك",
+              message: `تم استلام عدد كبير من البلاغات على منتجك "${listing.title}". سيتم مراجعته من قبل الإدارة.`,
+              linkUrl: `/product/${targetId}`,
+            });
           }
         }
       }
