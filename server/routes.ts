@@ -12,6 +12,7 @@ import sharp from "sharp";
 import { financialService } from "./services/financial-service";
 import { deliveryService } from "./services/delivery-service";
 import { deliveryApi, DeliveryWebhookPayload } from "./services/delivery-api";
+import { ObjectStorageService } from "./replit_integrations/object_storage/objectStorage";
 
 const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
@@ -2796,6 +2797,20 @@ export async function registerRoutes(
       const user = await storage.updateUser(userId, updates);
       if (!user) {
         return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+
+      // If avatar was updated, ensure it has a public ACL policy
+      if (req.body.avatar) {
+        try {
+          const objectStorageService = new ObjectStorageService();
+          await objectStorageService.trySetObjectEntityAclPolicy(req.body.avatar, {
+            owner: userId,
+            visibility: "public",
+          });
+        } catch (err) {
+          console.error("Failed to set avatar ACL:", err);
+          // Don't fail the request if ACL setting fails, but log it
+        }
       }
 
       res.json({

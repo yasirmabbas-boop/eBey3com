@@ -39,7 +39,7 @@ class AuthStorage implements IAuthStorage {
         set: {
           email: userData.email || sql`${users.email}`,
           displayName: displayName,
-          avatar: userData.profileImageUrl || sql`${users.avatar}`,
+          avatar: sql`COALESCE(${users.avatar}, ${userData.profileImageUrl || null})`,
           lastLoginAt: new Date(),
         },
       })

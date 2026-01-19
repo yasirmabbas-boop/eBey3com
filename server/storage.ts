@@ -237,29 +237,52 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  private normalizeAvatar(avatar: string | null | undefined): string | null {
+    if (!avatar) return null;
+    if (avatar.startsWith("http://") || avatar.startsWith("https://")) {
+      try {
+        const url = new URL(avatar);
+        if (url.pathname.startsWith("/objects/")) {
+          return url.pathname;
+        }
+      } catch (e) {
+        // Fallback if URL parsing fails
+      }
+    }
+    return avatar;
+  }
+
+  private normalizeUser(user: User | undefined): User | undefined {
+    if (!user) return undefined;
+    return {
+      ...user,
+      avatar: this.normalizeAvatar(user.avatar),
+    };
+  }
+
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    return this.normalizeUser(user);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
+    return this.normalizeUser(user);
   }
 
   async getUserByPhone(phone: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.phone, phone));
-    return user;
+    return this.normalizeUser(user);
   }
 
   async getUserByAccountCode(accountCode: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.accountCode, accountCode));
-    return user;
+    return this.normalizeUser(user);
   }
 
   async getUserByAuthToken(token: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.authToken, token));
-    return user;
+    return this.normalizeUser(user);
   }
 
   private async generateAccountCode(): Promise<string> {
@@ -288,12 +311,12 @@ export class DatabaseStorage implements IStorage {
       accountCode,
     };
     const [user] = await db.insert(users).values(userWithCode).returning();
-    return user;
+    return this.normalizeUser(user)!;
   }
 
   async updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined> {
     const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
-    return user;
+    return this.normalizeUser(user);
   }
 
   async getListings(): Promise<Listing[]> {
@@ -1178,6 +1201,7 @@ export class DatabaseStorage implements IStorage {
     return result.map(r => ({
       ...r,
       bidderName: r.bidderName || "مستخدم مجهول",
+      bidderAvatar: this.normalizeAvatar(r.bidderAvatar),
     }));
   }
 
@@ -1346,7 +1370,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllUsers(): Promise<User[]> {
-    return db.select().from(users).orderBy(desc(users.createdAt));
+    const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
+    return allUsers.map(u => this.normalizeUser(u)!);
   }
 
   async updateUserStatus(id: string, updates: { sellerApproved?: boolean; isVerified?: boolean; isBanned?: boolean; sellerRequestStatus?: string; isAuthenticated?: boolean; authenticityGuaranteed?: boolean }): Promise<User | undefined> {
@@ -1371,7 +1396,7 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(users.id, id))
       .returning();
-    return updated;
+    return this.normalizeUser(updated);
   }
 
   async getAdminStats(): Promise<{ totalUsers: number; totalListings: number; activeListings: number; totalTransactions: number; pendingReports: number; totalRevenue: number }> {
@@ -1521,7 +1546,7 @@ export class DatabaseStorage implements IStorage {
       parentId: r.parentId,
       createdAt: r.createdAt,
       userName: r.userName || "مستخدم",
-      userAvatar: r.userAvatar,
+      userAvatar: this.normalizeAvatar(r.userAvatar),
     }));
   }
 

@@ -62,40 +62,47 @@ export default function MyAccount() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-  const { uploadFile } = useUpload({
-    onSuccess: async (response) => {
-      try {
-        const avatarUrl = `${window.location.origin}${response.objectPath}`;
-        const res = await fetch("/api/account/profile", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ avatar: avatarUrl }),
-        });
-        if (res.ok) {
-          toast({ title: "تم تحديث الصورة بنجاح" });
-          queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-        }
-      } catch (error) {
-        toast({ title: "خطأ", description: "فشل في حفظ الصورة", variant: "destructive" });
-      } finally {
-        setIsUploadingAvatar(false);
-      }
-    },
-    onError: () => {
-      toast({ title: "خطأ", description: "فشل في رفع الصورة", variant: "destructive" });
-      setIsUploadingAvatar(false);
-    },
-  });
-
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: "الملف كبير جداً", description: "الحد الأقصى 5 ميغابايت", variant: "destructive" });
-        return;
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "الملف كبير جداً", description: "الحد الأقصى 5 ميغابايت", variant: "destructive" });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append("images", file);
+
+      const response = await fetch("/api/uploads/optimized", {
+        method: "POST",
+        body: uploadFormData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload image");
       }
-      setIsUploadingAvatar(true);
-      await uploadFile(file);
+
+      const result = await response.json();
+      const avatarUrl = result.images[0].main; // This is a relative path like /objects/uploads/uuid.jpg
+
+      const res = await fetch("/api/account/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar: avatarUrl }),
+      });
+
+      if (res.ok) {
+        toast({ title: "تم تحديث الصورة بنجاح" });
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      }
+    } catch (error) {
+      toast({ title: "خطأ", description: "فشل في رفع أو حفظ الصورة", variant: "destructive" });
+    } finally {
+      setIsUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -307,6 +314,10 @@ export default function MyAccount() {
                     src={user.avatar} 
                     alt={user.displayName || "صورة الملف الشخصي"} 
                     className="w-16 h-16 rounded-full object-cover border-2 border-primary/20"
+                    onError={(e) => {
+                      // If image fails to load, hide it so fallback initial shows
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
                   />
                 ) : (
                   <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl">
