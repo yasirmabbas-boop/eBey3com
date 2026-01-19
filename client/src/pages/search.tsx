@@ -151,6 +151,9 @@ export default function SearchPage() {
   const [mergedListings, setMergedListings] = useState<Listing[]>([]);
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:153',message:'useEffect1-categoryParam-change',data:{categoryParam,searchQuery,trigger:'categoryParam-or-searchQuery'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     const freshFilters: FilterState = {
       category: categoryParam,
       conditions: [],
@@ -196,13 +199,23 @@ export default function SearchPage() {
     queryKey: ["/api/listings", sellerIdParam, appliedFilters, searchQuery, saleTypeParam, page],
     queryFn: async () => {
       const url = buildApiUrl();
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:queryFn',message:'fetching-listings',data:{url,page,category:appliedFilters.category},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch listings");
-      return res.json();
+      const data = await res.json();
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:queryFn-response',message:'listings-response',data:{listingsCount:data?.listings?.length,total:data?.pagination?.total,isArray:Array.isArray(data)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      return data;
     },
   });
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:205',message:'useEffect-update-mergedListings',data:{hasListingsData:!!listingsData?.listings,listingsCount:listingsData?.listings?.length,page},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     if (!listingsData?.listings) return;
     setMergedListings((prev) => (page === 1 ? listingsData.listings : [...prev, ...listingsData.listings]));
   }, [listingsData, page]);
@@ -225,6 +238,8 @@ export default function SearchPage() {
   const listings: Listing[] = Array.isArray(listingsData) 
     ? listingsData 
     : mergedListings;
+  // #region agent log
+  fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:listings-derivation',message:'listings-computed',data:{isArrayListingsData:Array.isArray(listingsData),mergedListingsLen:mergedListings.length,finalListingsLen:listings.length,isLoading},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
 
   const allProducts = useMemo(() => {
     return listings;
@@ -358,6 +373,9 @@ export default function SearchPage() {
   };
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:360',message:'useEffect2-reset-mergedListings',data:{category:appliedFilters.category,searchQuery,saleTypeParam,sellerIdParam},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     setPage(1);
     setMergedListings([]);
   }, [appliedFilters, searchQuery, saleTypeParam, sellerIdParam]);

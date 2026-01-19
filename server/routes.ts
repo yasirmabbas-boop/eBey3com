@@ -202,6 +202,9 @@ export async function registerRoutes(
       
       // Use optimized paginated query with SQL-level filtering
       const searchQuery = typeof q === "string" ? q : undefined;
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:api-listings',message:'api-listings-request',data:{category:typeof category === "string" ? category : undefined,sellerId:sellerIdStr,includeSold:includeSold === "true" || isOwnProfile,searchQuery,page:pageNum},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       const { listings: paginatedListings, total } = await storage.getListingsPaginated({
         limit,
         offset,
@@ -398,6 +401,7 @@ export async function registerRoutes(
         quantityAvailable: typeof req.body.quantityAvailable === "number" 
           ? req.body.quantityAvailable 
           : parseInt(req.body.quantityAvailable, 10) || 1,
+        allowedBidderType: req.body.allowedBidderType || "verified_only",
       };
 
       const validatedData = insertListingSchema.parse(listingData);
@@ -467,6 +471,7 @@ export async function registerRoutes(
             sellerId: userId,
             isNegotiable: row.isnegotiable === "true" || row.isnegotiable === "نعم",
             quantityAvailable: parseInt(row.quantity, 10) || 1,
+            allowedBidderType: "verified_only",
           };
 
           if (!listingData.title || !listingData.description || listingData.price <= 0) {
@@ -693,6 +698,7 @@ export async function registerRoutes(
         isNegotiable: originalListing.isNegotiable,
         serialNumber: originalListing.serialNumber,
         quantityAvailable: req.body.quantityAvailable || 1,
+        allowedBidderType: originalListing.allowedBidderType || "verified_only",
       };
 
       const validatedData = insertListingSchema.parse(newListingData);
