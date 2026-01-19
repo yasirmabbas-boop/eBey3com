@@ -3865,6 +3865,101 @@ export async function registerRoutes(
     }
   });
 
+  // User: Submit verification request
+  app.post("/api/verification-request", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+
+      if (user.isVerified) {
+        return res.status(400).json({ error: "حسابك موثق بالفعل" });
+      }
+
+      const existingRequest = await storage.getVerificationRequestByUser(userId);
+      if (existingRequest && existingRequest.status === "pending") {
+        return res.status(400).json({ error: "لديك طلب توثيق قيد المراجعة بالفعل" });
+      }
+
+      const request = await storage.createVerificationRequest(userId);
+      res.status(201).json({ message: "تم إرسال طلب التوثيق بنجاح", request });
+    } catch (error) {
+      console.error("Error creating verification request:", error);
+      res.status(500).json({ error: "فشل في إرسال طلب التوثيق" });
+    }
+  });
+
+  // User: Get own verification request status
+  app.get("/api/verification-request", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+
+      const request = await storage.getVerificationRequestByUser(userId);
+      res.json(request || null);
+    } catch (error) {
+      console.error("Error fetching verification request:", error);
+      res.status(500).json({ error: "فشل في جلب حالة الطلب" });
+    }
+  });
+
+  // Admin: Get pending verification requests
+  app.get("/api/admin/verification-requests", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const requests = await storage.getPendingVerificationRequests();
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching verification requests:", error);
+      res.status(500).json({ error: "Failed to fetch verification requests" });
+    }
+  });
+
+  // Admin: Approve or reject verification request
+  app.patch("/api/admin/verification-requests/:id", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { status, adminNotes } = req.body;
+      if (!["approved", "rejected"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+
+      const request = await storage.updateVerificationRequest(req.params.id, status, userId, adminNotes);
+      if (!request) {
+        return res.status(404).json({ error: "Request not found" });
+      }
+
+      res.json(request);
+    } catch (error) {
+      console.error("Error updating verification request:", error);
+      res.status(500).json({ error: "Failed to update verification request" });
+    }
+  });
+
   // Admin: Get pending seller requests
   app.get("/api/admin/seller-requests", async (req, res) => {
     try {
