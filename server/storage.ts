@@ -340,12 +340,21 @@ export class DatabaseStorage implements IStorage {
   }): Promise<{ listings: Listing[]; total: number }> {
     const { limit, offset, category, saleTypes, sellerId, includeSold, searchQuery, minPrice, maxPrice, conditions: conditionFilters, cities } = options;
     
+    console.log('[STORAGE] getListingsPaginated called with:', {
+      limit, offset, category, saleTypes, sellerId, includeSold, 
+      searchQuery, minPrice, maxPrice, 
+      conditionsCount: conditionFilters?.length, citiesCount: cities?.length
+    });
+    
     // Only show available (non-sold) listings unless includeSold is true
     // The route layer handles checking if user is viewing their own profile
     // Always filter out deleted items
     const conditions: any[] = [eq(listings.isDeleted, false)];
     if (!includeSold) {
+      console.log('[STORAGE] Adding availableListingCondition (filtering out sold items)');
       conditions.push(availableListingCondition);
+    } else {
+      console.log('[STORAGE] includeSold=true, showing ALL items including sold');
     }
     if (category) conditions.push(eq(listings.category, category));
     if (saleTypes && saleTypes.length > 0) {
@@ -457,6 +466,15 @@ export class DatabaseStorage implements IStorage {
     const results = await query
       .limit(limit)
       .offset(offset);
+    
+    console.log('[STORAGE] Query results:', {
+      resultsCount: results.length,
+      total: countResult?.count || 0,
+      firstResultId: results[0]?.id,
+      firstResultIsActive: results[0]?.isActive,
+      firstResultQuantitySold: results[0]?.quantitySold,
+      firstResultQuantityAvailable: results[0]?.quantityAvailable
+    });
     
     return { listings: results as Listing[], total: countResult?.count || 0 };
   }

@@ -202,7 +202,16 @@ export async function registerRoutes(
       
       // Use optimized paginated query with SQL-level filtering
       const searchQuery = typeof q === "string" ? q : undefined;
-      console.log('[DEBUG-SERVER] API /api/listings request', { category: typeof category === "string" ? category : undefined, sellerId: sellerIdStr, includeSold: includeSold === "true" || isOwnProfile, searchQuery, page: pageNum });
+      console.log('[DEBUG-SERVER] API /api/listings request', { 
+        category: typeof category === "string" ? category : undefined, 
+        sellerId: sellerIdStr, 
+        includeSoldRequested: includeSold === "true",
+        hasSearchQuery: !!searchQuery,
+        isOwnProfile,
+        includeSoldFinal: (includeSold === "true" && !!searchQuery) || isOwnProfile, 
+        searchQuery, 
+        page: pageNum 
+      });
       // #region agent log
       fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings',message:'listings-request',data:{category:typeof category === "string" ? category : undefined,sellerId:sellerIdStr,includeSold:includeSold === "true" || isOwnProfile,searchQuery,page:pageNum,limit},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H6'})}).catch(()=>{});
       // #endregion
@@ -212,8 +221,9 @@ export async function registerRoutes(
         category: typeof category === "string" ? category : undefined,
         saleTypes,
         sellerId: sellerIdStr,
-        // Only include sold items if: explicitly requested via filter OR viewing own profile
-        includeSold: includeSold === "true" || isOwnProfile,
+        // Only include sold items if: (explicitly requested via filter AND has search query) OR viewing own profile
+        // This prevents browsing all sold items without a search term
+        includeSold: (includeSold === "true" && !!searchQuery) || isOwnProfile,
         searchQuery,
         minPrice: typeof minPrice === "string" ? parseInt(minPrice) : undefined,
         maxPrice: typeof maxPrice === "string" ? parseInt(maxPrice) : undefined,

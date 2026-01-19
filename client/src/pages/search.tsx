@@ -178,7 +178,10 @@ export default function SearchPage() {
     apiParams.set("page", String(page));
     
     if (sellerIdParam) apiParams.set("sellerId", sellerIdParam);
-    if (appliedFilters.includeSold) apiParams.set("includeSold", "true");
+    if (appliedFilters.includeSold) {
+      console.log('[SEARCH] Adding includeSold=true to API URL');
+      apiParams.set("includeSold", "true");
+    }
     if (searchQuery) apiParams.set("q", searchQuery);
     if (appliedFilters.category) apiParams.set("category", appliedFilters.category);
     if (appliedFilters.priceMin) apiParams.set("minPrice", appliedFilters.priceMin);
@@ -192,7 +195,9 @@ export default function SearchPage() {
     appliedFilters.conditions.forEach((value) => apiParams.append("condition", value));
     appliedFilters.cities.forEach((value) => apiParams.append("city", value));
     
-    return `/api/listings?${apiParams.toString()}`;
+    const url = `/api/listings?${apiParams.toString()}`;
+    console.log('[SEARCH] Built API URL:', url, 'includeSold:', appliedFilters.includeSold);
+    return url;
   }, [sellerIdParam, appliedFilters, searchQuery, saleTypeParam, page]);
 
   // Use primitive values in queryKey for stable cache keys (objects cause unnecessary refetches)
@@ -235,16 +240,29 @@ export default function SearchPage() {
   }, [isLoading, isFetching, listingsData?.listings?.length, appliedFilters.category, page]);
 
   useEffect(() => {
-    console.log('[DEBUG-D] useEffect3 - update mergedListings', { hasListingsData: !!listingsData?.listings, listingsCount: listingsData?.listings?.length, page });
+    console.log('[DEBUG-D] useEffect3 - update mergedListings', { 
+      hasListingsData: !!listingsData?.listings, 
+      listingsCount: listingsData?.listings?.length, 
+      page,
+      firstListingId: listingsData?.listings?.[0]?.id,
+      firstListingIsActive: listingsData?.listings?.[0]?.isActive,
+      firstListingQuantitySold: listingsData?.listings?.[0]?.quantitySold,
+      firstListingQuantityAvailable: listingsData?.listings?.[0]?.quantityAvailable
+    });
     // #region agent log
     fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:update-merged',message:'update-mergedListings',data:{page,hasListingsData:!!listingsData?.listings,listingsCount:listingsData?.listings?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H4'})}).catch(()=>{});
     // #endregion
-    if (!listingsData?.listings) return;
+    if (!listingsData?.listings) {
+      console.log('[SEARCH] No listings data to merge');
+      return;
+    }
     if (page === 1) {
       // Store page 1 data for when pagination starts
+      console.log('[SEARCH] Setting page 1 listings:', listingsData.listings.length);
       setMergedListings(listingsData.listings);
     } else {
       // Append new pages to existing data
+      console.log('[SEARCH] Appending page', page, 'listings:', listingsData.listings.length);
       setMergedListings((prev) => [...prev, ...listingsData.listings]);
     }
   }, [listingsData, page]);
@@ -268,7 +286,15 @@ export default function SearchPage() {
   const listings: Listing[] = page === 1 
     ? (listingsData?.listings || [])
     : mergedListings.length > 0 ? mergedListings : (listingsData?.listings || []);
-  console.log('[DEBUG-E] listings computed', { page, listingsDataCount: listingsData?.listings?.length, mergedListingsLen: mergedListings.length, finalListingsLen: listings.length, isLoading });
+  console.log('[DEBUG-E] listings computed', { 
+    page, 
+    listingsDataCount: listingsData?.listings?.length, 
+    mergedListingsLen: mergedListings.length, 
+    finalListingsLen: listings.length, 
+    isLoading,
+    appliedIncludeSold: appliedFilters.includeSold,
+    draftIncludeSold: draftFilters.includeSold
+  });
 
   const allProducts = useMemo(() => {
     return listings;
@@ -385,14 +411,28 @@ export default function SearchPage() {
   };
 
   const applyFilters = () => {
+    console.log('[SEARCH] Applying filters:', {
+      draftFilters,
+      prevAppliedFilters: appliedFilters
+    });
     setAppliedFilters(draftFilters);
     setPage(1);
+    setMergedListings([]); // Clear merged listings when filters change
     setIsFilterOpen(false);
   };
 
   useEffect(() => {
     setPage(1);
   }, [searchQuery, sortBy]);
+
+  // Auto-clear includeSold when search query is cleared
+  useEffect(() => {
+    if (!searchQuery && (appliedFilters.includeSold || draftFilters.includeSold)) {
+      console.log('[SEARCH] Auto-clearing includeSold because search query is empty');
+      setAppliedFilters(prev => ({ ...prev, includeSold: false }));
+      setDraftFilters(prev => ({ ...prev, includeSold: false }));
+    }
+  }, [searchQuery]);
 
   const clearAllFilters = () => {
     const cleared: FilterState = {
@@ -426,7 +466,10 @@ export default function SearchPage() {
     appliedFilters.saleTypes.length,
     appliedFilters.cities.length,
     appliedFilters.priceMin || appliedFilters.priceMax ? 1 : 0,
+    appliedFilters.includeSold ? 1 : 0, // Count includeSold as an active filter
   ].reduce((a, b) => a + b, 0);
+  
+  console.log('[SEARCH] Active filters count:', activeFiltersCount, 'includeSold:', appliedFilters.includeSold);
 
   const getPageTitle = () => {
     if (searchQuery) return `${t("searchResults")}: "${searchQuery}"`;
@@ -674,11 +717,22 @@ export default function SearchPage() {
                               checked={draftFilters.includeSold}
                               onCheckedChange={(checked) => setDraftFilters(prev => ({ ...prev, includeSold: !!checked }))}
                               data-testid="filter-include-sold"
+                              disabled={!searchQuery}
                             />
-                            <Label htmlFor="includeSold" className="flex items-center gap-2 cursor-pointer text-muted-foreground">
+                            <Label 
+                              htmlFor="includeSold" 
+                              className={`flex items-center gap-2 cursor-pointer ${!searchQuery ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}
+                            >
                               {t("showSold")}
                             </Label>
                           </div>
+                          {!searchQuery && (
+                            <p className="text-xs text-muted-foreground/70 mt-1 mr-6">
+                              {language === "ar" 
+                                ? "متاح فقط عند البحث" 
+                                : "تەنها لە کاتی گەڕاندا بەردەستە"}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -854,11 +908,26 @@ export default function SearchPage() {
           {isLoading ? (
             <ProductGridSkeleton count={12} />
           ) : filteredProducts.length === 0 ? (
-            <EmptySearchState 
-              query={searchQuery || undefined}
-              onClearFilters={activeFiltersCount > 0 ? () => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false }) : undefined}
-              language={language}
-            />
+            // Only show empty state if user has applied filters or search query
+            // Otherwise, this shouldn't happen as we should always have listings
+            (activeFiltersCount > 0 || searchQuery) ? (
+              <EmptySearchState 
+                query={searchQuery || undefined}
+                onClearFilters={activeFiltersCount > 0 ? () => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false }) : undefined}
+                language={language}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">
+                  {language === "ar" ? "لا توجد منتجات متاحة حالياً" : "هیچ بەرهەمێک بەردەست نییە لە ئێستادا"}
+                </p>
+                <Link href="/">
+                  <Button variant="outline">
+                    {language === "ar" ? "العودة للرئيسية" : "گەڕانەوە بۆ سەرەکی"}
+                  </Button>
+                </Link>
+              </div>
+            )
           ) : (
             <div className="space-y-6">
               {/* Group products by category for carousel view */}
