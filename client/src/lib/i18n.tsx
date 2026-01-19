@@ -331,9 +331,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   });
 
   const setLanguage = (lang: Language) => {
-    // #region agent log
-    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1',location:'lib/i18n.tsx:setLanguage',message:'setLanguage called',data:{next:lang,prev:language,stored:typeof window!=="undefined"?localStorage.getItem("language"):null},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion agent log
     const nextLanguage = normalizeLanguage(lang);
     setLanguageState(nextLanguage);
     localStorage.setItem("language", nextLanguage);
@@ -346,16 +343,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       return key;
     }
     const value = translation[language] ?? translation.ar ?? key;
-    // #region agent log
-    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2',location:'lib/i18n.tsx:t',message:'t() lookup',data:{key,language,value,hasEn:Object.prototype.hasOwnProperty.call(translation,"en")},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion agent log
     return value;
   };
 
   useEffect(() => {
-    // #region agent log
-    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H3',location:'lib/i18n.tsx:LanguageProvider',message:'language state changed',data:{language,stored:typeof window!=="undefined"?localStorage.getItem("language"):null},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion agent log
+    // Language state effect
   }, [language]);
 
   return (

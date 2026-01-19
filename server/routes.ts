@@ -219,6 +219,9 @@ export async function registerRoutes(
         conditions,
         cities,
       });
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:api-listings-response',message:'api-listings-result',data:{listingsCount:paginatedListings.length,total},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       
       // Track search analytics when there's a search query
       if (searchQuery && searchQuery.trim()) {
