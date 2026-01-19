@@ -80,8 +80,9 @@ export function PushNotificationPrompt() {
 
   return (
     <div 
-      className="fixed bottom-36 left-4 right-4 md:left-auto md:right-4 md:bottom-20 md:w-80 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl shadow-2xl p-4 z-[9999]"
+      className="fixed bottom-48 left-4 right-4 md:left-auto md:right-4 md:bottom-20 md:w-80 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl shadow-2xl p-4 z-[100002]"
       dir="rtl"
+      style={{ bottom: "calc(9rem + env(safe-area-inset-bottom, 0px))" }}
     >
       <button
         onClick={handleDismiss}

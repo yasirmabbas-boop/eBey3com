@@ -9,8 +9,14 @@ interface BeforeInstallPromptEvent extends Event {
 
 const DISMISSED_KEY = "pwa-install-dismissed";
 
+declare global {
+  interface Window {
+    deferredPrompt: any;
+  }
+}
+
 export function InstallPWAPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(window.deferredPrompt || null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
 
@@ -27,14 +33,32 @@ export function InstallPWAPrompt() {
       return;
     }
 
+    // Check if prompt is already available globally
+    if (window.deferredPrompt) {
+      setDeferredPrompt(window.deferredPrompt);
+      setShowPrompt(true);
+    }
+
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowPrompt(true);
     };
 
+    const globalHandler = () => {
+      if (window.deferredPrompt) {
+        setDeferredPrompt(window.deferredPrompt);
+        setShowPrompt(true);
+      }
+    };
+
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    window.addEventListener("pwa-prompt-available", globalHandler);
+    
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("pwa-prompt-available", globalHandler);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -58,8 +82,9 @@ export function InstallPWAPrompt() {
 
   return (
     <div 
-      className="fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:bottom-4 md:w-80 bg-blue-600 text-white rounded-xl shadow-2xl p-4 z-[10000]"
+      className="fixed bottom-32 left-4 right-4 md:left-auto md:right-4 md:bottom-4 md:w-80 bg-blue-600 text-white rounded-xl shadow-2xl p-4 z-[100001]"
       dir="rtl"
+      style={{ bottom: "calc(6rem + env(safe-area-inset-bottom, 0px))" }}
     >
       <button
         onClick={handleDismiss}

@@ -117,6 +117,7 @@ export default function SellPage() {
     reservePrice: "",
     buyNowPrice: "",
     bidIncrement: "",
+    allowedBidderType: "verified_only",
   });
   
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -247,6 +248,7 @@ export default function SellPage() {
         reservePrice: "",
         buyNowPrice: "",
         bidIncrement: "",
+        allowedBidderType: sourceListing.allowedBidderType ?? "verified_only",
       });
       setImages(sourceListing.images ?? []);
       setSaleType((sourceListing.saleType as "auction" | "fixed") ?? "fixed");
@@ -486,6 +488,7 @@ export default function SellPage() {
         serialNumber: formData.serialNumber || null,
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
         tags: tags.length > 0 ? tags : null,
+        allowedBidderType: formData.allowedBidderType,
       };
 
       // Only edit mode uses PATCH, relist and template create new listings via POST
@@ -1341,6 +1344,48 @@ export default function SellPage() {
                     )}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Bidder Restrictions */}
+          {saleType === "auction" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5 text-primary" />
+                  {language === "ar" ? "من يمكنه المزايدة؟" : "کێ دەتوانێت مزایدە بکات؟"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <RadioGroup 
+                  value={formData.allowedBidderType} 
+                  onValueChange={(val) => handleInputChange("allowedBidderType", val)}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
+                  <div className="flex items-start space-x-2 space-x-reverse p-4 rounded-xl border bg-background hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => handleInputChange("allowedBidderType", "all_users")}>
+                    <RadioGroupItem value="all_users" id="all_users" className="mt-1" />
+                    <div className="grid gap-1.5 leading-none">
+                      <Label htmlFor="all_users" className="font-bold cursor-pointer">
+                        {language === "ar" ? "جميع المستخدمين" : "هەموو بەکارهێنەران"}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {language === "ar" ? "يسمح لأي مستخدم مسجل بالمزايدة." : "ڕێگە بە هەر بەکارهێنەرێکی تۆمارکراو دەدرێت مزایدە بکات."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2 space-x-reverse p-4 rounded-xl border bg-background hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => handleInputChange("allowedBidderType", "verified_only")}>
+                    <RadioGroupItem value="verified_only" id="verified_only" className="mt-1" />
+                    <div className="grid gap-1.5 leading-none">
+                      <Label htmlFor="verified_only" className="font-bold cursor-pointer">
+                        {language === "ar" ? "الموثقون فقط" : "تەنها متمانەپێکراوەکان"}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {language === "ar" ? "يسمح فقط لمن لديهم حسابات موثقة (أكثر أماناً)." : "تەنها ڕێگە بەوانە دەدرێت کە هەژماری متمانەپێکراویان هەیە (پارێزراوترە)."}
+                      </p>
+                    </div>
+                  </div>
+                </RadioGroup>
               </CardContent>
             </Card>
           )}

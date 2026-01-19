@@ -102,6 +102,7 @@ export default function SellWizardPage() {
     startHour: "00",
     quantityAvailable: "1",
     sellerName: "",
+    allowedBidderType: "verified_only",
   });
 
   const [isRequestingSellerAccess, setIsRequestingSellerAccess] = useState(false);
@@ -192,6 +193,7 @@ export default function SellWizardPage() {
         startHour: "00",
         quantityAvailable: sourceListing.quantityAvailable?.toString() ?? "1",
         sellerName: sourceListing.sellerName ?? user?.displayName ?? "",
+        allowedBidderType: sourceListing.allowedBidderType ?? "verified_only",
       });
       setImages(sourceListing.images ?? []);
       setSaleType((sourceListing.saleType as "auction" | "fixed") ?? "fixed");
@@ -325,6 +327,7 @@ export default function SellWizardPage() {
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
         isNegotiable,
         sellerName: formData.sellerName || user?.displayName || "بائع",
+        allowedBidderType: formData.allowedBidderType,
       };
       
       const url = isEditMode ? `/api/listings/${editListingId}` : "/api/listings";
@@ -855,7 +858,58 @@ export default function SellWizardPage() {
                 </div>
               </>
             )}
-            
+
+            {saleType === "auction" && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <Label className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-primary" />
+                    {language === "ar" ? "من يمكنه المزايدة؟" : "کێ دەتوانێت مزایدە بکات؟"}
+                  </Label>
+                  <RadioGroup 
+                    value={formData.allowedBidderType} 
+                    onValueChange={(val) => handleInputChange("allowedBidderType", val)}
+                    className="grid grid-cols-1 gap-3"
+                  >
+                    <Label 
+                      htmlFor="bidder-all"
+                      className={`flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                        formData.allowedBidderType === "all_users" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <RadioGroupItem value="all_users" id="bidder-all" className="mt-1" />
+                      <div>
+                        <div className="font-bold">
+                          {language === "ar" ? "جميع المستخدمين" : "هەموو بەکارهێنەران"}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {language === "ar" ? "يسمح لأي مستخدم مسجل بالمزايدة." : "ڕێگە بە هەر بەکارهێنەرێکی تۆمارکراو دەدرێت مزایدە بکات."}
+                        </p>
+                      </div>
+                    </Label>
+                    
+                    <Label 
+                      htmlFor="bidder-verified"
+                      className={`flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                        formData.allowedBidderType === "verified_only" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <RadioGroupItem value="verified_only" id="bidder-verified" className="mt-1" />
+                      <div>
+                        <div className="font-bold">
+                          {language === "ar" ? "الموثقون فقط" : "تەنها متمانەپێکراوەکان"}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {language === "ar" ? "يسمح فقط لمن لديهم حسابات موثقة (أكثر أماناً)." : "تەنها ڕێگە بەوانە دەدرێت کە هەژماری متمانەپێکراویان هەیە (پارێزراوترە)."}
+                        </p>
+                      </div>
+                    </Label>
+                  </RadioGroup>
+                </div>
+              </>
+            )}
+
             {saleType === "fixed" && (
               <>
                 <Separator />

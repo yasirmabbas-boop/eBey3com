@@ -44,6 +44,14 @@
             .catch((err) => console.log('SW registration failed'));
         });
       }
+
+      // Capture PWA install prompt globally
+      window.deferredPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        window.deferredPrompt = e;
+        window.dispatchEvent(new CustomEvent('pwa-prompt-available'));
+      });
     </script>
   </body>
 </html>

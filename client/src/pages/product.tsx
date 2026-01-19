@@ -989,6 +989,7 @@ export default function ProductPage() {
                     isWinning={!!isWinning}
                     isAuthLoading={isAuthLoading}
                     isVerified={user?.isVerified || false}
+                    allowedBidderType={listing?.allowedBidderType}
                   />
                 )}
 

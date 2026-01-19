@@ -762,13 +762,15 @@ export async function registerRoutes(
       if (bidder.isBanned) {
         return res.status(403).json({ error: "حسابك محظور. لا يمكنك المزايدة." });
       }
-      if (!bidder.isVerified) {
-        return res.status(403).json({ error: "يجب أن تكون موثقاً للمزايدة. يرجى توثيق حسابك أولاً." });
-      }
-      
+
       const listing = await storage.getListing(validatedData.listingId);
       if (!listing) {
         return res.status(404).json({ error: "Listing not found" });
+      }
+
+      // Enforce participation restrictions
+      if (listing.allowedBidderType === "verified_only" && !bidder.isVerified) {
+        return res.status(403).json({ error: "هذا المزاد مخصص للمستخدمين الموثقين فقط. يرجى توثيق حسابك للمشاركة." });
       }
       
       // Prevent sellers from bidding on their own items

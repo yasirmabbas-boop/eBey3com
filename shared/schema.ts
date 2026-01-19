@@ -329,6 +329,7 @@ export const listings = pgTable("listings", {
   isFeatured: boolean("is_featured").notNull().default(false),
   featuredOrder: integer("featured_order").default(0),
   featuredAt: timestamp("featured_at"),
+  allowedBidderType: text("allowed_bidder_type").notNull().default("verified_only"),
   searchVector: text("search_vector"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
