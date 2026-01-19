@@ -5,13 +5,44 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1766524497846,
+      "when": 1766524497845,
       "tag": "0000_overconfident_wrecking_crew",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1768723858796,
+      "tag": "0001_add_buyer_wallet_transactions",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768724984225,
+      "tag": "0002_add_buyer_cancellations",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1768754249611,
+      "tag": "0003_remove_unused_features",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1768754249611,
+      "tag": "0003_search_improvements",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1768815360082,
+      "tag": "0004_restore_offers",
       "breakpoints": true
     }
   ]
 }
-npm run db:migrate
-
-
-

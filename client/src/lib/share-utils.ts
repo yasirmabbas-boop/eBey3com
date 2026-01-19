@@ -1,29 +1,19 @@
 import { isDespia, nativeShare, hapticLight } from './despia';
 
-export function isMobile(): boolean {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+function openShareUrl(url: string, features?: string): void {
+  const popup = window.open(url, "_blank", features);
+  if (!popup) {
+    window.location.href = url;
+  }
 }
 
 export function shareToFacebook(url: string): void {
   hapticLight();
   const encodedUrl = encodeURIComponent(url);
-  
-  if (isMobile()) {
-    const fbAppUrl = `fb://facewebmodal/f?href=${encodedUrl}`;
-    const webUrl = `https://m.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
-    
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = fbAppUrl;
-    document.body.appendChild(iframe);
-    
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-      window.location.href = webUrl;
-    }, 500);
-  } else {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, "_blank", "width=600,height=400");
-  }
+  openShareUrl(
+    `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+    "width=600,height=400"
+  );
 }
 
 export function shareToWhatsApp(url: string, text: string): void {
@@ -36,34 +26,26 @@ export function shareToWhatsApp(url: string, text: string): void {
     nativeShare({ message: text, url });
     return;
   }
-  
-  if (isMobile()) {
-    window.location.href = `whatsapp://send?text=${encodedText}%20${encodedUrl}`;
-  } else {
-    window.open(`https://wa.me/?text=${encodedText}%20${encodedUrl}`, "_blank");
-  }
+
+  openShareUrl(`https://wa.me/?text=${encodedText}%20${encodedUrl}`);
 }
 
 export function shareToTelegram(url: string, text: string): void {
   hapticLight();
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(text);
-  
-  if (isMobile()) {
-    window.location.href = `tg://msg_url?url=${encodedUrl}&text=${encodedText}`;
-    setTimeout(() => {
-      window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, "_blank");
-    }, 500);
-  } else {
-    window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, "_blank");
-  }
+
+  openShareUrl(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`);
 }
 
 export function shareToTwitter(url: string, text: string): void {
   hapticLight();
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(text);
-  window.open(`https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`, "_blank", "width=600,height=400");
+  openShareUrl(
+    `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+    "width=600,height=400"
+  );
 }
 
 export function copyToClipboard(text: string): Promise<void> {

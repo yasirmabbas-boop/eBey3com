@@ -8,11 +8,15 @@ import { broadcastBidUpdate } from "./websocket";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { analyzeImageForSearch } from "./replit_integrations/image";
 import multer from "multer";
+import sharp from "sharp";
 import { financialService } from "./services/financial-service";
 import { deliveryService } from "./services/delivery-service";
 import { deliveryApi, DeliveryWebhookPayload } from "./services/delivery-api";
 
 const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+
+const OG_IMAGE_WIDTH = 1200;
+const OG_IMAGE_HEIGHT = 630;
 
 // Helper to get user ID from session or auth token (Safari/ITP fallback)
 async function getUserIdFromRequest(req: Request): Promise<string | null> {
@@ -33,6 +37,36 @@ async function getUserIdFromRequest(req: Request): Promise<string | null> {
   }
   
   return null;
+}
+
+function formatPriceForOg(price: number): string {
+  return new Intl.NumberFormat("ar-IQ").format(price) + " د.ع";
+}
+
+function escapeSvgText(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(0, maxLength - 3))}...`;
+}
+
+async function fetchImageBuffer(url: string): Promise<Buffer | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (error) {
+    console.error("Failed to fetch OG image source:", error);
+    return null;
+  }
 }
 
 const updateListingSchema = insertListingSchema.extend({
@@ -56,6 +90,67 @@ export async function registerRoutes(
   const setCacheHeaders = (seconds: number) => {
     return `public, max-age=${seconds}, stale-while-revalidate=${seconds * 2}`;
   };
+
+  app.get("/api/og/product/:id", async (req, res) => {
+    try {
+      const listing = await storage.getListing(req.params.id);
+      if (!listing || listing.isDeleted) {
+        return res.status(404).send("Listing not found");
+      }
+
+      const rawTitle = listing.title || "منتج";
+      const title = escapeSvgText(truncateText(rawTitle, 70));
+      const price = escapeSvgText(
+        formatPriceForOg(listing.currentBid || listing.price)
+      );
+      const saleTypeText = escapeSvgText(
+        listing.saleType === "auction" ? "مزاد" : "شراء الآن"
+      );
+
+      let imageBase64: string | null = null;
+      const imageUrl = listing.images?.[0];
+      if (imageUrl) {
+        const imageBuffer = await fetchImageBuffer(imageUrl);
+        if (imageBuffer) {
+          const resized = await sharp(imageBuffer)
+            .resize(1080, 360, { fit: "cover" })
+            .jpeg({ quality: 85 })
+            .toBuffer();
+          imageBase64 = resized.toString("base64");
+        }
+      }
+
+      const imageBlock = imageBase64
+        ? `<image href="data:image/jpeg;base64,${imageBase64}" x="60" y="40" width="1080" height="360" preserveAspectRatio="xMidYMid slice" />`
+        : `<rect x="60" y="40" width="1080" height="360" rx="24" fill="#e2e8f0" />
+           <text x="600" y="230" text-anchor="middle" font-size="40" fill="#64748b" font-family="Arial, sans-serif">No image</text>`;
+
+      const svg = `
+<svg width="${OG_IMAGE_WIDTH}" height="${OG_IMAGE_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)" />
+  ${imageBlock}
+  <rect x="60" y="430" width="1080" height="150" rx="24" fill="#ffffff" stroke="#e2e8f0" />
+  <text x="600" y="485" text-anchor="middle" font-size="44" fill="#0f172a" font-family="Arial, sans-serif" direction="rtl">${title}</text>
+  <text x="600" y="535" text-anchor="middle" font-size="32" fill="#2563eb" font-family="Arial, sans-serif">${price}</text>
+  <text x="600" y="580" text-anchor="middle" font-size="28" fill="#16a34a" font-family="Arial, sans-serif">${saleTypeText}</text>
+  <text x="1120" y="610" text-anchor="end" font-size="24" fill="#2563eb" font-family="Arial, sans-serif">E-بيع</text>
+</svg>`;
+
+      const png = await sharp(Buffer.from(svg)).png().toBuffer();
+      res.set("Content-Type", "image/png");
+      res.set("Cache-Control", setCacheHeaders(3600));
+      return res.send(png);
+    } catch (error) {
+      console.error("Error generating OG image:", error);
+      return res.status(500).send("Failed to generate OG image");
+    }
+  });
 
   app.get("/api/listings", async (req, res) => {
     try {

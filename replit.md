@@ -77,6 +77,24 @@ The platform includes an automated auction processing system (`server/auction-pr
 - Development: Vite dev server with HMR, served through Express middleware
 - Production: Static build served from `dist/public`, server bundled with esbuild
 
+### Migration Workflow (Recommended)
+- **Tooling**: Drizzle Kit with SQL migrations in `migrations/`
+- **Primary command**: `npm run db:migrate` (applies migration files)
+- **When to use `db:push`**: local-only prototyping when you intentionally skip migration history
+
+#### Apply flow (staging-first)
+1. Apply migrations locally or on staging:
+   - Ensure `DATABASE_URL` points to the target database
+   - Run `npm run db:migrate`
+2. Sanity-check critical endpoints and logs
+3. Apply the same migration set to production
+
+#### Minimal pre-prod checklist
+- Snapshot/backup available
+- Migration runs cleanly
+- Key flows verified (login, listing create, checkout/offers)
+- Monitor logs for 10–15 minutes post-deploy
+
 ### Production Setup
 After publishing, the production database is empty. To set up the admin account:
 

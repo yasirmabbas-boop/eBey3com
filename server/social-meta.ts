@@ -46,6 +46,17 @@ function getBaseUrl(req: Request): string {
   return `${req.protocol}://${host}`;
 }
 
+function ensureAbsoluteUrl(url: string, baseUrl: string): string {
+  if (!url) return baseUrl;
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  if (url.startsWith("/")) {
+    return `${baseUrl}${url}`;
+  }
+  return `${baseUrl}/${url}`;
+}
+
 export async function socialMetaMiddleware(
   req: Request,
   res: Response,
@@ -84,7 +95,11 @@ export async function socialMetaMiddleware(
       const description = escapeHtml(
         `${ratingStars} تقييم ${rating.toFixed(1)} | متجر ${sellerName} على E-بيع - منصة المزادات العراقية`
       );
-      const imageUrl = seller.avatar || `${baseUrl}/favicon.png`;
+      const imageUrl = ensureAbsoluteUrl(
+        seller.avatar || `${baseUrl}/favicon.png`,
+        baseUrl
+      );
+      const domain = new URL(baseUrl).hostname;
       
       const html = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -93,11 +108,15 @@ export async function socialMetaMiddleware(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>متجر ${sellerName} - E-بيع</title>
   
+  <link rel="canonical" href="${sellerUrl}" />
+
   <!-- Open Graph -->
   <meta property="og:type" content="profile" />
   <meta property="og:title" content="متجر ${sellerName}" />
   <meta property="og:description" content="${description}" />
   <meta property="og:image" content="${imageUrl}" />
+  <meta property="og:image:secure_url" content="${imageUrl}" />
+  <meta property="og:image:alt" content="متجر ${sellerName}" />
   <meta property="og:url" content="${sellerUrl}" />
   <meta property="og:site_name" content="E-بيع" />
   <meta property="og:locale" content="ar_IQ" />
@@ -107,6 +126,8 @@ export async function socialMetaMiddleware(
   <meta name="twitter:title" content="متجر ${sellerName}" />
   <meta name="twitter:description" content="${description}" />
   <meta name="twitter:image" content="${imageUrl}" />
+  <meta name="twitter:url" content="${sellerUrl}" />
+  <meta name="twitter:domain" content="${domain}" />
   
   <meta name="description" content="${description}" />
 </head>
@@ -136,7 +157,8 @@ export async function socialMetaMiddleware(
 
     const productUrl = `${baseUrl}/product/${listing.id}`;
     const images = listing.images || [];
-    const imageUrl = images[0] || LOGO_URL;
+    const ogImageUrl = `${baseUrl}/api/og/product/${listing.id}`;
+    const domain = new URL(baseUrl).hostname;
     const price = formatPrice(listing.currentBid || listing.price);
     const isAuction = listing.saleType === "auction";
     const saleTypeText = isAuction ? "🔨 مزاد" : "💰 شراء الآن";
@@ -153,13 +175,18 @@ export async function socialMetaMiddleware(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${title} - E-بيع</title>
   
+  <link rel="canonical" href="${productUrl}" />
+
   <!-- Open Graph -->
   <meta property="og:type" content="product" />
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${description}" />
-  <meta property="og:image" content="${imageUrl}" />
+  <meta property="og:image" content="${ogImageUrl}" />
+  <meta property="og:image:secure_url" content="${ogImageUrl}" />
+  <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="${title}" />
   <meta property="og:url" content="${productUrl}" />
   <meta property="og:site_name" content="E-بيع" />
   <meta property="og:locale" content="ar_IQ" />
@@ -171,7 +198,9 @@ export async function socialMetaMiddleware(
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${title}" />
   <meta name="twitter:description" content="${description}" />
-  <meta name="twitter:image" content="${imageUrl}" />
+  <meta name="twitter:image" content="${ogImageUrl}" />
+  <meta name="twitter:url" content="${productUrl}" />
+  <meta name="twitter:domain" content="${domain}" />
   <meta name="twitter:site" content="@replit" />
   
   <!-- Price display for messaging apps -->
