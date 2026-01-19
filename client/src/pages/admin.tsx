@@ -283,7 +283,7 @@ export default function AdminPage() {
   });
 
   interface VerificationRequest {
-    id: number;
+    id: string;
     userId: string;
     userName: string;
     userPhone?: string;
@@ -304,7 +304,7 @@ export default function AdminPage() {
   });
 
   const verificationMutation = useMutation({
-    mutationFn: async ({ id, status, adminNotes }: { id: number; status: "approved" | "rejected"; adminNotes?: string }) => {
+    mutationFn: async ({ id, status, adminNotes }: { id: string; status: "approved" | "rejected"; adminNotes?: string }) => {
       const res = await fetchWithAuth(`/api/admin/verification-requests/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

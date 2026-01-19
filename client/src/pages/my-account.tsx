@@ -134,7 +134,7 @@ export default function MyAccount() {
   });
 
   const { data: verificationRequest } = useQuery<{
-    id: number;
+    id: string;
     status: string;
     createdAt: string;
     adminNotes?: string;
