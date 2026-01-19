@@ -3924,7 +3924,17 @@ export async function registerRoutes(
       }
 
       const requests = await storage.getPendingVerificationRequests();
-      res.json(requests);
+      const formattedRequests = requests.map(r => ({
+        id: r.id,
+        userId: r.userId,
+        userName: r.user.displayName || r.user.phone || "مستخدم",
+        userPhone: r.user.phone,
+        status: r.status,
+        createdAt: r.createdAt,
+        reviewedAt: r.reviewedAt,
+        reviewedBy: r.reviewedBy,
+      }));
+      res.json(formattedRequests);
     } catch (error) {
       console.error("Error fetching verification requests:", error);
       res.status(500).json({ error: "Failed to fetch verification requests" });
