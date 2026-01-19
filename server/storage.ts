@@ -14,11 +14,12 @@ import {
   type Notification, type InsertNotification,
   type Report, type InsertReport,
   type VerificationCode,
+  type VerificationRequest,
   type ReturnRequest, type InsertReturnRequest,
   type ContactMessage, type InsertContactMessage,
   type ProductComment, type InsertProductComment,
   type PushSubscription, type InsertPushSubscription,
-  users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments, pushSubscriptions
+  users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, cartItems, notifications, reports, verificationCodes, verificationRequests, returnRequests, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, lt, inArray, ne } from "drizzle-orm";
@@ -208,6 +209,12 @@ export interface IStorage {
   getValidVerificationCode(phone: string, code: string, type: string): Promise<any | undefined>;
   markVerificationCodeUsed(id: string): Promise<boolean>;
   deleteExpiredVerificationCodes(): Promise<number>;
+  
+  // Verification requests (manual admin approval)
+  createVerificationRequest(userId: string): Promise<VerificationRequest>;
+  getVerificationRequestByUser(userId: string): Promise<VerificationRequest | undefined>;
+  getPendingVerificationRequests(): Promise<Array<VerificationRequest & { user: User }>>;
+  updateVerificationRequest(id: string, status: string, adminId: string, adminNotes?: string): Promise<VerificationRequest | undefined>;
   
   // Return requests
   createReturnRequest(request: InsertReturnRequest): Promise<ReturnRequest>;
@@ -1470,6 +1477,60 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(verificationCodes)
       .where(lt(verificationCodes.expiresAt, new Date()));
     return 0;
+  }
+
+  async createVerificationRequest(userId: string): Promise<VerificationRequest> {
+    const [result] = await db.insert(verificationRequests)
+      .values({ userId })
+      .returning();
+    return result;
+  }
+
+  async getVerificationRequestByUser(userId: string): Promise<VerificationRequest | undefined> {
+    const [result] = await db.select()
+      .from(verificationRequests)
+      .where(eq(verificationRequests.userId, userId))
+      .orderBy(desc(verificationRequests.createdAt))
+      .limit(1);
+    return result;
+  }
+
+  async getPendingVerificationRequests(): Promise<Array<VerificationRequest & { user: User }>> {
+    const results = await db.select({
+      id: verificationRequests.id,
+      userId: verificationRequests.userId,
+      status: verificationRequests.status,
+      adminNotes: verificationRequests.adminNotes,
+      reviewedBy: verificationRequests.reviewedBy,
+      reviewedAt: verificationRequests.reviewedAt,
+      createdAt: verificationRequests.createdAt,
+      user: users,
+    })
+      .from(verificationRequests)
+      .innerJoin(users, eq(verificationRequests.userId, users.id))
+      .where(eq(verificationRequests.status, "pending"))
+      .orderBy(desc(verificationRequests.createdAt));
+    return results;
+  }
+
+  async updateVerificationRequest(id: string, status: string, adminId: string, adminNotes?: string): Promise<VerificationRequest | undefined> {
+    const [result] = await db.update(verificationRequests)
+      .set({
+        status,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        adminNotes: adminNotes || null,
+      })
+      .where(eq(verificationRequests.id, id))
+      .returning();
+    
+    if (result && status === "approved") {
+      await db.update(users)
+        .set({ isVerified: true })
+        .where(eq(users.id, result.userId));
+    }
+    
+    return result;
   }
 
   async createReturnRequest(request: InsertReturnRequest): Promise<ReturnRequest> {

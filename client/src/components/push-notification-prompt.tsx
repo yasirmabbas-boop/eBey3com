@@ -10,8 +10,20 @@ const SUBSCRIBED_KEY = "push-notification-subscribed";
 export function PushNotificationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [isMobile, setIsMobile] = useState(true);
   const { isAuthenticated } = useAuth();
   const { language } = useLanguage();
+
+  useEffect(() => {
+    // Check if mobile on mount and on resize
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -80,9 +92,13 @@ export function PushNotificationPrompt() {
 
   return (
     <div 
-      className="fixed bottom-48 left-4 right-4 md:left-auto md:right-4 md:bottom-20 md:w-80 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl shadow-2xl p-4 z-[100002]"
+      className="fixed left-4 right-4 md:left-auto md:right-4 md:w-80 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl shadow-2xl p-4 z-[100002]"
       dir="rtl"
-      style={{ bottom: "calc(9rem + env(safe-area-inset-bottom, 0px))" }}
+      style={{ 
+        bottom: isMobile 
+          ? 'calc(9rem + env(safe-area-inset-bottom, 0px))' 
+          : '5rem'
+      }}
     >
       <button
         onClick={handleDismiss}

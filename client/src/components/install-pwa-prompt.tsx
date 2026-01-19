@@ -16,9 +16,21 @@ declare global {
 }
 
 export function InstallPWAPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(window.deferredPrompt || null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isMobile, setIsMobile] = useState(true);
+
+  useEffect(() => {
+    // Check if mobile on mount and on resize
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const dismissed = localStorage.getItem(DISMISSED_KEY);
@@ -34,29 +46,26 @@ export function InstallPWAPrompt() {
     }
 
     // Check if prompt is already available globally
-    if (window.deferredPrompt) {
+    if (typeof window !== 'undefined' && window.deferredPrompt) {
       setDeferredPrompt(window.deferredPrompt);
       setShowPrompt(true);
     }
 
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowPrompt(true);
-    };
+    let eventHandled = false;
 
     const globalHandler = () => {
+      if (eventHandled) return;
       if (window.deferredPrompt) {
+        eventHandled = true;
         setDeferredPrompt(window.deferredPrompt);
         setShowPrompt(true);
       }
     };
 
-    window.addEventListener("beforeinstallprompt", handler);
+    // Listen only to the custom event dispatched from index.html
     window.addEventListener("pwa-prompt-available", globalHandler);
     
     return () => {
-      window.removeEventListener("beforeinstallprompt", handler);
       window.removeEventListener("pwa-prompt-available", globalHandler);
     };
   }, []);
@@ -82,9 +91,13 @@ export function InstallPWAPrompt() {
 
   return (
     <div 
-      className="fixed bottom-32 left-4 right-4 md:left-auto md:right-4 md:bottom-4 md:w-80 bg-blue-600 text-white rounded-xl shadow-2xl p-4 z-[100001]"
+      className="fixed left-4 right-4 md:left-auto md:right-4 md:w-80 bg-blue-600 text-white rounded-xl shadow-2xl p-4 z-[100001]"
       dir="rtl"
-      style={{ bottom: "calc(6rem + env(safe-area-inset-bottom, 0px))" }}
+      style={{ 
+        bottom: isMobile 
+          ? 'calc(6rem + env(safe-area-inset-bottom, 0px))' 
+          : '1rem'
+      }}
     >
       <button
         onClick={handleDismiss}

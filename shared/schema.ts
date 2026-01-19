@@ -444,6 +444,29 @@ export const insertVerificationCodeSchema = createInsertSchema(verificationCodes
 export type InsertVerificationCode = z.infer<typeof insertVerificationCodeSchema>;
 export type VerificationCode = typeof verificationCodes.$inferSelect;
 
+// User verification requests (for manual admin approval)
+export const verificationRequests = pgTable("verification_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  status: text("status").notNull().default("pending"), // 'pending', 'approved', 'rejected'
+  adminNotes: text("admin_notes"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertVerificationRequestSchema = createInsertSchema(verificationRequests).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  adminNotes: true,
+  reviewedBy: true,
+  reviewedAt: true,
+});
+
+export type InsertVerificationRequest = z.infer<typeof insertVerificationRequestSchema>;
+export type VerificationRequest = typeof verificationRequests.$inferSelect;
+
 // Contact form submissions
 export const contactMessages = pgTable("contact_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
