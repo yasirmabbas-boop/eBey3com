@@ -238,9 +238,22 @@ export default function ProductPage() {
   const { data: listing, isLoading, error } = useQuery<Listing>({
     queryKey: ["/api/listings", params?.id],
     queryFn: async () => {
-      const res = await fetch(`/api/listings/${params?.id}`);
-      if (!res.ok) throw new Error("Listing not found");
-      return res.json();
+      const url = `/api/listings/${params?.id}`;
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:listing-query',message:'listing-detail-request',data:{listingId:params?.id,url},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H12'})}).catch(()=>{});
+      // #endregion
+      const res = await fetch(url);
+      if (!res.ok) {
+        // #region agent log
+        fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:listing-query',message:'listing-detail-error',data:{listingId:params?.id,status:res.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H13'})}).catch(()=>{});
+        // #endregion
+        throw new Error("Listing not found");
+      }
+      const data = await res.json();
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:listing-query',message:'listing-detail-success',data:{listingId:params?.id,isDeleted:data?.isDeleted,isActive:data?.isActive,quantitySold:data?.quantitySold,quantityAvailable:data?.quantityAvailable},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H14'})}).catch(()=>{});
+      // #endregion
+      return data;
     },
     enabled: !!params?.id,
   });

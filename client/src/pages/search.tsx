@@ -151,8 +151,9 @@ export default function SearchPage() {
   const [mergedListings, setMergedListings] = useState<Listing[]>([]);
 
   useEffect(() => {
+    console.log('[DEBUG-A] useEffect1 triggered', { categoryParam, searchQuery });
     // #region agent log
-    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:153',message:'useEffect1-categoryParam-change',data:{categoryParam,searchQuery,trigger:'categoryParam-or-searchQuery'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:useEffect1',message:'init-filters-from-params',data:{categoryParam,searchQuery},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H1'})}).catch(()=>{});
     // #endregion
     const freshFilters: FilterState = {
       category: categoryParam,
@@ -166,8 +167,7 @@ export default function SearchPage() {
     setAppliedFilters(freshFilters);
     setDraftFilters(freshFilters);
     setSortBy(searchQuery ? "relevance" : "newest");
-    setPage(1);
-    setMergedListings([]);
+    // Note: page reset and mergedListings reset handled by the appliedFilters effect
   }, [searchQuery, categoryParam]);
 
   const ITEMS_PER_PAGE = 20;
@@ -195,18 +195,34 @@ export default function SearchPage() {
     return `/api/listings?${apiParams.toString()}`;
   }, [sellerIdParam, appliedFilters, searchQuery, saleTypeParam, page]);
 
-  const { data: listingsData, isLoading } = useQuery({
-    queryKey: ["/api/listings", sellerIdParam, appliedFilters, searchQuery, saleTypeParam, page],
+  // Use primitive values in queryKey for stable cache keys (objects cause unnecessary refetches)
+  const { data: listingsData, isLoading, isFetching } = useQuery({
+    queryKey: [
+      "/api/listings", 
+      sellerIdParam, 
+      appliedFilters.category,
+      appliedFilters.includeSold,
+      appliedFilters.priceMin,
+      appliedFilters.priceMax,
+      appliedFilters.conditions.join(','),
+      appliedFilters.saleTypes.join(','),
+      appliedFilters.cities.join(','),
+      searchQuery, 
+      saleTypeParam, 
+      page
+    ],
     queryFn: async () => {
       const url = buildApiUrl();
+      console.log('[DEBUG-B] Fetching listings', { url, page, category: appliedFilters.category });
       // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:queryFn',message:'fetching-listings',data:{url,page,category:appliedFilters.category},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:queryFn',message:'fetch-listings',data:{url,page,category:appliedFilters.category,searchQuery,includeSold:appliedFilters.includeSold,saleTypes:appliedFilters.saleTypes.length,conditions:appliedFilters.conditions.length,cities:appliedFilters.cities.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H2'})}).catch(()=>{});
       // #endregion
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch listings");
       const data = await res.json();
+      console.log('[DEBUG-C] Listings response', { listingsCount: data?.listings?.length, total: data?.pagination?.total });
       // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:queryFn-response',message:'listings-response',data:{listingsCount:data?.listings?.length,total:data?.pagination?.total,isArray:Array.isArray(data)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:queryFn-response',message:'fetch-listings-response',data:{listingsCount:data?.listings?.length,total:data?.pagination?.total,hasPagination:!!data?.pagination},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H3'})}).catch(()=>{});
       // #endregion
       return data;
     },
@@ -214,10 +230,23 @@ export default function SearchPage() {
 
   useEffect(() => {
     // #region agent log
-    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:205',message:'useEffect-update-mergedListings',data:{hasListingsData:!!listingsData?.listings,listingsCount:listingsData?.listings?.length,page},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:loading-state',message:'loading-flags',data:{isLoading,isFetching,hasListingsData:!!listingsData?.listings,listingsCount:listingsData?.listings?.length,category:appliedFilters.category,page},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H8'})}).catch(()=>{});
+    // #endregion
+  }, [isLoading, isFetching, listingsData?.listings?.length, appliedFilters.category, page]);
+
+  useEffect(() => {
+    console.log('[DEBUG-D] useEffect3 - update mergedListings', { hasListingsData: !!listingsData?.listings, listingsCount: listingsData?.listings?.length, page });
+    // #region agent log
+    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:update-merged',message:'update-mergedListings',data:{page,hasListingsData:!!listingsData?.listings,listingsCount:listingsData?.listings?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H4'})}).catch(()=>{});
     // #endregion
     if (!listingsData?.listings) return;
-    setMergedListings((prev) => (page === 1 ? listingsData.listings : [...prev, ...listingsData.listings]));
+    if (page === 1) {
+      // Store page 1 data for when pagination starts
+      setMergedListings(listingsData.listings);
+    } else {
+      // Append new pages to existing data
+      setMergedListings((prev) => [...prev, ...listingsData.listings]);
+    }
   }, [listingsData, page]);
 
   const handleLoadMore = useCallback(() => {
@@ -235,11 +264,11 @@ export default function SearchPage() {
     enabled: !!sellerIdParam,
   });
   
-  const listings: Listing[] = Array.isArray(listingsData) 
-    ? listingsData 
-    : mergedListings;
-  // #region agent log
-  fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:listings-derivation',message:'listings-computed',data:{isArrayListingsData:Array.isArray(listingsData),mergedListingsLen:mergedListings.length,finalListingsLen:listings.length,isLoading},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+  // Use data directly from React Query for page 1, merged state only for infinite scroll
+  const listings: Listing[] = page === 1 
+    ? (listingsData?.listings || [])
+    : mergedListings.length > 0 ? mergedListings : (listingsData?.listings || []);
+  console.log('[DEBUG-E] listings computed', { page, listingsDataCount: listingsData?.listings?.length, mergedListingsLen: mergedListings.length, finalListingsLen: listings.length, isLoading });
 
   const allProducts = useMemo(() => {
     return listings;
@@ -289,6 +318,12 @@ export default function SearchPage() {
 
     return sortedProducts;
   }, [allProducts, searchQuery, sortBy]);
+
+  useEffect(() => {
+    // #region agent log
+    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:filteredProducts',message:'filtered-products-counts',data:{allProductsCount:allProducts.length,filteredProductsCount:filteredProducts.length,sortBy,category:appliedFilters.category,searchQuery,isLoading,isFetching},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H5'})}).catch(()=>{});
+    // #endregion
+  }, [allProducts.length, filteredProducts.length, sortBy, appliedFilters.category, searchQuery, isLoading, isFetching]);
 
   const displayedProducts = filteredProducts;
   const hasMoreProducts = listingsData?.pagination?.hasMore ?? false;
@@ -372,13 +407,13 @@ export default function SearchPage() {
     setDraftFilters(cleared);
   };
 
+  // Reset pagination when filters change - use primitive deps to avoid unnecessary runs
+  const filterKey = `${appliedFilters.category}-${appliedFilters.includeSold}-${appliedFilters.priceMin}-${appliedFilters.priceMax}-${appliedFilters.conditions.join(',')}-${appliedFilters.saleTypes.join(',')}-${appliedFilters.cities.join(',')}`;
   useEffect(() => {
-    // #region agent log
-    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:360',message:'useEffect2-reset-mergedListings',data:{category:appliedFilters.category,searchQuery,saleTypeParam,sellerIdParam},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
+    console.log('[DEBUG-F] useEffect2 - reset pagination', { filterKey, searchQuery, saleTypeParam, sellerIdParam });
     setPage(1);
     setMergedListings([]);
-  }, [appliedFilters, searchQuery, saleTypeParam, sellerIdParam]);
+  }, [filterKey, searchQuery, saleTypeParam, sellerIdParam]);
 
   const openFilters = () => {
     setDraftFilters(appliedFilters);
@@ -412,6 +447,9 @@ export default function SearchPage() {
   };
 
   const quickToggleCategory = (category: string | null) => {
+    // #region agent log
+    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:quickToggleCategory',message:'category-toggle',data:{current:appliedFilters.category,next:appliedFilters.category === category ? null : category},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H9'})}).catch(()=>{});
+    // #endregion
     setAppliedFilters(prev => ({
       ...prev,
       category: prev.category === category ? null : category

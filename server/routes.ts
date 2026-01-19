@@ -202,8 +202,9 @@ export async function registerRoutes(
       
       // Use optimized paginated query with SQL-level filtering
       const searchQuery = typeof q === "string" ? q : undefined;
+      console.log('[DEBUG-SERVER] API /api/listings request', { category: typeof category === "string" ? category : undefined, sellerId: sellerIdStr, includeSold: includeSold === "true" || isOwnProfile, searchQuery, page: pageNum });
       // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:api-listings',message:'api-listings-request',data:{category:typeof category === "string" ? category : undefined,sellerId:sellerIdStr,includeSold:includeSold === "true" || isOwnProfile,searchQuery,page:pageNum},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings',message:'listings-request',data:{category:typeof category === "string" ? category : undefined,sellerId:sellerIdStr,includeSold:includeSold === "true" || isOwnProfile,searchQuery,page:pageNum,limit},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H6'})}).catch(()=>{});
       // #endregion
       const { listings: paginatedListings, total } = await storage.getListingsPaginated({
         limit,
@@ -219,8 +220,9 @@ export async function registerRoutes(
         conditions,
         cities,
       });
+      console.log('[DEBUG-SERVER] API /api/listings response', { listingsCount: paginatedListings.length, total });
       // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:api-listings-response',message:'api-listings-result',data:{listingsCount:paginatedListings.length,total},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings',message:'listings-response',data:{listingsCount:paginatedListings.length,total},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H7'})}).catch(()=>{});
       // #endregion
       
       // Track search analytics when there's a search query
@@ -274,7 +276,13 @@ export async function registerRoutes(
   app.get("/api/listings/:id", async (req, res) => {
     try {
       const listing = await storage.getListing(req.params.id);
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings/:id',message:'listing-detail-fetch',data:{listingId:req.params.id,found:!!listing,isDeleted:listing?.isDeleted,isActive:listing?.isActive,quantitySold:listing?.quantitySold,quantityAvailable:listing?.quantityAvailable},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H10'})}).catch(()=>{});
+      // #endregion
       if (!listing || listing.isDeleted) {
+        // #region agent log
+        fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings/:id',message:'listing-detail-not-found',data:{listingId:req.params.id,found:!!listing,isDeleted:listing?.isDeleted},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H11'})}).catch(()=>{});
+        // #endregion
         return res.status(404).json({ error: "Listing not found" });
       }
       // Cache individual listing for 60 seconds
