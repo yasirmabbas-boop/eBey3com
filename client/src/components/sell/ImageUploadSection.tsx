@@ -1,7 +1,9 @@
 import { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Plus, X, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Camera, Plus, X, Loader2, ImagePlus } from "lucide-react";
+import { isNative } from "@/lib/capacitor";
 
 interface ImageUploadSectionProps {
   images: string[];
@@ -10,6 +12,7 @@ interface ImageUploadSectionProps {
   language: string;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveImage: (index: number) => void;
+  onCameraClick?: () => void;
 }
 
 export function ImageUploadSection({
@@ -19,6 +22,7 @@ export function ImageUploadSection({
   language,
   onImageUpload,
   onRemoveImage,
+  onCameraClick,
 }: ImageUploadSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +80,23 @@ export function ImageUploadSection({
             </label>
           )}
         </div>
+        
+        {/* Native camera button - only show on mobile apps */}
+        {isNative && onCameraClick && images.length < 8 && (
+          <div className="mt-4">
+            <Button
+              type="button"
+              onClick={onCameraClick}
+              disabled={isUploadingImages}
+              className="w-full"
+              variant="outline"
+            >
+              <Camera className="ml-2 h-4 w-4" />
+              {language === "ar" ? "التقط صورة بالكاميرا" : "وێنە بگرە بە کامێرا"}
+            </Button>
+          </div>
+        )}
+        
         <p className="text-xs text-muted-foreground mt-3">
           {language === "ar" 
             ? "يمكنك إضافة حتى 8 صور. الصورة الأولى ستكون الصورة الرئيسية."

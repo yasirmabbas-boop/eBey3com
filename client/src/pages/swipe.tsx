@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavVisibility } from "@/hooks/use-nav-visibility";
 import { useLanguage } from "@/lib/i18n";
+import { share } from "@/lib/nativeShare";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { FavoriteButton } from "@/components/favorite-button";
 import { 
@@ -395,13 +396,15 @@ export default function SwipePage() {
     return "الآن";
   };
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: currentListing?.title,
-        url: window.location.origin + `/product/${currentListing?.id}`
-      });
-    }
+  const handleShare = async () => {
+    if (!currentListing) return;
+    
+    await share({
+      title: currentListing.title,
+      url: window.location.origin + `/product/${currentListing.id}`,
+      text: currentListing.title,
+      dialogTitle: 'مشاركة المنتج'
+    });
   };
 
   if (isLoading) {

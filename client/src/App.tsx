@@ -14,6 +14,10 @@ import { NavVisibilityProvider } from "@/hooks/use-nav-visibility";
 import { LanguageProvider } from "@/lib/i18n";
 import { BanBanner } from "@/components/ban-banner";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { isNative } from "@/lib/capacitor";
+import { initAppLifecycle } from "@/lib/appLifecycle";
+import { StatusBar, Style } from "@capacitor/status-bar";
+import { SplashScreen } from "@capacitor/splash-screen";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Home = lazy(() => import("@/pages/home"));
@@ -100,6 +104,33 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    // Initialize native app features
+    if (isNative) {
+      // Configure status bar
+      StatusBar.setStyle({ style: Style.Light }).catch(console.error);
+      StatusBar.setBackgroundColor({ color: '#2563eb' }).catch(console.error);
+      
+      // Hide splash screen after app loads
+      setTimeout(() => {
+        SplashScreen.hide().catch(console.error);
+      }, 1000);
+      
+      // Initialize app lifecycle (deep links, back button, etc.)
+      initAppLifecycle({
+        onDeepLink: (path) => {
+          console.log('Deep link:', path);
+          // Navigate to the path
+          window.location.href = path;
+        },
+        onAppStateChange: (isActive) => {
+          console.log('App state changed:', isActive ? 'active' : 'background');
+          // Handle app becoming active/inactive
+        }
+      });
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -123,7 +154,7 @@ function App() {
                 </Suspense>
               </SwipeBackNavigation>
               <MobileNavBar />
-              <InstallPWAPrompt />
+              {!isNative && <InstallPWAPrompt />}
               <PushNotificationPrompt />
             </NavVisibilityProvider>
           </TooltipProvider>

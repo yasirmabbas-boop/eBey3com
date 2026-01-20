@@ -3706,6 +3706,38 @@ export async function registerRoutes(
     res.json({ publicKey });
   });
 
+  // Push notifications - register native device token (FCM/APNS)
+  app.post("/api/push/register-native", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    try {
+      const { token, platform } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ error: "Token is required" });
+      }
+
+      const userId = req.user!.id;
+
+      // Store the native push token in the database
+      // For now, we'll use the same table as web push but with a different format
+      // In production, you'd want a separate table for native tokens
+      await storage.createPushSubscription(
+        userId,
+        `native:${platform}:${token}`, // Prefix to distinguish from web
+        '', // Not needed for native
+        '' // Not needed for native
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[push] Error saving native token:", error);
+      res.status(500).json({ error: "Failed to save push token" });
+    }
+  });
+
   // Push notifications - subscribe
   app.post("/api/push/subscribe", async (req, res) => {
     try {

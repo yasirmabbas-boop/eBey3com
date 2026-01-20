@@ -5,6 +5,7 @@ import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@/hooks/use-upload";
+import { share } from "@/lib/nativeShare";
 import {
   Heart,
   Package,
@@ -110,13 +111,22 @@ export default function MyAccount() {
     }
   };
 
-  const handleShareProfile = () => {
+  const handleShareProfile = async () => {
     const url = `${window.location.origin}/seller/${user?.id}`;
-    if (navigator.share) {
-      navigator.share({ title: `متجر ${user?.displayName}`, url });
-    } else {
-      navigator.clipboard.writeText(url);
-      toast({ title: "تم نسخ رابط المتجر" });
+    const shared = await share({ 
+      title: `متجر ${user?.displayName}`, 
+      url,
+      dialogTitle: 'مشاركة المتجر'
+    });
+    
+    if (!shared) {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(url);
+        toast({ title: "تم نسخ رابط المتجر" });
+      } catch {
+        toast({ title: "فشل نسخ الرابط", variant: "destructive" });
+      }
     }
   };
 

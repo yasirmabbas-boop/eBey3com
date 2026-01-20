@@ -3,6 +3,8 @@ import { Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/lib/i18n";
+import { isNative, isWeb } from "@/lib/capacitor";
+import { initNativePushNotifications, checkNativePushPermission } from "@/lib/nativePush";
 
 const DISMISSED_KEY = "push-notification-dismissed";
 const SUBSCRIBED_KEY = "push-notification-subscribed";
@@ -27,55 +29,112 @@ export function PushNotificationPrompt() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
     
     const dismissed = localStorage.getItem(DISMISSED_KEY);
     const subscribed = localStorage.getItem(SUBSCRIBED_KEY);
     
     if (dismissed || subscribed) return;
-    if (Notification.permission === "granted") return;
-    if (Notification.permission === "denied") return;
-    
-    const timer = setTimeout(() => {
-      setShowPrompt(true);
-    }, 5000);
 
-    return () => clearTimeout(timer);
+    const checkPermission = async () => {
+      if (isNative) {
+        // Check native push permission
+        const permission = await checkNativePushPermission();
+        if (permission === 'granted' || permission === 'denied') return;
+        
+        const timer = setTimeout(() => {
+          setShowPrompt(true);
+        }, 5000);
+        return () => clearTimeout(timer);
+      } else {
+        // Check web push permission
+        if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+        if (Notification.permission === "granted") return;
+        if (Notification.permission === "denied") return;
+        
+        const timer = setTimeout(() => {
+          setShowPrompt(true);
+        }, 5000);
+        return () => clearTimeout(timer);
+      }
+    };
+
+    checkPermission();
   }, [isAuthenticated]);
 
   const handleSubscribe = useCallback(async () => {
     setIsSubscribing(true);
     
     try {
-      const permission = await Notification.requestPermission();
-      
-      if (permission !== "granted") {
+      if (isNative) {
+        // Handle native push notifications
+        const success = await initNativePushNotifications(
+          async (token) => {
+            // Send token to backend
+            const response = await fetch("/api/push/register-native", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ 
+                token,
+                platform: 'native'
+              }),
+            });
+
+            if (response.ok) {
+              localStorage.setItem(SUBSCRIBED_KEY, "true");
+              setShowPrompt(false);
+            }
+          },
+          (notification) => {
+            // Handle notification received while app is open
+            console.log('Notification received:', notification);
+          },
+          (notification) => {
+            // Handle notification tap
+            console.log('Notification tapped:', notification);
+            // Navigate to the appropriate page based on notification data
+            if (notification.notification.data?.url) {
+              window.location.href = notification.notification.data.url;
+            }
+          }
+        );
+
+        if (!success) {
+          setShowPrompt(false);
+          localStorage.setItem(DISMISSED_KEY, "true");
+        }
+      } else {
+        // Handle web push notifications (existing logic)
+        const permission = await Notification.requestPermission();
+        
+        if (permission !== "granted") {
+          setShowPrompt(false);
+          localStorage.setItem(DISMISSED_KEY, "true");
+          return;
+        }
+
+        const vapidResponse = await fetch("/api/push/vapid-public-key");
+        if (!vapidResponse.ok) throw new Error("Failed to get VAPID key");
+        const { publicKey } = await vapidResponse.json();
+
+        const registration = await navigator.serviceWorker.ready;
+        
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        });
+
+        const subscribeResponse = await fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(subscription.toJSON()),
+        });
+
+        if (!subscribeResponse.ok) throw new Error("Failed to save subscription");
+
+        localStorage.setItem(SUBSCRIBED_KEY, "true");
         setShowPrompt(false);
-        localStorage.setItem(DISMISSED_KEY, "true");
-        return;
       }
-
-      const vapidResponse = await fetch("/api/push/vapid-public-key");
-      if (!vapidResponse.ok) throw new Error("Failed to get VAPID key");
-      const { publicKey } = await vapidResponse.json();
-
-      const registration = await navigator.serviceWorker.ready;
-      
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
-      });
-
-      const subscribeResponse = await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(subscription.toJSON()),
-      });
-
-      if (!subscribeResponse.ok) throw new Error("Failed to save subscription");
-
-      localStorage.setItem(SUBSCRIBED_KEY, "true");
-      setShowPrompt(false);
     } catch (error) {
       console.error("Push subscription error:", error);
     } finally {

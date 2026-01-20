@@ -40,18 +40,38 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
-            .then((reg) => console.log('SW registered'))
-            .catch((err) => console.log('SW registration failed'));
+            .then((reg) => {
+              console.log('[PWA] Service Worker registered successfully', reg);
+            })
+            .catch((err) => {
+              console.error('[PWA] Service Worker registration failed:', err);
+            });
         });
+      } else {
+        console.warn('[PWA] Service Workers not supported in this browser');
       }
 
       // Capture PWA install prompt globally
       window.deferredPrompt = null;
+      
       window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('[PWA] beforeinstallprompt event fired');
         e.preventDefault();
         window.deferredPrompt = e;
         window.dispatchEvent(new CustomEvent('pwa-prompt-available'));
+        console.log('[PWA] Custom pwa-prompt-available event dispatched');
       });
+
+      // Log if app is already installed
+      window.addEventListener('appinstalled', (e) => {
+        console.log('[PWA] App was installed successfully');
+        window.deferredPrompt = null;
+      });
+
+      // Check if running in standalone mode on load
+      if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+        console.log('[PWA] App is running in standalone mode (already installed)');
+      }
     </script>
   </body>
 </html>

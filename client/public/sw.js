@@ -6,24 +6,45 @@ const STATIC_ASSETS = [
   '/icon-512.png'
 ];
 
+// Debug logging helper
+const log = (message, data) => {
+  console.log(`[SW v2] ${message}`, data || '');
+};
+
 self.addEventListener('install', (event) => {
+  log('Installing service worker...');
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        log('Caching static assets', STATIC_ASSETS);
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .then(() => {
+        log('Installation complete');
+      })
+      .catch((err) => {
+        console.error('[SW v2] Installation failed:', err);
+      })
   );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
+  log('Activating service worker...');
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      );
-    })
+    caches.keys()
+      .then((cacheNames) => {
+        const oldCaches = cacheNames.filter((name) => name !== CACHE_NAME);
+        if (oldCaches.length > 0) {
+          log('Deleting old caches', oldCaches);
+        }
+        return Promise.all(
+          oldCaches.map((name) => caches.delete(name))
+        );
+      })
+      .then(() => {
+        log('Activation complete');
+      })
   );
   self.clients.claim();
 });

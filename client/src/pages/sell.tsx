@@ -19,6 +19,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/lib/i18n";
 import type { Listing } from "@shared/schema";
 import { ImageUploadSection } from "@/components/sell";
+import { capturePhoto } from "@/lib/nativeCamera";
+import { isNative } from "@/lib/capacitor";
 import { 
   Camera,
   Upload,
@@ -372,6 +374,72 @@ export default function SellPage() {
 
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleNativeCamera = async () => {
+    if (!isNative) return;
+
+    const maxFiles = 8 - images.length;
+    if (maxFiles <= 0) {
+      toast({
+        title: language === "ar" ? "الحد الأقصى للصور" : "زۆرترین ژمارەی وێنە",
+        description: language === "ar" ? "يمكنك رفع 8 صور كحد أقصى" : "دەتوانیت ٨ وێنە زۆرترین بارکەیت",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploadingImages(true);
+
+    try {
+      const file = await capturePhoto({ source: 'prompt' });
+      
+      if (!file) {
+        // User cancelled
+        setIsUploadingImages(false);
+        return;
+      }
+
+      const uploadFormData = new FormData();
+      uploadFormData.append("images", file);
+
+      const response = await fetch("/api/uploads/optimized", {
+        method: "POST",
+        body: uploadFormData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || (language === "ar" ? "فشل في رفع الصورة" : "شکست لە بارکردنی وێنە"));
+      }
+
+      const result = await response.json();
+      const uploadedPaths = result.images.map((img: { main: string }) => img.main);
+
+      setImages(prev => [...prev, ...uploadedPaths]);
+      
+      if (validationErrors.images) {
+        setValidationErrors(prev => {
+          const updated = { ...prev };
+          delete updated.images;
+          return updated;
+        });
+      }
+      
+      toast({
+        title: language === "ar" ? "تم رفع الصورة بنجاح" : "وێنە بە سەرکەوتوویی بارکرا",
+        description: language === "ar" ? "تم رفع الصورة (محسّنة)" : "وێنە بارکرا (باشتر کراو)",
+      });
+    } catch (error) {
+      console.error("Camera upload error:", error);
+      toast({
+        title: language === "ar" ? "خطأ في رفع الصورة" : "هەڵە لە بارکردنی وێنە",
+        description: error instanceof Error ? error.message : (language === "ar" ? "حدث خطأ أثناء رفع الصورة" : "هەڵەیەک ڕوویدا لە کاتی بارکردنی وێنە"),
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingImages(false);
+    }
   };
 
   const validateForm = (): boolean => {
@@ -877,6 +945,7 @@ export default function SellPage() {
             language={language}
             onImageUpload={handleImageUpload}
             onRemoveImage={removeImage}
+            onCameraClick={handleNativeCamera}
           />
 
           {/* Basic Info */}
