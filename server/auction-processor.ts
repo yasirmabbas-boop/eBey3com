@@ -112,6 +112,71 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
     }
 
     const highestBid = allBids[0];
+    
+    // Check if reserve price was met (if one was set)
+    if (listing.reservePrice && highestBid.amount < listing.reservePrice) {
+      // Reserve price not met - auction ends without sale
+      await db
+        .update(listings)
+        .set({ 
+          isActive: false,
+          currentBid: highestBid.amount,
+        })
+        .where(eq(listings.id, listing.id));
+
+      // Notify seller that reserve price wasn't met
+      if (listing.sellerId) {
+        await storage.createNotification({
+          userId: listing.sellerId,
+          type: "auction_ended_no_reserve",
+          title: "انتهى المزاد - لم يصل للسعر الاحتياطي",
+          message: `انتهى المزاد على "${listing.title}" بأعلى مزايدة ${highestBid.amount.toLocaleString("ar-IQ")} د.ع، لكنها لم تصل للسعر الاحتياطي ${listing.reservePrice.toLocaleString("ar-IQ")} د.ع. يمكنك إعادة عرض المنتج.`,
+          relatedId: listing.id,
+        });
+        sendPushNotification(listing.sellerId, {
+          title: "المزاد انتهى بدون بيع",
+          body: `لم يصل المزاد على "${listing.title}" للسعر الاحتياطي`,
+          url: `/product/${listing.id}`,
+          tag: `auction-${listing.id}`,
+        });
+      }
+
+      // Notify all bidders that auction ended without sale
+      const notifiedBidders = new Set<string>();
+      for (const bid of allBids) {
+        if (!notifiedBidders.has(bid.userId)) {
+          notifiedBidders.add(bid.userId);
+          await storage.createNotification({
+            userId: bid.userId,
+            type: "auction_ended_no_reserve",
+            title: "انتهى المزاد بدون بيع",
+            message: `انتهى المزاد على "${listing.title}" لكن لم يتم تحقيق السعر الاحتياطي. لن يتم البيع.`,
+            relatedId: listing.id,
+          });
+          sendPushNotification(bid.userId, {
+            title: "انتهى المزاد بدون بيع",
+            body: `لم يتم تحقيق السعر الاحتياطي لـ "${listing.title}"`,
+            url: `/product/${listing.id}`,
+            tag: `auction-${listing.id}`,
+          });
+        }
+      }
+
+      log(`Auction ${listing.id} ended - reserve price ${listing.reservePrice} not met (highest bid: ${highestBid.amount})`, "info");
+      result.success = true;
+      result.winningBid = highestBid.amount;
+      
+      broadcastAuctionEnd({
+        listingId: listing.id,
+        status: "reserve_not_met",
+        winnerId: null,
+        winnerName: null,
+        winningBid: highestBid.amount,
+      });
+      
+      return result;
+    }
+    
     const winner = await storage.getUser(highestBid.userId);
     
     if (!winner) {

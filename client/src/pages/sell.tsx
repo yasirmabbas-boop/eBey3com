@@ -245,7 +245,7 @@ export default function SellPage() {
         startHour,
         endDate,
         endHour,
-        reservePrice: "",
+        reservePrice: (sourceListing as any).reservePrice?.toString() ?? "",
         buyNowPrice: "",
         bidIncrement: "",
         allowedBidderType: sourceListing.allowedBidderType ?? "verified_only",
@@ -255,6 +255,11 @@ export default function SellPage() {
       setInternationalShipping(sourceListing.internationalShipping ?? false);
       setSelectedCountries(sourceListing.internationalCountries ?? []);
       setTags(sourceListing.tags ?? []);
+      
+      // Set hasReservePrice if reserve price exists
+      if ((sourceListing as any).reservePrice) {
+        setHasReservePrice(true);
+      }
       
       // Set start time option based on whether auction has started
       if (sourceListing.auctionStartTime) {
@@ -473,6 +478,9 @@ export default function SellPage() {
         timeLeft: null,
         auctionStartTime: auctionStartTime,
         auctionEndTime: auctionEndTime,
+        reservePrice: (saleType === "auction" && hasReservePrice && formData.reservePrice) 
+          ? parseInt(formData.reservePrice) 
+          : null,
         deliveryWindow: formData.deliveryWindow,
         shippingType: formData.shippingType,
         shippingCost: formData.shippingType === "buyer_pays" ? (parseInt(formData.shippingCost) || 0) : 0,

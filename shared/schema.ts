@@ -302,6 +302,7 @@ export const listings = pgTable("listings", {
   timeLeft: text("time_left"),
   auctionStartTime: timestamp("auction_start_time"),
   auctionEndTime: timestamp("auction_end_time"),
+  reservePrice: integer("reserve_price"),
   deliveryWindow: text("delivery_window").notNull(),
   shippingCost: integer("shipping_cost").default(0),
   shippingType: text("shipping_type").default("seller_pays"),

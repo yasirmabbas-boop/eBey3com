@@ -26,7 +26,11 @@ const checkSizeClasses = {
 
 export function VerifiedBadge({ size = "md", className }: VerifiedBadgeProps) {
   const { language } = useLanguage();
-  const label = language === "ar" ? "حساب موثق" : "هەژماری پشتڕاستکراو";
+  const label = language === "ar" 
+    ? "بائع موثوق" 
+    : language === "ku" 
+      ? "فرۆشیاری متمانەپێکراو" 
+      : "Trusted Seller";
 
   return (
     <Tooltip>

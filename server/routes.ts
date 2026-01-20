@@ -1,7 +1,7 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema, insertBuyerAddressSchema, insertContactMessageSchema, insertProductCommentSchema } from "@shared/schema";
+import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema, insertBuyerAddressSchema, insertContactMessageSchema, insertProductCommentSchema, type User } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { broadcastBidUpdate } from "./websocket";
@@ -86,6 +86,20 @@ async function fetchImageBuffer(url: string): Promise<Buffer | null> {
     console.error("Failed to fetch OG image source:", error);
     return null;
   }
+}
+
+// Helper to check if a user is eligible for blue check badge (trusted seller)
+// Requirements: 50+ sales AND 90%+ positive rating (4.5/5.0)
+function isEligibleForBlueCheck(user: User): boolean {
+  const MIN_SALES = 50;
+  const MIN_RATING = 4.5; // 90% positive
+  
+  return (
+    user.sellerApproved === true &&
+    (user.totalSales || 0) >= MIN_SALES &&
+    (user.rating || 0) >= MIN_RATING &&
+    (user.ratingCount || 0) > 0
+  );
 }
 
 const updateListingSchema = insertListingSchema.extend({
@@ -398,6 +412,22 @@ export async function registerRoutes(
         }
       }
       
+      // Validate reserve price for auctions
+      if (req.body.saleType === "auction" && req.body.reservePrice) {
+        const reservePrice = typeof req.body.reservePrice === "number" 
+          ? req.body.reservePrice 
+          : parseInt(req.body.reservePrice, 10);
+        const startPrice = typeof req.body.price === "number" 
+          ? req.body.price 
+          : parseInt(req.body.price, 10);
+        
+        if (reservePrice < startPrice) {
+          return res.status(400).json({ 
+            error: "السعر الاحتياطي يجب أن يكون أكبر من أو يساوي سعر البداية" 
+          });
+        }
+      }
+      
       const listingData = {
         title: req.body.title,
         description: req.body.description,
@@ -409,6 +439,9 @@ export async function registerRoutes(
         timeLeft: req.body.timeLeft || null,
         auctionStartTime: req.body.auctionStartTime ? new Date(req.body.auctionStartTime) : null,
         auctionEndTime: req.body.auctionEndTime ? new Date(req.body.auctionEndTime) : null,
+        reservePrice: req.body.reservePrice 
+          ? (typeof req.body.reservePrice === "number" ? req.body.reservePrice : parseInt(req.body.reservePrice, 10))
+          : null,
         deliveryWindow: req.body.deliveryWindow,
         returnPolicy: req.body.returnPolicy,
         returnDetails: req.body.returnDetails || null,
@@ -597,6 +630,30 @@ export async function registerRoutes(
           : parseInt(req.body.price, 10);
         if (isNaN(req.body.price)) {
           return res.status(400).json({ error: "Invalid price value" });
+        }
+      }
+      
+      // Handle reserve price for auctions
+      if (req.body.reservePrice !== undefined) {
+        if (req.body.reservePrice === null || req.body.reservePrice === "") {
+          req.body.reservePrice = null;
+        } else {
+          req.body.reservePrice = typeof req.body.reservePrice === "number" 
+            ? req.body.reservePrice 
+            : parseInt(req.body.reservePrice, 10);
+          if (isNaN(req.body.reservePrice)) {
+            return res.status(400).json({ error: "Invalid reserve price value" });
+          }
+          
+          // Validate reserve price is greater than or equal to start price
+          const startPrice = req.body.price !== undefined 
+            ? req.body.price 
+            : existingListing.price;
+          if (req.body.reservePrice < startPrice) {
+            return res.status(400).json({ 
+              error: "السعر الاحتياطي يجب أن يكون أكبر من أو يساوي سعر البداية" 
+            });
+          }
         }
       }
       
@@ -1075,6 +1132,7 @@ export async function registerRoutes(
         displayName: user.displayName,
         avatar: user.avatar,
         isVerified: user.isVerified,
+        isAuthenticated: user.isAuthenticated,
         totalSales: user.totalSales,
         rating: user.rating,
         ratingCount: user.ratingCount,
@@ -2347,10 +2405,16 @@ export async function registerRoutes(
     }
   });
 
-  // WhatsApp Authentication via WAuth
-  app.post("/api/auth/whatsapp", async (req, res) => {
+  // WhatsApp Phone Verification (not login)
+  app.post("/api/auth/verify-phone-whatsapp", async (req, res) => {
     try {
-      const { mobile, name } = req.body;
+      // User must be logged in to verify their phone
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+      }
+
+      const { mobile } = req.body;
       
       if (!mobile) {
         return res.status(400).json({ error: "رقم الهاتف مطلوب" });
@@ -2366,73 +2430,30 @@ export async function registerRoutes(
         phone = '0' + phone;
       }
 
-      // Check if user exists
-      let user = await storage.getUserByPhone(phone);
-      
-      if (user) {
-        // Check if user is banned
-        if (user.isBanned) {
-          return res.status(403).json({ 
-            error: "تم حظر حسابك من المنصة. لا يمكنك تسجيل الدخول.",
-            isBanned: true
-          });
-        }
+      // Get the logged-in user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
 
-        // Existing user - log them in
-        (req.session as any).userId = user.id;
-
-        // Generate auth token
-        const crypto = await import("crypto");
-        const authToken = crypto.randomBytes(32).toString("hex");
-        await storage.updateUser(user.id, { authToken } as any);
-
-        return res.json({
-          success: true,
-          isNewUser: false,
-          authToken,
-          id: user.id,
-          phone: user.phone,
-          displayName: user.displayName,
-          sellerApproved: user.sellerApproved,
-          isVerified: user.isVerified,
-          accountCode: user.accountCode,
-        });
-      } else {
-        // New user - create account with WhatsApp-verified phone
-        const displayName = name || phone;
-        
-        user = await storage.createUser({
-          phone,
-          password: null, // No password for WhatsApp auth
-          displayName,
-          email: null,
-          authProvider: "whatsapp",
-          isVerified: true, // WhatsApp verified the phone number
-        });
-
-        // Set session
-        (req.session as any).userId = user.id;
-
-        // Generate auth token
-        const crypto = await import("crypto");
-        const authToken = crypto.randomBytes(32).toString("hex");
-        await storage.updateUser(user.id, { authToken } as any);
-
-        return res.status(201).json({
-          success: true,
-          isNewUser: true,
-          authToken,
-          id: user.id,
-          phone: user.phone,
-          displayName: user.displayName,
-          sellerApproved: user.sellerApproved,
-          isVerified: true,
-          accountCode: user.accountCode,
+      // Verify that the WhatsApp phone matches the user's registered phone
+      if (user.phone !== phone) {
+        return res.status(400).json({ 
+          error: "رقم واتساب لا يتطابق مع رقم الهاتف المسجل في حسابك" 
         });
       }
+
+      // Mark user as verified
+      await storage.updateUser(userId, { isVerified: true } as any);
+
+      return res.json({
+        success: true,
+        message: "تم التحقق من رقم الهاتف بنجاح",
+        isVerified: true,
+      });
     } catch (error) {
-      console.error("Error with WhatsApp auth:", error);
-      res.status(500).json({ error: "فشل في تسجيل الدخول عبر واتساب" });
+      console.error("Error verifying phone via WhatsApp:", error);
+      res.status(500).json({ error: "فشل في التحقق من رقم الهاتف" });
     }
   });
 
@@ -2810,7 +2831,7 @@ export async function registerRoutes(
     }
 
     try {
-      const allowedFields = ["displayName", "phone", "city", "district", "addressLine1", "addressLine2", "ageBracket", "interests", "surveyCompleted", "avatar"];
+      const allowedFields = ["displayName", "city", "district", "addressLine1", "addressLine2", "ageBracket", "interests", "surveyCompleted", "avatar"];
       const updates: Record<string, any> = {};
       
       for (const field of allowedFields) {
@@ -3370,10 +3391,9 @@ export async function registerRoutes(
         }
       }
 
-      // Update user's address info
+      // Update user's address info (but not phone - that's immutable)
       await storage.updateUser(userId, {
         displayName: fullName,
-        phone,
         city,
         addressLine1,
         addressLine2: addressLine2 || null,
@@ -4099,7 +4119,11 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Access denied" });
       }
       const allUsers = await storage.getAllUsers();
-      res.json(allUsers);
+      const usersWithEligibility = allUsers.map(u => ({
+        ...u,
+        eligibleForBlueCheck: isEligibleForBlueCheck(u)
+      }));
+      res.json(usersWithEligibility);
     } catch (error) {
       console.error("Error fetching admin users:", error);
       res.status(500).json({ error: "Failed to fetch users" });

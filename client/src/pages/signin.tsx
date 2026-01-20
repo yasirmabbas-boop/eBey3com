@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,19 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Lock, LogIn, Loader2, Shield, MessageCircle } from "lucide-react";
+import { Phone, Lock, LogIn, Loader2, Shield } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useLanguage } from "@/lib/i18n";
 import { FormError } from "@/components/form-error";
 import { validatePhone, validatePassword } from "@/lib/form-validation";
-
-declare global {
-  interface Window {
-    wauthCallback: (user: { mobile: string; name?: string }) => void;
-  }
-}
 
 type Step = "credentials" | "2fa";
 
@@ -39,64 +33,6 @@ export default function SignIn() {
       navigate("/");
     }
   }, [user, authLoading, navigate]);
-
-  // WhatsApp authentication callback handler
-  const handleWhatsAppAuth = useCallback(async (wauthUser: { mobile: string; name?: string }) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/whatsapp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(wauthUser),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-            tr(
-              "فشل تسجيل الدخول عبر واتساب",
-              "چوونە ژوورەوە لە ڕێگەی واتسئاپ سەرکەوتوو نەبوو",
-              "WhatsApp sign-in failed"
-            )
-        );
-      }
-
-      if (data.authToken) {
-        localStorage.setItem("authToken", data.authToken);
-      }
-
-      toast({
-        title: data.isNewUser
-          ? tr("تم إنشاء حسابك بنجاح!", "هەژمارەکەت دروستکرا!", "Account created successfully!")
-          : tr("تم تسجيل الدخول بنجاح", "بە سەرکەوتوویی چوویتە ژوورەوە", "Signed in successfully"),
-        description: `${t("welcome")} ${data.displayName}`,
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-
-      navigate("/");
-    } catch (error: any) {
-      toast({
-        title: tr("خطأ في تسجيل الدخول", "هەڵە لە چوونە ژوورەوە", "Sign-in error"),
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [language, navigate, queryClient, t, toast]);
-
-  // Register the global callback for WAuth SDK
-  useEffect(() => {
-    window.wauthCallback = handleWhatsAppAuth;
-    return () => {
-      delete (window as any).wauthCallback;
-    };
-  }, [handleWhatsAppAuth]);
   
   const [formData, setFormData] = useState({
     phone: "",
@@ -404,34 +340,12 @@ export default function SignIn() {
             )}
 
             {step === "credentials" && (
-              <>
-                <div className="mt-6 text-center text-sm">
-                  <span className="text-muted-foreground">{t("dontHaveAccount")} </span>
-                  <Link href="/register" className="text-primary hover:underline font-medium">
-                    {t("createAccount")}
-                  </Link>
-                </div>
-
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                      {tr("أو", "یان", "or")}
-                    </span>
-                  </div>
-                </div>
-
-                {/* WhatsApp Login Button - WAuth Container */}
-                <div className="space-y-3">
-                  <div 
-                    id="wauth-login-container"
-                    className="flex justify-center"
-                    data-testid="whatsapp-login-container"
-                  />
-                </div>
-              </>
+              <div className="mt-6 text-center text-sm">
+                <span className="text-muted-foreground">{t("dontHaveAccount")} </span>
+                <Link href="/register" className="text-primary hover:underline font-medium">
+                  {t("createAccount")}
+                </Link>
+              </div>
             )}
           </CardContent>
         </Card>

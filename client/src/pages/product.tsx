@@ -24,6 +24,7 @@ import { SellerTrustBadge } from "@/components/seller-trust-badge";
 import { ContactSeller } from "@/components/contact-seller";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { InstagramShareCard } from "@/components/instagram-share-card";
+import { VerifiedBadge } from "@/components/verified-badge";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram, shareToTwitter } from "@/lib/share-utils";
 import { hapticSuccess, hapticError, hapticLight, saveToPhotos, isDespia } from "@/lib/despia";
 import type { Listing } from "@shared/schema";
@@ -772,6 +773,9 @@ export default function ProductPage() {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-sm group-hover:text-primary transition-colors">{product.seller?.name || product.sellerName || "بائع"}</span>
+              {sellerData?.isAuthenticated && (
+                <VerifiedBadge size="sm" />
+              )}
               {(product.seller?.salesCount || 0) > 0 && (
                 <span className="text-xs text-gray-500">({product.seller?.salesCount})</span>
               )}

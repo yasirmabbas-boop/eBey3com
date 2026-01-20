@@ -1025,6 +1025,11 @@ export default function AdminPage() {
                                       ضمان الأصالة
                                     </Badge>
                                   )}
+                                  {(u as any).eligibleForBlueCheck && !u.isAuthenticated && (
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+                                      مؤهل للعلامة الزرقاء
+                                    </Badge>
+                                  )}
                                   {!u.isVerified && !u.isBanned && !u.isAuthenticated && !u.authenticityGuaranteed && (
                                     <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">عادي</Badge>
                                   )}
@@ -1110,11 +1115,11 @@ export default function AdminPage() {
                                       إعادة كلمة المرور
                                     </Button>
                                   )}
-                                  {!u.isAuthenticated && !u.isAdmin && (
+                                  {!u.isAuthenticated && !u.isAdmin && (u as any).eligibleForBlueCheck && (
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      className="text-blue-500 border-blue-500 hover:bg-blue-50"
+                                      className="text-blue-600 border-blue-600 hover:bg-blue-50"
                                       onClick={() => updateUserMutation.mutate({ id: u.id, updates: { isAuthenticated: true } })}
                                       disabled={updateUserMutation.isPending}
                                       data-testid={`button-authenticate-${u.id}`}

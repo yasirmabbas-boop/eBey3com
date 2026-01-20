@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PhoneVerificationModal } from "@/components/phone-verification-modal";
 
 interface AccountMenuItem {
   icon: React.ReactNode;
@@ -63,6 +64,7 @@ export default function MyAccount() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -527,6 +529,13 @@ export default function MyAccount() {
 
         </div>
       </div>
+
+      <PhoneVerificationModal
+        open={showPhoneVerification}
+        onOpenChange={setShowPhoneVerification}
+        phone={user.phone || ""}
+        isVerified={user.isVerified || false}
+      />
     </Layout>
   );
 }

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Star, MapPin, Calendar, Package, Share2, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram } from "@/lib/share-utils";
+import { VerifiedBadge } from "@/components/verified-badge";
 
 interface SellerInfo {
   id: string;
@@ -19,6 +20,7 @@ interface SellerInfo {
   rating?: number;
   ratingCount?: number;
   isVerified?: boolean;
+  isAuthenticated?: boolean;
   createdAt: string;
   totalListings?: number;
   totalSales?: number;
@@ -144,6 +146,9 @@ export default function SellerProfile() {
                     <Badge className="bg-emerald-50 text-emerald-700 border-0">
                       {language === "ar" ? "موثق" : "Verified"}
                     </Badge>
+                  )}
+                  {seller.isAuthenticated && (
+                    <VerifiedBadge size="md" />
                   )}
                 </div>
 
