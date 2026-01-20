@@ -67,18 +67,20 @@ export function InstallPWAPrompt() {
       return;
     }
 
-    const dismissed = localStorage.getItem(DISMISSED_KEY);
-    if (dismissed && !debugEnabled) {
-      addDebugLog('Prompt previously dismissed by user');
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    // For iOS, always show the prompt (no dismiss memory) until installed
+    if (isIOSDevice && !isInStandaloneMode) {
+      addDebugLog('iOS device detected - showing manual install instructions (persistent)');
+      setIsIOS(true);
+      setShowPrompt(true);
       return;
     }
 
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    
-    if (isIOSDevice && !isInStandaloneMode) {
-      addDebugLog('iOS device detected - showing manual install instructions');
-      setIsIOS(true);
-      setShowPrompt(true);
+    // For non-iOS, respect the dismiss preference
+    const dismissed = localStorage.getItem(DISMISSED_KEY);
+    if (dismissed && !debugEnabled) {
+      addDebugLog('Prompt previously dismissed by user');
       return;
     }
 
@@ -239,13 +241,16 @@ export function InstallPWAPrompt() {
               : '1rem'
           }}
         >
-          <button
-            onClick={handleDismiss}
-            className="absolute top-2 left-2 p-1 rounded-full hover:bg-blue-700"
-            data-testid="button-dismiss-pwa"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {/* Only show dismiss button for non-iOS devices */}
+          {!isIOS && (
+            <button
+              onClick={handleDismiss}
+              className="absolute top-2 left-2 p-1 rounded-full hover:bg-blue-700"
+              data-testid="button-dismiss-pwa"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
           
           <div className="flex items-start gap-3">
             <div className="bg-white rounded-lg p-2 flex-shrink-0">
@@ -253,17 +258,23 @@ export function InstallPWAPrompt() {
             </div>
             <div className="flex-1">
               <h3 className="font-bold text-sm mb-1">ثبّت E-بيع على هاتفك</h3>
-              <p className="text-xs text-blue-100 mb-3">
-                {isIOS 
-                  ? "اضغط على زر المشاركة ↑ ثم \"إضافة إلى الشاشة الرئيسية\""
-                  : "احصل على تجربة أفضل مع التطبيق"
-                }
-              </p>
+              {isIOS ? (
+                <div className="text-xs text-blue-100 space-y-1">
+                  <p className="font-medium">للتثبيت على الآيفون:</p>
+                  <p>١. افتح الموقع في Safari</p>
+                  <p>٢. اضغط على زر المشاركة <span className="inline-block rotate-180">⬆</span></p>
+                  <p>٣. اختر "إضافة إلى الشاشة الرئيسية"</p>
+                </div>
+              ) : (
+                <p className="text-xs text-blue-100 mb-3">
+                  احصل على تجربة أفضل مع التطبيق
+                </p>
+              )}
               {!isIOS && deferredPrompt && (
                 <Button
                   onClick={handleInstall}
                   size="sm"
-                  className="bg-white text-blue-600 hover:bg-blue-50 w-full"
+                  className="bg-white text-blue-600 hover:bg-blue-50 w-full mt-3"
                   data-testid="button-install-pwa"
                 >
                   <Download className="h-4 w-4 ml-2" />
