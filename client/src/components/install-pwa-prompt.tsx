@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import { Download, X, Bug } from "lucide-react";
+import { Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// Only enable debug mode in development with explicit URL parameter
+const isDev = import.meta.env.DEV;
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -43,9 +46,9 @@ export function InstallPWAPrompt() {
   }, []);
 
   useEffect(() => {
-    // Enable debug mode via localStorage or URL parameter
+    // Enable debug mode ONLY in development with explicit URL parameter
     const urlParams = new URLSearchParams(window.location.search);
-    const debugEnabled = urlParams.has('pwa-debug') || localStorage.getItem(DEBUG_MODE_KEY) === 'true';
+    const debugEnabled = isDev && (urlParams.has('pwa-debug') || localStorage.getItem(DEBUG_MODE_KEY) === 'true');
     setDebugMode(debugEnabled);
 
     if (debugEnabled) {
@@ -153,7 +156,11 @@ export function InstallPWAPrompt() {
 
   const handleDismiss = () => {
     addDebugLog('User dismissed prompt manually');
-    localStorage.setItem(DISMISSED_KEY, "true");
+    // For iOS, only hide for this session (will show again on next visit)
+    // For non-iOS, remember the dismissal permanently
+    if (!isIOS) {
+      localStorage.setItem(DISMISSED_KEY, "true");
+    }
     setShowPrompt(false);
   };
 
@@ -241,16 +248,13 @@ export function InstallPWAPrompt() {
               : '1rem'
           }}
         >
-          {/* Only show dismiss button for non-iOS devices */}
-          {!isIOS && (
-            <button
-              onClick={handleDismiss}
-              className="absolute top-2 left-2 p-1 rounded-full hover:bg-blue-700"
-              data-testid="button-dismiss-pwa"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+          <button
+            onClick={handleDismiss}
+            className="absolute top-2 left-2 p-1 rounded-full hover:bg-blue-700"
+            data-testid="button-dismiss-pwa"
+          >
+            <X className="h-4 w-4" />
+          </button>
           
           <div className="flex items-start gap-3">
             <div className="bg-white rounded-lg p-2 flex-shrink-0">
@@ -286,14 +290,14 @@ export function InstallPWAPrompt() {
         </div>
       )}
 
-      {/* Debug Mode Toggle - Hidden button in bottom-left corner */}
-      {!debugMode && (
+      {/* Debug Mode Toggle - Only visible in development */}
+      {isDev && !debugMode && (
         <button
           onClick={toggleDebugPanel}
           className="fixed bottom-2 left-2 w-8 h-8 bg-gray-800 text-white rounded-full opacity-20 hover:opacity-100 transition-opacity z-[100002] flex items-center justify-center"
           title="Enable PWA Debug Mode"
         >
-          <Bug className="h-4 w-4" />
+          <X className="h-4 w-4" />
         </button>
       )}
     </>
