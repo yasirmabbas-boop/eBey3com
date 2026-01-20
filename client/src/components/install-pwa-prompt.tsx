@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Download, X } from "lucide-react";
+import { Download, X, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Only enable debug mode in development with explicit URL parameter
