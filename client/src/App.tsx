@@ -107,6 +107,10 @@ function App() {
   useEffect(() => {
     // Initialize native app features
     if (isNative) {
+      // Add class to body so CSS knows we're in native mode
+      // This prevents double safe area padding (native + CSS)
+      document.body.classList.add('capacitor-native');
+      
       // Configure status bar
       StatusBar.setStyle({ style: Style.Light }).catch(console.error);
       StatusBar.setBackgroundColor({ color: '#2563eb' }).catch(console.error);
