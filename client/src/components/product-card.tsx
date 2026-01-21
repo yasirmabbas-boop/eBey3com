@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, ShoppingCart, Gavel, ExternalLink } from "lucide-react";
+import { Eye, ShoppingCart, Gavel, ExternalLink, Heart } from "lucide-react";
 import { FavoriteButton } from "@/components/favorite-button";
 import { OptimizedImage } from "@/components/optimized-image";
 import { AuctionCountdown } from "@/components/auction-countdown";
@@ -16,6 +16,7 @@ interface ProductCardProps {
   image: string;
   category?: string;
   views?: number;
+  favoritesCount?: number;
   saleType?: "auction" | "fixed";
   auctionEndTime?: string;
   className?: string;
@@ -30,6 +31,7 @@ export function ProductCard({
   image,
   category,
   views = 0,
+  favoritesCount = 0,
   saleType = "fixed",
   auctionEndTime,
   className,
@@ -99,10 +101,16 @@ export function ProductCard({
           {category && (
             <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">
               <span className="truncate">{category}</span>
-              <span className="flex items-center gap-0.5 sm:gap-1">
-                <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                {views}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-0.5 sm:gap-1">
+                  <Heart className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-400" />
+                  {favoritesCount}
+                </span>
+                <span className="flex items-center gap-0.5 sm:gap-1">
+                  <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                  {views}
+                </span>
+              </div>
             </div>
           )}
           

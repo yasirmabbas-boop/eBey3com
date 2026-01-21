@@ -107,6 +107,8 @@ export interface IStorage {
   addToWatchlist(item: InsertWatchlist): Promise<Watchlist>;
   removeFromWatchlist(userId: string, listingId: string): Promise<boolean>;
   isInWatchlist(userId: string, listingId: string): Promise<boolean>;
+  getWatchlistCountForListing(listingId: string): Promise<number>;
+  getWatchlistCountsForListings(listingIds: string[]): Promise<Map<string, number>>;
   
   trackAnalytics(event: InsertAnalytics): Promise<Analytics>;
   getAnalyticsByUser(userId: string): Promise<Analytics[]>;
@@ -810,6 +812,31 @@ export class DatabaseStorage implements IStorage {
     const [item] = await db.select().from(watchlist)
       .where(and(eq(watchlist.userId, userId), eq(watchlist.listingId, listingId)));
     return !!item;
+  }
+
+  async getWatchlistCountForListing(listingId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)::int` })
+      .from(watchlist)
+      .where(eq(watchlist.listingId, listingId));
+    return result[0]?.count || 0;
+  }
+
+  async getWatchlistCountsForListings(listingIds: string[]): Promise<Map<string, number>> {
+    if (listingIds.length === 0) return new Map();
+    
+    const results = await db.select({
+      listingId: watchlist.listingId,
+      count: sql<number>`count(*)::int`
+    })
+      .from(watchlist)
+      .where(inArray(watchlist.listingId, listingIds))
+      .groupBy(watchlist.listingId);
+    
+    const countsMap = new Map<string, number>();
+    for (const row of results) {
+      countsMap.set(row.listingId, row.count);
+    }
+    return countsMap;
   }
 
   async trackAnalytics(event: InsertAnalytics): Promise<Analytics> {

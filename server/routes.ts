@@ -278,11 +278,21 @@ export async function registerRoutes(
         }
       }
       
+      // Get favorites count for all listings
+      const listingIds = paginatedListings.map(l => l.id);
+      const favoritesCounts = await storage.getWatchlistCountsForListings(listingIds);
+      
+      // Add favorites count to each listing
+      const listingsWithFavorites = paginatedListings.map(listing => ({
+        ...listing,
+        favoritesCount: favoritesCounts.get(listing.id) || 0
+      }));
+      
       // Cache listing responses for 30 seconds to reduce repeat requests
       res.set("Cache-Control", setCacheHeaders(30));
       
       res.json({
-        listings: paginatedListings,
+        listings: listingsWithFavorites,
         pagination: {
           page: pageNum,
           limit,

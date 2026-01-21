@@ -136,6 +136,7 @@ export default function Home() {
       quantityAvailable: l.quantityAvailable || 1,
       quantitySold: l.quantitySold || 0,
       views: (l as any).views || 0,
+      favoritesCount: (l as any).favoritesCount || 0,
     }));
 
   const recommendedProducts = displayProducts.slice(0, 6);
@@ -253,10 +254,16 @@ export default function Home() {
                         <p className="font-bold text-primary text-[10px] sm:text-sm">
                           {(product.currentBid || product.price).toLocaleString()} <span className="hidden sm:inline">د.ع</span>
                         </p>
-                        <span className="text-[9px] sm:text-xs text-gray-400 items-center gap-0.5 hidden sm:flex">
-                          <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                          {product.views}
-                        </span>
+                        <div className="flex items-center gap-2 hidden sm:flex">
+                          <span className="text-[9px] sm:text-xs text-gray-400 flex items-center gap-0.5">
+                            <Heart className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-400" />
+                            {product.favoritesCount}
+                          </span>
+                          <span className="text-[9px] sm:text-xs text-gray-400 flex items-center gap-0.5">
+                            <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            {product.views}
+                          </span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -336,10 +343,16 @@ export default function Home() {
                     <CardContent className="p-2 sm:p-4">
                       <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">
                         <span className="truncate">{product.category}</span>
-                        <span className="flex items-center gap-0.5 sm:gap-1">
-                          <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                          {(product as any).views || 0}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-0.5 sm:gap-1">
+                            <Heart className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-400" />
+                            {(product as any).favoritesCount || 0}
+                          </span>
+                          <span className="flex items-center gap-0.5 sm:gap-1">
+                            <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            {(product as any).views || 0}
+                          </span>
+                        </div>
                       </div>
                       <h3 className="font-bold text-xs sm:text-lg mb-1 sm:mb-2 line-clamp-2 sm:line-clamp-1 group-hover:text-primary transition-colors leading-tight">
                         {product.title}
