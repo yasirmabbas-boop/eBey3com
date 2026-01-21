@@ -43,7 +43,7 @@ export function MobileNavBar() {
       dir="rtl"
       style={{ 
         zIndex: 99999,
-        paddingBottom: "var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))",
+        paddingBottom: "var(--safe-area-bottom)",
         position: "fixed",
         display: "flex"
       }}
