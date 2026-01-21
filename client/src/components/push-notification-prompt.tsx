@@ -155,7 +155,7 @@ export function PushNotificationPrompt() {
       dir="rtl"
       style={{ 
         bottom: isMobile 
-          ? 'calc(9rem + env(safe-area-inset-bottom, 0px))' 
+          ? 'calc(9rem + var(--safe-area-bottom, 0px))' 
           : '5rem'
       }}
     >

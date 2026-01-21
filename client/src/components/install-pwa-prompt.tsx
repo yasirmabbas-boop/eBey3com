@@ -181,7 +181,7 @@ export function InstallPWAPrompt() {
           dir="ltr"
           style={{ 
             bottom: isMobile 
-              ? 'calc(12rem + env(safe-area-inset-bottom, 0px))' 
+              ? 'calc(12rem + var(--safe-area-bottom, 0px))' 
               : '1rem'
           }}
         >
@@ -244,7 +244,7 @@ export function InstallPWAPrompt() {
           dir="rtl"
           style={{ 
             bottom: isMobile 
-              ? 'calc(6rem + env(safe-area-inset-bottom, 0px))' 
+              ? 'calc(6rem + var(--safe-area-bottom, 0px))' 
               : '1rem'
           }}
         >
