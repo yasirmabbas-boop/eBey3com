@@ -259,12 +259,12 @@ export default function ProductPage() {
     enabled: !!params?.id,
   });
   
-  // Fetch seller data to get real rating info
+  // Fetch seller public data to get real rating info and avatar
   const { data: sellerData } = useQuery({
-    queryKey: ["/api/users", listing?.sellerId],
+    queryKey: ["/api/users", listing?.sellerId, "public"],
     queryFn: async () => {
       if (!listing?.sellerId) return null;
-      const res = await fetch(`/api/users/${listing.sellerId}`);
+      const res = await fetch(`/api/users/${listing.sellerId}/public`);
       if (!res.ok) return null;
       return res.json();
     },
@@ -767,9 +767,17 @@ export default function ProductPage() {
           className="flex items-center gap-3 py-3 border-b hover:bg-gray-50 transition-colors cursor-pointer group"
           data-testid="link-seller-store"
         >
-          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-sm group-hover:bg-primary group-hover:text-white transition-colors">
-            {product.seller?.name?.charAt(0) || "ب"}
-          </div>
+          {sellerData?.avatar ? (
+            <img 
+              src={sellerData.avatar} 
+              alt={product.seller?.name || "البائع"}
+              className="w-10 h-10 rounded-full object-cover group-hover:ring-2 group-hover:ring-primary transition-all"
+            />
+          ) : (
+            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-sm group-hover:bg-primary group-hover:text-white transition-colors">
+              {product.seller?.name?.charAt(0) || "ب"}
+            </div>
+          )}
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-sm group-hover:text-primary transition-colors">{product.seller?.name || product.sellerName || "بائع"}</span>
