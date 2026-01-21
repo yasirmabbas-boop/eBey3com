@@ -915,6 +915,51 @@ export default function SellWizardPage() {
                     onChange={(e) => handleInputChange("buyNowPrice", e.target.value)}
                   />
                 </div>
+                
+                <Separator />
+                
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <Checkbox
+                      id="hasReservePrice"
+                      checked={!!formData.reservePrice}
+                      onCheckedChange={(checked) => {
+                        if (!checked) {
+                          handleInputChange("reservePrice", "");
+                        }
+                      }}
+                      className="h-5 w-5"
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="hasReservePrice" className="cursor-pointer font-bold">
+                        {language === "ar" ? "سعر احتياطي (اختياري)" : "نرخی پاراستن (ئارەزوومەندانە)"}
+                      </Label>
+                      <p className="text-xs text-amber-700 mt-1">
+                        {language === "ar" 
+                          ? "حدد سعراً أدنى يجب الوصول إليه لإتمام البيع" 
+                          : "کەمترین نرخێک دیاری بکە کە دەبێت بگاتە بۆ تەواوکردنی فرۆشتن"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {formData.reservePrice && (
+                    <div className="space-y-2">
+                      <Label>{language === "ar" ? "السعر الاحتياطي" : "نرخی پاراستن"}</Label>
+                      <Input
+                        type="number"
+                        placeholder={language === "ar" ? "أدخل السعر الاحتياطي" : "نرخی پاراستن بنووسە"}
+                        value={formData.reservePrice}
+                        onChange={(e) => handleInputChange("reservePrice", e.target.value)}
+                        data-testid="input-reserve-price"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {language === "ar" 
+                          ? "لن يتم بيع المنتج إذا لم يصل المزاد لهذا السعر" 
+                          : "بەرهەمەکە نافرۆشرێت ئەگەر مزایدە نەگاتە ئەم نرخە"}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </>
             )}
 

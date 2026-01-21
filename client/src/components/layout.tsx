@@ -19,6 +19,7 @@ import { BackButton } from "@/components/back-button";
 import { TutorialTrigger } from "@/components/onboarding-tutorial";
 import { useLanguage } from "@/lib/i18n";
 import { nativeShare, isDespia } from "@/lib/despia";
+import { isNative } from "@/lib/capacitor";
 
 // Feature flag for exchange option - set to true to enable
 const ENABLE_EXCHANGE_FEATURE = false;
@@ -60,7 +61,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
   const isRtl = language === "ar" || language === "ku";
 
   return (
-    <div className="despia-app bg-background font-sans md:min-h-screen md:block overflow-x-hidden max-w-full safe-area-top" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="despia-app bg-background font-sans md:min-h-screen md:block overflow-x-hidden max-w-full" dir={isRtl ? "rtl" : "ltr"}>
             
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
@@ -230,11 +231,11 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       )}
 
       {/* Main Content */}
-      <main className="despia-content pb-20 md:pb-0 md:flex-1">
+      <main className={`despia-content md:pb-0 md:flex-1 ${isNative ? "pb-6" : "pb-20"}`}>
         {children}
         
         {/* Footer - Panda Black (inside scrollable content) */}
-        <footer className="bg-[#141414] text-gray-300 py-8 mt-20">
+        <footer className={`bg-[#141414] text-gray-300 ${isNative ? "py-6 mt-8" : "py-8 mt-20"}`}>
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div className="flex items-center gap-3 md:flex-col md:items-start">

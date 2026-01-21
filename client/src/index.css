@@ -247,12 +247,6 @@ img, video, iframe {
   }
 }
 
-/* Despia Safe Area Fallbacks */
-:root {
-  --safe-area-top: env(safe-area-inset-top, 0px);
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-}
-
 /* Hide scrollbar for Despia native app */
 .despia-scroll-container {
   overflow-y: auto;
