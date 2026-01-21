@@ -155,7 +155,7 @@ export function PushNotificationPrompt() {
       dir="rtl"
       style={{ 
         bottom: isMobile 
-          ? 'calc(9rem + var(--safe-area-bottom, 0px))' 
+          ? (isNative ? '9rem' : 'calc(9rem + var(--safe-area-bottom, 0px))') 
           : '5rem'
       }}
     >

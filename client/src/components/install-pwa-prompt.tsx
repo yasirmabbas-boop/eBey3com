@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Download, X, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { isNative } from "@/lib/capacitor";
 
 // Only enable debug mode in development with explicit URL parameter
 const isDev = import.meta.env.DEV;
@@ -181,7 +182,7 @@ export function InstallPWAPrompt() {
           dir="ltr"
           style={{ 
             bottom: isMobile 
-              ? 'calc(12rem + var(--safe-area-bottom, 0px))' 
+              ? (isNative ? '12rem' : 'calc(12rem + var(--safe-area-bottom, 0px))') 
               : '1rem'
           }}
         >
@@ -244,7 +245,7 @@ export function InstallPWAPrompt() {
           dir="rtl"
           style={{ 
             bottom: isMobile 
-              ? 'calc(6rem + var(--safe-area-bottom, 0px))' 
+              ? (isNative ? '6rem' : 'calc(6rem + var(--safe-area-bottom, 0px))') 
               : '1rem'
           }}
         >

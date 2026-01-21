@@ -5,6 +5,7 @@ import { useNavVisibility } from "@/hooks/use-nav-visibility";
 import { useLanguage } from "@/lib/i18n";
 import { useNavState } from "@/hooks/use-nav-state";
 import { hapticLight } from "@/lib/despia";
+import { isNative } from "@/lib/capacitor";
 
 const HIDDEN_NAV_PATHS: string[] = [];
 
@@ -43,7 +44,7 @@ export function MobileNavBar() {
       dir="rtl"
       style={{ 
         zIndex: 99999,
-        paddingBottom: "var(--safe-area-bottom)",
+        paddingBottom: isNative ? "0px" : "var(--safe-area-bottom)",
         position: "fixed",
         display: "flex"
       }}
