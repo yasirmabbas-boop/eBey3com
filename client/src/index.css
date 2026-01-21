@@ -11,14 +11,8 @@
   --safe-area-right: env(safe-area-inset-right, 0px);
 }
 
-/* When running as native Capacitor app, iOS handles safe areas natively */
-/* This prevents double padding from both native and CSS */
-body.capacitor-native {
-  --safe-area-top: 0px;
-  --safe-area-bottom: 0px;
-  --safe-area-left: 0px;
-  --safe-area-right: 0px;
-}
+/* With contentInset: "never" in capacitor.config.json, iOS native won't add insets */
+/* CSS handles all safe area padding via env() values */
 
 html, body {
   overflow-x: hidden !important;

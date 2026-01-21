@@ -4,6 +4,9 @@ const config: CapacitorConfig = {
   appId: 'iq.ebay3.app',
   appName: 'E-بيع',
   webDir: 'dist/public',
+  ios: {
+    contentInset: 'never'
+  },
   server: {
     androidScheme: 'https',
     // Uncomment for development with live reload:
