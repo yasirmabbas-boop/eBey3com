@@ -723,6 +723,14 @@ export default function SellerDashboard() {
       return res.json();
     },
     onSuccess: () => {
+      // Track buyer rating in GTM
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        'event': 'submit_rating',
+        'rating_value': buyerRating,
+        'rated_entity_id': selectedOrderForAction?.buyerId
+      });
+      
       toast({ title: "تم التقييم", description: "تم تقييم المشتري بنجاح" });
       setRatingDialogOpen(false);
       setSelectedOrderForAction(null);

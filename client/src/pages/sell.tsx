@@ -618,6 +618,16 @@ export default function SellPage() {
       // Clear draft on successful submission
       localStorage.removeItem(DRAFT_KEY);
       
+      // Track listing creation in GTM (only for new listings, not edits)
+      if (!isEditMode) {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          'event': 'listing_created',
+          'category': formData.category,
+          'seller_id': user?.id
+        });
+      }
+      
       setLocation("/seller-dashboard");
     } catch (error) {
       console.error("Error:", error);

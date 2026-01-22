@@ -100,6 +100,14 @@ function RateSellerCard({
       return res.json();
     },
     onSuccess: () => {
+      // Track rating submission in GTM
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        'event': 'submit_rating',
+        'rating_value': rating,
+        'rated_entity_id': purchase.sellerId
+      });
+      
       toast({
         title: "تم إرسال التقييم",
         description: "شكراً لك على تقييم البائع",

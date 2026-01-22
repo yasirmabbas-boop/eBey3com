@@ -253,6 +253,13 @@ export default function Register() {
         );
       }
 
+      // Track sign up event in GTM
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        'event': 'sign_up',
+        'method': 'email'
+      });
+      
       toast({
         title: tr("تم إنشاء الحساب بنجاح!", "هەژمار بە سەرکەوتوویی دروستکرا!", "Account created successfully!"),
         description: language === "ar" 

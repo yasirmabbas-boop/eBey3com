@@ -96,6 +96,13 @@ export default function SignIn() {
         localStorage.setItem("authToken", data.authToken);
       }
       
+      // Track login event in GTM
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        'event': 'login',
+        'method': 'email'
+      });
+      
       toast({
         title: tr("تم تسجيل الدخول بنجاح", "بە سەرکەوتوویی چوویتە ژوورەوە", "Signed in successfully"),
         description: `${t("welcome")} ${data.displayName}`,
@@ -155,6 +162,13 @@ export default function SignIn() {
       if (data.authToken) {
         localStorage.setItem("authToken", data.authToken);
       }
+      
+      // Track login event in GTM (2FA successful)
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        'event': 'login',
+        'method': 'email'
+      });
       
       toast({
         title: tr("تم تسجيل الدخول بنجاح", "بە سەرکەوتوویی چوویتە ژوورەوە", "Signed in successfully"),

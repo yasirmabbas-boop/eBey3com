@@ -175,7 +175,32 @@ export default function CheckoutPage() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Track purchase event in GTM
+      if (data.transactions && Array.isArray(data.transactions)) {
+        const items = data.transactions.map((transaction: any, index: number) => {
+          const cartItem = cartItems[index];
+          return {
+            'item_name': cartItem?.listing?.title || 'Unknown Product',
+            'item_id': transaction.listingId,
+            'price': transaction.amount,
+          };
+        });
+
+        const totalValue = data.transactions.reduce((sum: number, t: any) => sum + t.amount, 0);
+
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          'event': 'purchase',
+          'ecommerce': {
+            'transaction_id': data.transactions.map((t: any) => t.id).join(','),
+            'value': totalValue,
+            'currency': 'IQD',
+            'items': items
+          }
+        });
+      }
+      
       setIsOrderComplete(true);
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
