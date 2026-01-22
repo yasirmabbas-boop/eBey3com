@@ -549,6 +549,9 @@ export default function SellPage() {
         reservePrice: (saleType === "auction" && hasReservePrice && formData.reservePrice) 
           ? parseInt(formData.reservePrice) 
           : null,
+        buyNowPrice: (saleType === "auction" && hasBuyNow && formData.buyNowPrice)
+          ? parseInt(formData.buyNowPrice)
+          : null,
         deliveryWindow: formData.deliveryWindow,
         shippingType: formData.shippingType,
         shippingCost: formData.shippingType === "buyer_pays" ? (parseInt(formData.shippingCost) || 0) : 0,

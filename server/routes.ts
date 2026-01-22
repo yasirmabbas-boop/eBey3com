@@ -452,6 +452,9 @@ export async function registerRoutes(
         reservePrice: req.body.reservePrice 
           ? (typeof req.body.reservePrice === "number" ? req.body.reservePrice : parseInt(req.body.reservePrice, 10))
           : null,
+        buyNowPrice: req.body.buyNowPrice
+          ? (typeof req.body.buyNowPrice === "number" ? req.body.buyNowPrice : parseInt(req.body.buyNowPrice, 10))
+          : null,
         deliveryWindow: req.body.deliveryWindow,
         returnPolicy: req.body.returnPolicy,
         returnDetails: req.body.returnDetails || null,
