@@ -1228,7 +1228,10 @@ export default function SellPage() {
                   </div>
 
                   {/* Reserve Price Checkbox */}
-                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <label 
+                    htmlFor="reserveToggle" 
+                    className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                  >
                     <Checkbox 
                       id="reserveToggle" 
                       checked={hasReservePrice}
@@ -1237,12 +1240,12 @@ export default function SellPage() {
                       data-testid="checkbox-reserve-price"
                     />
                     <div className="space-y-1 flex-1">
-                      <Label htmlFor="reserveToggle" className="font-bold cursor-pointer">سعر احتياطي</Label>
+                      <span className="font-bold">سعر احتياطي</span>
                       <p className="text-xs text-muted-foreground">
                         حدد سعراً أدنى يجب الوصول إليه لإتمام البيع
                       </p>
                     </div>
-                  </div>
+                  </label>
 
                   {hasReservePrice && (
                     <div className="space-y-2">
