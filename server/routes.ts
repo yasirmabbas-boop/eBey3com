@@ -3459,6 +3459,22 @@ export async function registerRoutes(
         return res.status(404).json({ error: "المنتج غير موجود" });
       }
       
+      // Check if listing is still active and available
+      if (!listing.isActive || listing.isDeleted) {
+        return res.status(400).json({ error: "هذا المنتج غير متاح حالياً" });
+      }
+      
+      // Check if item is sold out
+      if (listing.quantityAvailable <= 0 || listing.quantitySold >= listing.quantityAvailable) {
+        return res.status(400).json({ error: "هذا المنتج غير متاح للشراء" });
+      }
+      
+      // Check if user already purchased this item
+      const existingPurchase = await storage.getUserTransactionForListing(userId, listingId);
+      if (existingPurchase && !["cancelled", "returned", "refunded"].includes(existingPurchase.status)) {
+        return res.status(400).json({ error: "لقد قمت بشراء هذا المنتج مسبقاً" });
+      }
+      
       // Prevent sellers from making offers on their own products
       if (listing.sellerId === userId) {
         return res.status(400).json({ error: "لا يمكنك تقديم عرض على منتجك الخاص" });
