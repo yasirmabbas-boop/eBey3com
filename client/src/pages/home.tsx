@@ -230,26 +230,12 @@ export default function Home() {
               {language === "ar" ? "منصتك الأولى للمزادات والتسوق الآمن في العراق" : "یەکەم پلاتفۆرمی مزایدە و کڕین بە پارێزراوی لە عێراق"}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/search">
-                <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-bold px-8 shadow-[var(--shadow-2)]">
-                  <Search className="h-5 w-5 ml-2" />
-                  {language === "ar" ? "تصفح المنتجات" : "بەرهەمەکان ببینە"}
-                </Button>
-              </Link>
               <Link href="/sell">
-                <Button size="lg" variant="outline" className="border-white/70 text-white hover:bg-white/10 font-bold px-8">
+                <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-bold px-8 shadow-[var(--shadow-2)]">
                   <Tag className="h-5 w-5 ml-2" />
                   {language === "ar" ? "ابدأ البيع" : "دەست بە فرۆشتن بکە"}
                 </Button>
               </Link>
-              {user && (
-                <Link href="/favorites">
-                  <Button size="lg" variant="outline" className="border-white/70 text-white hover:bg-white/10 font-bold px-8">
-                    <Heart className="h-5 w-5 ml-2" />
-                    {t("favorites") || (language === "ar" ? "المفضلة" : "دڵخوازەکان")}
-                  </Button>
-                </Link>
-              )}
             </div>
           </div>
         </div>
