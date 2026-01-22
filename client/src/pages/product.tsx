@@ -349,6 +349,20 @@ export default function ProductPage() {
           body: JSON.stringify({ viewerId: user?.id || null })
         }).catch(() => {});
       }
+      
+      // Track in localStorage for recently viewed section
+      try {
+        const stored = localStorage.getItem("recentlyViewed");
+        let recentIds: string[] = stored ? JSON.parse(stored) : [];
+        // Remove if already exists and add to front
+        recentIds = recentIds.filter(id => id !== listing.id);
+        recentIds.unshift(listing.id);
+        // Keep only last 20 items
+        recentIds = recentIds.slice(0, 20);
+        localStorage.setItem("recentlyViewed", JSON.stringify(recentIds));
+      } catch (e) {
+        console.log("Error saving recently viewed:", e);
+      }
     }
   }, [listing?.id, listing?.sellerId, user?.id]);
 

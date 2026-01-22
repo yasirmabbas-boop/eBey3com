@@ -64,9 +64,23 @@ const ADS = [
 export default function Home() {
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>([]);
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const { language, t } = useLanguage();
+
+  // Load recently viewed items from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("recentlyViewed");
+      if (stored) {
+        const ids = JSON.parse(stored) as string[];
+        setRecentlyViewedIds(ids.slice(0, 10));
+      }
+    } catch (e) {
+      console.log("Error loading recently viewed:", e);
+    }
+  }, []);
   const debugHeroLabel = language === "ar" ? "بيع واشتري بأمان" : "بە پارێزراوی بکڕە و بفرۆشە";
   if (language === "en") {
     // #region agent log
@@ -140,6 +154,11 @@ export default function Home() {
     }));
 
   const recommendedProducts = displayProducts.slice(0, 6);
+
+  // Get recently viewed products from the displayProducts list
+  const recentlyViewedProducts = displayProducts.filter(p => 
+    recentlyViewedIds.includes(p.id)
+  ).slice(0, 8);
   
   const productsByCategory = CATEGORIES.reduce((acc, cat) => {
     acc[cat.id] = displayProducts.filter(p => p.category === cat.id).slice(0, 12);
@@ -169,9 +188,6 @@ export default function Home() {
             <h1 className="text-3xl md:text-5xl font-bold mb-4" style={{ fontFamily: "Cairo, sans-serif" }}>
               {language === "ar" ? "بيع واشتري بأمان" : "بە پارێزراوی بکڕە و بفرۆشە"}
             </h1>
-            <p className="text-lg md:text-2xl mb-6 text-blue-100 uppercase tracking-wide">
-              Buy and Sell With Trust
-            </p>
             <p className="text-sm md:text-base text-blue-200 mb-8">
               {language === "ar" ? "منصتك الأولى للمزادات والتسوق الآمن في العراق" : "یەکەم پلاتفۆرمی مزایدە و کڕین بە پارێزراوی لە عێراق"}
             </p>
@@ -213,6 +229,47 @@ export default function Home() {
           <HeroBanner />
         </div>
       </section>
+
+      {/* Recently Viewed Section */}
+      {recentlyViewedProducts.length > 0 && (
+        <section className="py-4 sm:py-6 bg-gradient-to-l from-blue-50/50 to-indigo-50/50">
+          <div className="container mx-auto px-3 sm:px-4">
+            <div className="flex justify-between items-center mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                <h2 className="text-base sm:text-lg font-bold text-primary">{language === "ar" ? "شوهد مؤخراً" : "تازە بینراوەکان"}</h2>
+              </div>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-3" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {recentlyViewedProducts.map((product) => (
+                <Link key={product.id} href={`/product/${product.id}`}>
+                  <Card className="overflow-hidden cursor-pointer group soft-border hover-elevate active:scale-[0.98] flex-shrink-0 w-36 sm:w-44" data-testid={`card-recent-${product.id}`}>
+                    <div className="relative aspect-square overflow-hidden bg-gray-100">
+                      <img 
+                        src={product.image} 
+                        alt={product.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                      />
+                      {product.saleType === "auction" && (
+                        <Badge className="absolute top-1.5 right-1.5 bg-primary text-white text-[10px] px-1.5 py-0.5">
+                          مزاد
+                        </Badge>
+                      )}
+                    </div>
+                    <CardContent className="p-2 sm:p-3">
+                      <h3 className="font-medium text-xs sm:text-sm line-clamp-2 text-gray-800 mb-1">{product.title}</h3>
+                      <p className="font-bold text-sm sm:text-base text-primary">
+                        {(product.currentBid || product.price).toLocaleString()} {t("iqd")}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Recommended Items Section */}
       {recommendedProducts.length > 0 && (
@@ -274,35 +331,37 @@ export default function Home() {
         </section>
       )}
 
-      {/* Categories - Quick Access */}
-      <section className="py-4 sm:py-6 bg-muted/40">
+      {/* Categories - Horizontal Sliding Strip */}
+      <section className="py-3 bg-gradient-to-l from-primary/5 to-primary/10 overflow-hidden">
         <div className="container mx-auto px-3 sm:px-4">
-          <div className="flex items-center gap-2 mb-3 sm:mb-4">
-            <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-            <h2 className="text-base sm:text-lg font-bold text-primary">{language === "ar" ? "تصفح الأقسام" : "بەشەکان ببینە"}</h2>
-          </div>
-          <div className="grid grid-cols-4 gap-2 sm:gap-3 md:grid-cols-8">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {CATEGORIES.map((cat, i) => (
               <Link key={i} href={`/search?category=${encodeURIComponent(cat.id)}`}>
-                <div className="group cursor-pointer bg-card p-2 sm:p-3 rounded-lg soft-border hover-elevate transition-all text-center active:scale-95" data-testid={`category-${cat.id}`}>
-                  <div className={`h-8 w-8 sm:h-10 sm:w-10 ${
-                    cat.nameEn === "watches" ? "bg-blue-50" :
-                    cat.nameEn === "electronics" ? "bg-amber-50" :
-                    cat.nameEn === "clothing" ? "bg-purple-50" :
-                    cat.nameEn === "antiques" ? "bg-rose-50" :
-                    cat.nameEn === "cars" ? "bg-red-50" :
-                    cat.nameEn === "realestate" ? "bg-green-50" :
-                    "bg-gray-50"
-                  } rounded-full mx-auto mb-1 sm:mb-2 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                    {cat.nameEn === "watches" ? <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" /> :
-                     cat.nameEn === "electronics" ? <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" /> :
-                     cat.nameEn === "clothing" ? <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" /> :
-                     cat.nameEn === "antiques" ? <Search className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600" /> :
-                     cat.nameEn === "cars" ? <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" /> :
-                     cat.nameEn === "realestate" ? <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" /> :
-                     <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />}
+                <div 
+                  className="group cursor-pointer flex items-center gap-2 bg-white/80 backdrop-blur px-3 py-2 sm:px-4 sm:py-2.5 rounded-full soft-border hover:shadow-md transition-all whitespace-nowrap active:scale-95 hover:bg-primary hover:text-white"
+                  data-testid={`category-${cat.id}`}
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  <div className={`h-6 w-6 sm:h-7 sm:w-7 ${
+                    cat.nameEn === "watches" ? "bg-blue-100 group-hover:bg-blue-200" :
+                    cat.nameEn === "electronics" ? "bg-amber-100 group-hover:bg-amber-200" :
+                    cat.nameEn === "clothing" ? "bg-purple-100 group-hover:bg-purple-200" :
+                    cat.nameEn === "antiques" ? "bg-rose-100 group-hover:bg-rose-200" :
+                    cat.nameEn === "jewelry" ? "bg-pink-100 group-hover:bg-pink-200" :
+                    cat.nameEn === "music" ? "bg-indigo-100 group-hover:bg-indigo-200" :
+                    cat.nameEn === "collectibles" ? "bg-teal-100 group-hover:bg-teal-200" :
+                    "bg-gray-100 group-hover:bg-gray-200"
+                  } rounded-full flex items-center justify-center transition-all animate-pulse`}>
+                    {cat.nameEn === "watches" ? <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" /> :
+                     cat.nameEn === "electronics" ? <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600" /> :
+                     cat.nameEn === "clothing" ? <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600" /> :
+                     cat.nameEn === "antiques" ? <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-600" /> :
+                     cat.nameEn === "jewelry" ? <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-pink-600" /> :
+                     cat.nameEn === "music" ? <Gavel className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-indigo-600" /> :
+                     cat.nameEn === "collectibles" ? <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-teal-600" /> :
+                     <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-600" />}
                   </div>
-                  <h3 className="font-medium text-[10px] sm:text-sm text-gray-800 leading-tight">{cat.name}</h3>
+                  <span className="font-medium text-xs sm:text-sm text-gray-800 group-hover:text-white transition-colors">{cat.name}</span>
                 </div>
               </Link>
             ))}
