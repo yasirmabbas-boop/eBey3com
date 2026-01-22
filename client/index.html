@@ -52,10 +52,42 @@
           navigator.serviceWorker.register('/sw.js')
             .then((reg) => {
               console.log('[PWA] Service Worker registered successfully', reg);
+              
+              // Check for updates every 30 seconds
+              setInterval(() => {
+                reg.update();
+              }, 30000);
+              
+              // Listen for new service worker
+              reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                console.log('[PWA] New service worker found, installing...');
+                
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('[PWA] New version available!');
+                    window.dispatchEvent(new CustomEvent('pwa-update-available'));
+                  }
+                });
+              });
             })
             .catch((err) => {
               console.error('[PWA] Service Worker registration failed:', err);
             });
+        });
+        
+        // Listen for SW_UPDATED message from service worker
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'SW_UPDATED') {
+            console.log('[PWA] Received SW_UPDATED message');
+            window.dispatchEvent(new CustomEvent('pwa-update-available'));
+          }
+        });
+        
+        // Handle controller change (new SW activated)
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          console.log('[PWA] Controller changed, reloading...');
+          window.location.reload();
         });
       } else {
         console.warn('[PWA] Service Workers not supported in this browser');

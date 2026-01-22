@@ -1,6 +1,5 @@
-const CACHE_NAME = 'ebay-iraq-v2';
+const CACHE_NAME = 'ebay-iraq-v3';
 const STATIC_ASSETS = [
-  '/',
   '/favicon.png',
   '/icon-192.png',
   '/icon-512.png'
@@ -8,7 +7,7 @@ const STATIC_ASSETS = [
 
 // Debug logging helper
 const log = (message, data) => {
-  console.log(`[SW v2] ${message}`, data || '');
+  console.log(`[SW v3] ${message}`, data || '');
 };
 
 self.addEventListener('install', (event) => {
@@ -23,7 +22,7 @@ self.addEventListener('install', (event) => {
         log('Installation complete');
       })
       .catch((err) => {
-        console.error('[SW v2] Installation failed:', err);
+        console.error('[SW v3] Installation failed:', err);
       })
   );
   self.skipWaiting();
@@ -44,6 +43,13 @@ self.addEventListener('activate', (event) => {
       })
       .then(() => {
         log('Activation complete');
+        // Notify all clients that a new version is available
+        return self.clients.matchAll({ type: 'window' });
+      })
+      .then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'SW_UPDATED' });
+        });
       })
   );
   self.clients.claim();
@@ -54,6 +60,7 @@ self.addEventListener('fetch', (event) => {
   
   const url = new URL(event.request.url);
   
+  // API requests - network only, no caching
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(event.request)
@@ -65,9 +72,55 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
+  // HTML/navigation requests - NETWORK FIRST (always get fresh content)
+  if (event.request.mode === 'navigate' || 
+      event.request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Cache successful responses for offline use
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, clone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache only if network fails
+          return caches.match(event.request).then((cached) => {
+            return cached || caches.match('/');
+          });
+        })
+    );
+    return;
+  }
+  
+  // JS/CSS assets - network first with cache fallback
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok && url.origin === location.origin) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, clone);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+  
+  // Static assets (images, fonts) - cache first for performance
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request).then((response) => {
+      if (cached) return cached;
+      
+      return fetch(event.request).then((response) => {
         if (response.ok && url.origin === location.origin) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -76,9 +129,15 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       });
-      return cached || fetchPromise;
     })
   );
+});
+
+// Listen for skip waiting message from client
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Push notification handler
