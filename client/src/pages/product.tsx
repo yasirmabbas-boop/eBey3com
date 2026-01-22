@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send, Trophy, AlertCircle, Eye, Flag, Globe } from "lucide-react";
+import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send, Trophy, AlertCircle, Eye, Flag, Globe, Zap } from "lucide-react";
 import { ProductDetailSkeleton } from "@/components/optimized-image";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -330,6 +330,7 @@ export default function ProductPage() {
     internationalShipping: listing.internationalShipping || false,
     internationalCountries: listing.internationalCountries || [],
     area: listing.area || null,
+    buyNowPrice: (listing as any).buyNowPrice || null,
   } : null;
 
   // Track view when product loads - reset ref on listing change
@@ -1016,6 +1017,31 @@ export default function ProductPage() {
                     isVerified={user?.isVerified || false}
                     allowedBidderType={listing?.allowedBidderType}
                   />
+                )}
+
+                {/* Buy Now Option for Auctions with buyNowPrice */}
+                {product.saleType === "auction" && listing?.isActive && !auctionEnded && product.buyNowPrice && (
+                  <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-green-600" />
+                        <span className="font-bold text-green-800 dark:text-green-400">{language === "ar" ? "اشتر الآن" : "ئێستا بیکڕە"}</span>
+                      </div>
+                      <span className="text-2xl font-bold text-green-700 dark:text-green-300">{product.buyNowPrice.toLocaleString()} {t("iqd")}</span>
+                    </div>
+                    <p className="text-sm text-green-600 dark:text-green-400 mb-3">
+                      {language === "ar" ? "تخطى المزاد واشتر المنتج فوراً بهذا السعر" : "لە مزایدە تێپەڕە و بەرهەمەکە ئێستا بکڕە بەم نرخە"}
+                    </p>
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12"
+                      onClick={handleBuyNowDirect}
+                      disabled={!!isPurchaseDisabled}
+                      data-testid="button-auction-buy-now"
+                    >
+                      <Zap className="w-5 h-5 ml-2" />
+                      {language === "ar" ? `اشتر الآن بـ ${product.buyNowPrice.toLocaleString()} د.ع` : `ئێستا بکڕە بە ${product.buyNowPrice.toLocaleString()} د.ع`}
+                    </Button>
+                  </div>
                 )}
 
                 {/* Fixed Price Buttons */}
