@@ -71,6 +71,8 @@ export default function MyAccount() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log("[Avatar] Starting upload, file:", file.name, file.size);
+
     if (file.size > 5 * 1024 * 1024) {
       toast({ title: "الملف كبير جداً", description: "الحد الأقصى 5 ميغابايت", variant: "destructive" });
       return;
@@ -81,29 +83,45 @@ export default function MyAccount() {
       const uploadFormData = new FormData();
       uploadFormData.append("images", file);
 
+      console.log("[Avatar] Uploading to /api/uploads/optimized...");
       const response = await fetch("/api/uploads/optimized", {
         method: "POST",
         body: uploadFormData,
       });
 
+      console.log("[Avatar] Upload response status:", response.status);
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Avatar] Upload failed:", errorText);
         throw new Error("Failed to upload image");
       }
 
       const result = await response.json();
-      const avatarUrl = result.images[0].main; // This is a relative path like /objects/uploads/uuid.jpg
+      console.log("[Avatar] Upload result:", result);
+      const avatarUrl = result.images[0].main;
+      console.log("[Avatar] Avatar URL to save:", avatarUrl);
 
+      console.log("[Avatar] Saving to profile...");
       const res = await fetch("/api/account/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ avatar: avatarUrl }),
       });
 
+      console.log("[Avatar] Profile update response status:", res.status);
       if (res.ok) {
+        const profileResult = await res.json();
+        console.log("[Avatar] Profile update result:", profileResult);
         toast({ title: "تم تحديث الصورة بنجاح" });
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/account/profile"] });
+      } else {
+        const errorText = await res.text();
+        console.error("[Avatar] Profile update failed:", errorText);
+        toast({ title: "خطأ", description: "فشل في حفظ الصورة", variant: "destructive" });
       }
     } catch (error) {
+      console.error("[Avatar] Error:", error);
       toast({ title: "خطأ", description: "فشل في رفع أو حفظ الصورة", variant: "destructive" });
     } finally {
       setIsUploadingAvatar(false);

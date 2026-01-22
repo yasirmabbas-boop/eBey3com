@@ -2873,10 +2873,12 @@ export async function registerRoutes(
         }
       }
 
+      console.log("[Profile Update] User updated:", user.id, "avatar:", user.avatar);
       res.json({
         id: user.id,
         phone: user.phone,
         displayName: user.displayName,
+        avatar: user.avatar,
         city: user.city,
         district: user.district,
         addressLine1: user.addressLine1,
@@ -2884,7 +2886,6 @@ export async function registerRoutes(
         ageBracket: user.ageBracket,
         interests: user.interests,
         surveyCompleted: user.surveyCompleted,
-        avatar: user.avatar,
       });
     } catch (error) {
       console.error("Error updating profile:", error);
