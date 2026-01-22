@@ -1641,7 +1641,8 @@ export async function registerRoutes(
             type: "order_shipped",
             title: "تم شحن طلبك! 📦",
             message: `تم شحن طلبك "${listing?.title || 'منتج'}". سيصلك قريباً!`,
-            relatedId: transaction.listingId,
+            relatedId: transactionId,
+            linkUrl: "/my-account/purchases",
           });
           await storage.sendMessage({
             senderId: transaction.sellerId,
@@ -1719,6 +1720,14 @@ export async function registerRoutes(
       if (transaction.buyerId && transaction.buyerId !== "guest") {
         const listing = await storage.getListing(transaction.listingId);
         try {
+          await storage.createNotification({
+            userId: transaction.buyerId,
+            type: "order_delivered",
+            title: "تم تسليم طلبك! ✅",
+            message: `تم تسليم طلبك "${listing?.title || 'منتج'}" بنجاح!`,
+            relatedId: transactionId,
+            linkUrl: "/my-account/purchases",
+          });
           await storage.sendMessage({
             senderId: transaction.sellerId,
             receiverId: transaction.buyerId,
