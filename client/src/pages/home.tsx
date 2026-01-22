@@ -177,6 +177,44 @@ export default function Home() {
 
   return (
     <Layout>
+      {/* Categories - Horizontal Sliding Strip */}
+      <section className="py-2 bg-gradient-to-l from-primary/5 to-primary/10 overflow-hidden border-b border-border/30">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {CATEGORIES.map((cat, i) => (
+              <Link key={i} href={`/search?category=${encodeURIComponent(cat.id)}`}>
+                <div 
+                  className="group cursor-pointer flex items-center gap-2 bg-white/80 backdrop-blur px-3 py-1.5 sm:px-4 sm:py-2 rounded-full soft-border hover:shadow-md transition-all whitespace-nowrap active:scale-95 hover:bg-primary hover:text-white"
+                  data-testid={`category-top-${cat.id}`}
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  <div className={`h-5 w-5 sm:h-6 sm:w-6 ${
+                    cat.nameEn === "watches" ? "bg-blue-100 group-hover:bg-blue-200" :
+                    cat.nameEn === "electronics" ? "bg-amber-100 group-hover:bg-amber-200" :
+                    cat.nameEn === "clothing" ? "bg-purple-100 group-hover:bg-purple-200" :
+                    cat.nameEn === "antiques" ? "bg-rose-100 group-hover:bg-rose-200" :
+                    cat.nameEn === "jewelry" ? "bg-pink-100 group-hover:bg-pink-200" :
+                    cat.nameEn === "music" ? "bg-indigo-100 group-hover:bg-indigo-200" :
+                    cat.nameEn === "collectibles" ? "bg-teal-100 group-hover:bg-teal-200" :
+                    "bg-gray-100 group-hover:bg-gray-200"
+                  } rounded-full flex items-center justify-center transition-all`}>
+                    {cat.nameEn === "watches" ? <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-600" /> :
+                     cat.nameEn === "electronics" ? <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-600" /> :
+                     cat.nameEn === "clothing" ? <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-purple-600" /> :
+                     cat.nameEn === "antiques" ? <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-rose-600" /> :
+                     cat.nameEn === "jewelry" ? <Heart className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-pink-600" /> :
+                     cat.nameEn === "music" ? <Gavel className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-indigo-600" /> :
+                     cat.nameEn === "collectibles" ? <ShoppingBag className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-teal-600" /> :
+                     <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-600" />}
+                  </div>
+                  <span className="font-medium text-xs sm:text-sm text-gray-800 group-hover:text-white transition-colors">{cat.name}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Hero Banner */}
       <section className="relative bg-gradient-to-l from-primary via-[#1b2b5a] to-[#0f172a] text-white py-12 md:py-20 overflow-hidden">
         <div className="absolute inset-0 opacity-15">
@@ -330,44 +368,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
-      {/* Categories - Horizontal Sliding Strip */}
-      <section className="py-3 bg-gradient-to-l from-primary/5 to-primary/10 overflow-hidden">
-        <div className="container mx-auto px-3 sm:px-4">
-          <div className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {CATEGORIES.map((cat, i) => (
-              <Link key={i} href={`/search?category=${encodeURIComponent(cat.id)}`}>
-                <div 
-                  className="group cursor-pointer flex items-center gap-2 bg-white/80 backdrop-blur px-3 py-2 sm:px-4 sm:py-2.5 rounded-full soft-border hover:shadow-md transition-all whitespace-nowrap active:scale-95 hover:bg-primary hover:text-white"
-                  data-testid={`category-${cat.id}`}
-                  style={{ animationDelay: `${i * 0.1}s` }}
-                >
-                  <div className={`h-6 w-6 sm:h-7 sm:w-7 ${
-                    cat.nameEn === "watches" ? "bg-blue-100 group-hover:bg-blue-200" :
-                    cat.nameEn === "electronics" ? "bg-amber-100 group-hover:bg-amber-200" :
-                    cat.nameEn === "clothing" ? "bg-purple-100 group-hover:bg-purple-200" :
-                    cat.nameEn === "antiques" ? "bg-rose-100 group-hover:bg-rose-200" :
-                    cat.nameEn === "jewelry" ? "bg-pink-100 group-hover:bg-pink-200" :
-                    cat.nameEn === "music" ? "bg-indigo-100 group-hover:bg-indigo-200" :
-                    cat.nameEn === "collectibles" ? "bg-teal-100 group-hover:bg-teal-200" :
-                    "bg-gray-100 group-hover:bg-gray-200"
-                  } rounded-full flex items-center justify-center transition-all animate-pulse`}>
-                    {cat.nameEn === "watches" ? <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" /> :
-                     cat.nameEn === "electronics" ? <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600" /> :
-                     cat.nameEn === "clothing" ? <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600" /> :
-                     cat.nameEn === "antiques" ? <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-600" /> :
-                     cat.nameEn === "jewelry" ? <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-pink-600" /> :
-                     cat.nameEn === "music" ? <Gavel className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-indigo-600" /> :
-                     cat.nameEn === "collectibles" ? <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-teal-600" /> :
-                     <Tag className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-600" />}
-                  </div>
-                  <span className="font-medium text-xs sm:text-sm text-gray-800 group-hover:text-white transition-colors">{cat.name}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Featured Items - New Arrivals */}
       <section className="py-6 sm:py-12 bg-muted/40">
