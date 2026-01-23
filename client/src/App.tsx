@@ -52,6 +52,7 @@ const SwipePage = lazy(() => import("@/pages/swipe"));
 const AuctionsDashboard = lazy(() => import("@/pages/auctions-dashboard"));
 const MyAuctions = lazy(() => import("@/pages/my-auctions"));
 const SellerProfile = lazy(() => import("@/pages/seller-profile"));
+const NotificationsPage = lazy(() => import("@/pages/notifications"));
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -99,6 +100,7 @@ function Router() {
       <Route path="/auctions" component={AuctionsDashboard} />
       <Route path="/my-auctions" component={MyAuctions} />
       <Route path="/seller/:id" component={SellerProfile} />
+      <Route path="/notifications" component={NotificationsPage} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -79,6 +80,7 @@ export function ContactSeller({ sellerName, sellerId, listingId, productTitle, p
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
 
   const handleSend = async () => {
     if (!isAuthenticated || !user) {
@@ -135,6 +137,7 @@ export function ContactSeller({ sellerName, sellerId, listingId, productTitle, p
 
       setMessage("");
       setIsOpen(false);
+      navigate(`/messages/${sellerId}`);
     } catch (error) {
       toast({
         title: "خطأ",

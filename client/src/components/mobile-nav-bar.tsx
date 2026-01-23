@@ -37,7 +37,7 @@ export function MobileNavBar() {
     { href: "/", icon: Home, label: language === "ar" ? "الرئيسية" : "سەرەکی", testId: "nav-home", section: "home" },
     { href: "/favorites", icon: Heart, label: language === "ar" ? "المفضلة" : "دڵخوازەکان", testId: "nav-favorites", section: "favorites" },
     { href: "/swipe", icon: Play, label: language === "ar" ? "تصفح" : "گەڕان", testId: "nav-swipe", section: "swipe" },
-    { href: "/my-account?tab=notifications", icon: Bell, label: language === "ar" ? "الإشعارات" : "ئاگادارییەکان", testId: "nav-notifications", section: "notifications", badge: unreadCount },
+    { href: "/notifications", icon: Bell, label: language === "ar" ? "الإشعارات" : "ئاگادارییەکان", testId: "nav-notifications", section: "notifications", badge: unreadCount },
     { href: isAuthenticated ? "/my-account" : "/signin", icon: User, label: language === "ar" ? "حسابي" : "هەژمارەکەم", testId: "nav-account", section: "account" },
   ];
 
@@ -45,7 +45,7 @@ export function MobileNavBar() {
     if (section === "home") return location === "/" || location.startsWith("/product/") || location.startsWith("/category/");
     if (section === "favorites") return location.startsWith("/favorites");
     if (section === "swipe") return location.startsWith("/swipe");
-    if (section === "notifications") return location.includes("tab=notifications");
+    if (section === "notifications") return location.startsWith("/notifications");
     if (section === "account") return (location.startsWith("/my-account") && !location.includes("tab=notifications")) || location.startsWith("/signin") || location.startsWith("/seller") || location.startsWith("/cart") || location.startsWith("/orders") || location.startsWith("/checkout") || location.startsWith("/my-") || location.startsWith("/security") || location.startsWith("/settings");
     return false;
   };
