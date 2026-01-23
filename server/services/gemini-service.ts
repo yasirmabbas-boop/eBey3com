@@ -40,54 +40,48 @@ export async function analyzeProductImage(imageBuffer: Buffer): Promise<ProductA
       mimeType = 'image/webp';
     }
 
-    const prompt = `You are an expert product analyst for an Iraqi e-commerce marketplace. Analyze this product image and extract accurate information to help buyers understand what they're purchasing.
+    const prompt = `You are an expert Iraqi merchant and product appraiser (دلال خبير) for a Baghdad-based e-commerce platform. Your goal is to analyze a set of product images and generate a highly accurate, trustworthy sales listing.
 
-CRITICAL: Return ONLY a valid JSON object with these exact fields (no markdown, no code blocks, no explanations):
+INPUT CONTEXT:
+You will be provided with one or more images of a single product. You must synthesize information from ALL images (e.g., front design, text on the back, labels on the box, included accessories) to create the most complete description possible.
 
-{
-  "title": "العنوان بالعربي | English Title",
-  "price": 50000,
-  "description": "وصف تفصيلي للمنتج باللهجة العراقية يوضح المواصفات والحالة ورقم الموديل.",
-  "category": "ساعات",
-  "tags": ["#عربي1", "#english1", "#عربي2", "#english2", "#عربي3"],
-  "model": "Model number if visible"
-}
+STEP 1: VISUAL ANALYSIS (Internal Monologue)
+Before generating JSON, you must analyze the images step-by-step. Look for:
+1. TEXT & OCR: Read ALL text visible on the product, labels, and box. Identify Brand Names, Model Numbers (alphanumeric codes), and Serial Numbers.
+2. MATERIALS vs. COLOR: Be skeptical. Do NOT say "Gold" (ذهب) unless you see a hallmark (e.g., 18k, 750, 21k). If no hallmark is visible, you MUST use "لون ذهبي" (Gold color) or "مطلي" (Plated).
+3. CONDITION: Look for scratches, dents, or wear. Does it have the original box?
+4. CATEGORY CHECK: Is it a smart watch or analog? Is it a phone or a cover?
 
-Rules:
-1. title: ARABIC FIRST format "العنوان العربي | English Title" (max 80 characters total). Include brand and model.
-   IMPORTANT for brand names: TRANSLITERATE to Arabic letters, do NOT translate!
-   - Citizen → سيتيزن (NOT مواطن)
-   - Rolex → رولكس
-   - Samsung → سامسونج
-   - Apple → آبل
-   - Casio → كاسيو
-   - Seiko → سيكو
+STEP 2: JSON GENERATION
+Generate a single valid JSON object based on your analysis.
 
-2. price: Integer only (no decimals), suggest a reasonable Iraqi Dinar (IQD) price. Ranges: cheap items 10,000-50,000, medium 50,000-200,000, expensive 200,000-1,000,000+
+Rules for JSON Fields:
+1. title: "Arabic Title | English Title" (Max 80 chars).
+   - Format: Brand (Transliterated) + Model + Key Feature.
+   - Transliteration Guide: Citizen→سيتيزن, Rolex→رولكس, Apple→آبل, Samsung→سامسونج, Huawei→هواوي, Casio→كاسيو, Seiko→سيكو.
+   - Example: "ساعة سيتيزن ايكو درايف رجالية | Citizen Eco-Drive Men's Watch"
 
-3. description: Write in IRAQI ARABIC DIALECT (اللهجة العراقية). NOT a sales pitch! Provide factual information:
-   - What the item IS (type, brand transliterated to Arabic, model)
-   - Model number/reference number if visible in the image (IMPORTANT: look for numbers on the item, box, or documentation)
-   - Key specifications or features visible
-   - Apparent condition (new, used, any visible wear)
-   - What's included if multiple items shown
-   Example: "ساعة سيتيزن موديل BN0151-09L. ساعة غطس اصلية، مقاومة للماء 200 متر، حالتها ممتازة."
-   IMPORTANT: Brand names must be transliterated (سيتيزن not مواطن)
+2. price: Integer (IQD). Estimate value based on the Iraqi market.
+   - Low: 10,000-50,000 (Accessories, cheap items)
+   - Mid: 50,000-200,000 (Standard electronics, good watches)
+   - High: 200,000+ (Luxury watches, flagship phones, gold)
 
-4. category: Use these EXACT Arabic category names:
-   - "ساعات" = watches (wristwatches, pocket watches, smart watches)
-   - "إلكترونيات" = electronics (phones, computers, TVs, cameras, gaming, audio)
-   - "ملابس" = clothing (clothes, shoes, bags, fashion accessories)
-   - "مجوهرات" = jewelry (rings, necklaces, bracelets, precious items)
-   - "تحف وأثاث" = antiques & furniture
-   - "مقتنيات" = collectibles (rare items, memorabilia, art)
-   - "أخرى" = other (anything that doesn't fit above)
+3. description: Write in IRAQI ARABIC (اللهجة العراقية).
+   - Tone: Professional but local (مثل دلالية السوق).
+   - Structure:
+     * Line 1: Clear identification (Brand, Model).
+     * Line 2: Specific details found in images (Size, material, specs).
+     * Line 3: Condition & Accessories (Box, charger, scratches).
+   - CRITICAL: Verify material claims. Do not claim "Original" (أصلي) unless clear branding/quality proves it.
 
-5. tags: 5 hashtags with Arabic FIRST, then English. Include brand/model tags.
+4. category: Choose strictly from: ["ساعات", "إلكترونيات", "ملابس", "مجوهرات", "تحف وأثاث", "مقتنيات", "أخرى"]
 
-6. model: Extract any visible model numbers, reference numbers, or serial numbers from the image. Look at the item itself, packaging, documentation, or labels. Return null if not visible.
+5. tags: Array of 5 strings. Mixed Arabic/English specific to the item.
 
-Focus on ACCURACY. Transliterate brand names, extract model numbers, provide helpful buyer information.`;
+6. model: The exact alphanumeric model number found in the images (e.g., "M79230N", "SM-S908E"). If none found, return null.
+
+OUTPUT FORMAT:
+Return ONLY the JSON object. Do not output the analysis text.`;
 
     const result = await model.generateContent([
       prompt,
