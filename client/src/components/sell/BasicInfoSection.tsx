@@ -23,6 +23,7 @@ interface BasicInfoSectionProps {
   tagInput: string;
   language: string;
   t: (key: string) => string;
+  wasAIFilled?: boolean;
   onInputChange: (field: string, value: string) => void;
   onTagInputChange: (value: string) => void;
   onAddTag: () => void;
@@ -50,10 +51,18 @@ export function BasicInfoSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Tag className="h-5 w-5 text-primary" />
-          {language === "ar" ? "معلومات المنتج" : "زانیاری بەرهەم"}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Tag className="h-5 w-5 text-primary" />
+            {language === "ar" ? "معلومات المنتج" : "زانیاری بەرهەم"}
+          </CardTitle>
+          {wasAIFilled && (
+            <Badge variant="secondary" className="gap-1">
+              <span>✨</span>
+              {language === "ar" ? "تم ملؤه بالذكاء الاصطناعي" : "پڕکرایەوە بە AI"}
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">

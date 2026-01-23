@@ -75,6 +75,8 @@ export default function SellWizardPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  const [wasAIFilled, setWasAIFilled] = useState(false);
   
   const [images, setImages] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
@@ -321,6 +323,88 @@ export default function SellWizardPage() {
       });
     } finally {
       setIsUploadingImages(false);
+    }
+  };
+
+  const analyzeImageWithAI = async () => {
+    if (images.length === 0) {
+      toast({
+        title: language === "ar" ? "لا توجد صورة" : "وێنە نییە",
+        description: language === "ar" 
+          ? "الرجاء رفع صورة أولاً" 
+          : "تکایە یەکەم جار وێنە بارکە",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzingImage(true);
+
+    try {
+      // Fetch the first image as blob
+      const imageUrl = images[0];
+      // Handle both relative and absolute URLs
+      const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${window.location.origin}${imageUrl}`;
+      const response = await fetch(fullImageUrl);
+      
+      if (!response.ok) {
+        throw new Error('فشل تحميل الصورة');
+      }
+      
+      const blob = await response.blob();
+      
+      // Create FormData and send to AI endpoint
+      const formData = new FormData();
+      formData.append('image', blob, 'product.jpg');
+      
+      const aiResponse = await fetch('/api/analyze-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!aiResponse.ok) {
+        throw new Error('فشل تحليل الصورة');
+      }
+      
+      const analysis = await aiResponse.json();
+      
+      // Map AI category to Arabic
+      const categoryMap: Record<string, string> = {
+        'Clothing': 'ملابس',
+        'Electronics': 'إلكترونيات',
+        'Home': 'تحف وأثاث',
+        'Other': 'أخرى'
+      };
+      
+      // Auto-fill form fields (excluding price - seller sets manually)
+      setFormData(prev => ({
+        ...prev,
+        title: analysis.title,
+        description: analysis.description,
+        category: categoryMap[analysis.category] || 'أخرى',
+      }));
+      
+      // Set tags (remove # prefix for display)
+      setTags(analysis.tags.map((tag: string) => tag.replace('#', '')));
+      setWasAIFilled(true);
+      
+      toast({
+        title: language === "ar" ? "تم التعبئة التلقائية! ✨" : "پڕکرایەوە بە شێوەی خۆکار! ✨",
+        description: language === "ar"
+          ? "تم ملء الحقول بواسطة الذكاء الاصطناعي. يمكنك التعديل عليها."
+          : "خانەکان پڕکرانەوە بە هۆکاری زیرەکی دەستکرد. دەتوانیت دەستکاریان بکەیت.",
+      });
+    } catch (error) {
+      console.error('AI analysis error:', error);
+      toast({
+        title: language === "ar" ? "فشل التحليل" : "شکستی شیکاری",
+        description: language === "ar"
+          ? "حدث خطأ أثناء تحليل الصورة. حاول مرة أخرى."
+          : "هەڵەیەک ڕوویدا لە کاتی شیکردنەوەی وێنە. دووبارە هەوڵ بدەوە.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzingImage(false);
     }
   };
 
@@ -625,11 +709,13 @@ export default function SellWizardPage() {
             <ImageUploadSection
               images={images}
               isUploadingImages={isUploadingImages}
+              isAnalyzingImage={isAnalyzingImage}
               validationErrors={{}}
               language={language}
               onImageUpload={handleImageUpload}
               onRemoveImage={removeImage}
-              onCameraClick={handleNativeCamera}
+              onCameraClick={isNative ? handleNativeCamera : undefined}
+              onAIAnalyze={analyzeImageWithAI}
             />
             {images.length === 0 && (
               <p className="text-center text-amber-600 text-sm">
@@ -640,6 +726,17 @@ export default function SellWizardPage() {
 
           {/* Step 2: Product Info */}
           <div className="space-y-6">
+            {wasAIFilled && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
+                <Badge variant="secondary" className="gap-1">
+                  <span>✨</span>
+                  {language === "ar" ? "تم ملؤه بالذكاء الاصطناعي" : "پڕکرایەوە بە AI"}
+                </Badge>
+                <p className="text-sm text-blue-700">
+                  {language === "ar" ? "يمكنك تعديل الحقول أدناه" : "دەتوانیت خانەکان دەستکاری بکەیت"}
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>{t("productTitle")} *</Label>
               <Input 

@@ -8,21 +8,25 @@ import { isNative } from "@/lib/capacitor";
 interface ImageUploadSectionProps {
   images: string[];
   isUploadingImages: boolean;
+  isAnalyzingImage?: boolean;
   validationErrors: Record<string, string>;
   language: string;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveImage: (index: number) => void;
   onCameraClick?: () => void;
+  onAIAnalyze?: () => void;
 }
 
 export function ImageUploadSection({
   images,
   isUploadingImages,
+  isAnalyzingImage,
   validationErrors,
   language,
   onImageUpload,
   onRemoveImage,
   onCameraClick,
+  onAIAnalyze,
 }: ImageUploadSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -93,6 +97,31 @@ export function ImageUploadSection({
             >
               <Camera className="ml-2 h-4 w-4" />
               {language === "ar" ? "التقط صورة بالكاميرا" : "وێنە بگرە بە کامێرا"}
+            </Button>
+          </div>
+        )}
+
+        {/* AI Smart Fill button - show after first image */}
+        {images.length > 0 && onAIAnalyze && (
+          <div className="mt-4">
+            <Button
+              type="button"
+              onClick={onAIAnalyze}
+              disabled={isUploadingImages || isAnalyzingImage}
+              className="w-full"
+              variant="default"
+            >
+              {isAnalyzingImage ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  {language === "ar" ? "جاري التحليل..." : "شیکردنەوە..."}
+                </>
+              ) : (
+                <>
+                  <ImagePlus className="ml-2 h-4 w-4" />
+                  {language === "ar" ? "🤖 ملء تلقائي ذكي" : "🤖 پڕکردنەوەی زیرەکانە"}
+                </>
+              )}
             </Button>
           </div>
         )}
