@@ -6,6 +6,7 @@ export interface ProductAnalysis {
   description: string;
   category: 'Clothing' | 'Home' | 'Electronics' | 'Other';
   tags: string[];
+  model: string | null;
 }
 
 const apiKey = process.env.GEMINI_API_KEY;
@@ -39,26 +40,43 @@ export async function analyzeProductImage(imageBuffer: Buffer): Promise<ProductA
       mimeType = 'image/webp';
     }
 
-    const prompt = `You are an expert product listing assistant for an Iraqi e-commerce marketplace. Analyze this product image and generate listing data to help sellers list their items faster.
+    const prompt = `You are an expert product analyst for an Iraqi e-commerce marketplace. Analyze this product image and extract accurate information to help buyers understand what they're purchasing.
 
 CRITICAL: Return ONLY a valid JSON object with these exact fields (no markdown, no code blocks, no explanations):
 
 {
   "title": "Bilingual title - English | العنوان بالعربي",
   "price": 50000,
-  "description": "وصف المنتج باللهجة العراقية. جملتين تقنع المشتري بشراء المنتج.",
+  "description": "وصف تفصيلي للمنتج باللهجة العراقية يوضح المواصفات والحالة.",
   "category": "One of: Clothing, Home, Electronics, or Other",
-  "tags": ["#english1", "#عربي1", "#english2", "#عربي2", "#english3"]
+  "tags": ["#english1", "#عربي1", "#english2", "#عربي2", "#english3"],
+  "model": "Model number if visible (e.g., iPhone 14 Pro, Rolex Submariner 116610)"
 }
 
 Rules:
-1. title: Bilingual format "English Title | العنوان العربي" (max 80 characters total). Include both English and Arabic versions separated by |
-2. price: Integer only (no decimals), suggest a reasonable Iraqi Dinar (IQD) price based on the item's apparent quality and type. Common ranges: cheap items 10,000-50,000, medium 50,000-200,000, expensive 200,000-1,000,000+
-3. description: Write in IRAQI ARABIC DIALECT (اللهجة العراقية). Exactly 2 sentences that would convince an Iraqi buyer to purchase. Use casual Iraqi expressions.
-4. category: Must be one of: Clothing, Home, Electronics, Other
-5. tags: Exactly 5 hashtags - mix of English AND Arabic tags (include #, no spaces in tags). Example: #vintage, #عتيق, #electronics, #الكترونيات, #iphoneلايفون
+1. title: Bilingual format "English Title | العنوان العربي" (max 80 characters total). Include the model/brand name if visible.
 
-Analyze the image carefully and create compelling, accurate listing data for the Iraqi market.`;
+2. price: Integer only (no decimals), suggest a reasonable Iraqi Dinar (IQD) price. Ranges: cheap items 10,000-50,000, medium 50,000-200,000, expensive 200,000-1,000,000+
+
+3. description: Write in IRAQI ARABIC DIALECT (اللهجة العراقية). NOT a sales pitch! Instead, describe:
+   - What the item IS (type, brand, model if visible)
+   - Key specifications or features visible in the image
+   - Apparent condition (new, used, any visible wear)
+   - What's included if multiple items shown
+   Example: "ساعة رولكس سبمارينر موديل 116610. الساعة اصلية وحالتها ممتازة، الكريستال نظيف بدون خدوش."
+
+4. category: IMPORTANT - Choose correctly:
+   - "Clothing" = ONLY clothes, shoes, bags, fashion accessories worn on body
+   - "Electronics" = phones, computers, TVs, cameras, gaming consoles, audio equipment
+   - "Home" = furniture, kitchenware, decor, appliances, tools
+   - "Other" = watches, jewelry, collectibles, sports equipment, vehicles, anything else
+   NOTE: Watches are "Other", NOT "Clothing"!
+
+5. tags: 5 hashtags mixing English AND Arabic. Include brand/model tags if applicable.
+
+6. model: Look carefully for any model numbers, serial numbers, or specific product names visible on the item or packaging. For watches, look for reference numbers. For electronics, look for model names. Return null if not visible.
+
+Focus on ACCURACY and helpful buyer information, not marketing language.`;
 
     const result = await model.generateContent([
       prompt,
