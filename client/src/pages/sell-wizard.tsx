@@ -208,8 +208,23 @@ export default function SellWizardPage() {
     }
   }, [sourceListing, isEditMode, user?.displayName]);
 
+  const convertArabicNumerals = (input: string): string => {
+    const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    let result = input;
+    arabicNumerals.forEach((arabic, index) => {
+      result = result.replace(new RegExp(arabic, 'g'), index.toString());
+    });
+    return result;
+  };
+
+  const numericFields = ['price', 'buyNowPrice', 'reservePrice', 'shippingCost', 'quantityAvailable'];
+
   const handleInputChange = useCallback((field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    let processedValue = value;
+    if (numericFields.includes(field)) {
+      processedValue = convertArabicNumerals(value);
+    }
+    setFormData(prev => ({ ...prev, [field]: processedValue }));
   }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
