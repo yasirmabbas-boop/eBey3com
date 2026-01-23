@@ -39,26 +39,26 @@ export async function analyzeProductImage(imageBuffer: Buffer): Promise<ProductA
       mimeType = 'image/webp';
     }
 
-    const prompt = `You are an expert product listing assistant for an e-commerce marketplace. Analyze this product image and generate listing data to help sellers list their items faster.
+    const prompt = `You are an expert product listing assistant for an Iraqi e-commerce marketplace. Analyze this product image and generate listing data to help sellers list their items faster.
 
 CRITICAL: Return ONLY a valid JSON object with these exact fields (no markdown, no code blocks, no explanations):
 
 {
-  "title": "A catchy, descriptive product title (max 50 characters)",
-  "price": 50,
-  "description": "A compelling 2-sentence sales pitch highlighting key features and benefits.",
+  "title": "Bilingual title - English | العنوان بالعربي",
+  "price": 50000,
+  "description": "وصف المنتج باللهجة العراقية. جملتين تقنع المشتري بشراء المنتج.",
   "category": "One of: Clothing, Home, Electronics, or Other",
-  "tags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"]
+  "tags": ["#english1", "#عربي1", "#english2", "#عربي2", "#english3"]
 }
 
 Rules:
-1. title: Must be 50 characters or less, catchy and descriptive
-2. price: Integer only (no decimals), suggest a reasonable USD price based on the item's apparent quality and type
-3. description: Exactly 2 sentences that would convince a buyer to purchase
+1. title: Bilingual format "English Title | العنوان العربي" (max 80 characters total). Include both English and Arabic versions separated by |
+2. price: Integer only (no decimals), suggest a reasonable Iraqi Dinar (IQD) price based on the item's apparent quality and type. Common ranges: cheap items 10,000-50,000, medium 50,000-200,000, expensive 200,000-1,000,000+
+3. description: Write in IRAQI ARABIC DIALECT (اللهجة العراقية). Exactly 2 sentences that would convince an Iraqi buyer to purchase. Use casual Iraqi expressions.
 4. category: Must be one of: Clothing, Home, Electronics, Other
-5. tags: Exactly 5 relevant hashtags (include #, no spaces in tags)
+5. tags: Exactly 5 hashtags - mix of English AND Arabic tags (include #, no spaces in tags). Example: #vintage, #عتيق, #electronics, #الكترونيات, #iphoneلايفون
 
-Analyze the image carefully and create compelling, accurate listing data.`;
+Analyze the image carefully and create compelling, accurate listing data for the Iraqi market.`;
 
     const result = await model.generateContent([
       prompt,
