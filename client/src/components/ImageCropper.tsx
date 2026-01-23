@@ -85,15 +85,7 @@ export function ImageCropper({
     const cropWidth = completedCrop.width * scaleX;
     const cropHeight = completedCrop.height * scaleY;
 
-    const rotRad = (rotation * Math.PI) / 180;
-
-    if (rotation === 90 || rotation === -270) {
-      canvas.width = cropHeight;
-      canvas.height = cropWidth;
-    } else if (rotation === 180 || rotation === -180) {
-      canvas.width = cropWidth;
-      canvas.height = cropHeight;
-    } else if (rotation === 270 || rotation === -90) {
+    if (Math.abs(rotation) === 90 || Math.abs(rotation) === 270) {
       canvas.width = cropHeight;
       canvas.height = cropWidth;
     } else {
@@ -103,57 +95,19 @@ export function ImageCropper({
 
     ctx.save();
     ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.rotate(rotRad);
+    ctx.rotate((rotation * Math.PI) / 180);
 
-    if (rotation === 90 || rotation === -270) {
-      ctx.drawImage(
-        image,
-        cropX,
-        cropY,
-        cropWidth,
-        cropHeight,
-        -cropWidth / 2,
-        -cropHeight / 2,
-        cropWidth,
-        cropHeight
-      );
-    } else if (rotation === 180 || rotation === -180) {
-      ctx.drawImage(
-        image,
-        cropX,
-        cropY,
-        cropWidth,
-        cropHeight,
-        -cropWidth / 2,
-        -cropHeight / 2,
-        cropWidth,
-        cropHeight
-      );
-    } else if (rotation === 270 || rotation === -90) {
-      ctx.drawImage(
-        image,
-        cropX,
-        cropY,
-        cropWidth,
-        cropHeight,
-        -cropWidth / 2,
-        -cropHeight / 2,
-        cropWidth,
-        cropHeight
-      );
-    } else {
-      ctx.drawImage(
-        image,
-        cropX,
-        cropY,
-        cropWidth,
-        cropHeight,
-        -cropWidth / 2,
-        -cropHeight / 2,
-        cropWidth,
-        cropHeight
-      );
-    }
+    ctx.drawImage(
+      image,
+      cropX,
+      cropY,
+      cropWidth,
+      cropHeight,
+      -cropWidth / 2,
+      -cropHeight / 2,
+      cropWidth,
+      cropHeight
+    );
 
     ctx.restore();
 
@@ -176,14 +130,6 @@ export function ImageCropper({
     const croppedUrl = await getCroppedImg();
     onCropComplete(croppedUrl);
     onClose();
-  };
-
-  const handleReset = () => {
-    setRotation(0);
-    if (imgRef.current) {
-      const { width, height } = imgRef.current;
-      setCrop(centerAspectCrop(width, height, 1));
-    }
   };
 
   return (
