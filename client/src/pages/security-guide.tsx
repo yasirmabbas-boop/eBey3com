@@ -87,11 +87,11 @@ export default function SecurityGuide() {
               <div>
                 <h3 className="font-bold text-xl mb-2">التحقق من الروابط</h3>
                 <p className="text-gray-600 mb-4">
-                  تأكد دائماً من أنك تتصفح الموقع الرسمي <strong>eby3.iq</strong> ولا تضغط على روابط مشبوهة.
+                  تأكد دائماً من أنك تتصفح الموقع الرسمي <strong>ebey3.com</strong> ولا تضغط على روابط مشبوهة.
                 </p>
                 <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-2 rounded">
                   <Lock className="h-4 w-4" />
-                  <span className="text-sm font-semibold">https://eby3.iq</span>
+                  <span className="text-sm font-semibold">https://ebey3.com</span>
                 </div>
               </div>
             </div>

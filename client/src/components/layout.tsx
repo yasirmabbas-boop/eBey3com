@@ -201,7 +201,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
           </div>
           
           <div className="mt-6 pt-4 border-t border-gray-800 text-center text-xs">
-            © 2024 اي بيع. جميع الحقوق محفوظة.
+            © 2025 اي بيع. جميع الحقوق محفوظة.
           </div>
         </div>
       </footer>

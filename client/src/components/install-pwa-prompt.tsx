@@ -73,9 +73,14 @@ export function InstallPWAPrompt() {
 
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
     
-    // For iOS, always show the prompt (no dismiss memory) until installed
+    // For iOS, check if previously dismissed
     if (isIOSDevice && !isInStandaloneMode) {
-      addDebugLog('iOS device detected - showing manual install instructions (persistent)');
+      const dismissed = localStorage.getItem(DISMISSED_KEY);
+      if (dismissed && !debugEnabled) {
+        addDebugLog('iOS prompt previously dismissed by user');
+        return;
+      }
+      addDebugLog('iOS device detected - showing manual install instructions');
       setIsIOS(true);
       setShowPrompt(true);
       return;
@@ -157,11 +162,8 @@ export function InstallPWAPrompt() {
 
   const handleDismiss = () => {
     addDebugLog('User dismissed prompt manually');
-    // For iOS, only hide for this session (will show again on next visit)
-    // For non-iOS, remember the dismissal permanently
-    if (!isIOS) {
-      localStorage.setItem(DISMISSED_KEY, "true");
-    }
+    // Remember dismissal for both iOS and non-iOS
+    localStorage.setItem(DISMISSED_KEY, "true");
     setShowPrompt(false);
   };
 
