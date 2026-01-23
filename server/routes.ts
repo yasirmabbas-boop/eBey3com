@@ -13,8 +13,10 @@ import { financialService } from "./services/financial-service";
 import { deliveryService } from "./services/delivery-service";
 import { deliveryApi, DeliveryWebhookPayload } from "./services/delivery-api";
 import { ObjectStorageService } from "./replit_integrations/object_storage/objectStorage";
+import { analyzeProductImage } from "./services/gemini-service";
 
 const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+const imageUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const OG_IMAGE_WIDTH = 1200;
 const OG_IMAGE_HEIGHT = 630;
@@ -599,6 +601,46 @@ export async function registerRoutes(
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", "attachment; filename=ebay_iraq_template.csv");
     res.send("\uFEFF" + csvContent); // BOM for Excel Arabic support
+  });
+
+  // AI-powered image analysis for product listing
+  app.post("/api/analyze-image", imageUpload.single("image"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Image file is required" });
+      }
+
+      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedMimeTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ 
+          error: "Invalid image format. Only JPEG, PNG, and WebP are supported" 
+        });
+      }
+
+      console.log(`[analyze-image] Processing image: ${req.file.mimetype}, ${(req.file.size / 1024).toFixed(1)}KB`);
+
+      const analysis = await analyzeProductImage(req.file.buffer);
+
+      console.log(`[analyze-image] Analysis complete: ${analysis.title} - ${analysis.category}`);
+
+      res.json(analysis);
+    } catch (error) {
+      console.error("[analyze-image] Error:", error);
+      
+      if (error instanceof Error) {
+        if (error.message.includes("GEMINI_API_KEY")) {
+          return res.status(500).json({ 
+            error: "Configuration error: API key not set" 
+          });
+        }
+        return res.status(500).json({ 
+          error: "Failed to analyze image",
+          details: error.message 
+        });
+      }
+      
+      res.status(500).json({ error: "Failed to analyze image" });
+    }
   });
 
   app.patch("/api/listings/:id", async (req, res) => {
