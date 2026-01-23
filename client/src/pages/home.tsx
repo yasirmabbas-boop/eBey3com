@@ -500,7 +500,7 @@ export default function Home() {
             سوق العراق الأول
           </Badge>
           <h2 className="text-xl sm:text-2xl md:text-4xl font-bold mb-3 sm:mb-4 leading-tight px-4">
-            اكتشف <span className="text-accent">المنتجات المميزة</span>
+            اكتشف <span className="text-accent">آلاف المنتجات المميزة</span>
           </h2>
           <p className="text-sm sm:text-lg opacity-90 mb-4 sm:mb-6 max-w-xl mx-auto px-4">
             سجل الآن وابدأ التسوق من أفضل البائعين في العراق
