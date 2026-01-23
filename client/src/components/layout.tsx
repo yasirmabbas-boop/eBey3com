@@ -1,24 +1,16 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, Loader2, Plus, Store, LogOut, HelpCircle, Share2, Languages } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ShoppingCart, User, Loader2, Plus, Store, LogOut, HelpCircle } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { AccountDropdown } from "@/components/account-dropdown";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
 import { ImageSearchModal } from "@/components/image-search-modal";
-import { NotificationsButton } from "@/components/notifications";
 import { SmartSearch } from "@/components/smart-search";
 import { BackButton } from "@/components/back-button";
 import { TutorialTrigger } from "@/components/onboarding-tutorial";
 import { useLanguage } from "@/lib/i18n";
-import { nativeShare, isDespia } from "@/lib/despia";
 import { isNative } from "@/lib/capacitor";
 
 // Feature flag for exchange option - set to true to enable
@@ -35,29 +27,6 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
 
-  const handleShareSite = async () => {
-    const shareData = {
-      title: "E-بيع - سوق العراق الإلكتروني",
-      message: "تسوق واشتري أفضل المنتجات في العراق",
-      url: window.location.origin,
-    };
-    
-    // Use native sharing when in Despia
-    if (isDespia()) {
-      await nativeShare(shareData);
-    } else if (navigator.share) {
-      try {
-        await navigator.share({ title: shareData.title, text: shareData.message, url: shareData.url });
-      } catch (err) {
-        // User cancelled or error
-      }
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.origin);
-      alert("تم نسخ الرابط!");
-    }
-  };
-
   const isRtl = language === "ar" || language === "ku";
 
   return (
@@ -66,10 +35,15 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 
-      {/* Combined Top Bar */}
+      {/* Combined Top Bar with Logo */}
       {!hideHeader && (
-      <div className={`despia-topbar ${isAuthenticated && user?.sellerApproved ? 'bg-emerald-600/95' : 'bg-primary'} text-white py-2 px-4 text-[13px] font-semibold shadow-[var(--shadow-1)]`}>
+      <div className={`despia-topbar ${isAuthenticated && user?.sellerApproved ? 'bg-emerald-600/95' : 'bg-primary'} text-white py-2 px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]`}>
         <div className="container mx-auto flex justify-between items-center">
+          {/* Logo - Now in top bar */}
+          <Link href="/" className="flex-shrink-0 flex items-center">
+            <Logo className="h-8 md:h-10 brightness-0 invert" />
+          </Link>
+
           {/* Navigation Links - Desktop only */}
           <div className="hidden md:flex items-center gap-6">
             <Link href="/" className="hover:opacity-80 transition-colors font-medium">{t("home")}</Link>
@@ -80,7 +54,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
           </div>
           
           {/* User Actions */}
-          <div className="flex items-center gap-3.5 mr-auto">
+          <div className="flex items-center gap-2 sm:gap-3">
             {isAuthenticated ? (
               <>
                 <span className="hidden sm:flex items-center gap-2 font-bold text-base">
@@ -104,7 +78,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                 {user?.sellerApproved && (
                   <Link 
                     href="/sell" 
-                    className="bg-white/95 text-primary hover:bg-white px-4 py-1.5 rounded-full font-bold flex items-center gap-2 transition-colors text-sm shadow-[var(--shadow-1)]"
+                    className="hidden sm:flex bg-white/95 text-primary hover:bg-white px-4 py-1.5 rounded-full font-bold items-center gap-2 transition-colors text-sm shadow-[var(--shadow-1)]"
                     data-testid="button-sell-item"
                   >
                     <Plus className="h-4 w-4" />
@@ -114,45 +88,31 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
               </>
             ) : (
               !isLoading && (
-                <Link href="/signin" className="hover:opacity-80 transition-colors flex items-center gap-1.5 text-base font-medium" data-testid="button-login">
+                <Link href="/signin" className="hover:opacity-80 transition-colors flex items-center gap-1.5 text-sm font-medium" data-testid="button-login">
                   <User className="h-4 w-4" />
-                  {t("login")}
+                  <span className="hidden sm:inline">{t("login")}</span>
                 </Link>
               )
             )}
-            <div className="flex items-center gap-2">
-              <Languages className="h-4 w-4 text-white/90" />
-              <Select
-                value={language}
-                onValueChange={(value) => {
-                  // #region agent log
-                  fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H4',location:'components/layout.tsx:languageSelect',message:'language select changed',data:{value},timestamp:Date.now()})}).catch(()=>{});
-                  // #endregion agent log
-                  setLanguage(value as typeof language);
-                }}
-              >
-                <SelectTrigger
-                  className="h-8 w-[130px] bg-white/95 text-primary border-0 shadow-[var(--shadow-1)] text-xs font-bold"
-                  data-testid="select-language"
-                >
-                  <SelectValue placeholder={t("language")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ar">{t("arabic")}</SelectItem>
-                  <SelectItem value="ku">{t("kurdish")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <button
-              onClick={handleShareSite}
-              className="hover:opacity-80 transition-colors flex items-center gap-2"
-              data-testid="button-share-site"
-              title={t("shareSite")}
+            {/* Compact Language Switcher */}
+            <Select
+              value={language}
+              onValueChange={(value) => {
+                setLanguage(value as typeof language);
+              }}
             >
-              <Share2 className="h-4 w-4" />
-            </button>
-            <NotificationsButton />
-            <Link href="/cart" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-colors" data-testid="link-cart">
+              <SelectTrigger
+                className="h-6 w-14 bg-white/20 text-white border-0 text-[10px] font-bold px-2"
+                data-testid="select-language"
+              >
+                <SelectValue placeholder={language === "ar" ? "AR" : "کو"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ar">AR</SelectItem>
+                <SelectItem value="ku">کو</SelectItem>
+              </SelectContent>
+            </Select>
+            <Link href="/cart" className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-colors" data-testid="link-cart">
               <ShoppingCart className="h-4 w-4" />
               {totalItems > 0 && (
                 <span className="bg-red-500 text-white text-[10px] rounded-full px-1.5 h-4 flex items-center justify-center font-bold">{totalItems > 99 ? '99+' : totalItems}</span>
@@ -163,53 +123,16 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       </div>
       )}
 
-      {/* Main Header */}
+      {/* Main Header - Search Only */}
       {!hideHeader && (
       <header className="sticky top-0 z-50 glass-surface border-b border-border/60 shadow-[var(--shadow-1)]">
-        <div className="container mx-auto px-4 py-3.5">
-          {/* Top Row: Menu/Back on right, Logo, Search on left */}
-          <div className="flex items-center gap-3 md:gap-4">
-            {/* Back Button - Mobile, Right side */}
-            <BackButton className="md:hidden" />
+        <div className="container mx-auto px-3 py-2">
+          {/* Full Width Search Bar */}
+          <div className="flex items-center gap-2">
+            {/* Back Button - Mobile */}
+            <BackButton className="md:hidden flex-shrink-0" />
 
-            {/* Mobile Menu - Right side */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden -mr-2">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right">
-                <nav className="flex flex-col gap-4 mt-8">
-                  <Link href="/" className="text-lg font-semibold">{t("home")}</Link>
-                  <Link href="/search" className="text-lg">{t("search")}</Link>
-                  {isAuthenticated && (
-                    <>
-                      <Link href="/my-account" className="text-lg text-primary font-semibold">{t("myAccount")}</Link>
-                      {user?.sellerApproved && (
-                        <>
-                          <Link href="/seller-dashboard" className="text-lg">{t("sellerDashboard")}</Link>
-                          <Link href="/sell" className="text-lg">{t("addProduct")}</Link>
-                        </>
-                      )}
-                      <Link href="/my-purchases" className="text-lg">{t("myPurchases")}</Link>
-                      <Link href="/messages" className="text-lg">{language === "ar" ? "الرسائل" : "پەیامەکان"}</Link>
-                      <Link href="/settings" className="text-lg">{t("settings")}</Link>
-                    </>
-                  )}
-                  {!isAuthenticated && (
-                    <Link href="/signin" className="text-lg text-primary font-semibold">{t("login")}</Link>
-                  )}
-                </nav>
-              </SheetContent>
-            </Sheet>
-
-            {/* Logo */}
-            <Link href="/" className="flex-shrink-0 flex items-center">
-              <Logo className="h-10 md:h-12" />
-            </Link>
-
-            {/* Search Bar - Flexible width */}
+            {/* Search Bar - Full width */}
             <div className="flex-1">
               <SmartSearch 
                 onImageSearchClick={() => setImageSearchOpen(true)}
