@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, ChevronLeft, ChevronRight, Home, Search, ShoppingCart, MessageCircle, User, Gavel, Tag, Shield, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface TutorialStep {
   id: string;
@@ -113,6 +114,11 @@ export function OnboardingTutorial() {
     setIsOpen(false);
   };
 
+  const handleRestart = () => {
+    setCurrentStep(0);
+    setIsOpen(true);
+  };
+
   const step = TUTORIAL_STEPS[currentStep];
   const progress = ((currentStep + 1) / TUTORIAL_STEPS.length) * 100;
 
@@ -120,114 +126,128 @@ export function OnboardingTutorial() {
     return null;
   }
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <>
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] animate-in fade-in duration-300"
-        onClick={handleSkip}
-      />
-      <div
-        className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto bg-card rounded-2xl shadow-[var(--shadow-3)] z-[101] overflow-hidden soft-border animate-in zoom-in-95 fade-in duration-300"
-        dir="rtl"
-      >
-        <div className="h-1 bg-muted/60">
-          <div
-            className="h-full bg-primary transition-all duration-300"
-            style={{ width: `${progress}%` }}
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            onClick={handleSkip}
           />
-        </div>
-
-        <button
-          onClick={handleSkip}
-          className="absolute top-3 left-3 p-2 rounded-full hover:bg-muted/60 transition-colors"
-          data-testid="button-skip-tutorial"
-        >
-          <X className="h-5 w-5 text-muted-foreground" />
-        </button>
-
-        <div className="p-6 pt-8">
-          <div className="flex justify-center mb-4">
-            <div
-              key={step.id}
-              className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center animate-in zoom-in duration-200"
-            >
-              {step.icon}
-            </div>
-          </div>
-
-          <div
-            key={step.id + "-content"}
-            className="animate-in slide-in-from-right-2 duration-200"
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto bg-card rounded-2xl shadow-[var(--shadow-3)] z-[101] overflow-hidden soft-border"
+            dir="rtl"
           >
-            <h3 className="text-xl font-bold text-center text-foreground mb-2">
-              {step.title}
-            </h3>
-            <p className="text-muted-foreground text-center leading-relaxed mb-6">
-              {step.description}
-            </p>
-          </div>
-
-          <div className="flex justify-center gap-1.5 mb-6">
-            {TUTORIAL_STEPS.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentStep(index)}
-                className={`h-2 rounded-full transition-all ${
-                  index === currentStep
-                    ? "bg-primary w-4"
-                    : index < currentStep
-                    ? "bg-primary/40 w-2"
-                    : "bg-muted-foreground/30 w-2"
-                }`}
-                data-testid={`button-step-${index}`}
+            <div className="h-1 bg-muted/60">
+              <motion.div
+                className="h-full bg-primary"
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.3 }}
               />
-            ))}
-          </div>
+            </div>
 
-          <div className="flex gap-3">
-            {currentStep > 0 && (
-              <Button
-                variant="outline"
-                onClick={handlePrev}
-                className="flex-1"
-                data-testid="button-prev-step"
-              >
-                <ChevronRight className="h-4 w-4 ml-1" />
-                السابق
-              </Button>
-            )}
-            <Button
-              onClick={handleNext}
-              className={`flex-1 ${currentStep === 0 ? "w-full" : ""}`}
-              data-testid="button-next-step"
-            >
-              {currentStep === TUTORIAL_STEPS.length - 1 ? (
-                "ابدأ التسوق"
-              ) : (
-                <>
-                  التالي
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                </>
-              )}
-            </Button>
-          </div>
-
-          {currentStep === 0 && (
             <button
               onClick={handleSkip}
-              className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="button-skip-intro"
+              className="absolute top-3 left-3 p-2 rounded-full hover:bg-muted/60 transition-colors"
+              data-testid="button-skip-tutorial"
             >
-              تخطي الدليل
+              <X className="h-5 w-5 text-muted-foreground" />
             </button>
-          )}
-        </div>
-      </div>
-    </>
+
+            <div className="p-6 pt-8">
+              <div className="flex justify-center mb-4">
+                <motion.div
+                  key={step.id}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", damping: 15 }}
+                  className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center"
+                >
+                  {step.icon}
+                </motion.div>
+              </div>
+
+              <motion.div
+                key={step.id + "-content"}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <h3 className="text-xl font-bold text-center text-foreground mb-2">
+                  {step.title}
+                </h3>
+                <p className="text-muted-foreground text-center leading-relaxed mb-6">
+                  {step.description}
+                </p>
+              </motion.div>
+
+              <div className="flex justify-center gap-1.5 mb-6">
+                {TUTORIAL_STEPS.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentStep(index)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === currentStep
+                        ? "bg-primary w-4"
+                        : index < currentStep
+                        ? "bg-primary/40"
+                        : "bg-muted-foreground/30"
+                    }`}
+                    data-testid={`button-step-${index}`}
+                  />
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                {currentStep > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={handlePrev}
+                    className="flex-1"
+                    data-testid="button-prev-step"
+                  >
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                    السابق
+                  </Button>
+                )}
+                <Button
+                  onClick={handleNext}
+                  className={`flex-1 ${currentStep === 0 ? "w-full" : ""}`}
+                  data-testid="button-next-step"
+                >
+                  {currentStep === TUTORIAL_STEPS.length - 1 ? (
+                    "ابدأ التسوق"
+                  ) : (
+                    <>
+                      التالي
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {currentStep === 0 && (
+                <button
+                  onClick={handleSkip}
+                  className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  data-testid="button-skip-intro"
+                >
+                  تخطي الدليل
+                </button>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }
 

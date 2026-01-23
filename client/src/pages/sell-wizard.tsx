@@ -270,48 +270,6 @@ export default function SellWizardPage() {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleImageEdit = async (index: number, croppedImageUrl: string) => {
-    setIsUploadingImages(true);
-    try {
-      const response = await fetch(croppedImageUrl);
-      const blob = await response.blob();
-      const file = new File([blob], `cropped-${Date.now()}.jpg`, { type: "image/jpeg" });
-      
-      const formData = new FormData();
-      formData.append("images", file);
-
-      const uploadResponse = await fetch("/api/uploads/optimized", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error(language === "ar" ? "فشل في رفع الصورة المعدلة" : "شکست لە بارکردنی وێنەی دەستکاریکراو");
-      }
-
-      const result = await uploadResponse.json();
-      const newImagePath = result.images[0].main;
-      
-      setImages(prev => prev.map((img, i) => i === index ? newImagePath : img));
-      
-      URL.revokeObjectURL(croppedImageUrl);
-      
-      toast({
-        title: language === "ar" ? "تم تعديل الصورة" : "وێنە دەستکاری کرا",
-        description: language === "ar" ? "تم حفظ التعديلات بنجاح" : "گۆڕانکارییەکان بە سەرکەوتوویی پاشەکەوت کران",
-      });
-    } catch (error) {
-      console.error("Image edit error:", error);
-      toast({
-        title: language === "ar" ? "خطأ في تعديل الصورة" : "هەڵە لە دەستکاری وێنە",
-        description: error instanceof Error ? error.message : (language === "ar" ? "حدث خطأ أثناء تعديل الصورة" : "هەڵەیەک ڕوویدا لە کاتی دەستکاری وێنە"),
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploadingImages(false);
-    }
-  };
-
   const handleNativeCamera = async () => {
     if (!isNative) return;
 
@@ -756,7 +714,6 @@ export default function SellWizardPage() {
               language={language}
               onImageUpload={handleImageUpload}
               onRemoveImage={removeImage}
-              onImageEdit={handleImageEdit}
               onCameraClick={isNative ? handleNativeCamera : undefined}
               onAIAnalyze={analyzeImageWithAI}
             />
