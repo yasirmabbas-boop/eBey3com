@@ -98,11 +98,15 @@ Focus on ACCURACY and helpful buyer information, not marketing language.`;
       analysis.category = 'Other';
     }
     
-    if (analysis.title.length > 50) {
-      analysis.title = analysis.title.substring(0, 47) + '...';
+    if (analysis.title.length > 80) {
+      analysis.title = analysis.title.substring(0, 77) + '...';
     }
     
     analysis.price = Math.round(analysis.price);
+    
+    if (!analysis.model || analysis.model === 'null' || analysis.model === '') {
+      analysis.model = null;
+    }
     
     if (!Array.isArray(analysis.tags)) {
       analysis.tags = [];
