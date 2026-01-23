@@ -1,0 +1,341 @@
+Skip to content
+
+Files
+Commands
+.git
+attached_assets
+client
+script
+server
+shared
+.gitignore
+components.json
+drizzle.config.ts
+postcss.config.js
+tsconfig.json
+vite-plugin-meta-images.ts
+vite.config.ts
+Packager files
+node_modules
+package-lock.json
+package.json
+Config files
+.replit
+This app is in Design Mode which is best for rapid designs & websites.
+npm run dev:client
+9m • 9 minutes ago
+npm run dev:client
+3m • 3 minutes ago
+Update seller hub and selling methods infographics with new content
+
+I need your help designing a flow chart and infograph for my online ecomerece site. What do y ou need from me to provide an apealing and well designed viisual to add to my site that would help seller and buyer 1; see the value of the site; 2; know th process of registration, selling and buying from the site?
+
+Role: You are an expert Frontend Developer and UI/UX Designer specialized in Arabic typography and Right-to-Left (RTL) layouts.
+
+Task: Create a responsive, modern HTML/CSS Infographic based on the requirements below.
+
+Technical Requirements:
+
+Framework: Use pure HTML5 and CSS3 (no external frameworks like Bootstrap, keep it lightweight).
+Typography: Use the 'Cairo' font from Google Fonts. It is essential for modern Arabic readability.
+Layout:
+    Set dir="rtl" on the <html> tag to ensure correct Arabic text flow.
+    Use a horizontally centered Flexbox layout containing 3 "Card" elements.
+    The flow should be logical: Input (Right) -> Process (Center) -> Output (Left).
+Styling:
+    Background: Clean, light grey/white professional look.
+    Cards: White background, rounded corners, soft shadow, hover effects.
+    Icons: Use generic Emojis for now (⚙️, 🔨, 🚚) to keep it simple, styled large and centered.
+    Colors: Use a color scheme of Trust Blue (#2980b9), Energetic Orange (#e67e22), and Success Green (#27ae60).
+
+Content (Arabic):
+
+Main Headline: "نظامنا الذكي: أتمتة كاملة من العرض وحتى الشحن" (Subtitle:) "دع النظام يعمل لأجلك واستمتع بتجربة بيع خالية من المتاعب"
+
+Card 1 (Right Side - Orders):
+
+Icon: ⚙️
+Title: ١. معالجة آلية للطلبات
+Text: "الطلبات تصلك تلقائياً. لا داعي لحذف المنتجات يدوياً، أو مراجعة العملاء، أو البحث عن العناوين. نظامنا يدير كل ذلك بدلاً منك."
+
+Card 2 (Center - Auctions):
+
+Icon: 🔨
+Title: ٢. مزادات ذاتية الإدارة
+Text: "أتمتة كاملة! اعرض سلعتك والنظام يدير المزاد. سيقوم بتنبيهك فقط عندما تتم عملية البيع بنجاح."
+
+Card 3 (Left Side - Shipping):
+
+Icon: 🚚
+Title: ٣. بيانات شحن جاهزة
+Text: "فور انتهاء البيع، استلم ملفاً كاملاً يحتوي على اسم الفائز، عنوانه الدقيق، رقم هاتفه، ورقم تتبع الشحنة."
+
+Action: Write the index.html and style.css files to render this infographic.
+
+I want to add the type of sales (auctions, sell now, make an offer
+Time worked1 minute
+Work done3 actions
+Code changed
++121-13
+Agent Usage
+$0.10
+
+I need to do some changes:
+
+    I need to add one step after teh system manages is buyers purchase.
+    Zero commission should be the main title and below it first 100 product free
+    Same with authenticated users: only authenticated users main and below is confirmed Iraqi numbers.
+    Same with the shipping
+    remove نضمن لك استلام الأرباح بأمان بعد وصول الشحنة. adn add through trusted delivery companies with special rates.
+
+the last green banner needs to be more about social media. We don't have a network, but sellers hould share through their networks.
+
+give me the code here so I can integrate it into my site
+
+Here are the files you need.
+
+You'll need these dependencies installed in your project:
+
+    framer-motion (for animations)
+    phosphor-icons (add the script tag to your index.html)
+    Google Fonts (Cairo font)
+
+1. The Seller Hub Component
+
+client/src/components/infographic/seller-hub.tsx
+
+import React from "react";
+import { motion } from "framer-motion";
+export function SellerHub() {
+  return (
+    <div className="w-full max-w-5xl mx-auto py-16 px-4">
+      {/* Header */}
+      <div className="text-center mb-16">
+        <h2 className="text-4xl md:text-5xl font-bold text-[#1F2937] mb-4">
+          لماذا تبيع معنا؟
+        </h2>
+        <p className="text-xl text-gray-500 font-medium">
+          أدوات احترافية. عمولة صفرية. راحة بال.
+        </p>
+      </div>
+      <div className="flex flex-col gap-12">
+        {/* Section 1: The Process (Horizontal Flow) */}
+        <div className="bg-white rounded-[24px] p-8 md:p-12 shadow-[0_4px_20px_rgba(0,0,0,0.03)] overflow-x-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative min-w-max md:min-w-0">
+            
+            {/* Step 1 */}
+            <motion.div 
+              whileHover={{ translateY: -5 }}
+              className="flex flex-col items-center gap-4 text-center z-10"
+            >
+              <div className="w-20 h-20 rounded-2xl bg-[#F3F4F6] flex items-center justify-center text-[#4F46E5]">
+                <i className="ph-duotone ph-camera text-4xl"></i>
+              </div>
+              <h3 className="text-lg font-bold text-[#1F2937]">صور وانشر</h3>
+            </motion.div>
+            {/* Connector */}
+            <div className="hidden md:flex text-gray-300">
+              <i className="ph-light ph-caret-left text-3xl"></i>
+            </div>
+            {/* Step 2 */}
+            <motion.div 
+              whileHover={{ translateY: -5 }}
+              className="flex flex-col items-center gap-4 text-center z-10"
+            >
+              <div className="w-20 h-20 rounded-2xl bg-[#F3F4F6] flex items-center justify-center text-[#4F46E5]">
+                <i className="ph-duotone ph-gear text-4xl"></i>
+              </div>
+              <h3 className="text-lg font-bold text-[#1F2937]">النظام يدير</h3>
+            </motion.div>
+            {/* Connector */}
+            <div className="hidden md:flex text-gray-300">
+              <i className="ph-light ph-caret-left text-3xl"></i>
+            </div>
+            {/* Step 3 */}
+            <motion.div 
+              whileHover={{ translateY: -5 }}
+              className="flex flex-col items-center gap-4 text-center z-10"
+            >
+              <div className="w-20 h-20 rounded-2xl bg-[#F3F4F6] flex items-center justify-center text-[#4F46E5]">
+                <i className="ph-duotone ph-shopping-cart text-4xl"></i>
+              </div>
+              <h3 className="text-lg font-bold text-[#1F2937]">المشتري يشتري</h3>
+            </motion.div>
+            {/* Connector */}
+            <div className="hidden md:flex text-gray-300">
+              <i className="ph-light ph-caret-left text-3xl"></i>
+            </div>
+            {/* Step 4 */}
+            <motion.div 
+              whileHover={{ translateY: -5 }}
+              className="flex flex-col items-center gap-4 text-center z-10"
+            >
+              <div className="w-20 h-20 rounded-2xl bg-[#F3F4F6] flex items-center justify-center text-[#4F46E5]">
+                <i className="ph-duotone ph-truck text-4xl"></i>
+              </div>
+              <h3 className="text-lg font-bold text-[#1F2937]">اشحن فوراً</h3>
+            </motion.div>
+          </div>
+        </div>
+        {/* Section 2: The Killer Features (Grid) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Feature 1 */}
+          <motion.div 
+            whileHover={{ translateY: -5 }}
+            className="bg-white rounded-[24px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-6"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-[#ECFDF5] flex items-center justify-center text-[#10B981] shrink-0">
+              <i className="ph-duotone ph-percent text-3xl"></i>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-[#1F2937] mb-1">عمولة صفرية</h3>
+              <p className="text-gray-500 text-sm">أول ١٠٠ منتج مجاناً</p>
+            </div>
+          </motion.div>
+          {/* Feature 2 */}
+          <motion.div 
+            whileHover={{ translateY: -5 }}
+            className="bg-white rounded-[24px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-6"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5] shrink-0">
+              <i className="ph-duotone ph-shield-check text-3xl"></i>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-[#1F2937] mb-1">مستخدمين موثقين فقط</h3>
+              <p className="text-gray-500 text-sm">أرقام هواتف عراقية</p>
+            </div>
+          </motion.div>
+          {/* Feature 3 */}
+          <motion.div 
+            whileHover={{ translateY: -5 }}
+            className="bg-white rounded-[24px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-6"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5] shrink-0">
+              <i className="ph-duotone ph-chart-pie-slice text-3xl"></i>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-[#1F2937] mb-1">تحكم كامل بالمبيعات</h3>
+              <p className="text-gray-500 text-sm">لوحة تحكم ذكية وشاملة</p>
+            </div>
+          </motion.div>
+          {/* Feature 4 */}
+          <motion.div 
+            whileHover={{ translateY: -5 }}
+            className="bg-white rounded-[24px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-6"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-[#EEF2FF] flex items-center justify-center text-[#4F46E5] shrink-0">
+              <i className="ph-duotone ph-rocket text-3xl"></i>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-[#1F2937] mb-1">شحن سريع وآمن</h3>
+              <p className="text-gray-500 text-sm">شراكات توصيل معتمدة</p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+2. The Selling Methods Component
+
+client/src/components/infographic/selling-methods.tsx
+
+import React from "react";
+import { motion } from "framer-motion";
+export function SellingMethods() {
+  return (
+    <div className="w-full max-w-5xl mx-auto py-16 px-4">
+      {/* Header */}
+      <div className="text-center mb-16">
+        <h2 className="text-4xl md:text-5xl font-bold text-[#1F2937] mb-4">
+          بع طريقتك: ٣ خيارات تناسب بضاعتك
+        </h2>
+        <p className="text-xl text-gray-500 font-medium">
+          أدوات مرنة، ضمان مالي، وجمهور مختص.
+        </p>
+      </div>
+      {/* 3 Selling Modes Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        
+        {/* Card 1: Auction */}
+        <motion.div 
+          whileHover={{ translateY: -5 }}
+          className="bg-white rounded-[20px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col h-full border-t-4 border-[#F59E0B]"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-[#FFF7ED] flex items-center justify-center text-[#F59E0B] mb-6">
+            <i className="ph-duotone ph-gavel text-3xl"></i>
+          </div>
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-2xl font-bold text-[#1F2937]">المزاد العلني</h3>
+            <span className="bg-[#FFF7ED] text-[#F59E0B] text-xs font-bold px-2 py-1 rounded-full">لأعلى سعر</span>
+          </div>
+          <p className="text-gray-500 leading-relaxed mt-auto">
+            مثالي للقطع النادرة (الدعافيس). دع السوق يحدد السعر واصنع منافسة حية.
+          </p>
+        </motion.div>
+        {/* Card 2: Negotiation */}
+        <motion.div 
+          whileHover={{ translateY: -5 }}
+          className="bg-white rounded-[20px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col h-full border-t-4 border-[#8B5CF6]"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-[#F5F3FF] flex items-center justify-center text-[#8B5CF6] mb-6">
+            <i className="ph-duotone ph-handshake text-3xl"></i>
+          </div>
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-2xl font-bold text-[#1F2937]">قابل للتفاوض</h3>
+            <span className="bg-[#F5F3FF] text-[#8B5CF6] text-xs font-bold px-2 py-1 rounded-full">مرونة كاملة</span>
+          </div>
+          <p className="text-gray-500 leading-relaxed mt-auto">
+            لا تحب السعر الثابت؟ اسمح للمشترين بتقديم عروضهم (السوم) وتفاوض معهم إلكترونياً.
+          </p>
+        </motion.div>
+        {/* Card 3: Direct Sale */}
+        <motion.div 
+          whileHover={{ translateY: -5 }}
+          className="bg-white rounded-[20px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col h-full border-t-4 border-[#10B981]"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-[#ECFDF5] flex items-center justify-center text-[#10B981] mb-6">
+            <i className="ph-duotone ph-tag text-3xl"></i>
+          </div>
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-2xl font-bold text-[#1F2937]">بيع مباشر</h3>
+            <span className="bg-[#ECFDF5] text-[#10B981] text-xs font-bold px-2 py-1 rounded-full">سعر ثابت</span>
+          </div>
+          <p className="text-gray-500 leading-relaxed mt-auto">
+            حدد سعرك النهائي. عند تأكيد المشتري، قم بشحن المنتج. عبر شركات توصيل معتمدة وبأسعار خاصة.
+          </p>
+        </motion.div>
+      </div>
+      {/* Targeted Reach Bar */}
+      <motion.div 
+        whileHover={{ scale: 1.01 }}
+        className="w-full rounded-[20px] p-8 md:p-12 bg-gradient-to-l from-[#10B981] to-[#059669] shadow-lg text-white relative overflow-hidden group"
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+        
+        <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+          <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm">
+            <i className="ph-fill ph-share-network text-4xl text-white"></i>
+          </div>
+          
+          <div className="text-center md:text-right">
+            <h3 className="text-2xl md:text-3xl font-bold mb-3">
+              سهولة المشاركة على وسائل التواصل
+            </h3>
+            <p className="text-emerald-50 text-lg max-w-2xl leading-relaxed">
+              رابط منتجك جاهز للمشاركة مع متابعينك على واتساب ومنصات التواصل الاجتماعي.
+            </p>
+          </div>
+          
+          <div className="mr-auto mt-4 md:mt-0">
+             <button className="bg-white text-[#059669] px-8 py-3 rounded-full font-bold shadow-sm hover:bg-emerald-50 transition-colors">
+               ابدأ البيع الآن
+             </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}

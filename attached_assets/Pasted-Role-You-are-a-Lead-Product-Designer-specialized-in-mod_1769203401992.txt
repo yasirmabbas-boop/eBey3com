@@ -1,0 +1,61 @@
+Role: You are a Lead Product Designer specialized in modern UI trends (2025/2026).
+
+Task: Re-design the "Seller Hub" section to look ultra-modern, clean, and premium.
+
+Design Language Requirements:
+
+    The "Bento" Grid: Use a layout where elements feel like soft, floating cards on a clean background.
+
+    Typography: Use 'Cairo' (Google Fonts) with varying weights (Bold for headers, Medium for body).
+
+    Icons: Crucial: Use the Phosphor Icons library (via CDN) with the ph-light or ph-duotone style. Do not use emojis.
+
+    Color Palette (Modern Tech):
+
+        Background: #F3F4F6 (Cool Light Grey).
+
+        Cards: #FFFFFF (White) with box-shadow: 0 4px 20px rgba(0,0,0,0.03).
+
+        Text: #1F2937 (Deep Grey).
+
+        Accent: #4F46E5 (Indigo) for icons and highlights.
+
+        Success Accents: #10B981 (Emerald Green) for "Zero Commission".
+
+    Styling Details:
+
+        Border Radius: 16px or 24px (Very rounded).
+
+        Hover Effects: Cards should float up slightly (transform: translateY(-5px)).
+
+        Separators: No hard lines. Use whitespace to separate sections.
+
+Content (Arabic) - Structure:
+
+Headline: Centered, Large. "لماذا تبيع معنا؟" (Why sell with us?) Subtitle: "أدوات احترافية. عمولة صفرية. راحة بال." (Pro tools. Zero commission. Peace of mind.)
+
+Section 1: The Process (Horizontal Flow) Use a flex row. Connect steps with a subtle chevron icon (ph-caret-left).
+
+    Icon: ph-camera | Text: صور وانشر
+
+    Icon: ph-gear | Text: النظام يدير
+
+    Icon: ph-truck | Text: اشحن فوراً
+
+Section 2: The Killer Features (2x2 Grid) Compact cards below the process.
+
+    Zero Commission: Icon ph-percent (Color: Emerald Green). Text: "أول ١٠٠ منتج مجاناً".
+
+    Verified Buyers: Icon ph-shield-check (Color: Indigo). Text: "أرقام هواتف عراقية".
+
+    Smart Dashboard: Icon ph-chart-pie-slice (Color: Indigo). Text: "تحكم كامل بالمبيعات".
+
+    Fast Shipping: Icon ph-rocket (Color: Indigo). Text: "شراكات توصيل معتمدة".
+
+Technical Setup:
+
+    Add the Phosphor Icons script in the <head>: <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    Use dir="rtl".
+
+Action: Generate the index.html and style.css.
