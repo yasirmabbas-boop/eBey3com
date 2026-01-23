@@ -81,6 +81,7 @@ export default function SellWizardPage() {
   const [tagInput, setTagInput] = useState("");
   const [saleType, setSaleType] = useState<"auction" | "fixed">("auction");
   const [isNegotiable, setIsNegotiable] = useState(false);
+  const [hasReservePrice, setHasReservePrice] = useState(false);
   const [startTimeOption, setStartTimeOption] = useState<"now" | "schedule">("now");
   
   const [formData, setFormData] = useState({
@@ -200,6 +201,7 @@ export default function SellWizardPage() {
       setImages(sourceListing.images ?? []);
       setSaleType((sourceListing.saleType as "auction" | "fixed") ?? "fixed");
       setIsNegotiable(sourceListing.isNegotiable ?? false);
+      setHasReservePrice(!!(sourceListing as any).reservePrice);
       setTags(sourceListing.tags ?? []);
     }
   }, [sourceListing, isEditMode, user?.displayName]);
@@ -372,7 +374,9 @@ export default function SellWizardPage() {
         auctionStartTime,
         auctionEndTime,
         buyNowPrice: formData.buyNowPrice ? parseInt(formData.buyNowPrice) : null,
-        reservePrice: formData.reservePrice ? parseInt(formData.reservePrice) : null,
+        reservePrice: (saleType === "auction" && hasReservePrice && formData.reservePrice) 
+          ? parseInt(formData.reservePrice) 
+          : null,
         city: formData.city,
         area: formData.area || null,
         deliveryWindow: formData.deliveryWindow,
@@ -923,8 +927,9 @@ export default function SellWizardPage() {
                   <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
                     <Checkbox
                       id="hasReservePrice"
-                      checked={!!formData.reservePrice}
+                      checked={hasReservePrice}
                       onCheckedChange={(checked) => {
+                        setHasReservePrice(!!checked);
                         if (!checked) {
                           handleInputChange("reservePrice", "");
                         }
@@ -943,7 +948,7 @@ export default function SellWizardPage() {
                     </div>
                   </div>
                   
-                  {formData.reservePrice && (
+                  {hasReservePrice && (
                     <div className="space-y-2">
                       <Label>{language === "ar" ? "السعر الاحتياطي" : "نرخی پاراستن"}</Label>
                       <Input
