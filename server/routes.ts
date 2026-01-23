@@ -6,7 +6,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { broadcastBidUpdate } from "./websocket";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { analyzeImageForSearch } from "./replit_integrations/image";
+import { analyzeImageForSearch } from "./services/gemini-image-search";
 import multer from "multer";
 import sharp from "sharp";
 import { financialService } from "./services/financial-service";
