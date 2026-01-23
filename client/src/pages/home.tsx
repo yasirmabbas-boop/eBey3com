@@ -306,10 +306,10 @@ export default function Home() {
               </div>
               <Link href="/search" className="text-accent hover:underline font-medium text-xs sm:text-sm">{language === "ar" ? "عرض المزيد" : "زیاتر ببینە"}</Link>
             </div>
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
               {recommendedProducts.map((product) => (
-                <Link key={product.id} href={`/product/${product.id}`}>
-                  <Card className="overflow-hidden cursor-pointer group soft-border hover-elevate active:scale-[0.98]" data-testid={`card-recommended-${product.id}`}>
+                <Link key={product.id} href={`/product/${product.id}`} className="snap-start">
+                  <Card className="overflow-hidden cursor-pointer group soft-border hover-elevate active:scale-[0.98] flex-shrink-0 w-36 sm:w-48" data-testid={`card-recommended-${product.id}`}>
                     <div className="relative aspect-square overflow-hidden bg-gray-100">
                       <img 
                         src={product.image} 
@@ -366,10 +366,10 @@ export default function Home() {
           {isLoading ? (
             <ProductGridSkeleton count={10} />
           ) : (
-            <div className="grid grid-cols-2 gap-2 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
               {displayProducts.map((product) => (
-                <Link key={product.id} href={`/product/${product.id}`}>
-                  <Card className="overflow-hidden cursor-pointer group soft-border hover-elevate active:scale-[0.98]" data-testid={`card-product-${product.id}`}>
+                <Link key={product.id} href={`/product/${product.id}`} className="snap-start">
+                  <Card className="overflow-hidden cursor-pointer group soft-border hover-elevate active:scale-[0.98] flex-shrink-0 w-40 sm:w-52" data-testid={`card-product-${product.id}`}>
                     <div className="relative aspect-square overflow-hidden bg-gray-100">
                       <OptimizedImage 
                         src={product.image} 
@@ -385,32 +385,16 @@ export default function Home() {
                         <FavoriteButton listingId={product.id} size="sm" />
                       </div>
                     </div>
-                    <CardContent className="p-2 sm:p-4">
-                      <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">
-                        <span className="truncate">{product.category}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="flex items-center gap-0.5 sm:gap-1">
-                            <Heart className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-400" />
-                            {(product as any).favoritesCount || 0}
-                          </span>
-                          <span className="flex items-center gap-0.5 sm:gap-1">
-                            <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            {(product as any).views || 0}
-                          </span>
-                        </div>
-                      </div>
-                      <h3 className="font-bold text-xs sm:text-lg mb-1 sm:mb-2 line-clamp-2 sm:line-clamp-1 group-hover:text-primary transition-colors leading-tight">
+                    <CardContent className="p-2 sm:p-3">
+                      <h3 className="font-bold text-xs sm:text-sm mb-1 line-clamp-1 group-hover:text-primary transition-colors leading-tight">
                         {product.title}
                       </h3>
-                      <div className="mt-1 sm:mt-4">
-                        <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">السعر الحالي</p>
-                        <p className="font-bold text-sm sm:text-xl text-primary">
-                          {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} <span className="text-[10px] sm:text-sm">د.ع</span>
-                        </p>
-                      </div>
+                      <p className="font-bold text-sm sm:text-base text-primary">
+                        {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} <span className="text-[10px] sm:text-xs">د.ع</span>
+                      </p>
                     </CardContent>
                     {product.saleType === "auction" && (
-                      <CardFooter className="px-2 sm:px-4 py-1.5 sm:py-2 bg-orange-50">
+                      <CardFooter className="px-2 py-1.5 bg-orange-50">
                         <AuctionCountdown endTime={product.auctionEndTime} />
                       </CardFooter>
                     )}
