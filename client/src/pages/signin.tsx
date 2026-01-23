@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Lock, LogIn, Loader2, Shield } from "lucide-react";
+import { Phone, Lock, LogIn, Loader2, Shield, Eye, EyeOff } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -27,6 +27,7 @@ export default function SignIn() {
   const [step, setStep] = useState<Step>("credentials");
   const [pendingToken, setPendingToken] = useState("");
   const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -258,14 +259,22 @@ export default function SignIn() {
                     <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="password"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder={t("enterPassword")}
                       value={formData.password}
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                       onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
-                      className={`pr-10 ${!passwordValidation.valid ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                      className={`pr-10 pl-10 ${!passwordValidation.valid ? "border-destructive focus-visible:ring-destructive" : ""}`}
                       data-testid="input-password"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      data-testid="button-toggle-password"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                   <FormError message={passwordValidation.message} />
                 </div>

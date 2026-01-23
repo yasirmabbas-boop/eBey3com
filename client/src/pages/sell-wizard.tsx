@@ -686,6 +686,7 @@ export default function SellWizardPage() {
                     <SelectItem value="New">{t("new")}</SelectItem>
                     <SelectItem value="Used - Like New">{t("likeNew")}</SelectItem>
                     <SelectItem value="Used - Good">{t("usedGood")}</SelectItem>
+                    <SelectItem value="Used - Fair">{t("usedFair")}</SelectItem>
                     <SelectItem value="Vintage">{t("vintage")}</SelectItem>
                   </SelectContent>
                 </Select>

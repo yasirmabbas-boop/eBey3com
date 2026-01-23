@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Shield, Smartphone, MapPin, Key, User, Save, Plus, Trash2, Star, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Shield, Smartphone, MapPin, Key, User, Save, Plus, Trash2, Star, CheckCircle, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { MapPicker } from "@/components/map-picker";
 
 interface UserProfile {
@@ -100,6 +100,11 @@ export default function Settings() {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
   });
 
   const [addressForm, setAddressForm] = useState({
@@ -586,33 +591,66 @@ export default function Settings() {
               <div className="space-y-4 max-w-md">
                 <div className="space-y-2">
                   <Label>كلمة المرور الحالية</Label>
-                  <Input 
-                    type="password"
-                    value={passwordForm.currentPassword}
-                    onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
-                    placeholder="أدخل كلمة المرور الحالية"
-                    data-testid="input-current-password"
-                  />
+                  <div className="relative">
+                    <Input 
+                      type={showPasswords.current ? "text" : "password"}
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      placeholder="أدخل كلمة المرور الحالية"
+                      className="pl-10"
+                      data-testid="input-current-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      data-testid="button-toggle-current-password"
+                    >
+                      {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>كلمة المرور الجديدة</Label>
-                  <Input 
-                    type="password"
-                    value={passwordForm.newPassword}
-                    onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                    placeholder="أدخل كلمة المرور الجديدة"
-                    data-testid="input-new-password"
-                  />
+                  <div className="relative">
+                    <Input 
+                      type={showPasswords.new ? "text" : "password"}
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                      placeholder="أدخل كلمة المرور الجديدة"
+                      className="pl-10"
+                      data-testid="input-new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      data-testid="button-toggle-new-password"
+                    >
+                      {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>تأكيد كلمة المرور الجديدة</Label>
-                  <Input 
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                    placeholder="أعد إدخال كلمة المرور الجديدة"
-                    data-testid="input-confirm-password"
-                  />
+                  <div className="relative">
+                    <Input 
+                      type={showPasswords.confirm ? "text" : "password"}
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      placeholder="أعد إدخال كلمة المرور الجديدة"
+                      className="pl-10"
+                      data-testid="input-confirm-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      data-testid="button-toggle-confirm-password"
+                    >
+                      {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button 
                   onClick={handleChangePassword}
