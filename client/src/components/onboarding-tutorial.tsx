@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { X, ChevronLeft, ChevronRight, Home, Search, ShoppingCart, MessageCircle, User, Gavel, Tag, Shield, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface TutorialStep {
   id: string;
@@ -48,42 +47,46 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     id: "messages",
     title: "تواصل مع البائعين",
     description: "لديك سؤال؟ راسل البائع مباشرة من صفحة المنتج للاستفسار قبل الشراء.",
-    icon: <MessageCircle className="h-8 w-8 text-teal-500" />,
+    icon: <MessageCircle className="h-8 w-8 text-cyan-500" />,
     highlight: "messages",
   },
   {
-    id: "account",
-    title: "حسابك الشخصي",
-    description: "تابع مشترياتك، مزايداتك، ورسائلك من حسابك. سجّل الآن للبدء!",
+    id: "profile",
+    title: "ملفك الشخصي",
+    description: "تابع مشترياتك، مبيعاتك، ومزاداتك من حسابك الشخصي.",
     icon: <User className="h-8 w-8 text-indigo-500" />,
-    highlight: "account",
+    highlight: "profile",
   },
   {
     id: "security",
-    title: "تسوق بأمان",
-    description: "نحرص على حمايتك. تحقق من تقييمات البائع واقرأ دليل الأمان قبل أي عملية شراء.",
+    title: "أمان وخصوصية",
+    description: "جميع البائعين موثقين. بياناتك ومعاملاتك محمية بأعلى معايير الأمان.",
     icon: <Shield className="h-8 w-8 text-emerald-500" />,
   },
   {
-    id: "done",
+    id: "complete",
     title: "أنت جاهز! ✨",
-    description: "ابدأ التسوق الآن واكتشف صفقات مميزة. نتمنى لك تجربة رائعة!",
+    description: "ابدأ رحلتك الآن واكتشف آلاف المنتجات. مزادات يومية وعروض حصرية بانتظارك!",
     icon: <CheckCircle2 className="h-8 w-8 text-green-500" />,
   },
 ];
 
-const STORAGE_KEY = "ebay-tutorial-completed";
+const STORAGE_KEY = "ebey3_tutorial_seen";
 
 export function OnboardingTutorial() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [hasSeenTutorial, setHasSeenTutorial] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const completed = localStorage.getItem(STORAGE_KEY);
-    if (!completed) {
+    const seen = localStorage.getItem(STORAGE_KEY);
+    if (!seen) {
       setHasSeenTutorial(false);
-      const timer = setTimeout(() => setIsOpen(true), 1500);
+      const timer = setTimeout(() => {
+        setIsOpen(true);
+        setTimeout(() => setIsVisible(true), 50);
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, []);
@@ -105,18 +108,15 @@ export function OnboardingTutorial() {
   const handleComplete = () => {
     localStorage.setItem(STORAGE_KEY, "true");
     setHasSeenTutorial(true);
-    setIsOpen(false);
+    setIsVisible(false);
+    setTimeout(() => setIsOpen(false), 300);
   };
 
   const handleSkip = () => {
     localStorage.setItem(STORAGE_KEY, "true");
     setHasSeenTutorial(true);
-    setIsOpen(false);
-  };
-
-  const handleRestart = () => {
-    setCurrentStep(0);
-    setIsOpen(true);
+    setIsVisible(false);
+    setTimeout(() => setIsOpen(false), 300);
   };
 
   const step = TUTORIAL_STEPS[currentStep];
@@ -127,30 +127,21 @@ export function OnboardingTutorial() {
   }
 
   return (
-    <AnimatePresence>
+    <>
       {isOpen && (
         <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+          <div
+            className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
             onClick={handleSkip}
           />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto bg-card rounded-2xl shadow-[var(--shadow-3)] z-[101] overflow-hidden soft-border"
+          <div
+            className={`fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto bg-card rounded-2xl shadow-[var(--shadow-3)] z-[101] overflow-hidden soft-border transition-all duration-300 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
             dir="rtl"
           >
             <div className="h-1 bg-muted/60">
-              <motion.div
-                className="h-full bg-primary"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
+              <div
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${progress}%` }}
               />
             </div>
 
@@ -164,22 +155,17 @@ export function OnboardingTutorial() {
 
             <div className="p-6 pt-8">
               <div className="flex justify-center mb-4">
-                <motion.div
+                <div
                   key={step.id}
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", damping: 15 }}
-                  className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center"
+                  className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center transition-transform duration-300"
                 >
                   {step.icon}
-                </motion.div>
+                </div>
               </div>
 
-              <motion.div
+              <div
                 key={step.id + "-content"}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 }}
+                className="transition-opacity duration-200"
               >
                 <h3 className="text-xl font-bold text-center text-foreground mb-2">
                   {step.title}
@@ -187,7 +173,7 @@ export function OnboardingTutorial() {
                 <p className="text-muted-foreground text-center leading-relaxed mb-6">
                   {step.description}
                 </p>
-              </motion.div>
+              </div>
 
               <div className="flex justify-center gap-1.5 mb-6">
                 {TUTORIAL_STEPS.map((_, index) => (
@@ -244,10 +230,10 @@ export function OnboardingTutorial() {
                 </button>
               )}
             </div>
-          </motion.div>
+          </div>
         </>
       )}
-    </AnimatePresence>
+    </>
   );
 }
 
