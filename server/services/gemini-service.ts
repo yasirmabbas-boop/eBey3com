@@ -4,7 +4,7 @@ export interface ProductAnalysis {
   title: string;
   price: number;
   description: string;
-  category: 'Clothing' | 'Home' | 'Electronics' | 'Other';
+  category: 'ساعات' | 'إلكترونيات' | 'ملابس' | 'مجوهرات' | 'تحف وأثاث' | 'مقتنيات' | 'أخرى';
   tags: string[];
   model: string | null;
 }
@@ -45,38 +45,49 @@ export async function analyzeProductImage(imageBuffer: Buffer): Promise<ProductA
 CRITICAL: Return ONLY a valid JSON object with these exact fields (no markdown, no code blocks, no explanations):
 
 {
-  "title": "Bilingual title - English | العنوان بالعربي",
+  "title": "العنوان بالعربي | English Title",
   "price": 50000,
-  "description": "وصف تفصيلي للمنتج باللهجة العراقية يوضح المواصفات والحالة.",
-  "category": "One of: Clothing, Home, Electronics, or Other",
-  "tags": ["#english1", "#عربي1", "#english2", "#عربي2", "#english3"],
-  "model": "Model number if visible (e.g., iPhone 14 Pro, Rolex Submariner 116610)"
+  "description": "وصف تفصيلي للمنتج باللهجة العراقية يوضح المواصفات والحالة ورقم الموديل.",
+  "category": "ساعات",
+  "tags": ["#عربي1", "#english1", "#عربي2", "#english2", "#عربي3"],
+  "model": "Model number if visible"
 }
 
 Rules:
-1. title: Bilingual format "English Title | العنوان العربي" (max 80 characters total). Include the model/brand name if visible.
+1. title: ARABIC FIRST format "العنوان العربي | English Title" (max 80 characters total). Include brand and model.
+   IMPORTANT for brand names: TRANSLITERATE to Arabic letters, do NOT translate!
+   - Citizen → سيتيزن (NOT مواطن)
+   - Rolex → رولكس
+   - Samsung → سامسونج
+   - Apple → آبل
+   - Casio → كاسيو
+   - Seiko → سيكو
 
 2. price: Integer only (no decimals), suggest a reasonable Iraqi Dinar (IQD) price. Ranges: cheap items 10,000-50,000, medium 50,000-200,000, expensive 200,000-1,000,000+
 
-3. description: Write in IRAQI ARABIC DIALECT (اللهجة العراقية). NOT a sales pitch! Instead, describe:
-   - What the item IS (type, brand, model if visible)
-   - Key specifications or features visible in the image
+3. description: Write in IRAQI ARABIC DIALECT (اللهجة العراقية). NOT a sales pitch! Provide factual information:
+   - What the item IS (type, brand transliterated to Arabic, model)
+   - Model number/reference number if visible in the image (IMPORTANT: look for numbers on the item, box, or documentation)
+   - Key specifications or features visible
    - Apparent condition (new, used, any visible wear)
    - What's included if multiple items shown
-   Example: "ساعة رولكس سبمارينر موديل 116610. الساعة اصلية وحالتها ممتازة، الكريستال نظيف بدون خدوش."
+   Example: "ساعة سيتيزن موديل BN0151-09L. ساعة غطس اصلية، مقاومة للماء 200 متر، حالتها ممتازة."
+   IMPORTANT: Brand names must be transliterated (سيتيزن not مواطن)
 
-4. category: IMPORTANT - Choose correctly:
-   - "Clothing" = ONLY clothes, shoes, bags, fashion accessories worn on body
-   - "Electronics" = phones, computers, TVs, cameras, gaming consoles, audio equipment
-   - "Home" = furniture, kitchenware, decor, appliances, tools
-   - "Other" = watches, jewelry, collectibles, sports equipment, vehicles, anything else
-   NOTE: Watches are "Other", NOT "Clothing"!
+4. category: Use these EXACT Arabic category names:
+   - "ساعات" = watches (wristwatches, pocket watches, smart watches)
+   - "إلكترونيات" = electronics (phones, computers, TVs, cameras, gaming, audio)
+   - "ملابس" = clothing (clothes, shoes, bags, fashion accessories)
+   - "مجوهرات" = jewelry (rings, necklaces, bracelets, precious items)
+   - "تحف وأثاث" = antiques & furniture
+   - "مقتنيات" = collectibles (rare items, memorabilia, art)
+   - "أخرى" = other (anything that doesn't fit above)
 
-5. tags: 5 hashtags mixing English AND Arabic. Include brand/model tags if applicable.
+5. tags: 5 hashtags with Arabic FIRST, then English. Include brand/model tags.
 
-6. model: Look carefully for any model numbers, serial numbers, or specific product names visible on the item or packaging. For watches, look for reference numbers. For electronics, look for model names. Return null if not visible.
+6. model: Extract any visible model numbers, reference numbers, or serial numbers from the image. Look at the item itself, packaging, documentation, or labels. Return null if not visible.
 
-Focus on ACCURACY and helpful buyer information, not marketing language.`;
+Focus on ACCURACY. Transliterate brand names, extract model numbers, provide helpful buyer information.`;
 
     const result = await model.generateContent([
       prompt,
@@ -93,9 +104,9 @@ Focus on ACCURACY and helpful buyer information, not marketing language.`;
     
     const analysis = JSON.parse(text) as ProductAnalysis;
     
-    const validCategories = ['Clothing', 'Home', 'Electronics', 'Other'];
+    const validCategories = ['ساعات', 'إلكترونيات', 'ملابس', 'مجوهرات', 'تحف وأثاث', 'مقتنيات', 'أخرى'];
     if (!validCategories.includes(analysis.category)) {
-      analysis.category = 'Other';
+      analysis.category = 'أخرى';
     }
     
     if (analysis.title.length > 80) {
