@@ -250,6 +250,7 @@ export default function SellerDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [salesFilter, setSalesFilter] = useState("all");
+  const [timePeriod, setTimePeriod] = useState<"7" | "30" | "all">("30");
   const [quickFilter, setQuickFilter] = useState<"pending_shipment" | "needs_reply" | "ending_soon" | "none">("none");
   const [showShippingLabel, setShowShippingLabel] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<SellerProduct | null>(null);
@@ -843,11 +844,27 @@ export default function SellerDashboard() {
 
   const pendingOrders = sellerOrders.filter(o => o.status === "pending" || o.status === "processing");
 
+  // Filter orders by time period
+  const getFilteredOrders = () => {
+    if (timePeriod === "all") return sellerOrders;
+    const daysAgo = timePeriod === "7" ? 7 : 30;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
+    return sellerOrders.filter(o => new Date(o.createdAt) >= cutoffDate);
+  };
+  
+  const filteredOrders = getFilteredOrders();
+  const filteredCompletedOrders = filteredOrders.filter(o => 
+    o.status === "delivered" || o.status === "completed"
+  );
+
   const SELLER_STATS = {
     totalProducts: sellerSummary?.totalListings ?? sellerProducts.length,
     activeListings: sellerSummary?.activeListings ?? activeProducts.length,
-    soldItems: sellerSummary?.totalSales ?? 0,
-    totalRevenue: sellerSummary?.totalRevenue ?? 0,
+    soldItems: timePeriod === "all" ? (sellerSummary?.totalSales ?? 0) : filteredCompletedOrders.length,
+    totalRevenue: timePeriod === "all" 
+      ? (sellerSummary?.totalRevenue ?? 0) 
+      : filteredCompletedOrders.reduce((sum, o) => sum + (o.amount || 0), 0),
     pendingShipments: sellerSummary?.pendingShipments ?? pendingOrders.length,
     pendingOffers: receivedOffers.filter(o => o.status === "pending").length,
     averageRating: sellerSummary?.averageRating ?? 0,
@@ -961,144 +978,97 @@ export default function SellerDashboard() {
           </div>
         </div>
 
-        <div className="sticky top-[112px] z-30 rounded-2xl bg-background/95 backdrop-blur border border-border/60 shadow-[var(--shadow-1)] mb-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4">
-          <Card 
-            className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 cursor-pointer hover-elevate soft-border"
-            onClick={() => setActiveTab("products")}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-blue-600 font-medium">{language === "ar" ? "إجمالي المنتجات" : "کۆی بەرهەمەکان"}</p>
-                  <p className="text-3xl font-bold text-blue-800">{SELLER_STATS.totalProducts}</p>
-                </div>
-                <Package className="h-10 w-10 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 cursor-pointer hover-elevate soft-border"
-            onClick={() => setActiveTab("orders")}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-green-600 font-medium">{t("sales")}</p>
-                  <p className="text-3xl font-bold text-green-800">{SELLER_STATS.soldItems}</p>
-                </div>
-                <DollarSign className="h-10 w-10 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-violet-50 to-violet-100 border-violet-200 soft-border">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-purple-600 font-medium">{language === "ar" ? "الإيرادات" : "داهات"}</p>
-                  <p className="text-2xl font-bold text-purple-800">{SELLER_STATS.totalRevenue.toLocaleString()}</p>
-                  <p className="text-xs text-purple-600">د.ع</p>
-                </div>
-                <TrendingUp className="h-10 w-10 text-purple-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 cursor-pointer hover-elevate soft-border"
-            onClick={() => setActiveTab("orders")}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-yellow-700 font-medium">{language === "ar" ? "بانتظار الشحن" : "چاوەڕێی ناردن"}</p>
-                  <p className="text-3xl font-bold text-yellow-800">{SELLER_STATS.pendingShipments}</p>
-                </div>
-                <Clock className="h-10 w-10 text-yellow-600" />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Compact Statistics Bar */}
+        <div className="sticky top-[112px] z-30 rounded-xl bg-background/95 backdrop-blur border border-border/60 shadow-sm mb-6">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border/40">
+            <span className="text-xs text-muted-foreground">{language === "ar" ? "الإحصائيات" : "ئامارەکان"}</span>
+            <Select value={timePeriod} onValueChange={(v) => setTimePeriod(v as "7" | "30" | "all")}>
+              <SelectTrigger className="h-7 w-24 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">{language === "ar" ? "7 أيام" : "7 ڕۆژ"}</SelectItem>
+                <SelectItem value="30">{language === "ar" ? "30 يوم" : "30 ڕۆژ"}</SelectItem>
+                <SelectItem value="all">{language === "ar" ? "الكل" : "هەموو"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 divide-x divide-border/40 rtl:divide-x-reverse">
+            <button 
+              className="p-3 text-center hover:bg-blue-50/50 transition-colors"
+              onClick={() => setActiveTab("products")}
+            >
+              <p className="text-xl font-bold text-blue-700">{SELLER_STATS.totalProducts}</p>
+              <p className="text-[10px] text-blue-600">{language === "ar" ? "المنتجات" : "بەرهەم"}</p>
+            </button>
+            <button 
+              className="p-3 text-center hover:bg-green-50/50 transition-colors"
+              onClick={() => setActiveTab("orders")}
+            >
+              <p className="text-xl font-bold text-green-700">{SELLER_STATS.soldItems}</p>
+              <p className="text-[10px] text-green-600">{language === "ar" ? "المبيعات" : "فرۆشتن"}</p>
+            </button>
+            <div className="p-3 text-center">
+              <p className="text-xl font-bold text-purple-700">{SELLER_STATS.totalRevenue.toLocaleString()}</p>
+              <p className="text-[10px] text-purple-600">{language === "ar" ? "د.ع" : "د.ع"}</p>
+            </div>
+            <button 
+              className="p-3 text-center hover:bg-amber-50/50 transition-colors"
+              onClick={() => setActiveTab("orders")}
+            >
+              <p className="text-xl font-bold text-amber-700">{SELLER_STATS.pendingShipments}</p>
+              <p className="text-[10px] text-amber-600">{language === "ar" ? "بانتظار الشحن" : "چاوەڕێ"}</p>
+            </button>
           </div>
         </div>
 
-        {/* Share My Shop Section */}
-        <Card className="mb-8 bg-gradient-to-r from-primary/5 to-blue-50 border-primary/20 soft-border">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row items-center gap-4">
-              <div className="flex-1 text-center md:text-right">
-                <h3 className="text-lg font-bold text-foreground flex items-center gap-2 justify-center md:justify-start">
-                  <Share2 className="h-5 w-5 text-primary" />
-                  {language === "ar" ? "شارك متجرك" : "فرۆشگاکەت هاوبەش بکە"}
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {language === "ar" 
-                    ? "انشر رابط متجرك على وسائل التواصل لجذب المزيد من المشترين"
-                    : "لینکی فرۆشگاکەت لە تۆڕە کۆمەڵایەتییەکان بڵاوبکەرەوە"
-                  }
-                </p>
-                <div className="flex items-center gap-2 mt-2 justify-center md:justify-start">
-                  <code className="bg-background/80 px-3 py-1 rounded border border-border/60 text-sm">
-                    ebey3.com/seller/{user?.id?.slice(0, 8)}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/seller/${user?.id}`);
-                      toast({ title: language === "ar" ? "تم نسخ الرابط" : "لینک کۆپی کرا" });
-                    }}
-                    data-testid="button-copy-shop-link"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <Button
-                  size="lg"
-                  className="bg-green-500 hover:bg-green-600 text-white gap-2"
-                  onClick={() => shareToWhatsApp(`${window.location.origin}/seller/${user?.id}`, language === "ar" ? `تصفح متجري على E-بيع` : `فرۆشگاکەم ببینە لە E-بيع`)}
-                  data-testid="button-share-shop-whatsapp"
-                >
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                  </svg>
-                  WhatsApp
-                </Button>
-                <Button
-                  size="lg"
-                  className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-                  onClick={() => shareToFacebook(`${window.location.origin}/seller/${user?.id}`)}
-                  data-testid="button-share-shop-facebook"
-                >
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                  Facebook
-                </Button>
-                <Button
-                  size="lg"
-                  className="bg-sky-500 hover:bg-sky-600 text-white gap-2"
-                  onClick={() => shareToTelegram(`${window.location.origin}/seller/${user?.id}`, language === "ar" ? `تصفح متجري على E-بيع` : `فرۆشگاکەم ببینە لە E-بيع`)}
-                  data-testid="button-share-shop-telegram"
-                >
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-                  </svg>
-                  Telegram
-                </Button>
-                <Link href={`/seller/${user?.id}`}>
-                  <Button size="lg" variant="outline" className="gap-2" data-testid="button-view-shop">
-                    <ExternalLink className="h-4 w-4" />
-                    {language === "ar" ? "عرض المتجر" : "فرۆشگا ببینە"}
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Compact Share Section */}
+        <div className="flex items-center justify-between gap-3 mb-6 p-3 rounded-lg bg-primary/5 border border-primary/10">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Share2 className="h-4 w-4 text-primary flex-shrink-0" />
+            <code className="text-xs bg-background/80 px-2 py-1 rounded border truncate">
+              ebey3.com/seller/{user?.id?.slice(0, 8)}
+            </code>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/seller/${user?.id}`);
+                toast({ title: language === "ar" ? "تم نسخ الرابط" : "لینک کۆپی کرا" });
+              }}
+              data-testid="button-copy-shop-link"
+            >
+              <Copy className="h-3 w-3 ml-1" />
+              {language === "ar" ? "نسخ" : "کۆپی"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={async () => {
+                const shareData = {
+                  title: language === "ar" ? "متجري على E-بيع" : "فرۆشگاکەم لە E-بيع",
+                  text: language === "ar" ? "تصفح متجري على E-بيع" : "فرۆشگاکەم ببینە لە E-بيع",
+                  url: `${window.location.origin}/seller/${user?.id}`,
+                };
+                if (navigator.share) {
+                  try { await navigator.share(shareData); } catch {}
+                } else {
+                  shareToWhatsApp(shareData.url, shareData.text);
+                }
+              }}
+              data-testid="button-share-shop"
+            >
+              <Share2 className="h-3 w-3 ml-1" />
+              {language === "ar" ? "مشاركة" : "هاوبەشکردن"}
+            </Button>
+            <Link href={`/seller/${user?.id}`}>
+              <Button size="sm" variant="ghost" data-testid="button-view-shop">
+                <ExternalLink className="h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
+        </div>
 
         {pendingOrders.length > 0 && (
           <Card className="mb-8 border-2 border-yellow-300 bg-yellow-50">
