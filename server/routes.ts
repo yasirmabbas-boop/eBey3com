@@ -456,6 +456,10 @@ export async function registerRoutes(
           ? (typeof req.body.buyNowPrice === "number" ? req.body.buyNowPrice : parseInt(req.body.buyNowPrice, 10))
           : null,
         deliveryWindow: req.body.deliveryWindow,
+        shippingType: req.body.shippingType || "seller_pays",
+        shippingCost: typeof req.body.shippingCost === "number" 
+          ? req.body.shippingCost 
+          : parseInt(req.body.shippingCost, 10) || 0,
         returnPolicy: req.body.returnPolicy,
         returnDetails: req.body.returnDetails || null,
         sellerName: req.body.sellerName,
