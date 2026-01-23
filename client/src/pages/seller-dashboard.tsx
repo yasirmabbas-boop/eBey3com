@@ -1003,7 +1003,7 @@ export default function SellerDashboard() {
             </button>
             <button 
               className="p-3 text-center hover:bg-green-50/50 transition-colors"
-              onClick={() => setActiveTab("orders")}
+              onClick={() => setActiveTab("sales")}
             >
               <p className="text-xl font-bold text-green-700">{SELLER_STATS.soldItems}</p>
               <p className="text-[10px] text-green-600">{language === "ar" ? "المبيعات" : "فرۆشتن"}</p>
@@ -1014,7 +1014,7 @@ export default function SellerDashboard() {
             </div>
             <button 
               className="p-3 text-center hover:bg-amber-50/50 transition-colors"
-              onClick={() => setActiveTab("orders")}
+              onClick={() => { setActiveTab("sales"); setSalesFilter("pending"); }}
             >
               <p className="text-xl font-bold text-amber-700">{SELLER_STATS.pendingShipments}</p>
               <p className="text-[10px] text-amber-600">{language === "ar" ? "بانتظار الشحن" : "چاوەڕێ"}</p>
@@ -1095,7 +1095,7 @@ export default function SellerDashboard() {
                     </div>
                     <Button 
                       size="sm" 
-                      onClick={() => setActiveTab("orders")}
+                      onClick={() => { setActiveTab("sales"); setSalesFilter("pending"); }}
                       className="gap-1"
                     >
                       <Truck className="h-4 w-4" />
@@ -1104,7 +1104,7 @@ export default function SellerDashboard() {
                   </div>
                 ))}
                 {pendingOrders.length > 5 && (
-                  <Button variant="outline" className="w-full" onClick={() => setActiveTab("orders")}>
+                  <Button variant="outline" className="w-full" onClick={() => { setActiveTab("sales"); setSalesFilter("pending"); }}>
                     عرض الكل ({pendingOrders.length})
                   </Button>
                 )}
