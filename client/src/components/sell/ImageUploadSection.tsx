@@ -1,9 +1,10 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Camera, Plus, X, Loader2, ImagePlus } from "lucide-react";
+import { Camera, Plus, X, Loader2, ImagePlus, Pencil } from "lucide-react";
 import { isNative } from "@/lib/capacitor";
+import { ImageCropper } from "@/components/ImageCropper";
 
 interface ImageUploadSectionProps {
   images: string[];
@@ -13,6 +14,7 @@ interface ImageUploadSectionProps {
   language: string;
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveImage: (index: number) => void;
+  onImageEdit?: (index: number, newImageUrl: string) => void;
   onCameraClick?: () => void;
   onAIAnalyze?: () => void;
 }
@@ -25,10 +27,19 @@ export function ImageUploadSection({
   language,
   onImageUpload,
   onRemoveImage,
+  onImageEdit,
   onCameraClick,
   onAIAnalyze,
 }: ImageUploadSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
+
+  const handleCropComplete = (croppedImageUrl: string) => {
+    if (editingImageIndex !== null && onImageEdit) {
+      onImageEdit(editingImageIndex, croppedImageUrl);
+    }
+    setEditingImageIndex(null);
+  };
 
   return (
     <Card>
@@ -43,13 +54,26 @@ export function ImageUploadSection({
           {images.map((img, index) => (
             <div key={index} className="relative aspect-square rounded-lg overflow-hidden border bg-gray-100">
               <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={() => onRemoveImage(index)}
-                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="absolute top-2 right-2 flex gap-1">
+                {onImageEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingImageIndex(index)}
+                    className="bg-blue-500 text-white rounded-full p-1 hover:bg-blue-600"
+                    data-testid={`button-edit-image-${index}`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onRemoveImage(index)}
+                  className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  data-testid={`button-remove-image-${index}`}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
               {index === 0 && (
                 <Badge className="absolute bottom-2 right-2 bg-primary">
                   {language === "ar" ? "الرئيسية" : "سەرەکی"}
@@ -135,6 +159,16 @@ export function ImageUploadSection({
           <p className="text-xs text-red-500 mt-2">{validationErrors.images}</p>
         )}
       </CardContent>
+
+      {editingImageIndex !== null && images[editingImageIndex] && (
+        <ImageCropper
+          open={editingImageIndex !== null}
+          onClose={() => setEditingImageIndex(null)}
+          imageSrc={images[editingImageIndex]}
+          onCropComplete={handleCropComplete}
+          language={language}
+        />
+      )}
     </Card>
   );
 }
