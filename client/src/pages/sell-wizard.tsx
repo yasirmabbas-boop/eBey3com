@@ -908,7 +908,9 @@ export default function SellWizardPage() {
                   : (language === "ar" ? "السعر" : "نرخ")} ({t("iqd")}) *
               </Label>
               <Input 
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9٠-٩]*"
                 placeholder="50000"
                 value={formData.price}
                 onChange={(e) => handleInputChange("price", e.target.value)}
@@ -1026,7 +1028,9 @@ export default function SellWizardPage() {
                 <div className="space-y-2">
                   <Label>{language === "ar" ? "سعر الشراء الفوري (اختياري)" : "نرخی کڕینی ڕاستەوخۆ"}</Label>
                   <Input 
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9٠-٩]*"
                     placeholder={language === "ar" ? "اتركه فارغاً إذا لم ترغب" : "بەتاڵی جێبهێڵە ئەگەر نەتەوێت"}
                     value={formData.buyNowPrice}
                     onChange={(e) => handleInputChange("buyNowPrice", e.target.value)}
@@ -1064,7 +1068,9 @@ export default function SellWizardPage() {
                     <div className="space-y-2">
                       <Label>{language === "ar" ? "السعر الاحتياطي" : "نرخی پاراستن"}</Label>
                       <Input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9٠-٩]*"
                         placeholder={language === "ar" ? "أدخل السعر الاحتياطي" : "نرخی پاراستن بنووسە"}
                         value={formData.reservePrice}
                         onChange={(e) => handleInputChange("reservePrice", e.target.value)}
@@ -1228,7 +1234,9 @@ export default function SellWizardPage() {
               
               {formData.shippingType === "buyer_pays" && (
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9٠-٩]*"
                   placeholder={language === "ar" ? "تكلفة الشحن بالدينار" : "تێچووی گواستنەوە بە دینار"}
                   value={formData.shippingCost}
                   onChange={(e) => handleInputChange("shippingCost", e.target.value)}
