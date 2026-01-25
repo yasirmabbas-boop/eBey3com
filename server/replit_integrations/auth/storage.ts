@@ -24,6 +24,7 @@ export interface IAuthStorage {
   upsertUser(userData: OIDCUserData): Promise<User>;
   getUserByFacebookId(facebookId: string): Promise<User | undefined>;
   upsertFacebookUser(userData: FacebookUserData): Promise<User>;
+  updateUser(id: string, data: Partial<User>): Promise<User | undefined>;
 }
 
 class AuthStorage implements IAuthStorage {
@@ -120,6 +121,18 @@ class AuthStorage implements IAuthStorage {
         .returning();
       return newUser;
     }
+  }
+
+  async updateUser(id: string, data: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      } as any)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
   }
 }
 
