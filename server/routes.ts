@@ -3501,6 +3501,7 @@ export async function registerRoutes(
           if (!isDuplicate) {
             await storage.createBuyerAddress({
               userId,
+              label: "عنوان التوصيل",
               recipientName: fullName,
               phone,
               city,
