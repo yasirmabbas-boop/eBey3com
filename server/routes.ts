@@ -2342,7 +2342,7 @@ export async function registerRoutes(
     }
   });
 
-  // SMS Verification Routes
+  // WhatsApp Verification Routes
   app.post("/api/auth/send-verification", async (req, res) => {
     try {
       const { phone, type = "registration" } = req.body;
@@ -2351,10 +2351,10 @@ export async function registerRoutes(
         return res.status(400).json({ error: "رقم الهاتف مطلوب" });
       }
       
-      // Check if Twilio is configured
-      const { isTwilioConfigured, generateVerificationCode, sendVerificationSMS } = await import("./sms");
-      if (!isTwilioConfigured()) {
-        return res.status(503).json({ error: "خدمة الرسائل النصية غير متاحة حالياً" });
+      // Check if WhatsApp is configured
+      const { isWhatsAppConfigured, generateOTPCode, sendWhatsAppOTP } = await import("./whatsapp");
+      if (!isWhatsAppConfigured()) {
+        return res.status(503).json({ error: "خدمة واتساب غير متاحة حالياً" });
       }
       
       // For registration, check if phone is already registered
@@ -2374,18 +2374,18 @@ export async function registerRoutes(
       }
       
       // Generate and store verification code
-      const code = generateVerificationCode();
+      const code = generateOTPCode();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
       
       await storage.createVerificationCode(phone, code, type, expiresAt);
       
-      // Send SMS
-      const sent = await sendVerificationSMS(phone, code, type);
+      // Send WhatsApp OTP
+      const sent = await sendWhatsAppOTP(phone, code);
       if (!sent) {
-        return res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+        return res.status(500).json({ error: "فشل في إرسال رمز التحقق عبر واتساب" });
       }
       
-      res.json({ success: true, message: "تم إرسال رمز التحقق" });
+      res.json({ success: true, message: "تم إرسال رمز التحقق عبر واتساب" });
     } catch (error) {
       console.error("Error sending verification:", error);
       res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
