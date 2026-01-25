@@ -4235,6 +4235,12 @@ export async function registerRoutes(
     }
   });
 
+  // Legacy verification-request endpoint (deprecated - returns null for cached requests)
+  app.get("/api/verification-request", async (req, res) => {
+    // This endpoint has been removed but we return null to handle any cached client requests
+    res.json(null);
+  });
+
   // Seller approval request endpoint
   app.post("/api/seller-request", async (req, res) => {
     try {
