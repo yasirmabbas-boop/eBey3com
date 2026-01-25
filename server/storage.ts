@@ -215,12 +215,6 @@ export interface IStorage {
   markVerificationCodeUsed(id: string): Promise<boolean>;
   deleteExpiredVerificationCodes(): Promise<number>;
   
-  // Verification requests (manual admin approval)
-  createVerificationRequest(userId: string): Promise<VerificationRequest>;
-  getVerificationRequestByUser(userId: string): Promise<VerificationRequest | undefined>;
-  getPendingVerificationRequests(): Promise<Array<VerificationRequest & { user: User }>>;
-  updateVerificationRequest(id: string, status: string, adminId: string, adminNotes?: string): Promise<VerificationRequest | undefined>;
-  
   // Return requests
   createReturnRequest(request: InsertReturnRequest): Promise<ReturnRequest>;
   getReturnRequestById(id: string): Promise<ReturnRequest | undefined>;
@@ -1662,60 +1656,6 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(verificationCodes)
       .where(lt(verificationCodes.expiresAt, new Date()));
     return 0;
-  }
-
-  async createVerificationRequest(userId: string): Promise<VerificationRequest> {
-    const [result] = await db.insert(verificationRequests)
-      .values({ userId })
-      .returning();
-    return result;
-  }
-
-  async getVerificationRequestByUser(userId: string): Promise<VerificationRequest | undefined> {
-    const [result] = await db.select()
-      .from(verificationRequests)
-      .where(eq(verificationRequests.userId, userId))
-      .orderBy(desc(verificationRequests.createdAt))
-      .limit(1);
-    return result;
-  }
-
-  async getPendingVerificationRequests(): Promise<Array<VerificationRequest & { user: User }>> {
-    const results = await db.select({
-      id: verificationRequests.id,
-      userId: verificationRequests.userId,
-      status: verificationRequests.status,
-      adminNotes: verificationRequests.adminNotes,
-      reviewedBy: verificationRequests.reviewedBy,
-      reviewedAt: verificationRequests.reviewedAt,
-      createdAt: verificationRequests.createdAt,
-      user: users,
-    })
-      .from(verificationRequests)
-      .innerJoin(users, eq(verificationRequests.userId, users.id))
-      .where(eq(verificationRequests.status, "pending"))
-      .orderBy(desc(verificationRequests.createdAt));
-    return results;
-  }
-
-  async updateVerificationRequest(id: string, status: string, adminId: string, adminNotes?: string): Promise<VerificationRequest | undefined> {
-    const [result] = await db.update(verificationRequests)
-      .set({
-        status,
-        reviewedBy: adminId,
-        reviewedAt: new Date(),
-        adminNotes: adminNotes || null,
-      })
-      .where(eq(verificationRequests.id, id))
-      .returning();
-    
-    if (result && status === "approved") {
-      await db.update(users)
-        .set({ isVerified: true })
-        .where(eq(users.id, result.userId));
-    }
-    
-    return result;
   }
 
   async createReturnRequest(request: InsertReturnRequest): Promise<ReturnRequest> {
