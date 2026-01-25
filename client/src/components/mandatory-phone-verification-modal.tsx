@@ -8,24 +8,23 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, Loader2, Shield, AlertCircle, MessageSquare } from "lucide-react";
+import { Loader2, Shield, MessageSquare, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLanguage } from "@/lib/i18n";
 
-interface PhoneVerificationModalProps {
+interface MandatoryPhoneVerificationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  phone: string;
-  isVerified: boolean;
+  onVerified: () => void;
 }
 
-export function PhoneVerificationModal({
+export function MandatoryPhoneVerificationModal({
   open,
   onOpenChange,
-  phone,
-  isVerified,
-}: PhoneVerificationModalProps) {
+  onVerified,
+}: MandatoryPhoneVerificationModalProps) {
+  const [phone, setPhone] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -39,19 +38,34 @@ export function PhoneVerificationModal({
   // Reset state when modal opens/closes
   useEffect(() => {
     if (!open) {
+      setPhone("");
       setOtpCode("");
       setOtpSent(false);
     }
   }, [open]);
 
   const handleSendOtp = async () => {
+    if (!phone || phone.trim().length < 10) {
+      toast({
+        title: tr("خطأ", "هەڵە", "Error"),
+        description: tr(
+          "الرجاء إدخال رقم هاتف صحيح",
+          "تکایە ژمارەی مۆبایلی دروست بنووسە",
+          "Please enter a valid phone number"
+        ),
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSendingOtp(true);
     
     try {
-      const response = await fetch("/api/auth/send-phone-otp", {
+      const response = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        body: JSON.stringify({ phone: phone.trim() }),
       });
 
       const data = await response.json();
@@ -69,7 +83,8 @@ export function PhoneVerificationModal({
           title: tr("موثق بالفعل", "پێشتر پشتڕاستکراوە", "Already verified"),
           description: data.message,
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        onVerified();
         onOpenChange(false);
         return;
       }
@@ -111,11 +126,11 @@ export function PhoneVerificationModal({
     setIsVerifying(true);
     
     try {
-      const response = await fetch("/api/auth/verify-phone-otp", {
+      const response = await fetch("/api/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ code: otpCode }),
+        body: JSON.stringify({ phone: phone.trim(), code: otpCode }),
       });
 
       const data = await response.json();
@@ -131,16 +146,19 @@ export function PhoneVerificationModal({
       toast({
         title: tr("تم التحقق بنجاح", "پشتڕاستکرایەوە", "Verified successfully"),
         description: tr(
-          "تم التحقق من رقم هاتفك بنجاح عبر واتساب",
-          "ژمارەی مۆبایلەکەت بە سەرکەوتوویی پشتڕاستکرایەوە",
-          "Your phone number has been verified via WhatsApp"
+          "تم التحقق من رقم هاتفك بنجاح. يمكنك الآن المزايدة والشراء.",
+          "ژمارەی مۆبایلەکەت بە سەرکەوتوویی پشتڕاستکرایەوە. ئێستا دەتوانیت مزایدە و کڕین بکەیت.",
+          "Your phone number has been verified. You can now bid and purchase."
         ),
       });
 
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/account/profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       
+      onVerified();
       onOpenChange(false);
+      
+      // Refresh the page to unlock bidding features
+      window.location.reload();
     } catch (error: any) {
       toast({
         title: tr("خطأ", "هەڵە", "Error"),
@@ -162,50 +180,54 @@ export function PhoneVerificationModal({
           </DialogTitle>
           <DialogDescription>
             {tr(
-              "تحقق من ملكيتك لرقم الهاتف المسجل في حسابك",
-              "پشتڕاستی بکەوە کە ژمارەی مۆبایلەکە هی تۆیە",
-              "Verify ownership of your registered phone number"
+              "يجب التحقق من رقم هاتفك للمزايدة والشراء",
+              "دەبێت ژمارەی مۆبایلەکەت پشتڕاست بکەیتەوە بۆ مزایدە و کڕین",
+              "You must verify your phone number to bid and purchase"
             )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="bg-muted rounded-lg p-4">
-            <div className="text-sm text-muted-foreground mb-1">
-              {tr("رقم الهاتف المسجل", "ژمارەی مۆبایلی تۆمارکراو", "Registered Phone")}
-            </div>
-            <div className="text-lg font-bold font-mono" dir="ltr">
-              {phone}
-            </div>
-          </div>
-
-          {isVerified ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-              <div className="text-sm text-green-800">
-                {tr(
-                  "رقم هاتفك موثق بالفعل",
-                  "ژمارەی مۆبایلەکەت پێشتر پشتڕاستکراوەتەوە",
-                  "Your phone number is already verified"
-                )}
-              </div>
-            </div>
-          ) : !otpSent ? (
+          {!otpSent ? (
             <>
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                 <div className="text-sm text-amber-800">
                   {tr(
-                    "لم يتم التحقق من رقم هاتفك بعد. التحقق يزيد من أمان حسابك ومصداقيتك.",
-                    "ژمارەی مۆبایلەکەت هێشتا پشتڕاست نەکراوەتەوە. پشتڕاستکردنەوە پارێزراوی هەژمارەکەت زیاد دەکات.",
-                    "Your phone number is not verified yet. Verification increases your account security and credibility."
+                    "للمزايدة والشراء، يجب التحقق من رقم هاتفك عبر واتساب",
+                    "بۆ مزایدە و کڕین، دەبێت ژمارەی مۆبایلەکەت بە واتسئاپ پشتڕاست بکەیتەوە",
+                    "To bid and purchase, you must verify your phone number via WhatsApp"
                   )}
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  {tr("رقم الهاتف", "ژمارەی مۆبایل", "Phone Number")}
+                </label>
+                <Input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "");
+                    setPhone(value);
+                  }}
+                  placeholder={tr("07501234567", "07501234567", "07501234567")}
+                  className="text-lg font-mono"
+                  dir="ltr"
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground">
+                  {tr(
+                    "أدخل رقم هاتفك العراقي (مثال: 07501234567)",
+                    "ژمارەی مۆبایلی عێراقی بنووسە (نموونە: 07501234567)",
+                    "Enter your Iraqi phone number (e.g., 07501234567)"
+                  )}
+                </p>
+              </div>
+
               <Button
                 onClick={handleSendOtp}
-                disabled={isSendingOtp}
+                disabled={isSendingOtp || !phone || phone.length < 10}
                 className="w-full"
               >
                 {isSendingOtp ? (
@@ -220,14 +242,6 @@ export function PhoneVerificationModal({
                   </>
                 )}
               </Button>
-
-              <p className="text-xs text-muted-foreground text-center">
-                {tr(
-                  "سيتم إرسال رمز التحقق المكون من 6 أرقام إلى واتساب الخاص بك",
-                  "کۆدی پشتڕاستکردنەوەی 6 ژمارەیی بۆ واتسئاپەکەت دەنێردرێت",
-                  "A 6-digit verification code will be sent to your WhatsApp number"
-                )}
-              </p>
             </>
           ) : (
             <>
@@ -235,9 +249,9 @@ export function PhoneVerificationModal({
                 <MessageSquare className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-blue-800">
                   {tr(
-                    "تم إرسال رمز التحقق إلى واتساب الخاص بك. يرجى إدخال الرمز المكون من 6 أرقام.",
-                    "کۆدی پشتڕاستکردنەوە بۆ واتسئاپەکەت نێردرا. تکایە کۆدی 6 ژمارەیی بنووسە.",
-                    "Verification code has been sent to your WhatsApp. Please enter the 6-digit code."
+                    `تم إرسال رمز التحقق إلى ${phone}. يرجى إدخال الرمز المكون من 6 أرقام.`,
+                    `کۆدی پشتڕاستکردنەوە بۆ ${phone} نێردرا. تکایە کۆدی 6 ژمارەیی بنووسە.`,
+                    `Verification code has been sent to ${phone}. Please enter the 6-digit code.`
                   )}
                 </div>
               </div>
@@ -262,9 +276,9 @@ export function PhoneVerificationModal({
                 />
                 <p className="text-xs text-muted-foreground text-center">
                   {tr(
-                    "الرمز صالح لمدة 10 دقائق",
-                    "کۆدەکە بۆ 10 خولەک بەکارهاتووە",
-                    "Code is valid for 10 minutes"
+                    "الرمز صالح لمدة 5 دقائق",
+                    "کۆدەکە بۆ 5 خولەک بەکارهاتووە",
+                    "Code is valid for 5 minutes"
                   )}
                 </p>
               </div>
@@ -293,7 +307,7 @@ export function PhoneVerificationModal({
                     </>
                   ) : (
                     <>
-                      <Shield className="h-4 w-4 ml-2" />
+                      <CheckCircle className="h-4 w-4 ml-2" />
                       {tr("التحقق", "پشتڕاستکردنەوە", "Verify")}
                     </>
                   )}

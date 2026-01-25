@@ -906,6 +906,34 @@ export async function registerRoutes(
         return res.status(403).json({ error: "حسابك محظور. لا يمكنك المزايدة." });
       }
 
+      // PHONE VERIFICATION GATE: Check if phone is verified
+      if (!bidder.phoneVerified) {
+        return res.status(403).json({ 
+          error: "يجب التحقق من رقم هاتفك أولاً",
+          requiresPhoneVerification: true,
+          phone: bidder.phone,
+          message: "للمزايدة، يجب عليك التحقق من رقم هاتفك عبر WhatsApp أولاً",
+        });
+      }
+
+      // BIDDING LIMIT CHECK: Calculate total active bids for this user
+      const userActiveBids = await storage.getUserActiveBids(validatedData.userId);
+      const totalActiveBidsValue = userActiveBids.reduce((sum, bid) => sum + bid.amount, 0);
+      const biddingLimit = bidder.biddingLimit || 100000; // Default 100,000 IQD
+
+      // Check if new bid would exceed limit
+      if (totalActiveBidsValue + validatedData.amount > biddingLimit) {
+        return res.status(403).json({ 
+          error: "تجاوزت حد المزايدة المسموح",
+          exceedsLimit: true,
+          biddingLimit,
+          currentBidsValue: totalActiveBidsValue,
+          attemptedBid: validatedData.amount,
+          availableLimit: biddingLimit - totalActiveBidsValue,
+          message: `حد المزايدة الخاص بك هو ${biddingLimit.toLocaleString()} د.ع. لديك حالياً مزايدات نشطة بقيمة ${totalActiveBidsValue.toLocaleString()} د.ع.`,
+        });
+      }
+
       const listing = await storage.getListing(validatedData.listingId);
       if (!listing) {
         return res.status(404).json({ error: "Listing not found" });
@@ -1763,6 +1791,20 @@ export async function registerRoutes(
         // Don't fail the delivery - wallet can be reconciled later
       }
       
+      // Check if buyer should receive bidding limit upgrade notification
+      // Database trigger automatically increments completed_purchases and upgrades limit
+      if (transaction.buyerId && transaction.buyerId !== "guest") {
+        try {
+          // Small delay to ensure database trigger has executed
+          setTimeout(async () => {
+            await storage.checkAndNotifyLimitUpgrade(transaction.buyerId);
+          }, 1000);
+        } catch (upgradeError) {
+          console.error("Error checking limit upgrade:", upgradeError);
+          // Don't fail the delivery
+        }
+      }
+      
       if (transaction.buyerId && transaction.buyerId !== "guest") {
         const listing = await storage.getListing(transaction.listingId);
         try {
@@ -2473,54 +2515,213 @@ export async function registerRoutes(
     }
   });
 
-  // WhatsApp Phone Verification (not login)
-  app.post("/api/auth/verify-phone-whatsapp", async (req, res) => {
+  // WhatsApp Phone Verification - Step 1: Send OTP
+  app.post("/api/auth/send-phone-otp", async (req, res) => {
     try {
-      // User must be logged in to verify their phone
+      // User must be logged in
       const userId = await getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
       }
 
-      const { mobile } = req.body;
+      const user = await storage.getUser(userId);
+      if (!user || !user.phone) {
+        return res.status(404).json({ error: "المستخدم غير موجود أو لا يملك رقم هاتف" });
+      }
+
+      // Check if already verified
+      if (user.phoneVerified) {
+        return res.json({
+          success: true,
+          alreadyVerified: true,
+          message: "رقم هاتفك موثق بالفعل",
+        });
+      }
+
+      // Generate OTP
+      const { generateOTPCode, sendWhatsAppOTP, isWhatsAppConfigured } = await import("./whatsapp");
       
-      if (!mobile) {
+      if (!isWhatsAppConfigured()) {
+        return res.status(500).json({ error: "خدمة التحقق غير متاحة حالياً" });
+      }
+      
+      const otpCode = generateOTPCode();
+      
+      // Store OTP in database (expires in 10 minutes)
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      await storage.createVerificationCode(user.phone, otpCode, "phone_verification", expiresAt);
+      
+      // Send via WhatsApp
+      const sent = await sendWhatsAppOTP(user.phone, otpCode);
+      
+      if (!sent) {
+        return res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+      }
+
+      return res.json({
+        success: true,
+        message: "تم إرسال رمز التحقق إلى واتساب",
+        phone: user.phone,
+      });
+    } catch (error) {
+      console.error("Error sending WhatsApp OTP:", error);
+      res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+    }
+  });
+
+  // WhatsApp Phone Verification - Step 2: Verify OTP
+  app.post("/api/auth/verify-phone-otp", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+      }
+
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ error: "رمز التحقق مطلوب" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user || !user.phone) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+
+      // Verify OTP
+      const validCode = await storage.getValidVerificationCode(
+        user.phone,
+        code,
+        "phone_verification"
+      );
+
+      if (!validCode) {
+        return res.status(400).json({ error: "رمز التحقق غير صحيح أو منتهي الصلاحية" });
+      }
+
+      // Mark phone as verified
+      await storage.markPhoneAsVerified(userId);
+      
+      // Mark code as used
+      await storage.markVerificationCodeUsed(validCode.id);
+
+      return res.json({
+        success: true,
+        message: "تم التحقق من رقم الهاتف بنجاح",
+        phoneVerified: true,
+      });
+    } catch (error) {
+      console.error("Error verifying phone OTP:", error);
+      res.status(500).json({ error: "فشل في التحقق من رقم الهاتف" });
+    }
+  });
+
+  // Send OTP for phone verification (allows entering phone number)
+  // Uses Meta Cloud API with ebey3_auth_code template
+  app.post("/api/auth/send-otp", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+      }
+
+      const { phone } = req.body;
+      if (!phone) {
         return res.status(400).json({ error: "رقم الهاتف مطلوب" });
       }
 
-      // Normalize phone number - remove country code if present
-      let phone = mobile.replace(/\D/g, '');
-      if (phone.startsWith('964')) {
-        phone = '0' + phone.substring(3);
-      } else if (phone.startsWith('+964')) {
-        phone = '0' + phone.substring(4);
-      } else if (!phone.startsWith('0')) {
-        phone = '0' + phone;
-      }
-
-      // Get the logged-in user
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ error: "المستخدم غير موجود" });
       }
 
-      // Verify that the WhatsApp phone matches the user's registered phone
-      if (user.phone !== phone) {
-        return res.status(400).json({ 
-          error: "رقم واتساب لا يتطابق مع رقم الهاتف المسجل في حسابك" 
+      // Check if already verified
+      if (user.phoneVerified) {
+        return res.json({
+          success: true,
+          alreadyVerified: true,
+          message: "رقم هاتفك موثق بالفعل",
         });
       }
 
-      // Mark user as verified
-      await storage.updateUser(userId, { isVerified: true } as any);
+      // Generate OTP
+      const { generateOTPCode, sendWhatsAppOTP, isWhatsAppConfigured } = await import("./whatsapp");
+      
+      if (!isWhatsAppConfigured()) {
+        return res.status(500).json({ error: "خدمة التحقق غير متاحة حالياً" });
+      }
+      
+      const otpCode = generateOTPCode();
+      
+      // Store OTP in database (expires in 5 minutes)
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      await storage.createVerificationCode(phone, otpCode, "phone_verification", expiresAt);
+      
+      // Send via WhatsApp using Meta Cloud API
+      const sent = await sendWhatsAppOTP(phone, otpCode);
+      
+      if (!sent) {
+        return res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+      }
+
+      return res.json({
+        success: true,
+        message: "تم إرسال رمز التحقق إلى واتساب",
+        phone: phone,
+      });
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+    }
+  });
+
+  // Simple OTP Verification Endpoint (for mandatory phone verification)
+  // Accepts phone number and code, verifies and marks user's phone as verified
+  app.post("/api/verify-otp", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+      }
+
+      const { phone, code } = req.body;
+      if (!phone || !code) {
+        return res.status(400).json({ error: "رقم الهاتف ورمز التحقق مطلوبان" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+
+      // Verify OTP for the provided phone number
+      const validCode = await storage.getValidVerificationCode(
+        phone,
+        code,
+        "phone_verification"
+      );
+
+      if (!validCode) {
+        return res.status(400).json({ error: "رمز التحقق غير صحيح أو منتهي الصلاحية" });
+      }
+
+      // Update user's phone if it's different (in case they're verifying a new number)
+      if (user.phone !== phone) {
+        await storage.updateUser(userId, { phone } as any);
+      }
+
+      // Mark phone as verified
+      await storage.markPhoneAsVerified(userId);
+      
+      // Mark code as used
+      await storage.markVerificationCodeUsed(validCode.id);
 
       return res.json({
         success: true,
         message: "تم التحقق من رقم الهاتف بنجاح",
-        isVerified: true,
+        phoneVerified: true,
       });
     } catch (error) {
-      console.error("Error verifying phone via WhatsApp:", error);
+      console.error("Error verifying OTP:", error);
       res.status(500).json({ error: "فشل في التحقق من رقم الهاتف" });
     }
   });
@@ -2858,6 +3059,7 @@ export async function registerRoutes(
       avatar: user.avatar,
       isVerified: user.isVerified,
       isBanned: user.isBanned,
+      phoneVerified: user.phoneVerified || false,
     });
   });
 
@@ -3409,6 +3611,16 @@ export async function registerRoutes(
       const buyer = await storage.getUser(userId);
       if (buyer?.isBanned) {
         return res.status(403).json({ error: "حسابك محظور. لا يمكنك الشراء." });
+      }
+
+      // PHONE VERIFICATION GATE: Check if phone is verified
+      if (buyer && !buyer.phoneVerified) {
+        return res.status(403).json({ 
+          error: "يجب التحقق من رقم هاتفك أولاً",
+          requiresPhoneVerification: true,
+          phone: buyer.phone,
+          message: "للشراء، يجب عليك التحقق من رقم هاتفك عبر WhatsApp أولاً",
+        });
       }
 
       const { fullName, phone, city, addressLine1, addressLine2, saveAddress } = req.body;

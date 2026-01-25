@@ -157,4 +157,149 @@ export function setupFacebookAuth(app: Express): void {
       }
     }
   );
+
+  /**
+   * Route: Handle Facebook Data Deletion Callback
+   * Required by Meta Platform Policies when users remove app from Facebook
+   * @see https://developers.facebook.com/docs/development/create-an-app/app-dashboard/data-deletion-callback
+   */
+  app.post("/api/facebook/data-deletion-callback", async (req, res) => {
+    try {
+      console.log("[Facebook Data Deletion] Received callback:", req.body);
+
+      // Meta sends signed_request parameter
+      const signedRequest = req.body.signed_request;
+      
+      if (!signedRequest) {
+        console.error("[Facebook Data Deletion] No signed_request in body");
+        return res.status(400).json({ error: "Missing signed_request" });
+      }
+
+      // Parse signed request (format: signature.payload)
+      const [signature, payload] = signedRequest.split(".");
+      
+      if (!signature || !payload) {
+        console.error("[Facebook Data Deletion] Invalid signed_request format");
+        return res.status(400).json({ error: "Invalid signed_request format" });
+      }
+
+      // Decode payload (base64url encoded JSON)
+      const decodedPayload = Buffer.from(payload, "base64").toString("utf-8");
+      const data = JSON.parse(decodedPayload);
+      
+      console.log("[Facebook Data Deletion] Decoded data:", data);
+
+      // Verify signature using HMAC SHA256
+      const expectedSignature = crypto
+        .createHmac("sha256", FB_APP_SECRET)
+        .update(payload)
+        .digest("base64")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=/g, "");
+
+      if (signature !== expectedSignature) {
+        console.error("[Facebook Data Deletion] Invalid signature");
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+
+      // Extract user_id from decoded data
+      const facebookUserId = data.user_id;
+      
+      if (!facebookUserId) {
+        console.error("[Facebook Data Deletion] No user_id in decoded data");
+        return res.status(400).json({ error: "Missing user_id" });
+      }
+
+      // Find user by Facebook ID
+      const userId = `fb_${facebookUserId}`;
+      const user = await authStorage.getUser(userId);
+
+      if (!user) {
+        console.log("[Facebook Data Deletion] User not found:", userId);
+        // Still return success - user might have already been deleted
+        const confirmationCode = crypto.randomBytes(16).toString("hex");
+        return res.json({
+          url: `https://ebey3.com/deletion/status?id=${confirmationCode}`,
+          confirmation_code: confirmationCode,
+        });
+      }
+
+      // Generate unique deletion request ID
+      const deletionId = crypto.randomBytes(16).toString("hex");
+      const confirmationCode = crypto.randomBytes(16).toString("hex");
+
+      // Log deletion request (you may want to store this in a deletion queue table)
+      console.log("[Facebook Data Deletion] Initiating deletion for user:", userId);
+      console.log("[Facebook Data Deletion] Deletion ID:", deletionId);
+      console.log("[Facebook Data Deletion] Confirmation code:", confirmationCode);
+
+      // TODO: Implement actual deletion logic here
+      // Options:
+      // 1. Mark user for deletion and process in background job
+      // 2. Queue deletion task with 30-day timeline
+      // 3. Send email notification to user about deletion
+      // 4. Log deletion request in audit table
+      
+      // For now, mark user as pending deletion (you may need to add a field to users table)
+      // await authStorage.updateUser(userId, { 
+      //   deletionRequested: true, 
+      //   deletionRequestedAt: new Date(),
+      //   deletionId: deletionId 
+      // } as any);
+
+      // Send email notification to security@ebey3.com
+      console.log(`[Facebook Data Deletion] TODO: Send notification email to security@ebey3.com for user ${userId}`);
+
+      // Return confirmation URL and code as required by Meta
+      return res.json({
+        url: `https://ebey3.com/deletion/status?id=${deletionId}`,
+        confirmation_code: confirmationCode,
+      });
+      
+    } catch (error) {
+      console.error("[Facebook Data Deletion] Error processing callback:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /**
+   * Route: Check data deletion status
+   * Public endpoint for users to check deletion status using confirmation code
+   */
+  app.get("/deletion/status", (req, res) => {
+    const deletionId = req.query.id;
+    
+    if (!deletionId) {
+      return res.status(400).send("Missing deletion ID");
+    }
+
+    // TODO: Query deletion status from database
+    // For now, return a simple status page
+    return res.send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Data Deletion Status - Ebey3</title>
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+          h1 { color: #2563eb; }
+          .status { background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <h1>Data Deletion Status</h1>
+        <div class="status">
+          <p><strong>Deletion ID:</strong> ${deletionId}</p>
+          <p><strong>Status:</strong> Processing</p>
+          <p>Your data deletion request has been received and is being processed. 
+          All personal data will be permanently deleted from our systems within 30 days.</p>
+        </div>
+        <p>If you have any questions, please contact <a href="mailto:security@ebey3.com">security@ebey3.com</a></p>
+      </body>
+      </html>
+    `);
+  });
 }

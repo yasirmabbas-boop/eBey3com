@@ -41,7 +41,7 @@ export default function DataDeletion() {
               <div>
                 <h3 className="font-bold text-lg mb-2">Option 2: Email Us</h3>
                 <p className="text-muted-foreground mb-3">
-                  Send an email to <a href="mailto:support@ebey3.com" className="text-primary font-semibold underline">support@ebey3.com</a> with the subject line "Data Deletion Request"
+                  Send an email to <a href="mailto:security@ebey3.com" className="text-primary font-semibold underline">security@ebey3.com</a> with the subject line "Data Deletion Request"
                 </p>
                 <p className="text-muted-foreground mb-2">Please include:</p>
                 <ul className="list-disc list-inside space-y-1 ml-2 text-muted-foreground">
@@ -62,13 +62,13 @@ export default function DataDeletion() {
             <div className="prose prose-lg max-w-none">
               <ul className="list-disc list-inside space-y-3 text-muted-foreground">
                 <li>
-                  <strong>Timeline:</strong> We will process your data deletion request within <strong>48 hours</strong> of receiving it
+                  <strong>Timeline:</strong> We will permanently delete all personal data from our production database and all backups within <strong>30 days</strong> of request verification
                 </li>
                 <li>
-                  <strong>What gets deleted:</strong> Your personal information including name, email, phone number, address, profile photo, and transaction history
+                  <strong>What gets deleted:</strong> Your personal information including name, email, phone number, address, profile photo, Facebook User ID, and communication history
                 </li>
                 <li>
-                  <strong>Legal retention:</strong> Some data may be retained for up to 1 year after account deletion for legal compliance purposes (fraud prevention, dispute resolution)
+                  <strong>Legal retention:</strong> Transaction logs may be retained for 7 years for legal compliance (Iraqi law and US IRS regulations) but will be anonymized
                 </li>
                 <li>
                   <strong>Irreversible:</strong> Account deletion is permanent and cannot be undone. You will need to create a new account if you wish to use Ebey3 again
@@ -85,7 +85,7 @@ export default function DataDeletion() {
           <h3 className="font-bold text-lg mb-2 text-blue-900">Questions or Concerns?</h3>
           <p className="text-blue-800">
             If you have any questions about our data deletion process or privacy practices, please contact us at{" "}
-            <a href="mailto:privacy@ebey3.com" className="font-semibold underline">privacy@ebey3.com</a>
+            <a href="mailto:security@ebey3.com" className="font-semibold underline">security@ebey3.com</a>
           </p>
         </div>
 

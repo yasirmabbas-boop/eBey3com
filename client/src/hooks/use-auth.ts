@@ -23,6 +23,7 @@ export interface AuthUser {
   city?: string | null;
   createdAt?: string | Date;
   twoFactorEnabled?: boolean;
+  phoneVerified?: boolean;
 }
 
 function getAuthToken(): string | null {

@@ -54,6 +54,9 @@ export const users = pgTable("users", {
   authToken: text("auth_token"),
   facebookId: text("facebook_id").unique(),
   facebookLongLivedToken: text("facebook_long_lived_token"),
+  phoneVerified: boolean("phone_verified").notNull().default(false),
+  biddingLimit: integer("bidding_limit").notNull().default(100000), // IQD
+  completedPurchases: integer("completed_purchases").notNull().default(0),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({

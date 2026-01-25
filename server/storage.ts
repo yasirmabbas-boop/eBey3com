@@ -102,6 +102,7 @@ export interface IStorage {
   createBid(bid: InsertBid): Promise<Bid>;
   getHighestBid(listingId: string): Promise<Bid | undefined>;
   getUserBids(userId: string): Promise<Bid[]>;
+  getUserActiveBids(userId: string): Promise<Bid[]>; // Get bids where user is winning
   
   getWatchlist(userId: string): Promise<Watchlist[]>;
   getWatchlistListings(userId: string): Promise<Listing[]>;
@@ -398,6 +399,9 @@ export class DatabaseStorage implements IStorage {
           authProviderId: data.facebookId,
           accountCode,
           phone: null, // Leave phone NULL so onboarding flow triggers
+          biddingLimit: 100000, // Set initial bidding limit to 100,000 IQD
+          phoneVerified: false, // Require phone verification
+          completedPurchases: 0,
         })
         .returning();
       return this.normalizeUser(newUser)!;
@@ -849,6 +853,31 @@ export class DatabaseStorage implements IStorage {
 
   async getUserBids(userId: string): Promise<Bid[]> {
     return db.select().from(bids).where(eq(bids.userId, userId)).orderBy(desc(bids.createdAt));
+  }
+
+  async getUserActiveBids(userId: string): Promise<Bid[]> {
+    // Get all active bids where this user is currently winning
+    const result = await db
+      .select({
+        id: bids.id,
+        listingId: bids.listingId,
+        userId: bids.userId,
+        amount: bids.amount,
+        shippingAddressId: bids.shippingAddressId,
+        isWinning: bids.isWinning,
+        createdAt: bids.createdAt,
+      })
+      .from(bids)
+      .innerJoin(listings, eq(bids.listingId, listings.id))
+      .where(
+        and(
+          eq(bids.userId, userId),
+          eq(bids.isWinning, true),
+          eq(listings.isActive, true)
+        )
+      );
+    
+    return result;
   }
 
   async getWatchlist(userId: string): Promise<Watchlist[]> {
@@ -1585,6 +1614,48 @@ export class DatabaseStorage implements IStorage {
       .where(eq(verificationCodes.id, id))
       .returning();
     return !!result;
+  }
+
+  async markPhoneAsVerified(userId: string): Promise<void> {
+    try {
+      await db
+        .update(users)
+        .set({ phoneVerified: true })
+        .where(eq(users.id, userId));
+    } catch (error: any) {
+      // If column doesn't exist, log error and provide helpful message
+      if (error.message?.includes('phone_verified') || error.message?.includes('column') || error.code === '42703') {
+        console.error("[Storage] ERROR: phone_verified column not found in database!");
+        console.error("[Storage] Please run the migration: tsx server/verify-phone-verification-migration.ts");
+        console.error("[Storage] Or run: ./run-phone-verification-migration.sh");
+        console.error("[Storage] Or manually run: ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN NOT NULL DEFAULT false;");
+        throw new Error("Database migration required: phone_verified column missing. Run migration script to fix.");
+      }
+      throw error;
+    }
+  }
+
+  async checkAndNotifyLimitUpgrade(userId: string): Promise<void> {
+    const user = await this.getUser(userId);
+    if (!user) return;
+    
+    // Check if just reached 10 purchases and limit was upgraded to 250k
+    if (user.completedPurchases >= 10 && user.biddingLimit === 250000) {
+      // Send WhatsApp notification
+      if (user.phone && user.phoneVerified) {
+        const { sendBiddingLimitIncreaseNotification } = await import("./whatsapp");
+        await sendBiddingLimitIncreaseNotification(user.phone, 250000);
+        
+        // Also create in-app notification
+        await this.createNotification({
+          userId: user.id,
+          type: "bidding_limit_increase",
+          title: "🎉 تم رفع حد المزايدة!",
+          message: "تهانينا! تم رفع حد المزايدة الخاص بك إلى 250,000 د.ع بعد إكمال 10 عمليات شراء ناجحة.",
+          linkUrl: "/my-account",
+        });
+      }
+    }
   }
 
   async deleteExpiredVerificationCodes(): Promise<number> {

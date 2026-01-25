@@ -25,6 +25,7 @@ import { ContactSeller } from "@/components/contact-seller";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { InstagramShareCard } from "@/components/instagram-share-card";
 import { VerifiedBadge } from "@/components/verified-badge";
+import { MandatoryPhoneVerificationModal } from "@/components/mandatory-phone-verification-modal";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram, shareToTwitter } from "@/lib/share-utils";
 import { hapticSuccess, hapticError, hapticLight, saveToPhotos, isDespia } from "@/lib/despia";
 import type { Listing } from "@shared/schema";
@@ -77,6 +78,9 @@ export default function ProductPage() {
   const [guestPhone, setGuestPhone] = useState("");
   const [guestAddress, setGuestAddress] = useState("");
   const [guestCity, setGuestCity] = useState("");
+
+  // Phone verification modal state
+  const [phoneVerificationOpen, setPhoneVerificationOpen] = useState(false);
 
   // Report dialog state
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -1013,24 +1017,48 @@ export default function ProductPage() {
 
                 {/* Auction Bidding - Show for active auction items */}
                 {product.saleType === "auction" && listing?.isActive && !auctionEnded && (
-                  <BiddingWindow
-                    listingId={params?.id || ""}
-                    userId={user?.id}
-                    currentBid={liveBidData?.currentBid || product.currentBid || product.price}
-                    totalBids={liveBidData?.totalBids || product.totalBids || 0}
-                    minimumBid={(liveBidData?.currentBid || product.currentBid || product.price) + 1000}
-                    timeLeft={product.timeLeft}
-                    auctionEndTime={(() => {
-                      const endTime = liveBidData?.auctionEndTime || product.auctionEndTime;
-                      if (!endTime) return null;
-                      return typeof endTime === 'string' ? endTime : endTime.toISOString();
-                    })()}
-                    onRequireAuth={() => requireAuth("bid")}
-                    isWinning={!!isWinning}
-                    isAuthLoading={isAuthLoading}
-                    isVerified={user?.isVerified || false}
-                    allowedBidderType={listing?.allowedBidderType}
-                  />
+                  isAuthenticated && !user?.phoneVerified ? (
+                    <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ShieldCheck className="w-5 h-5 text-amber-600" />
+                        <span className="font-bold text-amber-800 dark:text-amber-400">
+                          {language === "ar" ? "التحقق من الهاتف مطلوب" : "پشتڕاستکردنەوەی مۆبایل پێویستە"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 mb-4">
+                        {language === "ar" 
+                          ? "يجب التحقق من رقم هاتفك عبر واتساب للمزايدة على هذا المنتج"
+                          : "دەبێت ژمارەی مۆبایلەکەت بە واتسئاپ پشتڕاست بکەیتەوە بۆ مزایدەکردن لەم بەرهەمە"}
+                      </p>
+                      <Button 
+                        className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold h-12"
+                        onClick={() => setPhoneVerificationOpen(true)}
+                        data-testid="button-verify-phone-to-bid"
+                      >
+                        <ShieldCheck className="w-5 h-5 ml-2" />
+                        {language === "ar" ? "التحقق من الهاتف للمزايدة" : "پشتڕاستکردنەوەی مۆبایل بۆ مزایدە"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <BiddingWindow
+                      listingId={params?.id || ""}
+                      userId={user?.id}
+                      currentBid={liveBidData?.currentBid || product.currentBid || product.price}
+                      totalBids={liveBidData?.totalBids || product.totalBids || 0}
+                      minimumBid={(liveBidData?.currentBid || product.currentBid || product.price) + 1000}
+                      timeLeft={product.timeLeft}
+                      auctionEndTime={(() => {
+                        const endTime = liveBidData?.auctionEndTime || product.auctionEndTime;
+                        if (!endTime) return null;
+                        return typeof endTime === 'string' ? endTime : endTime.toISOString();
+                      })()}
+                      onRequireAuth={() => requireAuth("bid")}
+                      isWinning={!!isWinning}
+                      isAuthLoading={isAuthLoading}
+                      isVerified={user?.isVerified || false}
+                      allowedBidderType={listing?.allowedBidderType}
+                    />
+                  )
                 )}
 
                 {/* Buy Now Option for Auctions with buyNowPrice */}
@@ -1062,15 +1090,40 @@ export default function ProductPage() {
                 {product.saleType !== "auction" && (
                   listing?.isActive ? (
                     <>
-                      <Button 
-                        size="lg" 
-                        className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90"
-                        onClick={handleBuyNowDirect}
-                        disabled={!!isPurchaseDisabled}
-                        data-testid="button-buy-now"
-                      >
-                        {isPurchaseDisabled ? t("loading") : t("buyNowButton")}
-                      </Button>
+                      {isAuthenticated && !user?.phoneVerified ? (
+                        <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                          <div className="flex items-center gap-2 mb-3">
+                            <ShieldCheck className="w-5 h-5 text-amber-600" />
+                            <span className="font-bold text-amber-800 dark:text-amber-400">
+                              {language === "ar" ? "التحقق من الهاتف مطلوب" : "پشتڕاستکردنەوەی مۆبایل پێویستە"}
+                            </span>
+                          </div>
+                          <p className="text-sm text-amber-700 dark:text-amber-300 mb-4">
+                            {language === "ar" 
+                              ? "يجب التحقق من رقم هاتفك عبر واتساب للشراء"
+                              : "دەبێت ژمارەی مۆبایلەکەت بە واتسئاپ پشتڕاست بکەیتەوە بۆ کڕین"}
+                          </p>
+                          <Button 
+                            size="lg"
+                            className="w-full h-14 text-lg font-bold bg-amber-600 hover:bg-amber-700 text-white"
+                            onClick={() => setPhoneVerificationOpen(true)}
+                            data-testid="button-verify-phone-to-buy"
+                          >
+                            <ShieldCheck className="w-5 h-5 ml-2" />
+                            {language === "ar" ? "التحقق من الهاتف للشراء" : "پشتڕاستکردنەوەی مۆبایل بۆ کڕین"}
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button 
+                          size="lg" 
+                          className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90"
+                          onClick={handleBuyNowDirect}
+                          disabled={!!isPurchaseDisabled}
+                          data-testid="button-buy-now"
+                        >
+                          {isPurchaseDisabled ? t("loading") : t("buyNowButton")}
+                        </Button>
+                      )}
 
                       <Button 
                         variant="outline"
@@ -1571,6 +1624,15 @@ export default function ProductPage() {
         initialIndex={selectedImageIndex}
         onIndexChange={setSelectedImageIndex}
         title={product.title}
+      />
+
+      {/* Mandatory Phone Verification Modal */}
+      <MandatoryPhoneVerificationModal
+        open={phoneVerificationOpen}
+        onOpenChange={setPhoneVerificationOpen}
+        onVerified={() => {
+          // User will be verified, page will refresh automatically
+        }}
       />
 
       </Layout>
