@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import type { User } from "@shared/models/auth";
 
 export interface AuthUser {
@@ -29,8 +30,9 @@ function getAuthToken(): string | null {
 }
 
 // Check for token in URL (from Facebook OAuth redirect) and store it
-function checkAndStoreUrlToken(): void {
-  if (typeof window === "undefined") return;
+// Returns true if a token was found and stored
+function checkAndStoreUrlToken(): boolean {
+  if (typeof window === "undefined") return false;
   
   const urlParams = new URLSearchParams(window.location.search);
   const token = urlParams.get("token");
@@ -45,10 +47,12 @@ function checkAndStoreUrlToken(): void {
       ? `${window.location.pathname}?${urlParams.toString()}`
       : window.location.pathname;
     window.history.replaceState({}, "", newUrl);
+    return true;
   }
+  return false;
 }
 
-// Call this immediately when the module loads
+// Also try at module load time
 checkAndStoreUrlToken();
 
 async function fetchUser(): Promise<AuthUser | null> {
@@ -119,12 +123,27 @@ async function logout(): Promise<void> {
 
 export function useAuth() {
   const queryClient = useQueryClient();
-  const { data: user, isLoading } = useQuery<AuthUser | null>({
+  const hasCheckedToken = useRef(false);
+  
+  const { data: user, isLoading, refetch } = useQuery<AuthUser | null>({
     queryKey: ["/api/auth/user"],
     queryFn: fetchUser,
     retry: false,
     staleTime: 1000 * 60 * 5,
   });
+
+  // Check for token in URL on every mount (handles SPA navigation after OAuth redirect)
+  useEffect(() => {
+    if (hasCheckedToken.current) return;
+    hasCheckedToken.current = true;
+    
+    const tokenFound = checkAndStoreUrlToken();
+    if (tokenFound) {
+      console.log("[DEBUG useAuth] Token found in URL, invalidating auth cache and refetching");
+      // Invalidate the cache and refetch with the new token
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    }
+  }, [queryClient]);
 
   const logoutMutation = useMutation({
     mutationFn: logout,
@@ -139,5 +158,6 @@ export function useAuth() {
     isAuthenticated: !!user,
     logout: logoutMutation.mutate,
     isLoggingOut: logoutMutation.isPending,
+    refetch,
   };
 }
