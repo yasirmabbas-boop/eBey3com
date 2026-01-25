@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as FacebookStrategy } from "passport-facebook";
 import type { Express } from "express";
 import axios from "axios";
+import crypto from "crypto";
 import { authStorage } from "./replit_integrations/auth/storage";
 import type { User } from "@shared/schema";
 
@@ -134,20 +135,26 @@ export function setupFacebookAuth(app: Express): void {
           return res.redirect("/signin?error=user_not_found");
         }
 
+        // Generate an authToken for the frontend (same pattern as regular login)
+        const authToken = crypto.randomBytes(32).toString("hex");
+        await authStorage.updateUser(user.id, { authToken } as any);
+        console.log("[Facebook Auth] Generated authToken for user:", user.id);
+
         // Check if user has phone and address
         const hasPhone = fullUser.phone && fullUser.phone.trim() !== "" && !fullUser.phone.startsWith("fb_");
         const hasAddress = fullUser.addressLine1 && fullUser.addressLine1.trim() !== "";
         console.log("[Facebook Auth] hasPhone:", hasPhone, "hasAddress:", hasAddress);
 
         // Redirect to onboarding if data is missing, otherwise to home
+        // Pass authToken via URL so frontend can store it in localStorage
         if (!hasPhone || !hasAddress) {
-          console.log("[Facebook Auth] Missing data, redirecting to /onboarding");
-          return res.redirect("/onboarding");
+          console.log("[Facebook Auth] Missing data, redirecting to /onboarding with token");
+          return res.redirect(`/onboarding?token=${authToken}`);
         }
 
-        // User has all required data, redirect to home
-        console.log("[Facebook Auth] User complete, redirecting to /");
-        res.redirect("/");
+        // User has all required data, redirect to home with token
+        console.log("[Facebook Auth] User complete, redirecting to / with token");
+        res.redirect(`/?token=${authToken}`);
       } catch (error) {
         console.error("Error in Facebook callback:", error);
         res.redirect("/signin?error=callback_error");
