@@ -9,6 +9,7 @@ import { startAuctionProcessor } from "./auction-processor";
 import { socialMetaMiddleware } from "./social-meta";
 
 const app = express();
+app.set('trust proxy', 1);
 const httpServer = createServer(app);
 
 setupWebSocket(httpServer);
@@ -90,41 +91,17 @@ app.use((req, res, next) => {
   // This middleware only handles specific routes (product/seller pages) and calls next() for others
   app.use(socialMetaMiddleware);
 
-  // IMPORTANT: Setup static file serving or Vite dev server AFTER all API routes
-  // This ensures that:
-  // 1. API routes (like /api/onboarding) are handled first
-  // 2. Client-side routes (like /onboarding) fall through to the catch-all route
-  // 3. The catch-all route serves index.html so React Router can handle the route
-  if (process.env.NODE_ENV === "production") {
-    // Production: Serve static files with catch-all route for SPA routing
-    serveStatic(app);
-  } else {
-    // Development: Use Vite dev server with catch-all route for SPA routing
+  // IMPORTANT: Middleware order is critical
+  // Setup static file serving or Vite dev server AFTER all API routes
+  if (app.get("env") === "development") {
+    // In Dev: Vite handles the index.html fallback internally
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
-  }
-
-  // Explicit wildcard route handler as final fallback for client-side routing (production only)
-  // In development, Vite's catch-all handler handles all client-side routes
-  // This ensures that requests to /onboarding or any other client route return the React app
-  if (process.env.NODE_ENV === "production") {
-    app.use("*", (req, res) => {
-      // Skip API routes - they should have been handled already
-      if (req.path.startsWith("/api")) {
-        return res.status(404).json({ message: "Not Found" });
-      }
-
-      // Production: Serve index.html from dist/public (Vite build output)
-      console.log(`[Wildcard Handler] Production: Serving index.html for ${req.path}`);
-      const distPath = path.resolve(__dirname, "..", "dist", "public");
-      const indexPath = path.resolve(distPath, "index.html");
-      
-      if (fs.existsSync(indexPath)) {
-        return res.sendFile(indexPath);
-      } else {
-        console.error(`[Wildcard Handler] Production: index.html not found at ${indexPath}`);
-        return res.status(404).send("Not Found: index.html not found");
-      }
+  } else {
+    // In Prod: We serve static files, then fallback to index.html for SPA
+    serveStatic(app);
+    app.get("*", (req, res) => {
+      res.sendFile(path.resolve(__dirname, "..", "dist", "public", "index.html"));
     });
   }
 

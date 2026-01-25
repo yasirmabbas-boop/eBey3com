@@ -1,66 +1,69 @@
-import { type Express } from "express";
+import express, { type Express } from "express";
+import fs from "fs";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
-import fs from "fs";
-import path from "path";
 import { nanoid } from "nanoid";
 
-const viteLogger = createLogger();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export async function setupVite(server: Server, app: Express) {
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server, path: "/vite-hmr" },
-    allowedHosts: true as const,
-  };
-
+  const viteLogger = createLogger();
   const vite = await createViteServer({
     ...viteConfig,
     configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      },
+    customLogger: viteLogger,
+    server: {
+      middlewareMode: true,
+      hmr: { server },
+      allowedHosts: true,
     },
-    server: serverOptions,
     appType: "custom",
   });
 
+  // Use Vite's middleware
   app.use(vite.middlewares);
 
-  // Catch-all route: Serve index.html for all non-API routes
-  // This allows React Router to handle client-side routing (e.g., /onboarding, /signin, etc.)
-  // API routes (starting with /api) are handled before this middleware
+  // The Fallback Handler: Serves index.html for ANY unknown route
   app.use("*", async (req, res, next) => {
-    // Explicitly skip API routes - they should be handled by API route handlers
-    if (req.path.startsWith("/api")) {
+    const url = req.originalUrl;
+
+    // Ignore API routes - let them 404 if not found
+    if (url.startsWith("/api")) {
       return next();
     }
 
-    const url = req.originalUrl;
-
     try {
-      const clientTemplate = path.resolve(
-        import.meta.dirname,
-        "..",
-        "client",
-        "index.html",
-      );
+      // 1. Locate the file
+      const templatePath = path.resolve(__dirname, "..", "client", "index.html");
 
-      // always reload the index.html file from disk incase it changes
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
-      );
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      // 2. Read the file
+      let template = fs.readFileSync(templatePath, "utf-8");
+
+      // 3. Process it through Vite (Injects the React scripts)
+      const appHtml = await vite.transformIndexHtml(url, template);
+
+      // 4. Send it
+      console.log(`[Vite] Serving index.html for ${url}`);
+      res.status(200).set({ "Content-Type": "text/html" }).end(appHtml);
     } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
+      // If anything fails, log it clearly
+      console.error(`[Vite Error] Could not serve ${url}:`, e);
       next(e);
     }
+  });
+}
+
+export function serveStatic(app: Express) {
+  const distPath = path.resolve(__dirname, "..", "dist", "public");
+  if (!fs.existsSync(distPath)) {
+    throw new Error(`Could not find the build directory: ${distPath}`);
+  }
+  app.use(express.static(distPath));
+  app.use("*", (req, res) => {
+    res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
