@@ -144,9 +144,13 @@ export async function sendWhatsAppOTP(phone: string, code: string): Promise<bool
  * Send WhatsApp text message (for notifications)
  */
 export async function sendWhatsAppMessage(phone: string, message: string): Promise<boolean> {
+  // FORCE PRODUCTION MODE - Throw error instead of silent failure
   if (!WHATSAPP_PHONE_NUMBER_ID || !WHATSAPP_ACCESS_TOKEN) {
-    console.error("[WhatsApp] API credentials not configured. Please set WA_PHONE_ID and WA_TOKEN in Replit Secrets");
-    return false;
+    const missingVars: string[] = [];
+    if (!WHATSAPP_PHONE_NUMBER_ID) missingVars.push("WA_PHONE_ID");
+    if (!WHATSAPP_ACCESS_TOKEN) missingVars.push("WA_TOKEN");
+    
+    throw new Error(`WhatsApp API credentials not configured. Missing: ${missingVars.join(", ")}`);
   }
 
   const formattedPhone = formatPhoneForWhatsApp(phone);
@@ -191,7 +195,22 @@ export async function sendBiddingLimitIncreaseNotification(phone: string, newLim
 
 /**
  * Check if WhatsApp API is properly configured
+ * FORCE PRODUCTION MODE - Throws error if credentials are missing
  */
 export function isWhatsAppConfigured(): boolean {
-  return !!(WHATSAPP_PHONE_NUMBER_ID && WHATSAPP_ACCESS_TOKEN);
+  const isConfigured = !!(WHATSAPP_PHONE_NUMBER_ID && WHATSAPP_ACCESS_TOKEN);
+  
+  if (!isConfigured) {
+    const missingVars: string[] = [];
+    if (!WHATSAPP_PHONE_NUMBER_ID) missingVars.push("WA_PHONE_ID");
+    if (!WHATSAPP_ACCESS_TOKEN) missingVars.push("WA_TOKEN");
+    
+    const errorMsg = `[WhatsApp] PRODUCTION MODE REQUIRED: Missing environment variables: ${missingVars.join(", ")}. ` +
+                     `Please set these in Replit Secrets. See ENVIRONMENT_VARIABLES_REQUIRED.md for details.`;
+    
+    console.error(errorMsg);
+    throw new Error(`WhatsApp API not configured. Missing: ${missingVars.join(", ")}`);
+  }
+  
+  return isConfigured;
 }

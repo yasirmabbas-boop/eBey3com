@@ -325,7 +325,7 @@ export default function MyAccount() {
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-6 max-w-2xl">
           
-          {/* Profile Header */}
+          {/* Profile Header - v2 Updated */}
           <div className="flex items-center gap-4 py-6 border-b bg-white rounded-t-xl px-4 -mx-4 md:mx-0 md:px-6">
             <div className="relative">
               <input
