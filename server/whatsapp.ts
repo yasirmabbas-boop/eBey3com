@@ -67,102 +67,75 @@ export async function sendWhatsAppOTP(phone: string, code: string): Promise<bool
   console.log(`[WhatsApp DEBUG] Request URL: ${WHATSAPP_BASE_URL}/${WHATSAPP_PHONE_NUMBER_ID}/messages`);
   
   try {
-    const response = await axios.post(
+    const response = await fetch(
       `${WHATSAPP_BASE_URL}/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
       {
-        messaging_product: "whatsapp",
-        to: formattedPhone,
-        type: "template",
-        template: {
-          name: "ebey3_auth_code", // Template must be pre-approved in Meta Business Manager
-          language: {
-            code: "ar", // Arabic
-          },
-          components: [
-            {
-              type: "body",
-              parameters: [
-                {
-                  type: "text",
-                  text: code,
-                },
-              ],
-            },
-          ],
-        },
-      },
-      {
+        method: "POST",
         headers: {
           "Authorization": `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
           "Content-Type": "application/json",
         },
-        // DEBUG: Capture raw response before JSON parsing
-        transformResponse: [(data) => {
-          console.log("[WhatsApp DEBUG] Raw Response String (before parsing):", data);
-          console.log("[WhatsApp DEBUG] Response String Length:", data?.length);
-          console.log("[WhatsApp DEBUG] Response Starts With:", data?.substring(0, 100));
-          
-          // Check if response is HTML (error page)
-          if (typeof data === 'string' && (data.trim().startsWith('<!DOCTYPE') || data.trim().startsWith('<html'))) {
-            console.error("[WhatsApp DEBUG] ⚠️ RESPONSE IS HTML (not JSON)! This usually means an error page from Meta.");
-            console.error("[WhatsApp DEBUG] Full HTML Response:", data);
-            // Don't parse, return as string so we can see it
-            return data;
-          }
-          
-          // Try to parse JSON manually
-          try {
-            const parsed = JSON.parse(data);
-            console.log("[WhatsApp DEBUG] Successfully parsed JSON:", parsed);
-            return parsed;
-          } catch (parseError) {
-            console.error("[WhatsApp DEBUG] Failed to parse JSON:", parseError);
-            console.error("[WhatsApp DEBUG] Raw data that failed to parse:", data);
-            return data; // Return raw data
-          }
-        }],
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: formattedPhone,
+          type: "template",
+          template: {
+            name: "ebey3_auth_code", // Template must be pre-approved in Meta Business Manager
+            language: {
+              code: "ar", // Arabic
+            },
+            components: [
+              {
+                type: "body",
+                parameters: [
+                  {
+                    type: "text",
+                    text: code,
+                  },
+                ],
+              },
+            ],
+          },
+        }),
       }
     );
 
-    // DEBUG: Log response details
-    console.log("[WhatsApp DEBUG] Response status:", response.status);
-    console.log("[WhatsApp DEBUG] Response headers:", JSON.stringify(response.headers, null, 2));
-    console.log("[WhatsApp DEBUG] Response Data:", response.data);
-    console.log("[WhatsApp DEBUG] Response Data Type:", typeof response.data);
+    // FAIL-SAFE: Read as text first to avoid crash
+    const rawText = await response.text();
+    console.log("RAW META RESPONSE:", rawText);
     
-    // Check if response is HTML (shouldn't happen if transformResponse worked)
-    if (typeof response.data === 'string' && (response.data.trim().startsWith('<!DOCTYPE') || response.data.trim().startsWith('<html'))) {
-      console.error("[WhatsApp DEBUG] ⚠️ Response data is HTML! Full HTML:", response.data);
+    // Try to parse the JSON response
+    let data;
+    try {
+      data = JSON.parse(rawText);
+      console.log("[WhatsApp DEBUG] Successfully parsed JSON:", data);
+    } catch (e) {
+      console.error("JSON Parsing failed. The server sent back HTML instead of JSON.");
+      console.error("[WhatsApp DEBUG] Parse error:", e);
+      console.error("[WhatsApp DEBUG] This means Meta's API returned an error page, not JSON data.");
       return false;
     }
+
+    // DEBUG: Log response details
+    console.log("[WhatsApp DEBUG] Response status:", response.status);
+    console.log("[WhatsApp DEBUG] Response OK:", response.ok);
+    console.log("[WhatsApp DEBUG] Response Data:", data);
     
     // Success case
-    if (response.status >= 200 && response.status < 300) {
+    if (response.ok && response.status >= 200 && response.status < 300) {
       console.log("[WhatsApp] OTP sent successfully");
       return true;
     }
     
+    console.error("[WhatsApp] API returned non-success status:", response.status);
     return false;
   } catch (error: any) {
     console.error("[WhatsApp DEBUG] Error caught in catch block");
     console.error("[WhatsApp DEBUG] Error type:", error.constructor.name);
     console.error("[WhatsApp DEBUG] Error message:", error.message);
+    console.error("[WhatsApp DEBUG] Full error:", error);
     
-    // Log raw error response if available
-    if (error.response) {
-      console.error("[WhatsApp DEBUG] Error response status:", error.response.status);
-      console.error("[WhatsApp DEBUG] Error response headers:", JSON.stringify(error.response.headers, null, 2));
-      console.error("[WhatsApp DEBUG] Error response data (raw):", error.response.data);
-      console.error("[WhatsApp DEBUG] Error response data type:", typeof error.response.data);
-      
-      // Check if error response is HTML
-      const errorData = error.response.data;
-      if (typeof errorData === 'string' && (errorData.trim().startsWith('<!DOCTYPE') || errorData.trim().startsWith('<html'))) {
-        console.error("[WhatsApp DEBUG] Error response is HTML! Full HTML:", errorData);
-      }
-    }
-    
-    console.error("[WhatsApp] Failed to send OTP:", error.response?.data || error.message);
+    console.error("[WhatsApp] Failed to send OTP:", error.message);
     return false;
   }
 }
