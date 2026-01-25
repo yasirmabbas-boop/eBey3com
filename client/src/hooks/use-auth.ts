@@ -28,6 +28,29 @@ function getAuthToken(): string | null {
   return localStorage.getItem("authToken");
 }
 
+// Check for token in URL (from Facebook OAuth redirect) and store it
+function checkAndStoreUrlToken(): void {
+  if (typeof window === "undefined") return;
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get("token");
+  
+  if (token) {
+    console.log("[DEBUG useAuth] Found token in URL, storing in localStorage");
+    localStorage.setItem("authToken", token);
+    
+    // Remove token from URL for security (prevent sharing URL with token)
+    urlParams.delete("token");
+    const newUrl = urlParams.toString() 
+      ? `${window.location.pathname}?${urlParams.toString()}`
+      : window.location.pathname;
+    window.history.replaceState({}, "", newUrl);
+  }
+}
+
+// Call this immediately when the module loads
+checkAndStoreUrlToken();
+
 async function fetchUser(): Promise<AuthUser | null> {
   // Try custom auth first with token fallback for Safari
   const authToken = getAuthToken();
