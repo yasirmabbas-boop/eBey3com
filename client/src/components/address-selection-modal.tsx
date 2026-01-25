@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2, MapPin, Plus, Check } from "lucide-react";
 import type { BuyerAddress } from "@shared/schema";
+import { authFetch } from "@/lib/api";
 
 interface AddressSelectionModalProps {
   open: boolean;
@@ -41,15 +42,7 @@ export function AddressSelectionModal({
   const { data: addresses, isLoading } = useQuery<BuyerAddress[]>({
     queryKey: ["/api/account/addresses"],
     queryFn: async () => {
-      const authToken = localStorage.getItem("authToken");
-      const headers: Record<string, string> = {};
-      if (authToken) {
-        headers["Authorization"] = `Bearer ${authToken}`;
-      }
-      const res = await fetch("/api/account/addresses", {
-        headers,
-        credentials: "include",
-      });
+      const res = await authFetch("/api/account/addresses");
       if (!res.ok) throw new Error("Failed to fetch addresses");
       return res.json();
     },
@@ -58,15 +51,8 @@ export function AddressSelectionModal({
 
   const createAddressMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const authToken = localStorage.getItem("authToken");
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (authToken) {
-        headers["Authorization"] = `Bearer ${authToken}`;
-      }
-      const res = await fetch("/api/account/addresses", {
+      const res = await authFetch("/api/account/addresses", {
         method: "POST",
-        headers,
-        credentials: "include",
         body: JSON.stringify(data),
       });
       if (!res.ok) {

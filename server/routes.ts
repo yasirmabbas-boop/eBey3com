@@ -2925,16 +2925,9 @@ export async function registerRoutes(
 
       // If phone is being updated, check for uniqueness
       if (updates.phone) {
-        const existingUserWithPhone = await db
-          .select()
-          .from(users)
-          .where(and(
-            eq(users.phone, updates.phone),
-            sql`${users.id} != ${userId}` // Exclude current user
-          ))
-          .limit(1);
+        const existingUserWithPhone = await storage.getUserByPhone(updates.phone);
 
-        if (existingUserWithPhone.length > 0) {
+        if (existingUserWithPhone && existingUserWithPhone.id !== userId) {
           return res.status(409).json({ error: "This phone number is already in use" });
         }
       }
@@ -3821,7 +3814,8 @@ export async function registerRoutes(
 
   // Push notifications - register native device token (FCM/APNS)
   app.post("/api/push/register-native", async (req, res) => {
-    if (!req.isAuthenticated()) {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
@@ -3831,8 +3825,6 @@ export async function registerRoutes(
       if (!token) {
         return res.status(400).json({ error: "Token is required" });
       }
-
-      const userId = req.user!.id;
 
       // Store the native push token in the database
       // For now, we'll use the same table as web push but with a different format
@@ -5081,16 +5073,9 @@ export async function registerRoutes(
       }
 
       // Unique check: verify phone number isn't already claimed by another user
-      const existingUserWithPhone = await db
-        .select()
-        .from(users)
-        .where(and(
-          eq(users.phone, phone),
-          sql`${users.id} != ${userId}` // Exclude current user
-        ))
-        .limit(1);
+      const existingUserWithPhone = await storage.getUserByPhone(phone);
 
-      if (existingUserWithPhone.length > 0) {
+      if (existingUserWithPhone && existingUserWithPhone.id !== userId) {
         return res.status(409).json({ error: "This phone number is already in use" });
       }
 

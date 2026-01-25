@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shield, Smartphone, MapPin, Key, User, Save, Plus, Trash2, Star, CheckCircle, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { MapPicker } from "@/components/map-picker";
+import { authFetch } from "@/lib/api";
 
 interface UserProfile {
   id: string;
@@ -151,9 +152,8 @@ export default function Settings() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: typeof profileForm) => {
-      const response = await fetch("/api/account/profile", {
+      const response = await authFetch("/api/account/profile", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -181,9 +181,8 @@ export default function Settings() {
 
   const changePasswordMutation = useMutation({
     mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
-      const response = await fetch("/api/account/password", {
+      const response = await authFetch("/api/account/password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -210,9 +209,8 @@ export default function Settings() {
 
   const createAddressMutation = useMutation({
     mutationFn: async (data: typeof addressForm) => {
-      const response = await fetch("/api/account/addresses", {
+      const response = await authFetch("/api/account/addresses", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -241,9 +239,8 @@ export default function Settings() {
 
   const updateAddressMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof addressForm }) => {
-      const response = await fetch(`/api/account/addresses/${id}`, {
+      const response = await authFetch(`/api/account/addresses/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -273,7 +270,7 @@ export default function Settings() {
 
   const deleteAddressMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/account/addresses/${id}`, {
+      const response = await authFetch(`/api/account/addresses/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -300,7 +297,7 @@ export default function Settings() {
 
   const setDefaultAddressMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/account/addresses/${id}/default`, {
+      const response = await authFetch(`/api/account/addresses/${id}/default`, {
         method: "POST",
       });
       if (!response.ok) {

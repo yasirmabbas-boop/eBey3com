@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@/hooks/use-upload";
 import { share } from "@/lib/nativeShare";
 import { getUserAvatarSrc } from "@/lib/avatar";
+import { authFetch } from "@/lib/api";
 import {
   Heart,
   Package,
@@ -103,9 +104,8 @@ export default function MyAccount() {
       console.log("[Avatar] Avatar URL to save:", avatarUrl);
 
       console.log("[Avatar] Saving to profile...");
-      const res = await fetch("/api/account/profile", {
+      const res = await authFetch("/api/account/profile", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ avatar: avatarUrl }),
       });
 
@@ -176,7 +176,7 @@ export default function MyAccount() {
 
   const verificationMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/verification-request", { method: "POST" });
+      const res = await authFetch("/api/verification-request", { method: "POST" });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "فشل في إرسال الطلب");
