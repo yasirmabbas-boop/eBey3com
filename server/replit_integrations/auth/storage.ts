@@ -1,6 +1,6 @@
 import { users, type User } from "@shared/schema";
 import { db } from "../../db";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 
 interface OIDCUserData {
   id: string;
@@ -10,9 +10,20 @@ interface OIDCUserData {
   profileImageUrl?: string | null;
 }
 
+export interface FacebookUserData {
+  id: string;
+  email?: string | null;
+  displayName?: string;
+  avatar?: string | null;
+  facebookId: string;
+  facebookLongLivedToken: string;
+}
+
 export interface IAuthStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(userData: OIDCUserData): Promise<User>;
+  getUserByFacebookId(facebookId: string): Promise<User | undefined>;
+  upsertFacebookUser(userData: FacebookUserData): Promise<User>;
 }
 
 class AuthStorage implements IAuthStorage {
@@ -45,6 +56,70 @@ class AuthStorage implements IAuthStorage {
       })
       .returning();
     return user;
+  }
+
+  async getUserByFacebookId(facebookId: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.authProvider, "facebook"),
+          eq(users.authProviderId, facebookId)
+        )
+      );
+    return user;
+  }
+
+  async upsertFacebookUser(userData: FacebookUserData): Promise<User> {
+    const displayName = userData.displayName || userData.email || "مستخدم";
+    
+    // Try to find existing user by Facebook ID
+    const existingUser = await this.getUserByFacebookId(userData.facebookId);
+    
+    if (existingUser) {
+      // Update existing user
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          facebookLongLivedToken: userData.facebookLongLivedToken,
+          email: userData.email || sql`${users.email}`,
+          displayName: displayName,
+          avatar: sql`COALESCE(${users.avatar}, ${userData.avatar || null})`,
+          lastLoginAt: new Date(),
+        })
+        .where(eq(users.id, existingUser.id))
+        .returning();
+      return updatedUser;
+    } else {
+      // Create new user
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          id: userData.id,
+          email: userData.email || null,
+          displayName: displayName,
+          avatar: userData.avatar || null,
+          authProvider: "facebook",
+          authProviderId: userData.facebookId,
+          facebookLongLivedToken: userData.facebookLongLivedToken,
+          phone: `fb_${userData.facebookId}`, // Placeholder phone for Facebook users
+        })
+        .onConflictDoUpdate({
+          target: users.id,
+          set: {
+            email: userData.email || sql`${users.email}`,
+            displayName: displayName,
+            avatar: sql`COALESCE(${users.avatar}, ${userData.avatar || null})`,
+            authProvider: "facebook",
+            authProviderId: userData.facebookId,
+            facebookLongLivedToken: userData.facebookLongLivedToken,
+            lastLoginAt: new Date(),
+          },
+        })
+        .returning();
+      return newUser;
+    }
   }
 }
 

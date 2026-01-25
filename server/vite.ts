@@ -31,7 +31,15 @@ export async function setupVite(server: Server, app: Express) {
 
   app.use(vite.middlewares);
 
+  // Catch-all route: Serve index.html for all non-API routes
+  // This allows React Router to handle client-side routing (e.g., /onboarding, /signin, etc.)
+  // API routes (starting with /api) are handled before this middleware
   app.use("*", async (req, res, next) => {
+    // Explicitly skip API routes - they should be handled by API route handlers
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+
     const url = req.originalUrl;
 
     try {

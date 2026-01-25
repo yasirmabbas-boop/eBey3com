@@ -6,12 +6,14 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   accountCode: text("account_code").unique(),
-  phone: text("phone").unique().notNull(),
+  username: text("username").unique(),
+  phone: text("phone"),
   email: text("email").unique(),
   password: text("password"),
   displayName: text("display_name").notNull(),
   avatar: text("avatar"),
   role: text("role").notNull().default("user"),
+  accountType: text("account_type").notNull().default("buyer"),
   isVerified: boolean("is_verified").notNull().default(false),
   isAdmin: boolean("is_admin").notNull().default(false),
   isTrusted: boolean("is_trusted").notNull().default(false),
@@ -49,6 +51,8 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   lastLoginAt: timestamp("last_login_at"),
   authToken: text("auth_token"),
+  facebookId: text("facebook_id").unique(),
+  facebookLongLivedToken: text("facebook_long_lived_token"),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -319,6 +323,7 @@ export const listings = pgTable("listings", {
   isActive: boolean("is_active").notNull().default(true),
   isPaused: boolean("is_paused").notNull().default(false),
   isNegotiable: boolean("is_negotiable").notNull().default(false),
+  isExchangeable: boolean("is_exchangeable").notNull().default(false),
   serialNumber: text("serial_number"),
   quantityAvailable: integer("quantity_available").notNull().default(1),
   quantitySold: integer("quantity_sold").notNull().default(0),

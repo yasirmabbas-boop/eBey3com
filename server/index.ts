@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { setupFacebookAuth } from "./auth-facebook";
 import { setupWebSocket } from "./websocket";
 import { startAuctionProcessor } from "./auction-processor";
 import { socialMetaMiddleware } from "./social-meta";
@@ -73,6 +74,7 @@ app.use((req, res, next) => {
 
 (async () => {
   await setupAuth(app);
+  setupFacebookAuth(app);
   registerAuthRoutes(app);
   await registerRoutes(httpServer, app);
 
@@ -85,16 +87,45 @@ app.use((req, res, next) => {
   });
 
   // Social media meta tag middleware - serve dynamic OG tags for crawlers
+  // This middleware only handles specific routes (product/seller pages) and calls next() for others
   app.use(socialMetaMiddleware);
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // IMPORTANT: Setup static file serving or Vite dev server AFTER all API routes
+  // This ensures that:
+  // 1. API routes (like /api/onboarding) are handled first
+  // 2. Client-side routes (like /onboarding) fall through to the catch-all route
+  // 3. The catch-all route serves index.html so React Router can handle the route
   if (process.env.NODE_ENV === "production") {
+    // Production: Serve static files with catch-all route for SPA routing
     serveStatic(app);
   } else {
+    // Development: Use Vite dev server with catch-all route for SPA routing
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
+  }
+
+  // Explicit wildcard route handler as final fallback for client-side routing (production only)
+  // In development, Vite's catch-all handler handles all client-side routes
+  // This ensures that requests to /onboarding or any other client route return the React app
+  if (process.env.NODE_ENV === "production") {
+    app.use("*", (req, res) => {
+      // Skip API routes - they should have been handled already
+      if (req.path.startsWith("/api")) {
+        return res.status(404).json({ message: "Not Found" });
+      }
+
+      // Production: Serve index.html from dist/public (Vite build output)
+      console.log(`[Wildcard Handler] Production: Serving index.html for ${req.path}`);
+      const distPath = path.resolve(__dirname, "..", "dist", "public");
+      const indexPath = path.resolve(distPath, "index.html");
+      
+      if (fs.existsSync(indexPath)) {
+        return res.sendFile(indexPath);
+      } else {
+        console.error(`[Wildcard Handler] Production: index.html not found at ${indexPath}`);
+        return res.status(404).send("Not Found: index.html not found");
+      }
+    });
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT

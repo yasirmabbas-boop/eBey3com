@@ -4999,5 +4999,62 @@ export async function registerRoutes(
     }
   });
 
+  // Onboarding routes for Facebook users
+  app.get("/api/onboarding", async (req, res) => {
+    try {
+      // Check if user is authenticated
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Return user data to check if onboarding is needed
+      res.json({
+        phone: user.phone || null,
+        addressLine1: user.addressLine1 || null,
+        addressLine2: user.addressLine2 || null,
+        city: user.city || null,
+        district: user.district || null,
+      });
+    } catch (error) {
+      console.error("Error fetching onboarding data:", error);
+      res.status(500).json({ error: "Failed to fetch onboarding data" });
+    }
+  });
+
+  app.post("/api/onboarding", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { phone, addressLine1, addressLine2, city, district } = req.body;
+
+      if (!phone || !addressLine1) {
+        return res.status(400).json({ error: "Phone number and address are required" });
+      }
+
+      // Update user with onboarding data
+      await storage.updateUser(userId, {
+        phone,
+        addressLine1,
+        addressLine2: addressLine2 || null,
+        city: city || null,
+        district: district || null,
+      } as any);
+
+      res.json({ success: true, message: "Onboarding completed" });
+    } catch (error) {
+      console.error("Error updating onboarding data:", error);
+      res.status(500).json({ error: "Failed to update onboarding data" });
+    }
+  });
+
   return httpServer;
 }

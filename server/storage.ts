@@ -65,6 +65,7 @@ export interface IStorage {
   getUserByAuthToken(token: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
+  upsertFacebookUser(data: { facebookId: string; email: string | null; displayName: string; photoUrl: string | null }): Promise<User>;
   
   getListings(): Promise<Listing[]>;
   getListingsPaginated(options: {
@@ -327,6 +328,80 @@ export class DatabaseStorage implements IStorage {
   async updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined> {
     const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     return this.normalizeUser(user);
+  }
+
+  async upsertFacebookUser(data: { facebookId: string; email: string | null; displayName: string; photoUrl: string | null }): Promise<User> {
+    return db.transaction(async (tx) => {
+      // First, search for existing user by facebookId
+      const [existingByFacebookId] = await tx
+        .select()
+        .from(users)
+        .where(eq(users.facebookId, data.facebookId))
+        .limit(1);
+
+      if (existingByFacebookId) {
+        return this.normalizeUser(existingByFacebookId)!;
+      }
+
+      // If not found, search for existing user by email
+      if (data.email) {
+        const [existingByEmail] = await tx
+          .select()
+          .from(users)
+          .where(eq(users.email, data.email))
+          .limit(1);
+
+        if (existingByEmail) {
+          // Update that user's record to include the facebookId
+          const [updatedUser] = await tx
+            .update(users)
+            .set({
+              facebookId: data.facebookId,
+              avatar: data.photoUrl || existingByEmail.avatar,
+              displayName: data.displayName || existingByEmail.displayName,
+              authProvider: "facebook",
+              authProviderId: data.facebookId,
+              lastLoginAt: new Date(),
+            })
+            .where(eq(users.id, existingByEmail.id))
+            .returning();
+          return this.normalizeUser(updatedUser)!;
+        }
+      }
+
+      // If email does NOT exist: Insert a new user record
+      // Generate account code within transaction
+      const accountCodeResult = await tx
+        .select({ accountCode: users.accountCode })
+        .from(users)
+        .where(sql`account_code LIKE 'EB-%'`)
+        .orderBy(sql`CAST(SUBSTRING(account_code FROM 4) AS INTEGER) DESC`)
+        .limit(1);
+      
+      let nextNumber = 10001; // Start from 10001
+      if (accountCodeResult.length > 0 && accountCodeResult[0].accountCode) {
+        const match = accountCodeResult[0].accountCode.match(/EB-(\d+)/);
+        if (match) {
+          nextNumber = parseInt(match[1], 10) + 1;
+        }
+      }
+      const accountCode = `EB-${nextNumber}`;
+
+      const [newUser] = await tx
+        .insert(users)
+        .values({
+          email: data.email,
+          facebookId: data.facebookId,
+          displayName: data.displayName,
+          avatar: data.photoUrl,
+          authProvider: "facebook",
+          authProviderId: data.facebookId,
+          accountCode,
+          phone: `fb_${data.facebookId}`, // Placeholder phone for Facebook users
+        })
+        .returning();
+      return this.normalizeUser(newUser)!;
+    });
   }
 
   async getListings(): Promise<Listing[]> {
