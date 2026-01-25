@@ -104,7 +104,7 @@ class AuthStorage implements IAuthStorage {
           authProvider: "facebook",
           authProviderId: userData.facebookId,
           facebookLongLivedToken: userData.facebookLongLivedToken,
-          phone: `fb_${userData.facebookId}`, // Placeholder phone for Facebook users
+          phone: null, // Leave phone NULL so onboarding flow triggers
         })
         .onConflictDoUpdate({
           target: users.id,

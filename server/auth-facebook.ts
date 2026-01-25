@@ -63,7 +63,7 @@ export function setupFacebookAuth(app: Express): void {
         clientSecret: FB_APP_SECRET,
         callbackURL: FB_CALLBACK_URL,
         scope: ["public_profile", "email"],
-        profileFields: ["id", "emails", "name", "displayName", "photos"],
+        profileFields: ["id", "displayName", "photos", "email"],
       },
       async (accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: Express.User) => void) => {
         try {
@@ -73,12 +73,8 @@ export function setupFacebookAuth(app: Express): void {
           // Extract profile information
           const facebookId = profile.id;
           const email = profile.emails?.[0]?.value || null;
-          const displayName =
-            profile.displayName ||
-            (profile.name ? `${profile.name.givenName || ""} ${profile.name.familyName || ""}`.trim() : null) ||
-            email ||
-            "مستخدم";
-          const avatar = profile.photos?.[0]?.value || null;
+          const displayName = profile.displayName || email || "مستخدم";
+          const photoUrl = profile.photos && profile.photos[0] ? profile.photos[0].value : null;
 
           // Generate a unique user ID (use Facebook ID as base, but ensure uniqueness)
           const userId = `fb_${facebookId}`;
@@ -88,7 +84,7 @@ export function setupFacebookAuth(app: Express): void {
             id: userId,
             email,
             displayName,
-            avatar,
+            avatar: photoUrl,
             facebookId,
             facebookLongLivedToken: longLivedToken,
           });
@@ -141,7 +137,7 @@ export function setupFacebookAuth(app: Express): void {
         console.log("[Facebook Auth] Generated authToken for user:", user.id);
 
         // Check if user has phone and address
-        const hasPhone = fullUser.phone && fullUser.phone.trim() !== "" && !fullUser.phone.startsWith("fb_");
+        const hasPhone = fullUser.phone && fullUser.phone.trim() !== "";
         const hasAddress = fullUser.addressLine1 && fullUser.addressLine1.trim() !== "";
         console.log("[Facebook Auth] hasPhone:", hasPhone, "hasAddress:", hasAddress);
 

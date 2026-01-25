@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/lib/i18n";
 import { FormError } from "@/components/form-error";
 import { validatePhone } from "@/lib/form-validation";
+import { authFetch, apiRequest } from "@/lib/queryClient";
 
 export default function Onboarding() {
   const [, navigate] = useLocation();
@@ -34,6 +35,8 @@ export default function Onboarding() {
     addressLine1: false,
   });
 
+  const [phoneError, setPhoneError] = useState<string>("");
+
   const phoneValidation = touched.phone ? validatePhone(formData.phone, language) : { valid: true };
 
   useEffect(() => {
@@ -46,16 +49,7 @@ export default function Onboarding() {
     // Fetch existing user data
     const fetchUserData = async () => {
       try {
-        const authToken = localStorage.getItem("authToken");
-        const headers: HeadersInit = {};
-        if (authToken) {
-          headers["Authorization"] = `Bearer ${authToken}`;
-        }
-        
-        const response = await fetch("/api/onboarding", {
-          credentials: "include",
-          headers,
-        });
+        const response = await authFetch("/api/onboarding");
 
         if (response.ok) {
           const data = await response.json();
@@ -81,6 +75,9 @@ export default function Onboarding() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Clear any previous phone error
+    setPhoneError("");
 
     if (!formData.phone || !formData.addressLine1) {
       toast({
@@ -111,24 +108,8 @@ export default function Onboarding() {
     setIsLoading(true);
 
     try {
-      const authToken = localStorage.getItem("authToken");
-      const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (authToken) {
-        headers["Authorization"] = `Bearer ${authToken}`;
-      }
-      
-      const response = await fetch("/api/onboarding", {
-        method: "POST",
-        headers,
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
-
+      const response = await apiRequest("POST", "/api/onboarding", formData);
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || tr("فشل حفظ البيانات", "هەڵە لە پاشەکەوتکردنی داتا", "Failed to save data"));
-      }
 
       toast({
         title: tr("تم الحفظ بنجاح", "بە سەرکەوتوویی پاشەکەوت کرا", "Saved successfully"),
@@ -141,11 +122,29 @@ export default function Onboarding() {
 
       navigate("/");
     } catch (error: any) {
-      toast({
-        title: tr("خطأ", "هەڵە", "Error"),
-        description: error.message,
-        variant: "destructive",
-      });
+      // Check if it's a 409 Conflict error (phone already in use)
+      if (error.message && error.message.includes("409")) {
+        setPhoneError(tr(
+          "رقم الهاتف هذا مستخدم بالفعل",
+          "ئەم ژمارە مۆبایلە پێشتر بەکارهاتووە",
+          "This phone number is already in use"
+        ));
+        toast({
+          title: tr("خطأ", "هەڵە", "Error"),
+          description: tr(
+            "رقم الهاتف هذا مستخدم بالفعل",
+            "ئەم ژمارە مۆبایلە پێشتر بەکارهاتووە",
+            "This phone number is already in use"
+          ),
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: tr("خطأ", "هەڵە", "Error"),
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -277,16 +276,6 @@ export default function Onboarding() {
                   tr("حفظ والمتابعة", "پاشەکەوت و بەردەوامبوون", "Save & Continue")
                 )}
               </Button>
-
-              <Link href="/">
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  className="w-full"
-                >
-                  {tr("تخطي الآن", "ئێستا تێپەڕ", "Skip for Now")}
-                </Button>
-              </Link>
             </form>
           </CardContent>
         </Card>

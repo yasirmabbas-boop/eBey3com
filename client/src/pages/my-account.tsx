@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@/hooks/use-upload";
 import { share } from "@/lib/nativeShare";
+import { getUserAvatarSrc } from "@/lib/avatar";
 import {
   Heart,
   Package,
@@ -369,15 +370,11 @@ export default function MyAccount() {
                 disabled={isUploadingAvatar}
                 data-testid="button-change-avatar"
               >
-                {user.avatar ? (
+                {getUserAvatarSrc(user) ? (
                   <img 
-                    src={user.avatar} 
+                    src={getUserAvatarSrc(user) || ''} 
                     alt={user.displayName || "صورة الملف الشخصي"} 
                     className="w-16 h-16 rounded-full object-cover border-2 border-primary/20"
-                    onError={(e) => {
-                      // If image fails to load, hide it so fallback initial shows
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
                   />
                 ) : (
                   <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl">

@@ -7,7 +7,7 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   accountCode: text("account_code").unique(),
   username: text("username").unique(),
-  phone: text("phone"),
+  phone: text("phone").unique(), // Nullable with unique constraint
   email: text("email").unique(),
   password: text("password"),
   displayName: text("display_name").notNull(),
@@ -44,6 +44,7 @@ export const users = pgTable("users", {
   district: text("district"),
   locationLat: real("location_lat"),
   locationLng: real("location_lng"),
+  mapUrl: text("map_url"), // Google Maps link for delivery
   ageBracket: text("age_bracket"),
   gender: text("gender"),
   interests: text("interests").array(),

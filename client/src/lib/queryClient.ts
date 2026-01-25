@@ -1,6 +1,10 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-function getAuthHeaders(): HeadersInit {
+/**
+ * Get authentication headers from localStorage
+ * @returns HeadersInit with Authorization Bearer token if available
+ */
+export function getAuthHeaders(): HeadersInit {
   const headers: HeadersInit = {};
   const authToken = localStorage.getItem("authToken");
   if (authToken) {
@@ -16,6 +20,38 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+/**
+ * Authenticated fetch - drop-in replacement for fetch() that includes auth headers
+ * @param url - The URL to fetch
+ * @param options - Standard fetch options (headers will be merged with auth headers)
+ * @returns Response object
+ */
+export async function authFetch(
+  url: string,
+  options?: RequestInit
+): Promise<Response> {
+  const authHeaders = getAuthHeaders();
+  const mergedHeaders = {
+    ...authHeaders,
+    ...(options?.headers || {}),
+  };
+
+  const res = await fetch(url, {
+    ...options,
+    headers: mergedHeaders,
+    credentials: "include",
+  });
+
+  return res;
+}
+
+/**
+ * Convenience function for JSON API requests with automatic auth and error handling
+ * @param method - HTTP method
+ * @param url - The URL to fetch
+ * @param data - Optional data to send as JSON body
+ * @returns Response object
+ */
 export async function apiRequest(
   method: string,
   url: string,

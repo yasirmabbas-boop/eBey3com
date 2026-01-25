@@ -397,7 +397,7 @@ export class DatabaseStorage implements IStorage {
           authProvider: "facebook",
           authProviderId: data.facebookId,
           accountCode,
-          phone: `fb_${data.facebookId}`, // Placeholder phone for Facebook users
+          phone: null, // Leave phone NULL so onboarding flow triggers
         })
         .returning();
       return this.normalizeUser(newUser)!;

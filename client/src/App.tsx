@@ -27,6 +27,7 @@ const Register = lazy(() => import("@/pages/register"));
 const SignIn = lazy(() => import("@/pages/signin"));
 const SearchPage = lazy(() => import("@/pages/search"));
 const Privacy = lazy(() => import("@/pages/privacy"));
+const DataDeletion = lazy(() => import("@/pages/data-deletion"));
 const Terms = lazy(() => import("@/pages/terms"));
 const ContactUs = lazy(() => import("@/pages/contact"));
 const SecurityGuide = lazy(() => import("@/pages/security-guide"));
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/search" component={SearchPage} />
       <Route path="/privacy" component={Privacy} />
+      <Route path="/data-deletion" component={DataDeletion} />
       <Route path="/terms" component={Terms} />
       <Route path="/my-purchases" component={MyPurchases} />
       <Route path="/my-sales" component={MySales} />

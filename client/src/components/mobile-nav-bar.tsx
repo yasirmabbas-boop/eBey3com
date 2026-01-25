@@ -19,9 +19,9 @@ export function MobileNavBar() {
   
   // Fetch unread notification count
   const { data: notificationData } = useQuery({
-    queryKey: ["/api/notifications/unread-count"],
+    queryKey: ["/api/notifications/count"],
     queryFn: async () => {
-      const res = await fetch("/api/notifications/unread-count");
+      const res = await fetch("/api/notifications/count");
       if (!res.ok) return { count: 0 };
       return res.json();
     },

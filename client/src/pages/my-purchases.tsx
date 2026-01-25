@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { StarRating } from "@/components/star-rating";
 import { useToast } from "@/hooks/use-toast";
+import { authFetch } from "@/lib/queryClient";
 import {
   Dialog,
   DialogContent,
@@ -459,11 +460,7 @@ export default function MyPurchases() {
     queryKey: ["/api/delivery/track", currentOrderId],
     queryFn: async () => {
       if (!currentOrderId) return null;
-      const token = localStorage.getItem("authToken");
-      const res = await fetch(`/api/delivery/track/${currentOrderId}`, {
-        credentials: "include",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await authFetch(`/api/delivery/track/${currentOrderId}`);
       if (!res.ok) return null;
       return res.json();
     },
@@ -472,11 +469,9 @@ export default function MyPurchases() {
 
   const confirmDeliveryMutation = useMutation({
     mutationFn: async (transactionId: string) => {
-      const token = localStorage.getItem("authToken");
-      const res = await fetch(`/api/delivery/${transactionId}/accept`, {
+      const res = await authFetch(`/api/delivery/${transactionId}/accept`, {
         method: "POST",
-        credentials: "include",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       });
       if (!res.ok) throw new Error("Failed to confirm delivery");
       return res.json();

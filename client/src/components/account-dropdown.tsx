@@ -24,6 +24,7 @@ import {
   Star,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { getUserAvatarSrc } from "@/lib/avatar";
 
 // Feature flag for exchange option - set to true to enable
 const ENABLE_EXCHANGE_FEATURE = false;
@@ -44,6 +45,8 @@ export function AccountDropdown() {
     );
   }
 
+  const avatarSrc = getUserAvatarSrc(user);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -52,8 +55,8 @@ export function AccountDropdown() {
           className="hover:text-primary font-semibold transition-colors text-xs flex items-center gap-1"
           data-testid="button-account-dropdown"
         >
-          {user.avatar ? (
-            <img src={user.avatar} alt={user.displayName} className="h-5 w-5 rounded-full" />
+          {avatarSrc ? (
+            <img src={avatarSrc} alt={user.displayName} className="h-5 w-5 rounded-full" />
           ) : (
             <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
               {user.displayName?.charAt(0) || "م"}
@@ -65,8 +68,8 @@ export function AccountDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
         <DropdownMenuLabel className="font-bold flex items-center gap-2">
-          {user.avatar ? (
-            <img src={user.avatar} alt={user.displayName} className="h-6 w-6 rounded-full" />
+          {avatarSrc ? (
+            <img src={avatarSrc} alt={user.displayName} className="h-6 w-6 rounded-full" />
           ) : (
             <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
               {user.displayName?.charAt(0) || "م"}

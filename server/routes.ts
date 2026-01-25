@@ -2836,9 +2836,20 @@ export async function registerRoutes(
       return res.status(401).json({ error: "المستخدم غير موجود" });
     }
 
+    // Temporary Cleanup: If phone number matches facebookId, hide it
+    // This ensures users with legacy data see an empty phone field
+    let cleanPhone = user.phone;
+    if (cleanPhone && user.facebookId && cleanPhone === user.facebookId) {
+      cleanPhone = null;
+    }
+    // Also check for "fb_" prefix pattern (another legacy format)
+    if (cleanPhone && cleanPhone.startsWith("fb_")) {
+      cleanPhone = null;
+    }
+
     res.json({
       id: user.id,
-      phone: user.phone,
+      phone: cleanPhone,
       displayName: user.displayName,
       sellerApproved: user.sellerApproved,
       sellerRequestStatus: user.sellerRequestStatus,
@@ -2899,7 +2910,7 @@ export async function registerRoutes(
     }
 
     try {
-      const allowedFields = ["displayName", "city", "district", "addressLine1", "addressLine2", "ageBracket", "interests", "surveyCompleted", "avatar"];
+      const allowedFields = ["displayName", "city", "district", "addressLine1", "addressLine2", "phone", "mapUrl", "ageBracket", "interests", "surveyCompleted", "avatar"];
       const updates: Record<string, any> = {};
       
       for (const field of allowedFields) {
@@ -2910,6 +2921,22 @@ export async function registerRoutes(
 
       if (Object.keys(updates).length === 0) {
         return res.status(400).json({ error: "لم يتم تقديم أي حقول للتحديث" });
+      }
+
+      // If phone is being updated, check for uniqueness
+      if (updates.phone) {
+        const existingUserWithPhone = await db
+          .select()
+          .from(users)
+          .where(and(
+            eq(users.phone, updates.phone),
+            sql`${users.id} != ${userId}` // Exclude current user
+          ))
+          .limit(1);
+
+        if (existingUserWithPhone.length > 0) {
+          return res.status(409).json({ error: "This phone number is already in use" });
+        }
       }
 
       const user = await storage.updateUser(userId, updates);
@@ -2941,6 +2968,7 @@ export async function registerRoutes(
         district: user.district,
         addressLine1: user.addressLine1,
         addressLine2: user.addressLine2,
+        mapUrl: user.mapUrl,
         ageBracket: user.ageBracket,
         interests: user.interests,
         surveyCompleted: user.surveyCompleted,
@@ -5013,9 +5041,20 @@ export async function registerRoutes(
         return res.status(404).json({ error: "User not found" });
       }
 
+      // Temporary Cleanup: If phone number matches facebookId, treat it as NULL
+      // This handles legacy data where phone was set to Facebook ID
+      let cleanPhone = user.phone || null;
+      if (cleanPhone && user.facebookId && cleanPhone === user.facebookId) {
+        cleanPhone = null;
+      }
+      // Also check for "fb_" prefix pattern (another legacy format)
+      if (cleanPhone && cleanPhone.startsWith("fb_")) {
+        cleanPhone = null;
+      }
+
       // Return user data to check if onboarding is needed
       res.json({
-        phone: user.phone || null,
+        phone: cleanPhone,
         addressLine1: user.addressLine1 || null,
         addressLine2: user.addressLine2 || null,
         city: user.city || null,
@@ -5036,8 +5075,23 @@ export async function registerRoutes(
 
       const { phone, addressLine1, addressLine2, city, district } = req.body;
 
+      // Mandatory validation: both phone and address must be present
       if (!phone || !addressLine1) {
         return res.status(400).json({ error: "Phone number and address are required" });
+      }
+
+      // Unique check: verify phone number isn't already claimed by another user
+      const existingUserWithPhone = await db
+        .select()
+        .from(users)
+        .where(and(
+          eq(users.phone, phone),
+          sql`${users.id} != ${userId}` // Exclude current user
+        ))
+        .limit(1);
+
+      if (existingUserWithPhone.length > 0) {
+        return res.status(409).json({ error: "This phone number is already in use" });
       }
 
       // Update user with onboarding data

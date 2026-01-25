@@ -195,6 +195,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                 <ul className="space-y-1 text-xs">
                   <li><a href="mailto:info@ebey3.com" className="hover:text-white" data-testid="footer-email-info">info@ebey3.com</a></li>
                   <li><a href="mailto:support@ebey3.com" className="hover:text-white" data-testid="footer-email-support">support@ebey3.com</a></li>
+                  <li><a href="mailto:security@ebey3.com" className="hover:text-white text-red-400" data-testid="footer-email-security">Report a Security Issue</a></li>
                 </ul>
               </div>
             </div>

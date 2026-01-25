@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2, Sparkles } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 interface UserProfile {
   ageBracket?: string;
@@ -59,22 +60,7 @@ export function PostRegistrationSurvey({ open, onClose }: PostRegistrationSurvey
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: { ageBracket?: string; interests?: string[]; surveyCompleted: boolean }) => {
-      const authToken = localStorage.getItem("authToken");
-      const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (authToken) {
-        headers["Authorization"] = `Bearer ${authToken}`;
-      }
-      
-      const response = await fetch("/api/account/profile", {
-        method: "PUT",
-        headers,
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "فشل في حفظ البيانات");
-      }
+      const response = await apiRequest("PUT", "/api/account/profile", data);
       return response.json();
     },
     onSuccess: () => {

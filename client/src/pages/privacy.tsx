@@ -4,11 +4,29 @@ export default function Privacy() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12 max-w-4xl">
-        <h1 className="text-4xl font-bold text-primary mb-8">سياسة الخصوصية - منصة E-بيع (Ebey3)</h1>
-        <p className="text-sm text-gray-500 mb-8">تاريخ آخر تحديث: يناير 2026</p>
+        <h1 className="text-4xl font-bold text-primary mb-8">Privacy Policy for Ebey3</h1>
+        <p className="text-sm text-gray-500 mb-8">Last Updated: January 2026</p>
         
         <div className="prose prose-lg max-w-none space-y-6 text-gray-700">
           
+          <section>
+            <h2 className="text-2xl font-bold text-primary mb-4">Facebook Login Integration</h2>
+            <p>
+              When you log in with Facebook, we collect your <strong>name</strong> and <strong>email address</strong> from your Facebook profile to create and manage your account on our platform. This allows you to easily sign in without creating a separate username and password.
+            </p>
+            <p className="mt-4">
+              <strong>We do not sell your data.</strong> Your Facebook information is used solely for authentication and account management purposes. We do not share your personal data with third parties for marketing purposes.
+            </p>
+            <p className="mt-4">
+              For data deletion requests, please visit our <a href="/data-deletion" className="text-primary underline">Data Deletion Instructions</a> page or contact us at <strong>support@ebey3.com</strong>.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-primary mb-4">سياسة الخصوصية - منصة E-بيع (Ebey3)</h2>
+            <p className="text-sm text-gray-500 mb-4">تاريخ آخر تحديث: يناير 2026</p>
+          </section>
+
           <section>
             <h2 className="text-2xl font-bold text-primary mb-4">مقدمة</h2>
             <p>
@@ -21,6 +39,7 @@ export default function Privacy() {
             <p>نقوم بجمع أنواع مختلفة من البيانات لضمان عمل المنصة بأمان:</p>
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li><strong>المعلومات الشخصية:</strong> الاسم الكامل، رقم الهاتف العراقي، وعنوان التوصيل.</li>
+              <li><strong>تسجيل الدخول عبر Facebook:</strong> عند تسجيل الدخول باستخدام Facebook، نجمع الاسم والبريد الإلكتروني من حسابك على Facebook.</li>
               <li><strong>وثائق التحقق (للبائعين):</strong> صورة البطاقة الوطنية أو هوية الأحوال المدنية، وصورة شخصية للتحقق.</li>
               <li><strong>المعلومات المالية:</strong> تفاصيل حسابات استلام الأموال (مثل زين كاش) لتحويل الأرباح.</li>
               <li><strong>بيانات المراسلات:</strong> الرسائل المتبادلة بين البائع والمشتري عبر المنصة.</li>
@@ -78,6 +97,26 @@ export default function Privacy() {
             </p>
             <p className="mt-4">
               للتواصل بخصوص الخصوصية: <strong>privacy@ebey3.com</strong>
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-primary mb-4">Security & Vulnerability Reporting</h2>
+            <p>
+              Ebey3 LLC takes data security seriously. If you discover a security vulnerability in our platform, please contact our security team at <a href="mailto:security@ebey3.com" className="text-primary font-semibold underline">security@ebey3.com</a>.
+            </p>
+            <p className="mt-4">
+              We investigate all security reports and respond within <strong>72 hours</strong>. We appreciate the efforts of security researchers who help us maintain a safe platform for all users.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold text-primary mb-4">8. الإبلاغ عن الثغرات الأمنية</h2>
+            <p>
+              تأخذ Ebey3 LLC أمن البيانات على محمل الجد. إذا اكتشفت ثغرة أمنية في منصتنا، يرجى الاتصال بفريق الأمن لدينا على <a href="mailto:security@ebey3.com" className="text-primary font-semibold underline">security@ebey3.com</a>.
+            </p>
+            <p className="mt-4">
+              نحن نحقق في جميع التقارير الأمنية ونستجيب خلال <strong>72 ساعة</strong>. نحن نقدر جهود الباحثين الأمنيين الذين يساعدوننا في الحفاظ على منصة آمنة لجميع المستخدمين.
             </p>
           </section>
 
