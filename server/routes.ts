@@ -4014,6 +4014,21 @@ export async function registerRoutes(
     }
   });
 
+  // Alias for /api/notifications/count (some clients may use this endpoint)
+  app.get("/api/notifications/unread-count", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.json({ count: 0 });
+      }
+      const count = await storage.getUnreadNotificationCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching notification count:", error);
+      res.status(500).json({ error: "Failed to fetch notification count" });
+    }
+  });
+
   app.post("/api/notifications/:id/read", async (req, res) => {
     try {
       const userId = await getUserIdFromRequest(req);
