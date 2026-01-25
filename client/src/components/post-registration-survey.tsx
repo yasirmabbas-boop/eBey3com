@@ -59,9 +59,16 @@ export function PostRegistrationSurvey({ open, onClose }: PostRegistrationSurvey
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: { ageBracket?: string; interests?: string[]; surveyCompleted: boolean }) => {
+      const authToken = localStorage.getItem("authToken");
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
+      
       const response = await fetch("/api/account/profile", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
+        credentials: "include",
         body: JSON.stringify(data),
       });
       if (!response.ok) {
