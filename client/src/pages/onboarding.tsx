@@ -46,8 +46,15 @@ export default function Onboarding() {
     // Fetch existing user data
     const fetchUserData = async () => {
       try {
+        const authToken = localStorage.getItem("authToken");
+        const headers: HeadersInit = {};
+        if (authToken) {
+          headers["Authorization"] = `Bearer ${authToken}`;
+        }
+        
         const response = await fetch("/api/onboarding", {
           credentials: "include",
+          headers,
         });
 
         if (response.ok) {
@@ -104,9 +111,15 @@ export default function Onboarding() {
     setIsLoading(true);
 
     try {
+      const authToken = localStorage.getItem("authToken");
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
+      
       const response = await fetch("/api/onboarding", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         credentials: "include",
         body: JSON.stringify(formData),
       });
