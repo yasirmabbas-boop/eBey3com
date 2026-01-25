@@ -3411,7 +3411,7 @@ export async function registerRoutes(
         return res.status(403).json({ error: "حسابك محظور. لا يمكنك الشراء." });
       }
 
-      const { fullName, phone, city, addressLine1, addressLine2 } = req.body;
+      const { fullName, phone, city, addressLine1, addressLine2, saveAddress } = req.body;
       
       if (!fullName || !phone || !city || !addressLine1) {
         return res.status(400).json({ error: "جميع الحقول المطلوبة يجب ملؤها" });
@@ -3488,6 +3488,32 @@ export async function registerRoutes(
         addressLine1,
         addressLine2: addressLine2 || null,
       });
+
+      // Save address to buyer_addresses if requested
+      if (saveAddress) {
+        try {
+          // Check for duplicate address (same phone + addressLine1)
+          const existingAddresses = await storage.getBuyerAddresses(userId);
+          const isDuplicate = existingAddresses.some(
+            addr => addr.phone === phone && addr.addressLine1 === addressLine1
+          );
+          
+          if (!isDuplicate) {
+            await storage.createBuyerAddress({
+              userId,
+              recipientName: fullName,
+              phone,
+              city,
+              addressLine1,
+              addressLine2: addressLine2 || null,
+              isDefault: existingAddresses.length === 0, // First address becomes default
+            });
+          }
+        } catch (addrError) {
+          console.error("Error saving address:", addrError);
+          // Don't fail the checkout if address save fails
+        }
+      }
 
       // Clear cart after successful checkout
       await storage.clearCart(userId);

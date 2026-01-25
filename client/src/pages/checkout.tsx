@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ShoppingCart, MapPin, Phone, User, Loader2, CheckCircle, ArrowRight, Plus, Store, Truck, Package } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
@@ -63,6 +64,7 @@ export default function CheckoutPage() {
   const [addressLine2, setAddressLine2] = useState("");
   const [mapLocation, setMapLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isOrderComplete, setIsOrderComplete] = useState(false);
+  const [saveAddress, setSaveAddress] = useState(true);
 
   const { data: savedAddresses = [], isLoading: isAddressesLoading } = useQuery<BuyerAddress[]>({
     queryKey: ["/api/account/addresses"],
@@ -162,6 +164,7 @@ export default function CheckoutPage() {
       addressLine1: string;
       addressLine2?: string;
       shippingCost: number;
+      saveAddress?: boolean;
     }) => {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -205,6 +208,7 @@ export default function CheckoutPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/account/addresses"] });
     },
     onError: (error: Error) => {
       toast({
@@ -249,6 +253,7 @@ export default function CheckoutPage() {
       addressLine1: addressLine1.trim(),
       addressLine2: addressLine2.trim() || undefined,
       shippingCost: shippingTotal,
+      saveAddress: selectedAddressId === "new" && saveAddress,
     });
   };
 
@@ -465,6 +470,19 @@ export default function CheckoutPage() {
                       value={mapLocation}
                       onChange={setMapLocation}
                     />
+                  </div>
+
+                  {/* Save address checkbox */}
+                  <div className="flex items-center gap-2 pt-4 border-t mt-4">
+                    <Checkbox
+                      id="saveAddress"
+                      checked={saveAddress}
+                      onCheckedChange={(checked) => setSaveAddress(checked === true)}
+                      data-testid="checkbox-save-address"
+                    />
+                    <Label htmlFor="saveAddress" className="cursor-pointer text-sm">
+                      حفظ هذا العنوان للطلبات المستقبلية
+                    </Label>
                   </div>
                 </div>
               </Card>
