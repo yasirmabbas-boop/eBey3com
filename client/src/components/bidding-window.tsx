@@ -8,7 +8,6 @@ import { useBidWebSocket } from "@/hooks/use-bid-websocket";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AddressSelectionModal } from "./address-selection-modal";
 import { hapticSuccess, hapticError, hapticLight } from "@/lib/despia";
-import { Link } from "wouter";
 
 type BidUpdateEvent = {
   currentBid: number;
@@ -28,9 +27,11 @@ interface BiddingWindowProps {
   auctionEndTime?: string | null;
   onBidSuccess?: (bidAmount: number) => void;
   onRequireAuth?: () => boolean;
+  onRequirePhoneVerification?: () => void;
   isWinning?: boolean;
   isAuthLoading?: boolean;
   isVerified?: boolean;
+  phoneVerified?: boolean;
   allowedBidderType?: string;
 }
 
@@ -106,9 +107,11 @@ export function BiddingWindow({
   timeLeft,
   onBidSuccess,
   onRequireAuth,
+  onRequirePhoneVerification,
   isWinning = false,
   isAuthLoading = false,
   isVerified = false,
+  phoneVerified = false,
   allowedBidderType = "verified_only",
 }: BiddingWindowProps) {
   const [currentBid, setCurrentBid] = useState(initialCurrentBid);
@@ -246,7 +249,8 @@ export function BiddingWindow({
     setBidAmount(amount.toString());
   }, []);
 
-  const needsVerification = allowedBidderType === "verified_only" && !isVerified;
+  const needsPhoneVerification = !phoneVerified;
+  const needsVerification = allowedBidderType === "verified_only" && needsPhoneVerification;
   const isSubmitDisabled = bidMutation.isPending || isWinning || isAuthLoading || (!!userId && needsVerification);
   const currentBidValue = parseBidAmount(bidAmount);
   const isValidBid = currentBidValue >= minimumBid && currentBidValue <= MAX_BID_LIMIT;
@@ -311,11 +315,12 @@ export function BiddingWindow({
       )}
 
       {!!userId && needsVerification && (
-        <Link href="/my-account">
-          <div className="bg-yellow-50 border border-yellow-300 p-3 rounded-lg mb-6 text-sm text-yellow-700 font-medium text-center cursor-pointer hover:bg-yellow-100 transition-colors">
-            ⚠️ يجب توثيق حسابك للمزايدة في هذا المزاد. <span className="underline">اضغط هنا لطلب التوثيق</span>
-          </div>
-        </Link>
+        <div 
+          className="bg-yellow-50 border border-yellow-300 p-3 rounded-lg mb-6 text-sm text-yellow-700 font-medium text-center cursor-pointer hover:bg-yellow-100 transition-colors"
+          onClick={onRequirePhoneVerification}
+        >
+          ⚠️ يجب التحقق من رقم هاتفك للمزايدة في هذا المزاد. <span className="underline">اضغط هنا للتحقق عبر واتساب</span>
+        </div>
       )}
 
       <div className="space-y-4 mb-6">

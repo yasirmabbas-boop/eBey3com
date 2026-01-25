@@ -1053,9 +1053,11 @@ export default function ProductPage() {
                         return typeof endTime === 'string' ? endTime : endTime.toISOString();
                       })()}
                       onRequireAuth={() => requireAuth("bid")}
+                      onRequirePhoneVerification={() => setPhoneVerificationOpen(true)}
                       isWinning={!!isWinning}
                       isAuthLoading={isAuthLoading}
                       isVerified={user?.isVerified || false}
+                      phoneVerified={user?.phoneVerified || false}
                       allowedBidderType={listing?.allowedBidderType}
                     />
                   )
