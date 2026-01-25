@@ -45,6 +45,23 @@
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
     <div id="root"></div>
+    <!-- CRITICAL: Capture auth token from URL BEFORE any JS modules load (handles OAuth redirects) -->
+    <script>
+      (function() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var token = urlParams.get('token');
+        if (token) {
+          console.log('[index.html] Found token in URL, storing in localStorage');
+          localStorage.setItem('authToken', token);
+          urlParams.delete('token');
+          var newUrl = urlParams.toString() 
+            ? window.location.pathname + '?' + urlParams.toString()
+            : window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+          console.log('[index.html] Token stored successfully');
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
