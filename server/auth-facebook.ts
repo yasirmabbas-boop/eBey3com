@@ -118,28 +118,35 @@ export function setupFacebookAuth(app: Express): void {
       try {
         // User is now authenticated and in session
         const user = req.user as User;
+        console.log("[Facebook Auth] Callback received, user:", user?.id);
         
         if (!user || !user.id) {
+          console.log("[Facebook Auth] No user in request, redirecting to signin");
           return res.redirect("/signin?error=authentication_failed");
         }
 
         // Fetch the full user record from database to check for phone and address
         const fullUser = await authStorage.getUser(user.id);
+        console.log("[Facebook Auth] Full user from DB:", fullUser?.id, "phone:", fullUser?.phone, "address:", fullUser?.addressLine1);
         
         if (!fullUser) {
+          console.log("[Facebook Auth] User not found in DB, redirecting to signin");
           return res.redirect("/signin?error=user_not_found");
         }
 
         // Check if user has phone and address
         const hasPhone = fullUser.phone && fullUser.phone.trim() !== "" && !fullUser.phone.startsWith("fb_");
         const hasAddress = fullUser.addressLine1 && fullUser.addressLine1.trim() !== "";
+        console.log("[Facebook Auth] hasPhone:", hasPhone, "hasAddress:", hasAddress);
 
         // Redirect to onboarding if data is missing, otherwise to home
         if (!hasPhone || !hasAddress) {
+          console.log("[Facebook Auth] Missing data, redirecting to /onboarding");
           return res.redirect("/onboarding");
         }
 
         // User has all required data, redirect to home
+        console.log("[Facebook Auth] User complete, redirecting to /");
         res.redirect("/");
       } catch (error) {
         console.error("Error in Facebook callback:", error);
