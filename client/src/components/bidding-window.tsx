@@ -336,15 +336,6 @@ export function BiddingWindow({
     }
   }, [bidAmount, bidMutation, onRequireAuth, toast, validateBid, selectedAddress, showInlineAddressForm, inlineAddressData, createAddressMutation]);
 
-  const handleAddressSelected = useCallback((addressId: string) => {
-    if (pendingBidAmount === null) return;
-    
-    bidMutation.mutate({ amount: pendingBidAmount, shippingAddressId: addressId });
-    setPendingBidAmount(null);
-    setShowInlineAddressForm(false);
-    setInlineAddressData({ city: "", addressLine1: "" });
-  }, [pendingBidAmount, bidMutation]);
-
   const handleQuickBid = useCallback((amount: number) => {
     isTypingRef.current = false;
     setBidAmount(amount.toString());
@@ -599,7 +590,6 @@ export function BiddingWindow({
                             });
                             return;
                           }
-                          setPendingBidAmount(bid);
                           createAddressMutation.mutate(inlineAddressData);
                         } else {
                           toast({
@@ -666,10 +656,7 @@ export function BiddingWindow({
 
       <AddressSelectionModal
         open={showAddressModal}
-        onOpenChange={(open) => {
-          setShowAddressModal(open);
-          if (!open) setPendingBidAmount(null);
-        }}
+        onOpenChange={setShowAddressModal}
         onSelect={handleAddressSelected}
       />
     </Card>
