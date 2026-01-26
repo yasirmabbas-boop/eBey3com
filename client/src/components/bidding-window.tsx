@@ -247,8 +247,7 @@ export function BiddingWindow({
     setBidAmount(amount.toString());
   }, []);
 
-  const needsPhoneVerification = !phoneVerified;
-  const needsVerification = allowedBidderType === "verified_only" && needsPhoneVerification;
+  const needsVerification = !phoneVerified;
   const isSubmitDisabled = bidMutation.isPending || isWinning || isAuthLoading || (!!userId && needsVerification);
   const currentBidValue = parseBidAmount(bidAmount);
   const isValidBid = currentBidValue >= minimumBid && currentBidValue <= MAX_BID_LIMIT;

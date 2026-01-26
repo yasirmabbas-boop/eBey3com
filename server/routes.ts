@@ -945,9 +945,9 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Listing not found" });
       }
 
-      // Enforce participation restrictions
-      if (listing.allowedBidderType === "verified_only" && !bidder.isVerified) {
-        return res.status(403).json({ error: "هذا المزاد مخصص للمستخدمين الموثقين فقط. يرجى توثيق حسابك للمشاركة." });
+      // Enforce phone verification for bidding
+      if (!bidder.phoneVerified) {
+        return res.status(403).json({ error: "يجب التحقق من رقم هاتفك للمزايدة في هذا المزاد." });
       }
       
       // Prevent sellers from bidding on their own items
