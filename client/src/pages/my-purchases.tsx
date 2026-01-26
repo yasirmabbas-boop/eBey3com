@@ -106,7 +106,7 @@ function RateSellerCard({
       window.dataLayer.push({
         'event': 'submit_rating',
         'rating_value': rating,
-        'rated_entity_id': purchase.sellerId
+        'rated_entity_id': purchase.listing?.sellerId
       });
       
       toast({
