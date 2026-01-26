@@ -11,6 +11,7 @@ import { Star, MapPin, Calendar, Package, Share2, CheckCircle } from "lucide-rea
 import { Link } from "wouter";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram } from "@/lib/share-utils";
 import { VerifiedBadge } from "@/components/verified-badge";
+import { useListings } from "@/hooks/use-listings";
 
 interface SellerInfo {
   id: string;
@@ -49,16 +50,12 @@ export default function SellerProfile() {
     enabled: !!id,
   });
 
-  const { data: listings = [], isLoading: listingsLoading } = useQuery<Listing[]>({
-    queryKey: ["/api/listings", { sellerId: id }],
-    queryFn: async () => {
-      const res = await fetch(`/api/listings?sellerId=${id}&limit=50`);
-      if (!res.ok) throw new Error("Failed to fetch listings");
-      const data = await res.json();
-      return data.listings || data;
-    },
-    enabled: !!id,
+  const { data: listingsData, isLoading: listingsLoading } = useListings({
+    sellerId: id || undefined,
+    limit: 50,
   });
+  
+  const listings = listingsData?.listings || [];
 
   const handleShare = (platform: string) => {
     const shareText = language === "ar" 

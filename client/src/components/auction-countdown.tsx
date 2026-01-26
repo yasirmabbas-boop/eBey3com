@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { Clock } from "lucide-react";
 
 interface AuctionCountdownProps {
@@ -6,7 +6,7 @@ interface AuctionCountdownProps {
   onExpired?: () => void;
 }
 
-export function AuctionCountdown({ endTime, onExpired }: AuctionCountdownProps) {
+export const AuctionCountdown = memo(function AuctionCountdown({ endTime, onExpired }: AuctionCountdownProps) {
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -103,4 +103,4 @@ export function AuctionCountdown({ endTime, onExpired }: AuctionCountdownProps) 
       </div>
     </div>
   );
-}
+});

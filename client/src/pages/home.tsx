@@ -104,7 +104,7 @@ export default function Home() {
 
   const { data: listingsData, isLoading } = useListings({ limit: 24, sellerId });
   
-  const listings: Listing[] = listingsData || [];
+  const listings: Listing[] = listingsData?.listings || [];
 
   const displayProducts = listings
     .filter(l => {

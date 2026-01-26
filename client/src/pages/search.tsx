@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useLocation, useSearch, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
+import { useListings } from "@/hooks/use-listings";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -172,65 +173,26 @@ export default function SearchPage() {
 
   const ITEMS_PER_PAGE = 20;
 
-  const buildApiUrl = useCallback(() => {
-    const apiParams = new URLSearchParams();
-    apiParams.set("limit", String(ITEMS_PER_PAGE));
-    apiParams.set("page", String(page));
-    
-    if (sellerIdParam) apiParams.set("sellerId", sellerIdParam);
-    if (appliedFilters.includeSold) {
-      console.log('[SEARCH] Adding includeSold=true to API URL');
-      apiParams.set("includeSold", "true");
-    }
-    if (searchQuery) apiParams.set("q", searchQuery);
-    if (appliedFilters.category) apiParams.set("category", appliedFilters.category);
-    if (appliedFilters.priceMin) apiParams.set("minPrice", appliedFilters.priceMin);
-    if (appliedFilters.priceMax) apiParams.set("maxPrice", appliedFilters.priceMax);
-    const saleTypes = appliedFilters.saleTypes.length
-      ? appliedFilters.saleTypes
-      : saleTypeParam
-        ? [saleTypeParam]
-        : [];
-    saleTypes.forEach((value) => apiParams.append("saleType", value));
-    appliedFilters.conditions.forEach((value) => apiParams.append("condition", value));
-    appliedFilters.cities.forEach((value) => apiParams.append("city", value));
-    
-    const url = `/api/listings?${apiParams.toString()}`;
-    console.log('[SEARCH] Built API URL:', url, 'includeSold:', appliedFilters.includeSold);
-    return url;
-  }, [sellerIdParam, appliedFilters, searchQuery, saleTypeParam, page]);
+  // Determine saleType array: use appliedFilters.saleTypes if available, otherwise fall back to saleTypeParam
+  const saleTypes = appliedFilters.saleTypes.length
+    ? appliedFilters.saleTypes
+    : saleTypeParam
+      ? [saleTypeParam]
+      : [];
 
-  // Use primitive values in queryKey for stable cache keys (objects cause unnecessary refetches)
-  const { data: listingsData, isLoading, isFetching } = useQuery({
-    queryKey: [
-      "/api/listings", 
-      sellerIdParam, 
-      appliedFilters.category,
-      appliedFilters.includeSold,
-      appliedFilters.priceMin,
-      appliedFilters.priceMax,
-      appliedFilters.conditions.join(','),
-      appliedFilters.saleTypes.join(','),
-      appliedFilters.cities.join(','),
-      searchQuery, 
-      saleTypeParam, 
-      page
-    ],
-    queryFn: async () => {
-      const url = buildApiUrl();
-      console.log('[DEBUG-B] Fetching listings', { url, page, category: appliedFilters.category });
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:queryFn',message:'fetch-listings',data:{url,page,category:appliedFilters.category,searchQuery,includeSold:appliedFilters.includeSold,saleTypes:appliedFilters.saleTypes.length,conditions:appliedFilters.conditions.length,cities:appliedFilters.cities.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H2'})}).catch(()=>{});
-      // #endregion
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch listings");
-      const data = await res.json();
-      console.log('[DEBUG-C] Listings response', { listingsCount: data?.listings?.length, total: data?.pagination?.total });
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:queryFn-response',message:'fetch-listings-response',data:{listingsCount:data?.listings?.length,total:data?.pagination?.total,hasPagination:!!data?.pagination},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
-      return data;
-    },
+  // Use the standardized useListings hook for consistent data fetching and caching
+  const { data: listingsData, isLoading, isFetching } = useListings({
+    sellerId: sellerIdParam || undefined,
+    limit: ITEMS_PER_PAGE,
+    page,
+    category: appliedFilters.category || undefined,
+    includeSold: appliedFilters.includeSold,
+    q: searchQuery || undefined,
+    minPrice: appliedFilters.priceMin || undefined,
+    maxPrice: appliedFilters.priceMax || undefined,
+    condition: appliedFilters.conditions.length > 0 ? appliedFilters.conditions : undefined,
+    saleType: saleTypes.length > 0 ? saleTypes : undefined,
+    city: appliedFilters.cities.length > 0 ? appliedFilters.cities : undefined,
   });
 
   useEffect(() => {

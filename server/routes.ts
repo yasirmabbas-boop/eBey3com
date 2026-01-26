@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { insertListingSchema, insertBidSchema, insertAnalyticsSchema, insertWatchlistSchema, insertMessageSchema, insertReviewSchema, insertTransactionSchema, insertCategorySchema, insertBuyerAddressSchema, insertContactMessageSchema, insertProductCommentSchema, type User } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { broadcastBidUpdate } from "./websocket";
+import { broadcastBidUpdate, sendToUser } from "./websocket";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { registerProductRoutes } from "./routes/products";
 import { registerBidsRoutes } from "./routes/bids";
@@ -2042,6 +2042,41 @@ export async function registerRoutes(
     }
   });
 
+  // Test trigger for WebSocket notifications (for testing)
+  app.post("/api/notifications/test-trigger", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Create a test notification
+      const notification = await storage.createNotification({
+        userId,
+        type: "message",
+        title: "إشعار تجريبي 🧪",
+        message: "هذا إشعار تجريبي لاختبار نظام الإشعارات الفورية. إذا رأيت هذا الإشعار، فالنظام يعمل بشكل صحيح!",
+        linkUrl: "/notifications",
+      });
+
+      // Send real-time notification via WebSocket
+      sendToUser(userId, "NOTIFICATION", {
+        id: notification.id,
+        type: "message",
+        title: notification.title,
+        message: notification.message,
+        linkUrl: notification.linkUrl,
+        relatedId: notification.relatedId,
+        isRead: false,
+      });
+
+      res.json({ success: true, notification });
+    } catch (error) {
+      console.error("Error creating test notification:", error);
+      res.status(500).json({ error: "Failed to create test notification" });
+    }
+  });
+
   // Push notifications - get VAPID public key
   app.get("/api/push/vapid-public-key", (_req, res) => {
     const publicKey = process.env.VAPID_PUBLIC_KEY;
@@ -2776,6 +2811,41 @@ export async function registerRoutes(
     }
   });
 
+  // Test trigger for WebSocket notifications (for testing)
+  app.post("/api/notifications/test-trigger", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Create a test notification
+      const notification = await storage.createNotification({
+        userId,
+        type: "message",
+        title: "إشعار تجريبي 🧪",
+        message: "هذا إشعار تجريبي لاختبار نظام الإشعارات الفورية. إذا رأيت هذا الإشعار، فالنظام يعمل بشكل صحيح!",
+        linkUrl: "/notifications",
+      });
+
+      // Send real-time notification via WebSocket
+      sendToUser(userId, "NOTIFICATION", {
+        id: notification.id,
+        type: "message",
+        title: notification.title,
+        message: notification.message,
+        linkUrl: notification.linkUrl,
+        relatedId: notification.relatedId,
+        isRead: false,
+      });
+
+      res.json({ success: true, notification });
+    } catch (error) {
+      console.error("Error creating test notification:", error);
+      res.status(500).json({ error: "Failed to create test notification" });
+    }
+  });
+
   // Push notifications - get VAPID public key
   app.get("/api/push/vapid-public-key", (_req, res) => {
     const publicKey = process.env.VAPID_PUBLIC_KEY;
@@ -3510,6 +3580,41 @@ export async function registerRoutes(
     }
   });
 
+  // Test trigger for WebSocket notifications (for testing)
+  app.post("/api/notifications/test-trigger", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Create a test notification
+      const notification = await storage.createNotification({
+        userId,
+        type: "message",
+        title: "إشعار تجريبي 🧪",
+        message: "هذا إشعار تجريبي لاختبار نظام الإشعارات الفورية. إذا رأيت هذا الإشعار، فالنظام يعمل بشكل صحيح!",
+        linkUrl: "/notifications",
+      });
+
+      // Send real-time notification via WebSocket
+      sendToUser(userId, "NOTIFICATION", {
+        id: notification.id,
+        type: "message",
+        title: notification.title,
+        message: notification.message,
+        linkUrl: notification.linkUrl,
+        relatedId: notification.relatedId,
+        isRead: false,
+      });
+
+      res.json({ success: true, notification });
+    } catch (error) {
+      console.error("Error creating test notification:", error);
+      res.status(500).json({ error: "Failed to create test notification" });
+    }
+  });
+
   // Push notifications - get VAPID public key
   app.get("/api/push/vapid-public-key", (_req, res) => {
     const publicKey = process.env.VAPID_PUBLIC_KEY;
@@ -4241,6 +4346,41 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error marking notifications as read:", error);
       res.status(500).json({ error: "Failed to mark notifications as read" });
+    }
+  });
+
+  // Test trigger for WebSocket notifications (for testing)
+  app.post("/api/notifications/test-trigger", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Create a test notification
+      const notification = await storage.createNotification({
+        userId,
+        type: "message",
+        title: "إشعار تجريبي 🧪",
+        message: "هذا إشعار تجريبي لاختبار نظام الإشعارات الفورية. إذا رأيت هذا الإشعار، فالنظام يعمل بشكل صحيح!",
+        linkUrl: "/notifications",
+      });
+
+      // Send real-time notification via WebSocket
+      sendToUser(userId, "NOTIFICATION", {
+        id: notification.id,
+        type: "message",
+        title: notification.title,
+        message: notification.message,
+        linkUrl: notification.linkUrl,
+        relatedId: notification.relatedId,
+        isRead: false,
+      });
+
+      res.json({ success: true, notification });
+    } catch (error) {
+      console.error("Error creating test notification:", error);
+      res.status(500).json({ error: "Failed to create test notification" });
     }
   });
 

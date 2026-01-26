@@ -15,6 +15,8 @@ import { useLanguage } from "@/lib/i18n";
 import { share } from "@/lib/nativeShare";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { FavoriteButton } from "@/components/favorite-button";
+import { AddressSelectionModal } from "@/components/address-selection-modal";
+import { authFetch } from "@/lib/api";
 import { 
   MessageCircle, 
   Share2, 
@@ -37,7 +39,7 @@ import {
   Check,
   Tag
 } from "lucide-react";
-import type { Listing } from "@shared/schema";
+import type { Listing, BuyerAddress } from "@shared/schema";
 
 interface ProductComment {
   id: string;
@@ -97,6 +99,9 @@ export default function SwipePage() {
   const [offerAmount, setOfferAmount] = useState("");
   const [selectedSaleFilter, setSelectedSaleFilter] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<BuyerAddress | null>(null);
+  const [pendingBidAmount, setPendingBidAmount] = useState<number | null>(null);
   
   const { data: listingsData, isLoading } = useQuery({
     queryKey: ["/api/listings", selectedCategory, selectedSaleFilter],
@@ -165,6 +170,26 @@ export default function SwipePage() {
     enabled: !!currentListing?.id,
   });
 
+  // Fetch addresses
+  const { data: addresses, isLoading: addressesLoading } = useQuery<BuyerAddress[]>({
+    queryKey: ["/api/account/addresses"],
+    queryFn: async () => {
+      if (!isAuthenticated || !user?.id) return [];
+      const res = await authFetch("/api/account/addresses");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!isAuthenticated && !!user?.id,
+  });
+
+  // Initialize selectedAddress with default address
+  useEffect(() => {
+    if (addresses && addresses.length > 0 && !selectedAddress) {
+      const defaultAddress = addresses.find((a) => a.isDefault) || addresses[0];
+      setSelectedAddress(defaultAddress);
+    }
+  }, [addresses, selectedAddress]);
+
   const addCommentMutation = useMutation({
     mutationFn: async (content: string) => {
       const token = localStorage.getItem("authToken");
@@ -194,7 +219,7 @@ export default function SwipePage() {
   });
 
   const placeBidMutation = useMutation({
-    mutationFn: async (amount: number) => {
+    mutationFn: async ({ amount, shippingAddressId }: { amount: number; shippingAddressId: string }) => {
       const token = localStorage.getItem("authToken");
       const res = await fetch("/api/bids", {
         method: "POST",
@@ -206,6 +231,7 @@ export default function SwipePage() {
         body: JSON.stringify({
           listingId: currentListing.id,
           amount,
+          shippingAddressId,
         }),
       });
       if (!res.ok) {
@@ -275,8 +301,35 @@ export default function SwipePage() {
     e.preventDefault();
     const amount = Number(bidAmount);
     if (!amount || amount <= 0) return;
-    placeBidMutation.mutate(amount);
+    
+    // Check for address before bidding
+    if (!selectedAddress) {
+      setPendingBidAmount(amount);
+      setShowAddressModal(true);
+      toast({
+        title: "عنوان الشحن مطلوب",
+        description: "يرجى اختيار عنوان الشحن قبل المزايدة",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    placeBidMutation.mutate({ amount, shippingAddressId: selectedAddress.id });
   };
+
+  const handleAddressSelected = useCallback((addressId: string) => {
+    const address = addresses?.find((a) => a.id === addressId);
+    if (address) {
+      setSelectedAddress(address);
+      setShowAddressModal(false);
+      
+      // If there was a pending bid, submit it now
+      if (pendingBidAmount !== null) {
+        placeBidMutation.mutate({ amount: pendingBidAmount, shippingAddressId: addressId });
+        setPendingBidAmount(null);
+      }
+    }
+  }, [addresses, pendingBidAmount, placeBidMutation]);
 
   const handleSendOffer = (e: React.FormEvent) => {
     e.preventDefault();
@@ -900,6 +953,16 @@ export default function SwipePage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Address Selection Modal */}
+      <AddressSelectionModal
+        open={showAddressModal}
+        onOpenChange={(open) => {
+          setShowAddressModal(open);
+          if (!open) setPendingBidAmount(null);
+        }}
+        onSelect={handleAddressSelected}
+      />
 
       {/* Offer Dialog */}
       <Dialog open={isOfferOpen} onOpenChange={setIsOfferOpen}>

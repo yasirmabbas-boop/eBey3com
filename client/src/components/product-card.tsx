@@ -2,11 +2,17 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Gavel, Timer } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ShoppingCart, Gavel, MoreVertical, Share2, User, Flag, Clock } from "lucide-react";
 import { FavoriteButton } from "@/components/favorite-button";
 import { OptimizedImage } from "@/components/optimized-image";
-import { AuctionCountdown } from "@/components/auction-countdown";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 interface ProductCardProps {
   id: string;
@@ -33,6 +39,59 @@ export function ProductCard({
 }: ProductCardProps) {
   const isAuction = saleType === "auction";
   const displayPrice = currentBid || price;
+  const [timeRemaining, setTimeRemaining] = useState<{
+    hours: number;
+    minutes: number;
+    seconds: number;
+    totalHours: number;
+    expired: boolean;
+  } | null>(null);
+
+  // Calculate time remaining for badge color and display
+  useEffect(() => {
+    if (!isAuction || !auctionEndTime) {
+      setTimeRemaining(null);
+      return;
+    }
+
+    const calculateTimeRemaining = () => {
+      const end = typeof auctionEndTime === "string" ? new Date(auctionEndTime) : new Date(auctionEndTime);
+      if (isNaN(end.getTime())) {
+        setTimeRemaining(null);
+        return;
+      }
+
+      const now = new Date();
+      const difference = end.getTime() - now.getTime();
+      
+      if (difference <= 0) {
+        setTimeRemaining({ hours: 0, minutes: 0, seconds: 0, totalHours: 0, expired: true });
+        return;
+      }
+
+      const hours = Math.floor(difference / (1000 * 60 * 60));
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+      const totalHours = difference / (1000 * 60 * 60);
+
+      setTimeRemaining({ hours, minutes, seconds, totalHours, expired: false });
+    };
+
+    calculateTimeRemaining();
+    const interval = setInterval(calculateTimeRemaining, 1000); // Update every second
+
+    return () => clearInterval(interval);
+  }, [isAuction, auctionEndTime]);
+
+  const isUrgent = timeRemaining !== null && timeRemaining.totalHours < 24 && !timeRemaining.expired;
+  
+  const formatCountdown = () => {
+    if (!timeRemaining || timeRemaining.expired) return "انتهى";
+    if (timeRemaining.hours > 0) {
+      return `${timeRemaining.hours}:${String(timeRemaining.minutes).padStart(2, '0')}:${String(timeRemaining.seconds).padStart(2, '0')}`;
+    }
+    return `${timeRemaining.minutes}:${String(timeRemaining.seconds).padStart(2, '0')}`;
+  };
 
   return (
     <Link href={`/product/${id}`}>
@@ -51,45 +110,78 @@ export function ProductCard({
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
 
-          {/* Top Left: Badges */}
-          <div className="absolute left-2 top-2 flex flex-col gap-1">
-            {isAuction && (
+          {/* Top Left: Auction Timer Badge */}
+          {isAuction && auctionEndTime && timeRemaining && (
+            <div className="absolute left-2 top-2 z-10">
               <Badge
-                variant="default"
-                className="w-fit bg-primary/90 px-2 py-0.5 text-[10px] backdrop-blur-sm hover:bg-primary"
+                variant={isUrgent ? "destructive" : "secondary"}
+                className="w-fit px-2 py-0.5 text-[10px] backdrop-blur-sm flex items-center gap-1"
               >
-                <Gavel className="mr-1 h-3 w-3" /> مزاد
+                <Clock className="h-3 w-3" />
+                <span className="font-mono">{formatCountdown()}</span>
               </Badge>
-            )}
-          </div>
-
-          {/* Top Right: Favorite Action */}
-          <div className="absolute right-2 top-2 z-10">
-            <FavoriteButton
-              listingId={id}
-              className="h-8 w-8 rounded-full bg-white/80 shadow-sm backdrop-blur-sm hover:bg-white"
-            />
-          </div>
-
-          {/* Bottom of Image: Auction Timer Overlay */}
-          {isAuction && auctionEndTime && (
-            <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-3 py-1.5 text-white backdrop-blur-md">
-              <div className="flex items-center justify-center gap-1.5 text-xs font-medium">
-                <Timer className="h-3.5 w-3.5 text-yellow-400" />
-                <AuctionCountdown endTime={auctionEndTime} />
-              </div>
             </div>
           )}
+
+          {/* Top Right: More Menu */}
+          <div className="absolute right-2 top-2 z-10">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full bg-white/80 shadow-sm backdrop-blur-sm hover:bg-white"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  data-testid={`button-more-menu-${id}`}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Share logic here
+                  }}
+                  data-testid={`menu-share-${id}`}
+                >
+                  <Share2 className="h-4 w-4 ml-2" />
+                  مشاركة المنتج
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // View seller logic here
+                  }}
+                  data-testid={`menu-view-seller-${id}`}
+                >
+                  <User className="h-4 w-4 ml-2" />
+                  عرض البائع
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Report logic here
+                  }}
+                  data-testid={`menu-report-${id}`}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <Flag className="h-4 w-4 ml-2" />
+                  الإبلاغ عن المنتج
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* CONTENT SECTION */}
         <CardContent className="flex flex-1 flex-col gap-2 p-3">
-          {category && (
-            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-              {category}
-            </span>
-          )}
-
           <h3
             className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-tight text-foreground"
             title={title}
@@ -97,27 +189,31 @@ export function ProductCard({
             {title}
           </h3>
 
-          <div className="mt-auto flex items-baseline gap-1">
-            <span className="text-lg font-bold text-primary">
-              {displayPrice.toLocaleString()}
-            </span>
-            <span className="text-xs font-medium text-muted-foreground">د.ع</span>
-
-            {isAuction && (
-              <span className="mr-auto text-[10px] text-muted-foreground">(سعر حالي)</span>
-            )}
+          <div className="mt-auto flex items-center justify-between gap-2">
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-bold text-primary">
+                {displayPrice.toLocaleString()}
+              </span>
+              <span className="text-xs font-medium text-muted-foreground">د.ع</span>
+            </div>
+            
+            <FavoriteButton
+              listingId={id}
+              className="h-7 w-7 shrink-0"
+            />
           </div>
         </CardContent>
 
         {/* FOOTER ACTION */}
         <div className="px-3 pb-3 pt-0">
           <Button
-            className="w-full gap-2 rounded-lg bg-secondary/80 text-xs font-semibold text-secondary-foreground opacity-0 transition-opacity group-hover:opacity-100 max-md:opacity-100"
+            className="w-full gap-2 rounded-lg bg-secondary/80 text-xs font-semibold text-secondary-foreground"
             size="sm"
             onClick={(e) => {
               e.preventDefault();
               // Add to cart logic would go here if needed, or just let the Link handle navigation
             }}
+            data-testid={`button-action-${id}`}
           >
             {isAuction ? (
               <Gavel className="h-3.5 w-3.5" />

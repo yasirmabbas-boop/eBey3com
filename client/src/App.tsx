@@ -20,10 +20,17 @@ import { isNative } from "@/lib/capacitor";
 import { initAppLifecycle } from "@/lib/appLifecycle";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
+import { useSocketNotifications } from "@/hooks/use-socket-notifications";
 import HomePage from "@/pages/home";
-import AuthPage from "@/pages/signin";
 
-const NotFound = lazy(() => import("@/pages/not-found"));
+// Component to handle WebSocket notifications
+// Must be inside QueryClientProvider to access queryClient
+function SocketNotifications() {
+  useSocketNotifications();
+  return null;
+}
+import AuthPage from "@/pages/signin";
+import NotFound from "@/pages/not-found";
 const ProductPage = lazy(() => import("@/pages/product"));
 const Register = lazy(() => import("@/pages/register"));
 const SearchPage = lazy(() => import("@/pages/search"));
@@ -56,6 +63,13 @@ const MyAuctions = lazy(() => import("@/pages/my-auctions"));
 const SellerProfile = lazy(() => import("@/pages/seller-profile"));
 const NotificationsPage = lazy(() => import("@/pages/notifications"));
 const Onboarding = lazy(() => import("@/pages/onboarding"));
+
+// Wrapper to allow using the hook inside the JSX tree
+// Must be inside QueryClientProvider to access queryClient
+function SocketNotifications() {
+  useSocketNotifications();
+  return null;
+}
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -152,6 +166,7 @@ function App() {
           <TooltipProvider>
             <NavVisibilityProvider>
               <ScrollToTop />
+              <SocketNotifications />
               <Toaster />
               <BanBanner />
               <SurveyManager />

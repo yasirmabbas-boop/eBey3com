@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { insertBidSchema } from "@shared/schema";
 import { storage } from "../storage";
-import { broadcastBidUpdate } from "../websocket";
+import { broadcastBidUpdate, sendToUser } from "../websocket";
 import { getUserIdFromRequest } from "./shared";
 
 export function registerBidsRoutes(app: Express): void {
@@ -100,7 +100,7 @@ export function registerBidsRoutes(app: Express): void {
       
       // Send notification to previous highest bidder (they've been outbid)
       if (previousHighBidderId && previousHighBidderId !== validatedData.userId) {
-        await storage.createNotification({
+        const notification = await storage.createNotification({
           userId: previousHighBidderId,
           type: "outbid",
           title: "تم تجاوز مزايدتك!",
@@ -108,17 +108,39 @@ export function registerBidsRoutes(app: Express): void {
           linkUrl: `/product/${validatedData.listingId}`,
           relatedId: validatedData.listingId,
         });
+        
+        // Send real-time notification via WebSocket
+        sendToUser(previousHighBidderId, "NOTIFICATION", {
+          id: notification.id,
+          type: "outbid",
+          title: notification.title,
+          message: notification.message,
+          linkUrl: notification.linkUrl,
+          relatedId: notification.relatedId,
+          isRead: false,
+        });
       }
       
       // Send notification to seller about new bid
       if (listing.sellerId && listing.sellerId !== validatedData.userId) {
-        await storage.createNotification({
+        const notification = await storage.createNotification({
           userId: listing.sellerId,
           type: "new_bid",
           title: "مزايدة جديدة!",
           message: `${bidder?.displayName || "مستخدم"} قدم مزايدة ${validatedData.amount.toLocaleString()} د.ع على "${listing.title}"`,
           linkUrl: `/product/${validatedData.listingId}`,
           relatedId: validatedData.listingId,
+        });
+        
+        // Send real-time notification via WebSocket
+        sendToUser(listing.sellerId, "NOTIFICATION", {
+          id: notification.id,
+          type: "new_bid",
+          title: notification.title,
+          message: notification.message,
+          linkUrl: notification.linkUrl,
+          relatedId: notification.relatedId,
+          isRead: false,
         });
       }
       

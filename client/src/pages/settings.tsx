@@ -704,6 +704,38 @@ export default function Settings() {
                 </div>
               </div>
             </Card>
+            {/* Developer Test Section - Hidden by default, can be shown for testing */}
+            <Card className="p-6 border-dashed border-2 border-gray-300 bg-gray-50">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-sm text-gray-700">اختبار الإشعارات</h3>
+                  <p className="text-xs text-gray-500 mt-1">إرسال إشعار تجريبي لاختبار WebSocket</p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const res = await fetch("/api/notifications/test-trigger", {
+                      method: "POST",
+                      credentials: "include",
+                    });
+                    if (res.ok) {
+                      toast({ title: "تم إرسال الإشعار التجريبي" });
+                    } else {
+                      toast({ title: "فشل إرسال الإشعار", variant: "destructive" });
+                    }
+                  } catch (error) {
+                    toast({ title: "خطأ في الاتصال", variant: "destructive" });
+                  }
+                }}
+                className="w-full"
+                data-testid="button-test-notification"
+              >
+                إرسال إشعار تجريبي
+              </Button>
+            </Card>
           </TabsContent>
 
           <TabsContent value="addresses" className="space-y-6">

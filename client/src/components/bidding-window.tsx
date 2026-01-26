@@ -2,12 +2,16 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Gavel, TrendingUp, Wifi, WifiOff, Loader2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Gavel, TrendingUp, Wifi, WifiOff, Loader2, MapPin, AlertTriangle, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useBidWebSocket } from "@/hooks/use-bid-websocket";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { AddressSelectionModal } from "./address-selection-modal";
 import { hapticSuccess, hapticError, hapticLight } from "@/lib/despia";
+import { useLocation } from "wouter";
+import type { BuyerAddress } from "@shared/schema";
+import { authFetch } from "@/lib/api";
 
 type BidUpdateEvent = {
   currentBid: number;
@@ -118,9 +122,36 @@ export function BiddingWindow({
   const [lastBidder, setLastBidder] = useState<string | null>(null);
   const [priceHighlight, setPriceHighlight] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [pendingBidAmount, setPendingBidAmount] = useState<number | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<BuyerAddress | null>(null);
+  const [showInlineAddressForm, setShowInlineAddressForm] = useState(false);
+  const [inlineAddressData, setInlineAddressData] = useState({
+    city: "",
+    addressLine1: "",
+  });
   const isTypingRef = useRef(false);
   const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
+
+  // Fetch addresses upfront
+  const { data: addresses, isLoading: addressesLoading } = useQuery<BuyerAddress[]>({
+    queryKey: ["/api/account/addresses"],
+    queryFn: async () => {
+      if (!userId) return [];
+      const res = await authFetch("/api/account/addresses");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!userId,
+  });
+
+  // Initialize selectedAddress with default address
+  useEffect(() => {
+    if (addresses && addresses.length > 0 && !selectedAddress) {
+      const defaultAddress = addresses.find((a) => a.isDefault) || addresses[0];
+      setSelectedAddress(defaultAddress);
+    }
+  }, [addresses, selectedAddress]);
 
   const minimumBid = useMemo(() => {
     return Math.max(initialMinimumBid, currentBid + BID_INCREMENT);
@@ -212,6 +243,62 @@ export function BiddingWindow({
     return { valid: true };
   }, [minimumBid]);
 
+  const handleAddressSelected = useCallback((addressId: string) => {
+    const address = addresses?.find((a) => a.id === addressId);
+    if (address) {
+      setSelectedAddress(address);
+      setShowAddressModal(false);
+      
+      // If there was a pending bid, submit it now
+      const bid = parseBidAmount(bidAmount);
+      const validation = validateBid(bid);
+      if (validation.valid && bid > 0) {
+        bidMutation.mutate({ amount: bid, shippingAddressId: addressId });
+      }
+    }
+  }, [addresses, bidAmount, bidMutation, validateBid]);
+
+  // Create address mutation for inline form
+  const createAddressMutation = useMutation({
+    mutationFn: async (data: { city: string; addressLine1: string }) => {
+      const res = await authFetch("/api/account/addresses", {
+        method: "POST",
+        body: JSON.stringify({
+          label: "المنزل",
+          recipientName: "",
+          phone: "",
+          city: data.city,
+          addressLine1: data.addressLine1,
+        }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "فشل في إضافة العنوان");
+      }
+      return res.json();
+    },
+    onSuccess: (newAddress) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/account/addresses"] });
+      setSelectedAddress(newAddress);
+      setShowInlineAddressForm(false);
+      setInlineAddressData({ city: "", addressLine1: "" });
+      
+      // Submit bid with new address
+      const bid = parseBidAmount(bidAmount);
+      const validation = validateBid(bid);
+      if (validation.valid && bid > 0) {
+        bidMutation.mutate({ amount: bid, shippingAddressId: newAddress.id });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "فشل في إضافة العنوان",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSubmitBid = useCallback(() => {
     if (bidMutation.isPending) return;
     
@@ -231,15 +318,31 @@ export function BiddingWindow({
       return;
     }
 
-    setPendingBidAmount(bid);
-    setShowAddressModal(true);
-  }, [bidAmount, bidMutation, onRequireAuth, toast, validateBid]);
+    // If no address selected, open address modal
+    if (!selectedAddress) {
+      setShowAddressModal(true);
+      return;
+    }
+
+    // If inline form is filled but no address selected yet, create address first
+    if (showInlineAddressForm && inlineAddressData.city && inlineAddressData.addressLine1) {
+      createAddressMutation.mutate(inlineAddressData);
+      return;
+    }
+
+    // Address is selected - bid immediately
+    if (selectedAddress) {
+      bidMutation.mutate({ amount: bid, shippingAddressId: selectedAddress.id });
+    }
+  }, [bidAmount, bidMutation, onRequireAuth, toast, validateBid, selectedAddress, showInlineAddressForm, inlineAddressData, createAddressMutation]);
 
   const handleAddressSelected = useCallback((addressId: string) => {
     if (pendingBidAmount === null) return;
     
     bidMutation.mutate({ amount: pendingBidAmount, shippingAddressId: addressId });
     setPendingBidAmount(null);
+    setShowInlineAddressForm(false);
+    setInlineAddressData({ city: "", addressLine1: "" });
   }, [pendingBidAmount, bidMutation]);
 
   const handleQuickBid = useCallback((amount: number) => {
@@ -375,9 +478,168 @@ export function BiddingWindow({
         </div>
       </div>
 
+      {/* Address Summary Section - Inline Confirmation */}
+      {userId && !addressesLoading && (
+        <div className="mb-4">
+          {selectedAddress ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <MapPin className="h-4 w-4 text-green-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-green-700 font-semibold mb-1">📍 Ship to:</p>
+                  <p className="text-sm text-green-800 truncate">
+                    {selectedAddress.city} - {selectedAddress.addressLine1}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowAddressModal(true);
+                }}
+                className="text-xs h-8 px-2 text-green-700 hover:text-green-800 hover:bg-green-100 shrink-0"
+                data-testid="button-change-address"
+              >
+                (Change)
+              </Button>
+            </div>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="flex items-start gap-2 mb-3">
+                <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-yellow-800 mb-1">
+                    ⚠️ No shipping address selected
+                  </p>
+                  <p className="text-xs text-yellow-700">
+                    يجب إضافة عنوان الشحن قبل المزايدة في هذا المزاد
+                  </p>
+                </div>
+              </div>
+              {!showInlineAddressForm ? (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/my-account?tab=addresses")}
+                    className="flex-1 text-xs"
+                    data-testid="button-go-to-addresses"
+                  >
+                    <ExternalLink className="h-3 w-3 ml-1" />
+                    إضافة عنوان
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowInlineAddressForm(true)}
+                    className="flex-1 text-xs"
+                    data-testid="button-add-inline-address"
+                  >
+                    إضافة هنا
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2 pt-2 border-t border-yellow-200">
+                  <div>
+                    <Label htmlFor="inline-city" className="text-xs text-yellow-800">
+                      المحافظة *
+                    </Label>
+                    <Input
+                      id="inline-city"
+                      value={inlineAddressData.city}
+                      onChange={(e) =>
+                        setInlineAddressData({ ...inlineAddressData, city: e.target.value })
+                      }
+                      placeholder="بغداد، البصرة..."
+                      className="mt-1 text-sm"
+                      data-testid="input-inline-city"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="inline-address" className="text-xs text-yellow-800">
+                      العنوان التفصيلي *
+                    </Label>
+                    <Input
+                      id="inline-address"
+                      value={inlineAddressData.addressLine1}
+                      onChange={(e) =>
+                        setInlineAddressData({ ...inlineAddressData, addressLine1: e.target.value })
+                      }
+                      placeholder="الشارع، رقم المنزل..."
+                      className="mt-1 text-sm"
+                      data-testid="input-inline-address"
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowInlineAddressForm(false);
+                        setInlineAddressData({ city: "", addressLine1: "" });
+                      }}
+                      className="flex-1 text-xs"
+                    >
+                      إلغاء
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        if (inlineAddressData.city && inlineAddressData.addressLine1) {
+                          const bid = parseBidAmount(bidAmount);
+                          const validation = validateBid(bid);
+                          if (!validation.valid) {
+                            toast({
+                              title: "مزايدة غير صحيحة",
+                              description: validation.error,
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          setPendingBidAmount(bid);
+                          createAddressMutation.mutate(inlineAddressData);
+                        } else {
+                          toast({
+                            title: "يرجى إدخال جميع الحقول المطلوبة",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      disabled={
+                        !inlineAddressData.city ||
+                        !inlineAddressData.addressLine1 ||
+                        createAddressMutation.isPending
+                      }
+                      className="flex-1 text-xs"
+                      data-testid="button-continue-inline-address"
+                    >
+                      {createAddressMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin ml-1" />
+                          جاري الحفظ...
+                        </>
+                      ) : (
+                        "حفظ والمزايدة"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <Button
         onClick={handleSubmitBid}
-        disabled={isSubmitDisabled || !isValidBid}
+        disabled={
+          isSubmitDisabled ||
+          !isValidBid ||
+          (userId && showInlineAddressForm && (!inlineAddressData.city || !inlineAddressData.addressLine1))
+        }
         className="w-full bg-accent hover:bg-accent/90 text-white font-bold py-3 text-lg disabled:opacity-50"
         data-testid="button-submit-bid"
       >
@@ -391,8 +653,10 @@ export function BiddingWindow({
             <Loader2 className="h-5 w-5 animate-spin ml-2" />
             جاري المعالجة...
           </>
+        ) : userId && !selectedAddress && !showInlineAddressForm ? (
+          "Add Address to Bid"
         ) : (
-          "خلي سومتك"
+          "Place Bid"
         )}
       </Button>
 

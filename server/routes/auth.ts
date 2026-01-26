@@ -174,6 +174,26 @@ export function registerAuthRoutes(app: Express): void {
         city: city || null,
       });
 
+      // Auto-create default shipping address if addressLine1 is provided
+      const { addressLine1 } = req.body;
+      if (addressLine1 && city) {
+        try {
+          await storage.createBuyerAddress({
+            userId: user.id,
+            label: "المنزل",
+            recipientName: displayName || phone,
+            phone: phone,
+            city: city,
+            addressLine1: addressLine1.trim(),
+            isDefault: true,
+          });
+        } catch (addressError) {
+          // Log error but don't fail registration
+          console.error("Error creating default address during registration:", addressError);
+          // User can add address later in settings
+        }
+      }
+
       // Set session
       (req.session as any).userId = user.id;
 

@@ -113,6 +113,18 @@ export function NotificationsButton({ variant = "default" }: NotificationsButton
     refetchInterval: 30000,
   });
 
+  // Fetch unread notification count for instant badge updates
+  const { data: notificationCountData } = useQuery({
+    queryKey: ["/api/notifications/count"],
+    queryFn: async () => {
+      const res = await fetch("/api/notifications/count", { credentials: "include" });
+      if (!res.ok) return { count: 0 };
+      return res.json();
+    },
+    enabled: !!user?.id,
+    refetchInterval: 30000,
+  });
+
   // Fetch system notifications (outbid, new_bid, etc.)
   const { data: systemNotifications = [] } = useQuery<DBNotification[]>({
     queryKey: ["/api/notifications"],
@@ -205,7 +217,8 @@ export function NotificationsButton({ variant = "default" }: NotificationsButton
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
     .slice(0, 30);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // Use count from API for instant updates, fallback to calculated count
+  const unreadCount = notificationCountData?.count ?? notifications.filter((n) => !n.read).length;
 
   const markAsRead = (notification: Notification) => {
     if (notification.isSystemNotification) {

@@ -151,6 +151,7 @@ export default function Register() {
     password: "",
     displayName: "",
     district: "",
+    addressLine1: "",
     ageBracket: "",
     gender: "",
     interests: [] as string[],
@@ -196,6 +197,12 @@ export default function Register() {
 
     if (!formData.district) {
       newErrors.district = tr("المحافظة مطلوبة", "پارێزگا پێویستە", "Province is required");
+    }
+
+    // Address is optional but recommended
+    if (!formData.addressLine1.trim()) {
+      // Just a warning, not blocking
+      // We'll allow registration but remind them to add address later
     }
     
     if (!agreeTerms) {
@@ -427,6 +434,28 @@ export default function Register() {
                   </SelectContent>
                 </Select>
                 {errors.district && <p className="text-red-500 text-xs">{errors.district}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="addressLine1">
+                  {tr("العنوان / أقرب نقطة دالة", "ناونیشان / نزیکترین خاڵ", "Street Address / Nearest Point")}
+                  <span className="text-muted-foreground text-xs mr-1">({tr("موصى به", "پێشنیارکراو", "recommended")})</span>
+                </Label>
+                <Input
+                  id="addressLine1"
+                  type="text"
+                  placeholder={tr("مثال: شارع الرشيد، قرب جامع الحيدرية", "نموونە: شاری رەشید، نزیک مزگەوتی حەیدەریە", "Example: Al-Rashid Street, near Al-Haydariya Mosque")}
+                  value={formData.addressLine1}
+                  onChange={(e) => setFormData(prev => ({ ...prev, addressLine1: e.target.value }))}
+                  data-testid="input-address-line1"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {tr(
+                    "سيساعد هذا العنوان في تسريع عملية التوصيل عند الشراء",
+                    "ئەم ناونیشانە بەخێرایی کردنی کڕین دەکات",
+                    "This address will help speed up delivery when purchasing"
+                  )}
+                </p>
               </div>
 
               <div className="space-y-2">
