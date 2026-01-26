@@ -12,7 +12,6 @@ export interface AuthUser {
   sellerRequestStatus?: string | null;
   isAdmin?: boolean;
   accountCode?: string | null;
-  isVerified?: boolean;
   isBanned?: boolean;
   banReason?: string | null;
   rating?: number | null;

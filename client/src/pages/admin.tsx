@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, UserX, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy, BadgeCheck, Award, Star, StarOff, Wallet, BanknoteIcon, Clock, Calendar } from "lucide-react";
+import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy, BadgeCheck, Award, Star, StarOff, Wallet, BanknoteIcon, Clock, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,7 +63,6 @@ interface User {
   sellerApproved: boolean;
   sellerRequestStatus?: string;
   isAdmin: boolean;
-  isVerified: boolean;
   isBanned: boolean;
   isAuthenticated: boolean;
   authenticityGuaranteed: boolean;
@@ -400,7 +399,7 @@ export default function AdminPage() {
 
 
   const updateUserMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: { isVerified?: boolean; isBanned?: boolean; sellerApproved?: boolean; sellerRequestStatus?: string; isAuthenticated?: boolean; authenticityGuaranteed?: boolean } }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: { isBanned?: boolean; sellerApproved?: boolean; sellerRequestStatus?: string; isAuthenticated?: boolean; authenticityGuaranteed?: boolean } }) => {
       const res = await fetchWithAuth(`/api/admin/users/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -953,9 +952,6 @@ export default function AdminPage() {
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1 flex-wrap">
-                                  {u.isVerified && (
-                                    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">موثق</Badge>
-                                  )}
                                   {u.isBanned && (
                                     <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">محظور</Badge>
                                   )}
@@ -976,39 +972,13 @@ export default function AdminPage() {
                                       مؤهل للعلامة الزرقاء
                                     </Badge>
                                   )}
-                                  {!u.isVerified && !u.isBanned && !u.isAuthenticated && !u.authenticityGuaranteed && (
+                                  {!u.isBanned && !u.isAuthenticated && !u.authenticityGuaranteed && (
                                     <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">عادي</Badge>
                                   )}
                                 </div>
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-2">
-                                  {!u.isVerified && !u.isAdmin && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-green-600 border-green-600 hover:bg-green-50"
-                                      onClick={() => updateUserMutation.mutate({ id: u.id, updates: { isVerified: true } })}
-                                      disabled={updateUserMutation.isPending}
-                                      data-testid={`button-verify-user-${u.id}`}
-                                    >
-                                      <UserCheck className="h-4 w-4 ml-1" />
-                                      توثيق
-                                    </Button>
-                                  )}
-                                  {u.isVerified && !u.isAdmin && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-orange-600 border-orange-600 hover:bg-orange-50"
-                                      onClick={() => updateUserMutation.mutate({ id: u.id, updates: { isVerified: false } })}
-                                      disabled={updateUserMutation.isPending}
-                                      data-testid={`button-unverify-user-${u.id}`}
-                                    >
-                                      <UserX className="h-4 w-4 ml-1" />
-                                      إلغاء التوثيق
-                                    </Button>
-                                  )}
                                   {u.sellerApproved && !u.isAdmin && (
                                     <Button
                                       size="sm"

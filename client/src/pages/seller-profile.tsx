@@ -19,7 +19,6 @@ interface SellerInfo {
   city?: string;
   rating?: number;
   ratingCount?: number;
-  isVerified?: boolean;
   isAuthenticated?: boolean;
   createdAt: string;
   totalListings?: number;

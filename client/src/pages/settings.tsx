@@ -29,7 +29,6 @@ interface UserProfile {
   addressLine2?: string;
   accountType: string;
   accountCode: string;
-  isVerified?: boolean;
   verificationStatus?: string;
   rating?: number;
   ratingCount?: number;

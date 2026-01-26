@@ -14,12 +14,11 @@ import {
   type Notification, type InsertNotification,
   type Report, type InsertReport,
   type VerificationCode,
-  type VerificationRequest,
   type ReturnRequest, type InsertReturnRequest,
   type ContactMessage, type InsertContactMessage,
   type ProductComment, type InsertProductComment,
   type PushSubscription, type InsertPushSubscription,
-  users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, cartItems, notifications, reports, verificationCodes, verificationRequests, returnRequests, contactMessages, productComments, pushSubscriptions
+  users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, lt, inArray, ne } from "drizzle-orm";

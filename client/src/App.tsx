@@ -15,16 +15,17 @@ import { NavVisibilityProvider } from "@/hooks/use-nav-visibility";
 import { LanguageProvider } from "@/lib/i18n";
 import { BanBanner } from "@/components/ban-banner";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { LoadingSpinner } from "@/components/loading-spinner";
 import { isNative } from "@/lib/capacitor";
 import { initAppLifecycle } from "@/lib/appLifecycle";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
+import HomePage from "@/pages/home";
+import AuthPage from "@/pages/signin";
 
 const NotFound = lazy(() => import("@/pages/not-found"));
-const Home = lazy(() => import("@/pages/home"));
 const ProductPage = lazy(() => import("@/pages/product"));
 const Register = lazy(() => import("@/pages/register"));
-const SignIn = lazy(() => import("@/pages/signin"));
 const SearchPage = lazy(() => import("@/pages/search"));
 const Privacy = lazy(() => import("@/pages/privacy"));
 const DataDeletion = lazy(() => import("@/pages/data-deletion"));
@@ -70,10 +71,10 @@ function ScrollToTop() {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={HomePage} />
       <Route path="/product/:id" component={ProductPage} />
       <Route path="/register" component={Register} />
-      <Route path="/signin" component={SignIn} />
+      <Route path="/signin" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/search" component={SearchPage} />
       <Route path="/privacy" component={Privacy} />
@@ -158,9 +159,7 @@ function App() {
               <SwipeBackNavigation>
                 <Suspense
                   fallback={
-                    <div className="flex items-center justify-center py-12 text-muted-foreground">
-                      Loading...
-                    </div>
+                    <LoadingSpinner />
                   }
                 >
                   <Router />

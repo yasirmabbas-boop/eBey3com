@@ -22,6 +22,9 @@ const httpServer = createServer(app);
 
 setupWebSocket(httpServer);
 
+// Enable compression for all responses (should be early in middleware chain)
+app.use(compression());
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;

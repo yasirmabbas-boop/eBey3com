@@ -6,1258 +6,53 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { broadcastBidUpdate } from "./websocket";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { analyzeImageForSearch } from "./services/gemini-image-search";
-import multer from "multer";
-import sharp from "sharp";
+import { registerProductRoutes } from "./routes/products";
+import { registerBidsRoutes } from "./routes/bids";
+import { registerAuthRoutes } from "./routes/auth";
+import { registerUsersRoutes } from "./routes/users";
+import { registerAccountRoutes } from "./routes/account";
 import { financialService } from "./services/financial-service";
 import { deliveryService } from "./services/delivery-service";
 import { deliveryApi, DeliveryWebhookPayload } from "./services/delivery-api";
 import { ObjectStorageService } from "./replit_integrations/object_storage/objectStorage";
-import { analyzeProductImage } from "./services/gemini-service";
+import {
+  getUserIdFromRequest,
+  setCacheHeaders,
+  isEligibleForBlueCheck,
+} from "./routes/shared";
 
-const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
-const imageUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
-
-const OG_IMAGE_WIDTH = 1200;
-const OG_IMAGE_HEIGHT = 630;
-
-// Helper to get user ID from session or auth token (Safari/ITP fallback)
-async function getUserIdFromRequest(req: Request): Promise<string | null> {
-  // Try session first
-  const sessionUserId = (req.session as any)?.userId;
-  if (sessionUserId) {
-    return sessionUserId;
-  }
-  
-  // Check for Passport.js authenticated user (Facebook OAuth)
-  const passportUser = (req as any).user;
-  if (passportUser && passportUser.id) {
-    return passportUser.id;
-  }
-  
-  // Fallback to Authorization header token for Safari
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.substring(7);
-    const user = await storage.getUserByAuthToken(token);
-    if (user) {
-      return user.id;
-    }
-  }
-  
-  return null;
-}
-
-function formatPriceForOg(price: number): string {
-  return new Intl.NumberFormat("ar-IQ").format(price) + " د.ع";
-}
-
-function escapeSvgText(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, Math.max(0, maxLength - 3))}...`;
-}
-
-function buildBaseUrl(req: Request): string {
-  const host = req.get("host");
-  if (!host) {
-    return "";
-  }
-  return `${req.protocol}://${host}`;
-}
-
-function resolveAbsoluteUrl(rawUrl: string, baseUrl: string): string {
-  if (!rawUrl || !baseUrl) return rawUrl;
-  try {
-    return new URL(rawUrl, baseUrl).toString();
-  } catch (error) {
-    console.error("Failed to normalize OG image URL:", error);
-    return rawUrl;
-  }
-}
-
-async function fetchImageBuffer(url: string): Promise<Buffer | null> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
-  } catch (error) {
-    console.error("Failed to fetch OG image source:", error);
-    return null;
-  }
-}
-
-// Helper to check if a user is eligible for blue check badge (trusted seller)
-// Requirements: 50+ sales AND 90%+ positive rating (4.5/5.0)
-function isEligibleForBlueCheck(user: User): boolean {
-  const MIN_SALES = 50;
-  const MIN_RATING = 4.5; // 90% positive
-  
-  return (
-    user.sellerApproved === true &&
-    (user.totalSales || 0) >= MIN_SALES &&
-    (user.rating || 0) >= MIN_RATING &&
-    (user.ratingCount || 0) > 0
-  );
-}
-
-const updateListingSchema = insertListingSchema.extend({
-  auctionEndTime: z.union([z.string(), z.date(), z.null()]).optional(),
-  auctionStartTime: z.union([z.string(), z.date(), z.null()]).optional(),
-  isActive: z.boolean().optional(),
-}).partial().refine(
-  (data) => Object.keys(data).length > 0,
-  { message: "At least one field must be provided for update" }
-);
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Register routes in dependency order:
+  // 1. Infrastructure routes (object storage)
+  // 2. Auth routes (authentication endpoints needed by other routes)
+  // 3. Product routes (public and authenticated)
+  // 4. Bids routes (requires authentication)
+  // 5. Users routes (public user profiles)
+  // 6. Account routes (requires authentication)
 
-  // Register object storage routes for image uploads
+  // Infrastructure routes
   registerObjectStorageRoutes(app);
 
-  // Caching middleware for public GET endpoints to reduce data transfer costs
-  const setCacheHeaders = (seconds: number) => {
-    return `public, max-age=${seconds}, stale-while-revalidate=${seconds * 2}`;
-  };
+  // Authentication routes (register early so /api/auth/* endpoints are available)
+  registerAuthRoutes(app);
 
-  app.get("/api/og/product/:id", async (req, res) => {
-    try {
-      const listing = await storage.getListing(req.params.id);
-      if (!listing || listing.isDeleted) {
-        return res.status(404).send("Listing not found");
-      }
+  // Product routes
+  registerProductRoutes(app);
 
-      const rawTitle = listing.title || "منتج";
-      const title = escapeSvgText(truncateText(rawTitle, 70));
-      const price = escapeSvgText(
-        formatPriceForOg(listing.currentBid || listing.price)
-      );
-      const saleTypeText = escapeSvgText(
-        listing.saleType === "auction" ? "مزاد" : "شراء الآن"
-      );
+  // Bids routes (requires authentication)
+  registerBidsRoutes(app);
 
-      let imageBase64: string | null = null;
-      const imageUrl = listing.images?.[0];
-      if (imageUrl) {
-        const baseUrl = buildBaseUrl(req);
-        const normalizedImageUrl = resolveAbsoluteUrl(imageUrl, baseUrl);
-        const imageBuffer = await fetchImageBuffer(normalizedImageUrl);
-        if (imageBuffer) {
-          const resized = await sharp(imageBuffer)
-            .resize(1080, 360, { fit: "cover" })
-            .jpeg({ quality: 85 })
-            .toBuffer();
-          imageBase64 = resized.toString("base64");
-        }
-      }
+  // Public user routes
+  registerUsersRoutes(app);
 
-      const imageBlock = imageBase64
-        ? `<image href="data:image/jpeg;base64,${imageBase64}" x="60" y="40" width="1080" height="360" preserveAspectRatio="xMidYMid slice" />`
-        : `<rect x="60" y="40" width="1080" height="360" rx="24" fill="#e2e8f0" />
-           <text x="600" y="230" text-anchor="middle" font-size="40" fill="#64748b" font-family="Arial, sans-serif">No image</text>`;
+  // Account management routes (requires authentication)
+  registerAccountRoutes(app);
 
-      const svg = `
-<svg width="${OG_IMAGE_WIDTH}" height="${OG_IMAGE_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#f8fafc" />
-      <stop offset="100%" stop-color="#e2e8f0" />
-    </linearGradient>
-  </defs>
-  <rect width="100%" height="100%" fill="url(#bg)" />
-  ${imageBlock}
-  <rect x="60" y="430" width="1080" height="150" rx="24" fill="#ffffff" stroke="#e2e8f0" />
-  <text x="600" y="485" text-anchor="middle" font-size="44" fill="#0f172a" font-family="Arial, sans-serif" direction="rtl">${title}</text>
-  <text x="600" y="535" text-anchor="middle" font-size="32" fill="#2563eb" font-family="Arial, sans-serif">${price}</text>
-  <text x="600" y="580" text-anchor="middle" font-size="28" fill="#16a34a" font-family="Arial, sans-serif">${saleTypeText}</text>
-  <text x="1120" y="610" text-anchor="end" font-size="24" fill="#2563eb" font-family="Arial, sans-serif">E-بيع</text>
-</svg>`;
-
-      const png = await sharp(Buffer.from(svg)).png().toBuffer();
-      res.set("Content-Type", "image/png");
-      res.set("Cache-Control", setCacheHeaders(3600));
-      return res.send(png);
-    } catch (error) {
-      console.error("Error generating OG image:", error);
-      return res.status(500).send("Failed to generate OG image");
-    }
-  });
-
-  app.get("/api/listings", async (req, res) => {
-    try {
-      const { category, sellerId, page, limit: limitParam, saleType, includeSold, q, minPrice, maxPrice, condition, city } = req.query;
-      const saleTypes = Array.isArray(saleType)
-        ? saleType.map(s => String(s))
-        : typeof saleType === "string"
-          ? [saleType]
-          : undefined;
-      const conditions = Array.isArray(condition)
-        ? condition.map(c => String(c))
-        : typeof condition === "string"
-          ? [condition]
-          : undefined;
-      const cities = Array.isArray(city)
-        ? city.map(c => String(c))
-        : typeof city === "string"
-          ? [city]
-          : undefined;
-      const pageNum = parseInt(page as string) || 1;
-      const limit = Math.min(parseInt(limitParam as string) || 20, 100);
-      const offset = (pageNum - 1) * limit;
-      
-      // Check if user is viewing their own seller profile
-      const viewerId = await getUserIdFromRequest(req);
-      const sellerIdStr = typeof sellerId === "string" ? sellerId : undefined;
-      const isOwnProfile = !!(viewerId && sellerIdStr && viewerId === sellerIdStr);
-      
-      // Use optimized paginated query with SQL-level filtering
-      const searchQuery = typeof q === "string" ? q : undefined;
-      console.log('[DEBUG-SERVER] API /api/listings request', { 
-        category: typeof category === "string" ? category : undefined, 
-        sellerId: sellerIdStr, 
-        includeSoldRequested: includeSold === "true",
-        hasSearchQuery: !!searchQuery,
-        isOwnProfile,
-        includeSoldFinal: (includeSold === "true" && !!searchQuery) || isOwnProfile, 
-        searchQuery, 
-        page: pageNum 
-      });
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings',message:'listings-request',data:{category:typeof category === "string" ? category : undefined,sellerId:sellerIdStr,includeSold:includeSold === "true" || isOwnProfile,searchQuery,page:pageNum,limit},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H6'})}).catch(()=>{});
-      // #endregion
-      const { listings: paginatedListings, total } = await storage.getListingsPaginated({
-        limit,
-        offset,
-        category: typeof category === "string" ? category : undefined,
-        saleTypes,
-        sellerId: sellerIdStr,
-        // Only include sold items if: (explicitly requested via filter AND has search query) OR viewing own profile
-        // This prevents browsing all sold items without a search term
-        includeSold: (includeSold === "true" && !!searchQuery) || isOwnProfile,
-        searchQuery,
-        minPrice: typeof minPrice === "string" ? parseInt(minPrice) : undefined,
-        maxPrice: typeof maxPrice === "string" ? parseInt(maxPrice) : undefined,
-        conditions,
-        cities,
-      });
-      console.log('[DEBUG-SERVER] API /api/listings response', { listingsCount: paginatedListings.length, total });
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings',message:'listings-response',data:{listingsCount:paginatedListings.length,total},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H7'})}).catch(()=>{});
-      // #endregion
-      
-      // Track search analytics when there's a search query
-      if (searchQuery && searchQuery.trim()) {
-        try {
-          const userId = await getUserIdFromRequest(req);
-          const sessionId = (req.session as any)?.id || 'anonymous';
-          await storage.trackAnalytics({
-            sessionId,
-            userId: userId || undefined,
-            eventType: 'search',
-            searchQuery,
-            category: typeof category === "string" ? category : undefined,
-            eventData: JSON.stringify({
-              resultCount: total,
-              hasResults: total > 0,
-              page: pageNum,
-              filters: {
-                saleTypes,
-                conditions,
-                cities,
-                priceRange: minPrice || maxPrice ? { min: minPrice, max: maxPrice } : undefined
-              }
-            })
-          });
-        } catch (analyticsError) {
-          // Don't fail the request if analytics fails
-          console.error("Error tracking search analytics:", analyticsError);
-        }
-      }
-      
-      // Get favorites count for all listings
-      const listingIds = paginatedListings.map(l => l.id);
-      const favoritesCounts = await storage.getWatchlistCountsForListings(listingIds);
-      
-      // Add favorites count to each listing
-      const listingsWithFavorites = paginatedListings.map(listing => ({
-        ...listing,
-        favoritesCount: favoritesCounts.get(listing.id) || 0
-      }));
-      
-      // Cache listing responses for 30 seconds to reduce repeat requests
-      res.set("Cache-Control", setCacheHeaders(30));
-      
-      res.json({
-        listings: listingsWithFavorites,
-        pagination: {
-          page: pageNum,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-          hasMore: offset + limit < total
-        }
-      });
-    } catch (error) {
-      console.error("Error fetching listings:", error);
-      res.status(500).json({ error: "Failed to fetch listings" });
-    }
-  });
-
-  app.get("/api/listings/:id", async (req, res) => {
-    try {
-      const listing = await storage.getListing(req.params.id);
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings/:id',message:'listing-detail-fetch',data:{listingId:req.params.id,found:!!listing,isDeleted:listing?.isDeleted,isActive:listing?.isActive,quantitySold:listing?.quantitySold,quantityAvailable:listing?.quantityAvailable},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H10'})}).catch(()=>{});
-      // #endregion
-      if (!listing || listing.isDeleted) {
-        // #region agent log
-        fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings/:id',message:'listing-detail-not-found',data:{listingId:req.params.id,found:!!listing,isDeleted:listing?.isDeleted},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H11'})}).catch(()=>{});
-        // #endregion
-        return res.status(404).json({ error: "Listing not found" });
-      }
-      // Cache individual listing for 60 seconds
-      res.set("Cache-Control", setCacheHeaders(60));
-      res.json(listing);
-    } catch (error) {
-      console.error("Error fetching listing:", error);
-      res.status(500).json({ error: "Failed to fetch listing" });
-    }
-  });
-
-  // Hero banner listings (featured + hot items)
-  app.get("/api/hero-listings", async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 10;
-      const heroListings = await storage.getHeroListings(limit);
-      res.set("Cache-Control", setCacheHeaders(60));
-      res.json(heroListings);
-    } catch (error) {
-      console.error("Error fetching hero listings:", error);
-      res.status(500).json({ error: "Failed to fetch hero listings" });
-    }
-  });
-
-  // Hot listings (most viewed/bid on)
-  app.get("/api/hot-listings", async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 10;
-      const hotListings = await storage.getHotListings(limit);
-      res.set("Cache-Control", setCacheHeaders(60));
-      res.json(hotListings);
-    } catch (error) {
-      console.error("Error fetching hot listings:", error);
-      res.status(500).json({ error: "Failed to fetch hot listings" });
-    }
-  });
-
-  // Check if user has bid on a listing and if they are the highest bidder
-  app.get("/api/listings/:id/user-bid-status", async (req, res) => {
-    try {
-      const userId = await getUserIdFromRequest(req);
-      if (!userId) {
-        return res.json({ hasBid: false, isHighest: false });
-      }
-      
-      const listing = await storage.getListing(req.params.id);
-      if (!listing) {
-        return res.json({ hasBid: false, isHighest: false });
-      }
-      
-      const userBids = await storage.getUserBids(userId);
-      const hasBid = userBids.some(bid => bid.listingId === req.params.id);
-      const isHighest = (listing as any).highestBidderId === userId;
-      
-      res.json({ hasBid, isHighest });
-    } catch (error) {
-      console.error("Error checking user bid status:", error);
-      res.json({ hasBid: false, isHighest: false });
-    }
-  });
-
-  app.post("/api/listings", async (req, res) => {
-    try {
-      const sessionUserId = await getUserIdFromRequest(req);
-      
-      // Only allow sellers to create listings
-      if (!sessionUserId) {
-        return res.status(401).json({ error: "يجب تسجيل الدخول لإضافة منتج" });
-      }
-      
-      const user = await storage.getUser(sessionUserId);
-      if (!user || !user.sellerApproved) {
-        return res.status(403).json({ error: "يجب أن يكون حسابك معتمداً كبائع لإضافة منتجات" });
-      }
-      
-      // Check if user is banned
-      if (user.isBanned) {
-        return res.status(403).json({ error: "حسابك محظور. لا يمكنك إضافة منتجات." });
-      }
-      
-      // Validate auction times - auctions must have start and end times
-      if (req.body.saleType === "auction") {
-        if (!req.body.auctionStartTime || !req.body.auctionEndTime) {
-          return res.status(400).json({ 
-            error: "المزادات تتطلب تحديد تاريخ ووقت البدء والانتهاء" 
-          });
-        }
-        
-        const startTime = new Date(req.body.auctionStartTime);
-        const endTime = new Date(req.body.auctionEndTime);
-        const hoursDiff = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-        
-        if (hoursDiff < 24) {
-          return res.status(400).json({ 
-            error: "يجب أن تكون مدة المزاد 24 ساعة على الأقل" 
-          });
-        }
-        
-        if (endTime <= startTime) {
-          return res.status(400).json({ 
-            error: "تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء" 
-          });
-        }
-      }
-      
-      // Validate reserve price for auctions
-      if (req.body.saleType === "auction" && req.body.reservePrice) {
-        const reservePrice = typeof req.body.reservePrice === "number" 
-          ? req.body.reservePrice 
-          : parseInt(req.body.reservePrice, 10);
-        const startPrice = typeof req.body.price === "number" 
-          ? req.body.price 
-          : parseInt(req.body.price, 10);
-        
-        if (reservePrice < startPrice) {
-          return res.status(400).json({ 
-            error: "السعر الاحتياطي يجب أن يكون أكبر من أو يساوي سعر البداية" 
-          });
-        }
-      }
-      
-      const listingData = {
-        title: req.body.title,
-        description: req.body.description,
-        price: typeof req.body.price === "number" ? req.body.price : parseInt(req.body.price, 10),
-        category: req.body.category,
-        condition: req.body.condition,
-        images: req.body.images || [],
-        saleType: req.body.saleType || "fixed",
-        timeLeft: req.body.timeLeft || null,
-        auctionStartTime: req.body.auctionStartTime ? new Date(req.body.auctionStartTime) : null,
-        auctionEndTime: req.body.auctionEndTime ? new Date(req.body.auctionEndTime) : null,
-        reservePrice: req.body.reservePrice 
-          ? (typeof req.body.reservePrice === "number" ? req.body.reservePrice : parseInt(req.body.reservePrice, 10))
-          : null,
-        buyNowPrice: req.body.buyNowPrice
-          ? (typeof req.body.buyNowPrice === "number" ? req.body.buyNowPrice : parseInt(req.body.buyNowPrice, 10))
-          : null,
-        deliveryWindow: req.body.deliveryWindow,
-        shippingType: req.body.shippingType || "seller_pays",
-        shippingCost: typeof req.body.shippingCost === "number" 
-          ? req.body.shippingCost 
-          : parseInt(req.body.shippingCost, 10) || 0,
-        returnPolicy: req.body.returnPolicy,
-        returnDetails: req.body.returnDetails || null,
-        sellerName: req.body.sellerName,
-        sellerId: sessionUserId || req.body.sellerId || null,
-        sellerPhone: req.body.sellerPhone || null,
-        city: req.body.city,
-        brand: req.body.brand || null,
-        isNegotiable: req.body.isNegotiable === true,
-        serialNumber: req.body.serialNumber || null,
-        quantityAvailable: typeof req.body.quantityAvailable === "number" 
-          ? req.body.quantityAvailable 
-          : parseInt(req.body.quantityAvailable, 10) || 1,
-        allowedBidderType: req.body.allowedBidderType || "verified_only",
-      };
-
-      const validatedData = insertListingSchema.parse(listingData);
-      const listing = await storage.createListing(validatedData);
-      res.status(201).json(listing);
-    } catch (error) {
-      console.error("Error creating listing:", error);
-      res.status(400).json({ error: "Failed to create listing", details: String(error) });
-    }
-  });
-
-  // CSV Bulk Upload for Sellers
-  app.post("/api/listings/bulk-upload", csvUpload.single("file"), async (req, res) => {
-    try {
-      const userId = await getUserIdFromRequest(req);
-      if (!userId) {
-        return res.status(401).json({ error: "يجب تسجيل الدخول" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user || !user.sellerApproved) {
-        return res.status(403).json({ error: "يجب أن تكون بائعاً معتمداً" });
-      }
-
-      if (!req.file) {
-        return res.status(400).json({ error: "الرجاء رفع ملف CSV" });
-      }
-
-      const csvContent = req.file.buffer.toString("utf-8");
-      const lines = csvContent.split("\n").filter(line => line.trim());
-      
-      if (lines.length < 2) {
-        return res.status(400).json({ error: "الملف فارغ أو لا يحتوي على بيانات" });
-      }
-
-      const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-      const requiredHeaders = ["title", "description", "price", "category", "condition", "city"];
-      const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-      
-      if (missingHeaders.length > 0) {
-        return res.status(400).json({ 
-          error: `الأعمدة المطلوبة غير موجودة: ${missingHeaders.join(", ")}` 
-        });
-      }
-
-      const results = { success: 0, failed: 0, errors: [] as string[] };
-
-      for (let i = 1; i < lines.length; i++) {
-        try {
-          const values = parseCSVLine(lines[i]);
-          const row: Record<string, string> = {};
-          headers.forEach((h, idx) => { row[h] = values[idx] || ""; });
-
-          const listingData = {
-            title: row.title?.trim(),
-            description: row.description?.trim(),
-            price: parseInt(row.price, 10) || 0,
-            category: row.category?.trim() || "other",
-            condition: row.condition?.trim() || "used",
-            city: row.city?.trim() || user.city || "بغداد",
-            brand: row.brand?.trim() || null,
-            images: row.images ? row.images.split(";").map(u => u.trim()).filter(Boolean) : [],
-            saleType: "fixed" as const,
-            deliveryWindow: row.deliverywindow?.trim() || "3-5 أيام",
-            returnPolicy: row.returnpolicy?.trim() || "لا يوجد إرجاع",
-            sellerName: user.displayName || "",
-            sellerId: userId,
-            isNegotiable: row.isnegotiable === "true" || row.isnegotiable === "نعم",
-            quantityAvailable: parseInt(row.quantity, 10) || 1,
-            allowedBidderType: "verified_only",
-          };
-
-          if (!listingData.title || !listingData.description || listingData.price <= 0) {
-            results.failed++;
-            results.errors.push(`السطر ${i + 1}: بيانات غير مكتملة`);
-            continue;
-          }
-
-          await storage.createListing(listingData);
-          results.success++;
-        } catch (err) {
-          results.failed++;
-          results.errors.push(`السطر ${i + 1}: ${String(err)}`);
-        }
-      }
-
-      res.json({
-        message: `تم استيراد ${results.success} منتج بنجاح${results.failed > 0 ? `، فشل ${results.failed}` : ""}`,
-        ...results,
-      });
-    } catch (error) {
-      console.error("Error in bulk upload:", error);
-      res.status(500).json({ error: "حدث خطأ أثناء معالجة الملف" });
-    }
-  });
-
-  // Helper function to parse CSV line (handles quoted values)
-  function parseCSVLine(line: string): string[] {
-    const result: string[] = [];
-    let current = "";
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === "," && !inQuotes) {
-        result.push(current.trim());
-        current = "";
-      } else {
-        current += char;
-      }
-    }
-    result.push(current.trim());
-    return result;
-  }
-
-  // CSV Template Download
-  app.get("/api/listings/csv-template", (req, res) => {
-    const headers = "title,description,price,category,condition,city,brand,images,deliveryWindow,returnPolicy,isNegotiable,quantity";
-    const exampleRow = '"ساعة روليكس أصلية","ساعة روليكس موديل 2020 بحالة ممتازة",500000,watches,excellent,بغداد,Rolex,"https://example.com/img1.jpg;https://example.com/img2.jpg","3-5 أيام","إرجاع خلال 7 أيام",true,1';
-    const csvContent = `${headers}\n${exampleRow}`;
-    
-    res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", "attachment; filename=ebay_iraq_template.csv");
-    res.send("\uFEFF" + csvContent); // BOM for Excel Arabic support
-  });
-
-  // AI-powered image analysis for product listing
-  app.post("/api/analyze-image", imageUpload.single("image"), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: "Image file is required" });
-      }
-
-      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!allowedMimeTypes.includes(req.file.mimetype)) {
-        return res.status(400).json({ 
-          error: "Invalid image format. Only JPEG, PNG, and WebP are supported" 
-        });
-      }
-
-      console.log(`[analyze-image] Processing image: ${req.file.mimetype}, ${(req.file.size / 1024).toFixed(1)}KB`);
-
-      const analysis = await analyzeProductImage(req.file.buffer);
-
-      console.log(`[analyze-image] Analysis complete: ${analysis.title} - ${analysis.category}`);
-
-      res.json(analysis);
-    } catch (error) {
-      console.error("[analyze-image] Error:", error);
-      
-      if (error instanceof Error) {
-        if (error.message.includes("GEMINI_API_KEY")) {
-          return res.status(500).json({ 
-            error: "Configuration error: API key not set" 
-          });
-        }
-        return res.status(500).json({ 
-          error: "Failed to analyze image",
-          details: error.message 
-        });
-      }
-      
-      res.status(500).json({ error: "Failed to analyze image" });
-    }
-  });
-
-  app.patch("/api/listings/:id", async (req, res) => {
-    try {
-      const existingListing = await storage.getListing(req.params.id);
-      if (!existingListing) {
-        return res.status(404).json({ error: "Listing not found" });
-      }
-      
-      const quantitySold = existingListing.quantitySold || 0;
-      
-      // If items have been sold, only allow updating quantityAvailable
-      if (quantitySold > 0) {
-        const allowedFields = ['quantityAvailable', 'isActive'];
-        const requestedFields = Object.keys(req.body);
-        const disallowedFields = requestedFields.filter(f => !allowedFields.includes(f));
-        
-        if (disallowedFields.length > 0) {
-          return res.status(403).json({ 
-            error: "بعد البيع، يمكنك فقط تعديل الكمية المتوفرة. لتعديل باقي التفاصيل، أعد عرض المنتج كمنتج جديد." 
-          });
-        }
-        
-        // Ensure new quantity is at least equal to quantity sold
-        if (req.body.quantityAvailable !== undefined) {
-          const newQuantity = typeof req.body.quantityAvailable === "number" 
-            ? req.body.quantityAvailable 
-            : parseInt(req.body.quantityAvailable, 10);
-          
-          if (isNaN(newQuantity) || newQuantity < quantitySold) {
-            return res.status(400).json({ 
-              error: `الكمية الجديدة يجب أن تكون ${quantitySold} على الأقل (عدد المبيعات الحالية)` 
-            });
-          }
-          req.body.quantityAvailable = newQuantity;
-          // Re-activate listing if adding more stock
-          if (newQuantity > quantitySold) {
-            req.body.isActive = true;
-          }
-        }
-      }
-      
-      if (req.body.price !== undefined) {
-        req.body.price = typeof req.body.price === "number" 
-          ? req.body.price 
-          : parseInt(req.body.price, 10);
-        if (isNaN(req.body.price)) {
-          return res.status(400).json({ error: "Invalid price value" });
-        }
-      }
-      
-      // Handle reserve price for auctions
-      if (req.body.reservePrice !== undefined) {
-        if (req.body.reservePrice === null || req.body.reservePrice === "") {
-          req.body.reservePrice = null;
-        } else {
-          req.body.reservePrice = typeof req.body.reservePrice === "number" 
-            ? req.body.reservePrice 
-            : parseInt(req.body.reservePrice, 10);
-          if (isNaN(req.body.reservePrice)) {
-            return res.status(400).json({ error: "Invalid reserve price value" });
-          }
-          
-          // Validate reserve price is greater than or equal to start price
-          const startPrice = req.body.price !== undefined 
-            ? req.body.price 
-            : existingListing.price;
-          if (req.body.reservePrice < startPrice) {
-            return res.status(400).json({ 
-              error: "السعر الاحتياطي يجب أن يكون أكبر من أو يساوي سعر البداية" 
-            });
-          }
-        }
-      }
-      
-      // Convert date strings to Date objects for timestamp columns
-      if (req.body.auctionStartTime !== undefined && req.body.auctionStartTime !== null) {
-        const parsed = new Date(req.body.auctionStartTime);
-        req.body.auctionStartTime = isNaN(parsed.getTime()) ? null : parsed;
-      }
-      if (req.body.auctionEndTime !== undefined && req.body.auctionEndTime !== null) {
-        const parsed = new Date(req.body.auctionEndTime);
-        req.body.auctionEndTime = isNaN(parsed.getTime()) ? null : parsed;
-      }
-      
-      // Convert shippingCost to number
-      if (req.body.shippingCost !== undefined) {
-        req.body.shippingCost = typeof req.body.shippingCost === "number" 
-          ? req.body.shippingCost 
-          : parseInt(req.body.shippingCost, 10) || 0;
-      }
-      
-      // Ensure internationalCountries is array or null
-      if (req.body.internationalCountries !== undefined) {
-        if (!Array.isArray(req.body.internationalCountries)) {
-          req.body.internationalCountries = null;
-        }
-      }
-      
-      // Ensure area and sku are strings or null
-      if (req.body.area === "") req.body.area = null;
-      if (req.body.sku === "") req.body.sku = null;
-      
-      const validatedData = updateListingSchema.parse(req.body) as Parameters<typeof storage.updateListing>[1];
-      
-      const listing = await storage.updateListing(req.params.id, validatedData);
-      if (!listing) {
-        return res.status(404).json({ error: "Listing not found" });
-      }
-      res.json(listing);
-    } catch (error) {
-      console.error("Error updating listing:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid update data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update listing" });
-    }
-  });
-
-  app.delete("/api/listings/:id", async (req, res) => {
-    try {
-      const success = await storage.deleteListing(req.params.id);
-      if (!success) {
-        return res.status(404).json({ error: "Listing not found" });
-      }
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting listing:", error);
-      res.status(500).json({ error: "Failed to delete listing" });
-    }
-  });
-
-  // Relist an item - creates a new listing based on an existing one
-  app.post("/api/listings/:id/relist", async (req, res) => {
-    try {
-      const sessionUserId = await getUserIdFromRequest(req);
-      if (!sessionUserId) {
-        return res.status(401).json({ error: "يجب تسجيل الدخول" });
-      }
-
-      const originalListing = await storage.getListing(req.params.id);
-      if (!originalListing) {
-        return res.status(404).json({ error: "المنتج غير موجود" });
-      }
-
-      // Verify ownership
-      if (originalListing.sellerId !== sessionUserId) {
-        return res.status(403).json({ error: "لا يمكنك إعادة عرض منتج لا تملكه" });
-      }
-
-      // For auctions, require new start and end times
-      let auctionStartTime = null;
-      let auctionEndTime = null;
-      
-      if (originalListing.saleType === "auction") {
-        if (!req.body.auctionStartTime || !req.body.auctionEndTime) {
-          return res.status(400).json({ 
-            error: "المزادات تتطلب تحديد تاريخ ووقت البدء والانتهاء الجديد" 
-          });
-        }
-        
-        auctionStartTime = new Date(req.body.auctionStartTime);
-        auctionEndTime = new Date(req.body.auctionEndTime);
-        const hoursDiff = (auctionEndTime.getTime() - auctionStartTime.getTime()) / (1000 * 60 * 60);
-        
-        if (hoursDiff < 24) {
-          return res.status(400).json({ 
-            error: "يجب أن تكون مدة المزاد 24 ساعة على الأقل" 
-          });
-        }
-      }
-
-      // Create new listing with same details but reset stats
-      const newListingData = {
-        title: originalListing.title,
-        description: originalListing.description,
-        price: req.body.price || originalListing.price,
-        category: originalListing.category,
-        condition: originalListing.condition,
-        images: originalListing.images,
-        saleType: originalListing.saleType,
-        timeLeft: null,
-        auctionStartTime,
-        auctionEndTime,
-        deliveryWindow: originalListing.deliveryWindow,
-        returnPolicy: originalListing.returnPolicy,
-        returnDetails: originalListing.returnDetails,
-        sellerName: originalListing.sellerName,
-        sellerId: sessionUserId,
-        city: originalListing.city,
-        brand: originalListing.brand,
-        isNegotiable: originalListing.isNegotiable,
-        serialNumber: originalListing.serialNumber,
-        quantityAvailable: req.body.quantityAvailable || 1,
-        allowedBidderType: originalListing.allowedBidderType || "verified_only",
-      };
-
-      const validatedData = insertListingSchema.parse(newListingData);
-      const newListing = await storage.createListing(validatedData);
-      
-      res.status(201).json(newListing);
-    } catch (error) {
-      console.error("Error relisting item:", error);
-      res.status(400).json({ error: "فشل في إعادة عرض المنتج", details: String(error) });
-    }
-  });
-
-  app.get("/api/listings/:id/bids", async (req, res) => {
-    try {
-      const bids = await storage.getBidsForListing(req.params.id);
-      res.json(bids);
-    } catch (error) {
-      console.error("Error fetching bids:", error);
-      res.status(500).json({ error: "Failed to fetch bids" });
-    }
-  });
-
-  // Get bids with bidder information (for seller dashboard)
-  app.get("/api/listings/:id/bids/detailed", async (req, res) => {
-    try {
-      const bids = await storage.getBidsWithUserInfo(req.params.id);
-      res.json(bids);
-    } catch (error) {
-      console.error("Error fetching detailed bids:", error);
-      res.status(500).json({ error: "Failed to fetch bids" });
-    }
-  });
-
-  // Track listing view (excludes seller's own views)
-  app.post("/api/listings/:id/view", async (req, res) => {
-    try {
-      const listing = await storage.getListing(req.params.id);
-      if (!listing) {
-        return res.status(404).json({ error: "Listing not found" });
-      }
-      
-      // Get viewer ID from request body or session
-      const viewerId = req.body?.viewerId || (req.session as any)?.userId;
-      
-      // Don't count views from the seller themselves
-      if (viewerId && viewerId === listing.sellerId) {
-        return res.json({ views: listing.views || 0, skipped: true });
-      }
-      
-      const views = await storage.incrementListingViews(req.params.id);
-      res.json({ views });
-    } catch (error) {
-      console.error("Error tracking view:", error);
-      res.status(500).json({ error: "Failed to track view" });
-    }
-  });
-
-  app.post("/api/bids", async (req, res) => {
-    try {
-      const validatedData = insertBidSchema.parse(req.body);
-      
-      // Check if user is verified and not banned before allowing bids
-      const bidder = await storage.getUser(validatedData.userId);
-      if (!bidder) {
-        return res.status(404).json({ error: "المستخدم غير موجود" });
-      }
-      if (bidder.isBanned) {
-        return res.status(403).json({ error: "حسابك محظور. لا يمكنك المزايدة." });
-      }
-
-      // PHONE VERIFICATION GATE: Check if phone is verified
-      if (!bidder.phoneVerified) {
-        return res.status(403).json({ 
-          error: "يجب التحقق من رقم هاتفك أولاً",
-          requiresPhoneVerification: true,
-          phone: bidder.phone,
-          message: "للمزايدة، يجب عليك التحقق من رقم هاتفك عبر WhatsApp أولاً",
-        });
-      }
-
-      // BIDDING LIMIT CHECK: Calculate total active bids for this user
-      const userActiveBids = await storage.getUserActiveBids(validatedData.userId);
-      const totalActiveBidsValue = userActiveBids.reduce((sum, bid) => sum + bid.amount, 0);
-      const biddingLimit = bidder.biddingLimit || 100000; // Default 100,000 IQD
-
-      // Check if new bid would exceed limit
-      if (totalActiveBidsValue + validatedData.amount > biddingLimit) {
-        return res.status(403).json({ 
-          error: "تجاوزت حد المزايدة المسموح",
-          exceedsLimit: true,
-          biddingLimit,
-          currentBidsValue: totalActiveBidsValue,
-          attemptedBid: validatedData.amount,
-          availableLimit: biddingLimit - totalActiveBidsValue,
-          message: `حد المزايدة الخاص بك هو ${biddingLimit.toLocaleString()} د.ع. لديك حالياً مزايدات نشطة بقيمة ${totalActiveBidsValue.toLocaleString()} د.ع.`,
-        });
-      }
-
-      const listing = await storage.getListing(validatedData.listingId);
-      if (!listing) {
-        return res.status(404).json({ error: "Listing not found" });
-      }
-
-      // Enforce phone verification for bidding
-      if (!bidder.phoneVerified) {
-        return res.status(403).json({ error: "يجب التحقق من رقم هاتفك للمزايدة في هذا المزاد." });
-      }
-      
-      // Prevent sellers from bidding on their own items
-      if (listing.sellerId && validatedData.userId === listing.sellerId) {
-        return res.status(400).json({ error: "لا يمكنك المزايدة على منتجك الخاص" });
-      }
-      
-      if (listing.saleType === "auction" && listing.auctionEndTime) {
-        const now = new Date();
-        if (now > listing.auctionEndTime) {
-          return res.status(400).json({ error: "المزاد انتهى" });
-        }
-      }
-      
-      const highestBid = await storage.getHighestBid(validatedData.listingId);
-      
-      // Prevent users from outbidding themselves
-      if (highestBid && highestBid.userId === validatedData.userId) {
-        return res.status(400).json({ error: "أنت بالفعل صاحب أعلى مزايدة" });
-      }
-      
-      const minBid = highestBid ? highestBid.amount + 1000 : listing.price;
-      
-      if (validatedData.amount < minBid) {
-        return res.status(400).json({ 
-          error: "المزايدة يجب أن تكون أعلى من المزايدة الحالية",
-          minBid 
-        });
-      }
-      
-      // Get previous high bidder before creating new bid
-      const previousHighBid = highestBid;
-      const previousHighBidderId = previousHighBid?.userId;
-      
-      const bid = await storage.createBid(validatedData);
-      
-      // Update listing with new highest bid info
-      await storage.updateListing(validatedData.listingId, {
-        currentBid: validatedData.amount,
-        highestBidderId: validatedData.userId,
-        totalBids: (listing.totalBids || 0) + 1,
-      } as any);
-      
-      // Send notification to previous highest bidder (they've been outbid)
-      if (previousHighBidderId && previousHighBidderId !== validatedData.userId) {
-        await storage.createNotification({
-          userId: previousHighBidderId,
-          type: "outbid",
-          title: "تم تجاوز مزايدتك!",
-          message: `تم تقديم مزايدة أعلى على "${listing.title}". قم بزيادة مزايدتك للفوز.`,
-          linkUrl: `/product/${validatedData.listingId}`,
-          relatedId: validatedData.listingId,
-        });
-      }
-      
-      // Send notification to seller about new bid
-      if (listing.sellerId && listing.sellerId !== validatedData.userId) {
-        await storage.createNotification({
-          userId: listing.sellerId,
-          type: "new_bid",
-          title: "مزايدة جديدة!",
-          message: `${bidder?.displayName || "مستخدم"} قدم مزايدة ${validatedData.amount.toLocaleString()} د.ع على "${listing.title}"`,
-          linkUrl: `/product/${validatedData.listingId}`,
-          relatedId: validatedData.listingId,
-        });
-      }
-      
-      // Anti-sniping: Reset timer to 2 minutes if bid placed in last 2 minutes
-      let timeExtended = false;
-      let newEndTime: Date | undefined;
-      
-      if (listing.saleType === "auction" && listing.auctionEndTime) {
-        const currentEndTime = new Date(listing.auctionEndTime);
-        const now = new Date();
-        const timeRemaining = currentEndTime.getTime() - now.getTime();
-        const twoMinutes = 2 * 60 * 1000;
-        
-        if (timeRemaining > 0 && timeRemaining <= twoMinutes) {
-          // Bid in last 2 minutes - reset timer to exactly 2 minutes from now
-          newEndTime = new Date(now.getTime() + twoMinutes);
-          await storage.updateListing(validatedData.listingId, { 
-            auctionEndTime: newEndTime 
-          });
-          timeExtended = true;
-        }
-      }
-      
-      const allBids = await storage.getBidsForListing(validatedData.listingId);
-      const totalBids = allBids.length;
-      const currentBid = validatedData.amount;
-      
-      // Broadcast with anonymous bidder name for privacy - only seller sees real name via notification
-      broadcastBidUpdate({
-        type: "bid_update",
-        listingId: validatedData.listingId,
-        currentBid,
-        totalBids,
-        bidderName: "مزايد", // Anonymous for public
-        bidderId: validatedData.userId,
-        timestamp: new Date().toISOString(),
-        auctionEndTime: newEndTime?.toISOString() || listing.auctionEndTime?.toISOString(),
-        timeExtended,
-        previousHighBidderId: previousHighBid?.userId,
-      });
-      
-      res.status(201).json(bid);
-    } catch (error) {
-      console.error("Error creating bid:", error);
-      res.status(400).json({ error: "Failed to create bid", details: String(error) });
-    }
-  });
-
-  // AI-powered image search - analyze image and find matching products
-  app.post("/api/image-search", async (req, res) => {
-    try {
-      const { imageBase64 } = req.body;
-      
-      if (!imageBase64) {
-        return res.status(400).json({ error: "Image data is required" });
-      }
-
-      // Analyze the image using AI vision
-      const analysis = await analyzeImageForSearch(imageBase64);
-      
-      console.log("[image-search] AI Analysis result:", JSON.stringify(analysis, null, 2));
-      
-      // Get all listings to search through
-      const { listings } = await storage.getListingsPaginated({ limit: 200, offset: 0 });
-      
-      // Build comprehensive search terms from analysis
-      const brandTerms: string[] = [
-        analysis.brand,
-        analysis.model,
-        ...analysis.brandVariants
-      ].filter((term): term is string => !!term && term.length > 0);
-      
-      const otherTerms: string[] = [
-        analysis.itemType,
-        analysis.category,
-        analysis.material,
-        ...analysis.colors,
-        ...analysis.keywords
-      ].filter((term): term is string => !!term && term.length > 0);
-      
-      const allSearchTerms = [...brandTerms, ...otherTerms];
-      
-      // Score each listing based on how well it matches
-      const scoredListings = listings.map(listing => {
-        let score = 0;
-        let hasBrandMatch = false;
-        const title = (listing.title || "").toLowerCase();
-        const description = (listing.description || "").toLowerCase();
-        const category = (listing.category || "").toLowerCase();
-        const tags = (listing.tags || []).map((t: string) => t.toLowerCase());
-        const allText = `${title} ${description} ${tags.join(" ")}`;
-        
-        // BRAND MATCHING - highest priority (200+ points for brand match)
-        for (const brandTerm of brandTerms) {
-          const lowerBrand = brandTerm.toLowerCase();
-          if (title.includes(lowerBrand)) {
-            score += 200;
-            hasBrandMatch = true;
-          } else if (tags.some((tag: string) => tag.includes(lowerBrand) || lowerBrand.includes(tag))) {
-            score += 150;
-            hasBrandMatch = true;
-          } else if (description.includes(lowerBrand)) {
-            score += 100;
-            hasBrandMatch = true;
-          }
-        }
-        
-        // Model matching (e.g., "Submariner", "Speedmaster")
-        if (analysis.model) {
-          const modelLower = analysis.model.toLowerCase();
-          if (allText.includes(modelLower)) {
-            score += 80;
-          }
-        }
-        
-        // Category must match for watches
-        const isWatch = analysis.category === "ساعات" || analysis.itemType.toLowerCase().includes("watch");
-        const listingIsWatch = category.includes("ساعات") || category.includes("watch");
-        if (isWatch && !listingIsWatch) {
-          score = 0; // Exclude non-watches if searching for watches
-        } else if (isWatch && listingIsWatch) {
-          score += 30; // Bonus for correct category
-        }
-        
-        // Other term matching (lower weight)
-        for (const term of otherTerms) {
-          const lowerTerm = term.toLowerCase();
-          if (lowerTerm.length < 3) continue; // Skip very short terms
-          
-          if (title.includes(lowerTerm)) score += 15;
-          else if (tags.some((tag: string) => tag.includes(lowerTerm))) score += 10;
-          else if (description.includes(lowerTerm)) score += 5;
-        }
-        
-        return { listing, score, hasBrandMatch };
-      });
-      
-      // Filter and sort - prioritize brand matches, require minimum score
-      const MIN_SCORE = analysis.brand ? 50 : 20; // Higher threshold if brand was detected
-      
-      let matchingListings = scoredListings
-        .filter(item => item.score >= MIN_SCORE)
-        .sort((a, b) => {
-          // Brand matches always first
-          if (a.hasBrandMatch && !b.hasBrandMatch) return -1;
-          if (!a.hasBrandMatch && b.hasBrandMatch) return 1;
-          return b.score - a.score;
-        })
-        .slice(0, 12)
-        .map(item => ({
-          id: item.listing.id,
-          title: item.listing.title,
-          price: item.listing.price,
-          image: item.listing.images?.[0] || "",
-          currentBid: item.listing.currentBid,
-          saleType: item.listing.saleType,
-          score: item.score,
-          hasBrandMatch: item.hasBrandMatch
-        }));
-      
-      console.log("[image-search] Found", matchingListings.length, "matches. Brand terms:", brandTerms);
-      
-      res.json({
-        analysis,
-        results: matchingListings,
-        searchTerms: allSearchTerms,
-        brandTerms
-      });
-    } catch (error) {
-      console.error("Error in image search:", error);
-      res.status(500).json({ error: "Failed to analyze image" });
-    }
-  });
-
-  // Get public user profile (for seller info on product page)
-  app.get("/api/users/:userId", async (req, res) => {
-    try {
-      const user = await storage.getUser(req.params.userId);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      // Return only public info - no password or sensitive data
-      res.json({
-        id: user.id,
-        displayName: user.displayName,
-        phone: user.phone,
-        avatar: user.avatar,
-        sellerApproved: user.sellerApproved,
-        isVerified: user.isVerified,
-        totalSales: user.totalSales,
-        rating: user.rating,
-        ratingCount: user.ratingCount,
-        city: user.city,
-        createdAt: user.createdAt,
-      });
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ error: "Failed to fetch user" });
-    }
-  });
-
-  // Public seller profile endpoint (alias)
-  app.get("/api/users/:userId/public", async (req, res) => {
-    try {
-      const user = await storage.getUser(req.params.userId);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      res.json({
-        id: user.id,
-        displayName: user.displayName,
-        avatar: user.avatar,
-        isVerified: user.isVerified,
-        isAuthenticated: user.isAuthenticated,
-        totalSales: user.totalSales,
-        rating: user.rating,
-        ratingCount: user.ratingCount,
-        city: user.city,
-        createdAt: user.createdAt,
-      });
-    } catch (error) {
-      console.error("Error fetching public user:", error);
-      res.status(500).json({ error: "Failed to fetch user" });
-    }
-  });
-
-  app.get("/api/users/:userId/bids", async (req, res) => {
-    try {
-      const bids = await storage.getUserBids(req.params.userId);
-      res.json(bids);
-    } catch (error) {
-      console.error("Error fetching user bids:", error);
-      res.status(500).json({ error: "Failed to fetch user bids" });
-    }
-  });
-
-  app.get("/api/users/:userId/watchlist", async (req, res) => {
-    try {
-      const items = await storage.getWatchlist(req.params.userId);
-      res.json(items);
-    } catch (error) {
-      console.error("Error fetching watchlist:", error);
-      res.status(500).json({ error: "Failed to fetch watchlist" });
-    }
-  });
-
+  // Watchlist routes
   app.get("/api/watchlist/listings", async (req, res) => {
     try {
       const userId = await getUserIdFromRequest(req);
@@ -2320,1157 +1115,327 @@ export async function registerRoutes(
     }
   });
 
-  // TEMPORARY: Fix admin status endpoint - remove after use
-  app.post("/api/admin/fix-admin-status", async (req, res) => {
+  // Other routes (analytics, messages, comments, reviews, transactions, etc.)
+  app.post("/api/analytics", async (req, res) => {
     try {
-      const { secretCode, phone } = req.body;
-      
-      // Security: require secret code
-      if (secretCode !== "Ss120$JyA-ADMIN-FIX") {
-        return res.status(403).json({ error: "Invalid secret code" });
-      }
-      
-      const user = await storage.getUserByPhone(phone || "07700000000");
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      
-      await storage.updateUser(user.id, { isAdmin: true } as any);
-      
-      res.json({ 
-        success: true, 
-        message: `User ${user.displayName} (${user.phone}) is now admin`,
-        userId: user.id
-      });
+      const validatedData = insertAnalyticsSchema.parse(req.body);
+      const event = await storage.trackAnalytics(validatedData);
+      res.status(201).json(event);
     } catch (error) {
-      console.error("Error fixing admin status:", error);
-      res.status(500).json({ error: "Failed to fix admin status" });
+      console.error("Error tracking analytics:", error);
+      res.status(400).json({ error: "Failed to track analytics" });
     }
   });
 
-  // WhatsApp Verification Routes
-  app.post("/api/auth/send-verification", async (req, res) => {
+  app.get("/api/analytics/user/:userId", async (req, res) => {
     try {
-      const { phone, type = "registration" } = req.body;
-      
-      if (!phone) {
-        return res.status(400).json({ error: "رقم الهاتف مطلوب" });
-      }
-      
-      // Check if Twilio WhatsApp is configured
-      const { isWhatsAppConfigured, sendWhatsAppOTP, generateOTPCode } = await import("./whatsapp");
-      try {
-        isWhatsAppConfigured(); // Will throw if not configured
-      } catch (configError: any) {
-        console.error("[Route] Twilio WhatsApp not configured:", configError.message);
-        return res.status(503).json({ error: "خدمة واتساب غير متاحة حالياً - الرجاء التواصل مع الدعم الفني" });
-      }
-      
-      // For registration, check if phone is already registered
-      if (type === "registration") {
-        const existingUser = await storage.getUserByPhone(phone);
-        if (existingUser) {
-          return res.status(400).json({ error: "رقم الهاتف مستخدم بالفعل" });
-        }
-      }
-      
-      // For password reset, verify user exists
-      if (type === "password_reset") {
-        const existingUser = await storage.getUserByPhone(phone);
-        if (!existingUser) {
-          return res.status(404).json({ error: "لا يوجد حساب بهذا الرقم" });
-        }
-      }
-      
-      // Generate secure OTP code
-      const code = generateOTPCode();
-      
-      // Store OTP in database with 5-minute expiry
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-      await storage.createVerificationCode(phone, code, type, expiresAt);
-      
-      // Send OTP via WhatsApp using Twilio Messages API (Sandbox)
-      const result = await sendWhatsAppOTP(phone, code);
-      if (!result.success) {
-        return res.status(500).json({ 
-          error: result.errorAr || "فشل في إرسال رمز التحقق عبر واتساب",
-          details: result.error
-        });
-      }
-      
-      res.json({ success: true, message: "تم إرسال رمز التحقق عبر واتساب" });
+      const analytics = await storage.getAnalyticsByUser(req.params.userId);
+      res.json(analytics);
     } catch (error) {
-      console.error("Error sending verification:", error);
-      res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+      console.error("Error fetching user analytics:", error);
+      res.status(500).json({ error: "Failed to fetch user analytics" });
     }
   });
 
-  app.post("/api/auth/verify-code", async (req, res) => {
+  app.get("/api/analytics/listing/:listingId", async (req, res) => {
     try {
-      const { phone, code, type = "registration" } = req.body;
-      
-      if (!phone || !code) {
-        return res.status(400).json({ error: "رقم الهاتف ورمز التحقق مطلوبان" });
-      }
-      
-      // Verify OTP by checking database
-      const validCode = await storage.getValidVerificationCode(phone, code, type);
-      
-      if (!validCode) {
-        return res.status(400).json({ 
-          error: "رمز التحقق غير صحيح أو منتهي الصلاحية"
-        });
-      }
-      
-      // Mark code as used to prevent reuse
-      await storage.markVerificationCodeUsed(validCode.id);
-      
-      // If it's for password reset, return a one-time reset token
-      if (type === "password_reset") {
-        const crypto = await import("crypto");
-        const resetToken = crypto.randomBytes(32).toString("hex");
-        
-        // Store reset token in user record temporarily
-        const user = await storage.getUserByPhone(phone);
-        if (user) {
-          await storage.updateUser(user.id, { authToken: resetToken } as any);
-        }
-        
-        return res.json({ success: true, verified: true, resetToken });
-      }
-      
-      res.json({ success: true, verified: true });
+      const analytics = await storage.getAnalyticsByListing(req.params.listingId);
+      res.json(analytics);
     } catch (error) {
-      console.error("Error verifying code:", error);
-      res.status(500).json({ error: "فشل في التحقق من الرمز" });
+      console.error("Error fetching listing analytics:", error);
+      res.status(500).json({ error: "Failed to fetch listing analytics" });
     }
   });
 
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.get("/api/messages/:userId", async (req, res) => {
     try {
-      const { phone, resetToken, newPassword } = req.body;
-      
-      if (!phone || !resetToken || !newPassword) {
-        return res.status(400).json({ error: "جميع الحقول مطلوبة" });
-      }
-      
-      if (newPassword.length < 6) {
-        return res.status(400).json({ error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" });
-      }
-      
-      // Find user and verify reset token
-      const user = await storage.getUserByPhone(phone);
-      if (!user || user.authToken !== resetToken) {
-        return res.status(400).json({ error: "رابط إعادة التعيين غير صالح" });
-      }
-      
-      // Hash new password and update
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await storage.updateUser(user.id, { 
-        password: hashedPassword,
-        authToken: null 
-      } as any);
-      
-      res.json({ success: true, message: "تم تغيير كلمة المرور بنجاح" });
+      const messages = await storage.getMessages(req.params.userId);
+      res.json(messages);
     } catch (error) {
-      console.error("Error resetting password:", error);
-      res.status(500).json({ error: "فشل في إعادة تعيين كلمة المرور" });
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
 
-  // Phone/password authentication routes
-  app.post("/api/auth/register", async (req, res) => {
+  app.get("/api/messages/:userId1/:userId2", async (req, res) => {
     try {
-      const { phone, password, displayName, ageBracket, interests, city, email } = req.body;
-      
-      if (!phone || !password) {
-        return res.status(400).json({ error: "رقم الهاتف وكلمة المرور مطلوبان" });
-      }
-
-      // Check if phone already exists
-      const existingUser = await storage.getUserByPhone(phone);
-      if (existingUser) {
-        return res.status(400).json({ error: "رقم الهاتف مستخدم بالفعل" });
-      }
-
-      // Check if email already exists (if provided)
-      if (email) {
-        const existingEmail = await storage.getUserByEmail(email);
-        if (existingEmail) {
-          return res.status(400).json({ error: "البريد الإلكتروني مستخدم بالفعل" });
-        }
-      }
-
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Create user
-      const user = await storage.createUser({
-        phone,
-        password: hashedPassword,
-        displayName: displayName || phone,
-        email: email || null,
-        authProvider: "phone",
-        ageBracket: ageBracket || null,
-        interests: interests || [],
-        city: city || null,
-      });
-
-      // Set session
-      (req.session as any).userId = user.id;
-
-      res.status(201).json({ 
-        id: user.id,
-        phone: user.phone,
-        displayName: user.displayName,
-        sellerApproved: user.sellerApproved,
-        accountCode: user.accountCode,
-      });
+      const messages = await storage.getConversation(req.params.userId1, req.params.userId2);
+      res.json(messages);
     } catch (error) {
-      console.error("Error registering user:", error);
-      res.status(500).json({ error: "فشل في إنشاء الحساب" });
+      console.error("Error fetching conversation:", error);
+      res.status(500).json({ error: "Failed to fetch conversation" });
     }
   });
 
-  // WhatsApp Phone Verification - Step 1: Send OTP
-  app.post("/api/auth/send-phone-otp", async (req, res) => {
-    try {
-      // User must be logged in
-      const userId = await getUserIdFromRequest(req);
-      if (!userId) {
-        return res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user || !user.phone) {
-        return res.status(404).json({ error: "المستخدم غير موجود أو لا يملك رقم هاتف" });
-      }
-
-      // Check if already verified
-      if (user.phoneVerified) {
-        return res.json({
-          success: true,
-          alreadyVerified: true,
-          message: "رقم هاتفك موثق بالفعل",
-        });
-      }
-
-      // Check if Twilio WhatsApp is configured and generate OTP
-      const { generateOTPCode, sendWhatsAppOTP, isWhatsAppConfigured } = await import("./whatsapp");
-      
-      try {
-        isWhatsAppConfigured(); // Will throw if not configured
-      } catch (configError: any) {
-        console.error("[Route] Twilio WhatsApp not configured:", configError.message);
-        return res.status(500).json({ error: "خدمة التحقق غير متاحة حالياً - الرجاء التواصل مع الدعم الفني" });
-      }
-      
-      // Generate secure OTP code
-      const otpCode = generateOTPCode();
-      
-      // Store OTP in database with 5-minute expiry
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-      await storage.createVerificationCode(user.phone, otpCode, "phone_verification", expiresAt);
-      
-      // Send via Twilio WhatsApp Messages API (Sandbox)
-      const result = await sendWhatsAppOTP(user.phone, otpCode);
-      
-      if (!result.success) {
-        return res.status(500).json({ 
-          error: result.errorAr || "فشل في إرسال رمز التحقق",
-          details: result.error
-        });
-      }
-
-      return res.json({
-        success: true,
-        message: "تم إرسال رمز التحقق إلى واتساب",
-        phone: user.phone,
-      });
-    } catch (error) {
-      console.error("Error sending WhatsApp OTP:", error);
-      res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
-    }
-  });
-
-  // WhatsApp Phone Verification - Step 2: Verify OTP
-  app.post("/api/auth/verify-phone-otp", async (req, res) => {
+  app.post("/api/messages", async (req, res) => {
     try {
       const userId = await getUserIdFromRequest(req);
       if (!userId) {
-        return res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+        return res.status(401).json({ error: "يجب تسجيل الدخول لإرسال رسالة" });
       }
-
-      const { code } = req.body;
-      if (!code) {
-        return res.status(400).json({ error: "رمز التحقق مطلوب" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user || !user.phone) {
-        return res.status(404).json({ error: "المستخدم غير موجود" });
-      }
-
-      // Verify OTP by checking database
-      const validCode = await storage.getValidVerificationCode(
-        user.phone,
-        code,
-        "phone_verification"
-      );
-
-      if (!validCode) {
-        return res.status(400).json({ 
-          error: "رمز التحقق غير صحيح أو منتهي الصلاحية"
-        });
-      }
-
-      // Mark code as used to prevent reuse
-      await storage.markVerificationCodeUsed(validCode.id);
       
-      // Mark phone as verified
-      await storage.markPhoneAsVerified(userId);
-
-      return res.json({
-        success: true,
-        message: "تم التحقق من رقم الهاتف بنجاح",
-        phoneVerified: true,
+      // Check if user is banned
+      const currentUser = await storage.getUser(userId);
+      if (currentUser?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك إرسال الرسائل." });
+      }
+      
+      const validatedData = insertMessageSchema.parse(req.body);
+      
+      // Ensure the sender is the authenticated user
+      if (validatedData.senderId !== userId) {
+        return res.status(403).json({ error: "غير مصرح" });
+      }
+      
+      // Prevent users from messaging themselves
+      if (validatedData.senderId === validatedData.receiverId) {
+        return res.status(400).json({ error: "لا يمكنك إرسال رسالة لنفسك" });
+      }
+      
+      const message = await storage.sendMessage(validatedData);
+      
+      // Create notification for the receiver
+      const isOffer = validatedData.content?.includes("عرض سعر:");
+      
+      await storage.createNotification({
+        userId: validatedData.receiverId,
+        type: isOffer ? "new_offer" : "new_message",
+        title: isOffer ? "عرض سعر جديد!" : "رسالة جديدة",
+        message: isOffer 
+          ? `${currentUser?.displayName || "مستخدم"} أرسل لك عرض سعر`
+          : `${currentUser?.displayName || "مستخدم"} أرسل لك رسالة`,
+        linkUrl: `/messages/${validatedData.senderId}`,
+        relatedId: validatedData.senderId,
       });
+      
+      res.status(201).json(message);
     } catch (error) {
-      console.error("Error verifying phone OTP:", error);
-      res.status(500).json({ error: "فشل في التحقق من رقم الهاتف" });
+      console.error("Error sending message:", error);
+      res.status(400).json({ error: "Failed to send message", details: String(error) });
     }
   });
 
-  // Send OTP for phone verification (allows entering phone number)
-  // Uses VerifyWay API via in-memory OTP service
-  app.post("/api/auth/send-otp", async (req, res) => {
+  app.patch("/api/messages/:id/read", async (req, res) => {
     try {
-      const { phone } = req.body;
-      
-      // Try to get phone from body, fallback to logged-in user's phone
-      let phoneNumber = phone;
-      if (!phoneNumber) {
-        const userId = await getUserIdFromRequest(req);
-        if (userId) {
-          const user = await storage.getUser(userId);
-          phoneNumber = user?.phone;
-        }
-      }
-      
-      if (!phoneNumber) {
-        return res.status(400).json({ error: "رقم الهاتف مطلوب" });
-      }
-
-      // Check if user is logged in and already verified
-      const userId = await getUserIdFromRequest(req);
-      if (userId) {
-        const user = await storage.getUser(userId);
-        if (user?.phoneVerified && user?.phone === phoneNumber) {
-          return res.json({
-            success: true,
-            alreadyVerified: true,
-            message: "رقم هاتفك موثق بالفعل",
-          });
-        }
-      }
-
-      // Use in-memory OTP service with VerifyWay
-      const { sendOTP } = await import("./services/otp-service");
-      const success = await sendOTP(phoneNumber);
-      
-      if (!success) {
-        return res.status(500).json({ 
-          error: "فشل في إرسال رمز التحقق"
-        });
-      }
-
-      return res.json({
-        success: true,
-        message: "تم إرسال رمز التحقق إلى واتساب",
-        phone: phoneNumber,
-      });
+      const success = await storage.markMessageAsRead(req.params.id);
+      res.json({ success });
     } catch (error) {
-      console.error("Error sending OTP:", error);
-      res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+      console.error("Error marking message as read:", error);
+      res.status(500).json({ error: "Failed to mark message as read" });
     }
   });
 
-  // Simple OTP Verification Endpoint (for mandatory phone verification)
-  // Accepts phone number and code, verifies using in-memory service
-  app.post("/api/verify-otp", async (req, res) => {
-    try {
-      const { phone, code } = req.body;
-      if (!phone || !code) {
-        return res.status(400).json({ error: "رقم الهاتف ورمز التحقق مطلوبان" });
-      }
-
-      // Use in-memory OTP service for verification
-      const { verifyOTP } = await import("./services/otp-service");
-      const isValid = verifyOTP(phone, code);
-
-      if (!isValid) {
-        return res.status(400).json({ 
-          error: "رمز التحقق غير صحيح أو منتهي الصلاحية"
-        });
-      }
-
-      // If user is logged in, update their phone verification status
-      const userId = await getUserIdFromRequest(req);
-      console.log("[OTP Verify] User ID from request:", userId);
-      if (userId) {
-        const user = await storage.getUser(userId);
-        console.log("[OTP Verify] User found:", user?.id, "phone:", user?.phone);
-        if (user) {
-          // Update user's phone if different
-          if (user.phone !== phone) {
-            console.log("[OTP Verify] Updating phone from", user.phone, "to", phone);
-            await storage.updateUser(userId, { phone } as any);
-          }
-          // Mark phone as verified
-          console.log("[OTP Verify] Marking phone as verified for user:", userId);
-          await storage.markPhoneAsVerified(userId);
-          console.log("[OTP Verify] Phone verified successfully");
-        }
-      } else {
-        console.log("[OTP Verify] No user ID found in request - phone not linked to account");
-      }
-
-      return res.json({
-        success: true,
-        message: "تم التحقق من رقم الهاتف بنجاح",
-        phoneVerified: true,
-      });
-    } catch (error) {
-      console.error("Error verifying OTP:", error);
-      res.status(500).json({ error: "فشل في التحقق من رقم الهاتف" });
-    }
-  });
-
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const { phone, password } = req.body;
-
-      if (!phone || !password) {
-        return res.status(400).json({ error: "رقم الهاتف وكلمة المرور مطلوبان" });
-      }
-
-      // Find user by phone
-      const user = await storage.getUserByPhone(phone);
-      if (!user) {
-        return res.status(401).json({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" });
-      }
-
-      // Check password
-      if (!user.password) {
-        return res.status(401).json({ error: "هذا الحساب يستخدم طريقة تسجيل دخول مختلفة" });
-      }
-
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        return res.status(401).json({ error: "رقم الهاتف أو كلمة المرور غير صحيحة" });
-      }
-
-      // Check if user is banned - block login completely
-      if (user.isBanned) {
-        return res.status(403).json({ 
-          error: "تم حظر حسابك من المنصة. لا يمكنك تسجيل الدخول.",
-          isBanned: true
-        });
-      }
-
-      // Check if 2FA is enabled
-      if (user.twoFactorEnabled && user.twoFactorSecret) {
-        // Generate a pending token for 2FA verification
-        const crypto = await import("crypto");
-        const pendingToken = crypto.randomBytes(32).toString("hex");
-        
-        // Store pending token temporarily
-        await storage.updateUser(user.id, { authToken: pendingToken } as any);
-        
-        return res.json({ 
-          requires2FA: true,
-          phone: user.phone,
-          pendingToken,
-          message: "يرجى إدخال رمز المصادقة الثنائية"
-        });
-      }
-
-      // Generate auth token for Safari/ITP compatibility
-      const crypto = await import("crypto");
-      const authToken = crypto.randomBytes(32).toString("hex");
-
-      // Update last login and store auth token
-      await storage.updateUser(user.id, { 
-        lastLoginAt: new Date(),
-        authToken: authToken,
-      } as any);
-
-      // Set session (for browsers that support cookies)
-      (req.session as any).userId = user.id;
-
-      res.json({ 
-        id: user.id,
-        phone: user.phone,
-        displayName: user.displayName,
-        sellerApproved: user.sellerApproved,
-        isAdmin: user.isAdmin,
-        accountCode: user.accountCode,
-        avatar: user.avatar,
-        authToken: authToken,
-      });
-    } catch (error) {
-      console.error("Error logging in:", error);
-      res.status(500).json({ error: "فشل في تسجيل الدخول" });
-    }
-  });
-
-  app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ error: "فشل في تسجيل الخروج" });
-      }
-      res.json({ success: true });
-    });
-  });
-
-  // 2FA (Google Authenticator) Routes
-  app.post("/api/auth/2fa/setup", async (req, res) => {
-    try {
-      const userId = (req.session as any)?.userId;
-      if (!userId) {
-        const authHeader = req.headers.authorization;
-        if (authHeader && authHeader.startsWith("Bearer ")) {
-          const token = authHeader.substring(7);
-          const user = await storage.getUserByAuthToken(token);
-          if (!user) {
-            return res.status(401).json({ error: "غير مسجل الدخول" });
-          }
-          (req as any).userId = user.id;
-        } else {
-          return res.status(401).json({ error: "غير مسجل الدخول" });
-        }
-      }
-      
-      const activeUserId = userId || (req as any).userId;
-      const user = await storage.getUser(activeUserId);
-      if (!user) {
-        return res.status(404).json({ error: "المستخدم غير موجود" });
-      }
-
-      const { authenticator } = await import("otplib");
-      const qrcode = await import("qrcode");
-      
-      const secret = authenticator.generateSecret();
-      const appName = "E-بيع";
-      const otpauth = authenticator.keyuri(user.phone || user.email || user.id, appName, secret);
-      
-      const qrCodeDataUrl = await qrcode.toDataURL(otpauth);
-      
-      // Store secret temporarily (not enabled yet)
-      await storage.updateUser(activeUserId, { twoFactorSecret: secret } as any);
-      
-      res.json({ 
-        secret,
-        qrCode: qrCodeDataUrl,
-        message: "امسح رمز QR باستخدام تطبيق المصادقة"
-      });
-    } catch (error) {
-      console.error("Error setting up 2FA:", error);
-      res.status(500).json({ error: "فشل في إعداد المصادقة الثنائية" });
-    }
-  });
-
-  app.post("/api/auth/2fa/verify-setup", async (req, res) => {
-    try {
-      let userId = (req.session as any)?.userId;
-      if (!userId) {
-        const authHeader = req.headers.authorization;
-        if (authHeader && authHeader.startsWith("Bearer ")) {
-          const token = authHeader.substring(7);
-          const user = await storage.getUserByAuthToken(token);
-          if (user) userId = user.id;
-        }
-      }
-      
-      if (!userId) {
-        return res.status(401).json({ error: "غير مسجل الدخول" });
-      }
-
-      const { code } = req.body;
-      if (!code) {
-        return res.status(400).json({ error: "رمز التحقق مطلوب" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user || !user.twoFactorSecret) {
-        return res.status(400).json({ error: "يرجى إعداد المصادقة الثنائية أولاً" });
-      }
-
-      const { authenticator } = await import("otplib");
-      const isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret });
-      
-      if (!isValid) {
-        return res.status(400).json({ error: "رمز التحقق غير صحيح" });
-      }
-
-      // Enable 2FA
-      await storage.updateUser(userId, { twoFactorEnabled: true } as any);
-      
-      res.json({ success: true, message: "تم تفعيل المصادقة الثنائية بنجاح" });
-    } catch (error) {
-      console.error("Error verifying 2FA setup:", error);
-      res.status(500).json({ error: "فشل في التحقق من رمز المصادقة" });
-    }
-  });
-
-  app.post("/api/auth/2fa/disable", async (req, res) => {
-    try {
-      let userId = (req.session as any)?.userId;
-      if (!userId) {
-        const authHeader = req.headers.authorization;
-        if (authHeader && authHeader.startsWith("Bearer ")) {
-          const token = authHeader.substring(7);
-          const user = await storage.getUserByAuthToken(token);
-          if (user) userId = user.id;
-        }
-      }
-      
-      if (!userId) {
-        return res.status(401).json({ error: "غير مسجل الدخول" });
-      }
-
-      const { code, password } = req.body;
-      if (!code || !password) {
-        return res.status(400).json({ error: "رمز التحقق وكلمة المرور مطلوبان" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: "المستخدم غير موجود" });
-      }
-
-      // Verify password
-      if (!user.password) {
-        return res.status(400).json({ error: "لا يمكن إيقاف المصادقة الثنائية لهذا الحساب" });
-      }
-      
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        return res.status(400).json({ error: "كلمة المرور غير صحيحة" });
-      }
-
-      // Verify 2FA code
-      if (user.twoFactorSecret) {
-        const { authenticator } = await import("otplib");
-        const isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret });
-        if (!isValid) {
-          return res.status(400).json({ error: "رمز التحقق غير صحيح" });
-        }
-      }
-
-      // Disable 2FA
-      await storage.updateUser(userId, { 
-        twoFactorEnabled: false,
-        twoFactorSecret: null 
-      } as any);
-      
-      res.json({ success: true, message: "تم إيقاف المصادقة الثنائية" });
-    } catch (error) {
-      console.error("Error disabling 2FA:", error);
-      res.status(500).json({ error: "فشل في إيقاف المصادقة الثنائية" });
-    }
-  });
-
-  app.post("/api/auth/2fa/verify", async (req, res) => {
-    try {
-      const { phone, code, pendingToken } = req.body;
-      
-      if (!phone || !code || !pendingToken) {
-        return res.status(400).json({ error: "جميع الحقول مطلوبة" });
-      }
-
-      const user = await storage.getUserByPhone(phone);
-      if (!user || !user.twoFactorSecret) {
-        return res.status(400).json({ error: "المستخدم غير موجود" });
-      }
-
-      // Verify the pending token matches
-      if (user.authToken !== pendingToken) {
-        return res.status(400).json({ error: "جلسة تسجيل الدخول غير صالحة" });
-      }
-
-      const { authenticator } = await import("otplib");
-      const isValid = authenticator.verify({ token: code, secret: user.twoFactorSecret });
-      
-      if (!isValid) {
-        return res.status(400).json({ error: "رمز التحقق غير صحيح" });
-      }
-
-      // Generate a new auth token
-      const crypto = await import("crypto");
-      const authToken = crypto.randomBytes(32).toString("hex");
-      await storage.updateUser(user.id, { 
-        authToken,
-        lastLoginAt: new Date()
-      } as any);
-
-      // Set session
-      (req.session as any).userId = user.id;
-
-      res.json({ 
-        id: user.id,
-        phone: user.phone,
-        displayName: user.displayName,
-        sellerApproved: user.sellerApproved,
-        isAdmin: user.isAdmin,
-        accountCode: user.accountCode,
-        avatar: user.avatar,
-        authToken,
-      });
-    } catch (error) {
-      console.error("Error verifying 2FA:", error);
-      res.status(500).json({ error: "فشل في التحقق من رمز المصادقة" });
-    }
-  });
-
-  app.get("/api/auth/me", async (req, res) => {
-    let userId = (req.session as any)?.userId;
-    
-    // Safari/ITP fallback: check Authorization header for token
-    if (!userId) {
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith("Bearer ")) {
-        const token = authHeader.substring(7);
-        const user = await storage.getUserByAuthToken(token);
-        if (user) {
-          userId = user.id;
-        }
-      }
-    }
-    
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(401).json({ error: "المستخدم غير موجود" });
-    }
-
-    // Temporary Cleanup: If phone number matches facebookId, hide it
-    // This ensures users with legacy data see an empty phone field
-    let cleanPhone = user.phone;
-    if (cleanPhone && user.facebookId && cleanPhone === user.facebookId) {
-      cleanPhone = null;
-    }
-    // Also check for "fb_" prefix pattern (another legacy format)
-    if (cleanPhone && cleanPhone.startsWith("fb_")) {
-      cleanPhone = null;
-    }
-
-    res.json({
-      id: user.id,
-      phone: cleanPhone,
-      displayName: user.displayName,
-      sellerApproved: user.sellerApproved,
-      sellerRequestStatus: user.sellerRequestStatus,
-      isAdmin: user.isAdmin,
-      accountCode: user.accountCode,
-      avatar: user.avatar,
-      isVerified: user.isVerified,
-      isBanned: user.isBanned,
-      phoneVerified: user.phoneVerified || false,
-    });
-  });
-
-  // Account Management Routes
-
-  // Get full profile (for account settings)
-  app.get("/api/account/profile", async (req, res) => {
+  app.get("/api/seller-messages", async (req, res) => {
     const userId = await getUserIdFromRequest(req);
     if (!userId) {
       return res.status(401).json({ error: "غير مسجل الدخول" });
     }
-
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(401).json({ error: "المستخدم غير موجود" });
-    }
-
-    res.json({
-      id: user.id,
-      phone: user.phone,
-      email: user.email,
-      displayName: user.displayName,
-      avatar: user.avatar,
-      city: user.city,
-      district: user.district,
-      addressLine1: user.addressLine1,
-      addressLine2: user.addressLine2,
-      sellerApproved: user.sellerApproved,
-      sellerRequestStatus: user.sellerRequestStatus,
-      isAdmin: user.isAdmin,
-      accountCode: user.accountCode,
-      isVerified: user.isVerified,
-      verificationStatus: user.verificationStatus,
-      rating: user.rating,
-      ratingCount: user.ratingCount,
-      totalSales: user.totalSales,
-      twoFactorEnabled: user.twoFactorEnabled,
-      createdAt: user.createdAt,
-      ageBracket: user.ageBracket,
-      interests: user.interests,
-      surveyCompleted: user.surveyCompleted,
-    });
-  });
-
-  // Update profile
-  app.put("/api/account/profile", async (req, res) => {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
     try {
-      const allowedFields = ["displayName", "city", "district", "addressLine1", "addressLine2", "phone", "mapUrl", "ageBracket", "interests", "surveyCompleted", "avatar"];
-      const updates: Record<string, any> = {};
-      
-      for (const field of allowedFields) {
-        if (req.body[field] !== undefined) {
-          updates[field] = req.body[field];
-        }
-      }
-
-      if (Object.keys(updates).length === 0) {
-        return res.status(400).json({ error: "لم يتم تقديم أي حقول للتحديث" });
-      }
-
-      // If phone is being updated, check for uniqueness
-      if (updates.phone) {
-        const existingUserWithPhone = await storage.getUserByPhone(updates.phone);
-
-        if (existingUserWithPhone && existingUserWithPhone.id !== userId) {
-          return res.status(409).json({ error: "This phone number is already in use" });
-        }
-      }
-
-      const user = await storage.updateUser(userId, updates);
-      if (!user) {
-        return res.status(404).json({ error: "المستخدم غير موجود" });
-      }
-
-      // If avatar was updated, ensure it has a public ACL policy
-      if (req.body.avatar) {
-        try {
-          const objectStorageService = new ObjectStorageService();
-          await objectStorageService.trySetObjectEntityAclPolicy(req.body.avatar, {
-            owner: userId,
-            visibility: "public",
-          });
-        } catch (err) {
-          console.error("Failed to set avatar ACL:", err);
-          // Don't fail the request if ACL setting fails, but log it
-        }
-      }
-
-      console.log("[Profile Update] User updated:", user.id, "avatar:", user.avatar);
-      res.json({
-        id: user.id,
-        phone: user.phone,
-        displayName: user.displayName,
-        avatar: user.avatar,
-        city: user.city,
-        district: user.district,
-        addressLine1: user.addressLine1,
-        addressLine2: user.addressLine2,
-        mapUrl: user.mapUrl,
-        ageBracket: user.ageBracket,
-        interests: user.interests,
-        surveyCompleted: user.surveyCompleted,
-      });
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      res.status(500).json({ error: "فشل في تحديث الملف الشخصي" });
-    }
-  });
-
-  // Change password
-  app.post("/api/account/password", async (req, res) => {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
-    try {
-      const { currentPassword, newPassword } = req.body;
-
-      if (!currentPassword || !newPassword) {
-        return res.status(400).json({ error: "كلمة المرور الحالية والجديدة مطلوبتان" });
-      }
-
-      if (newPassword.length < 4) {
-        return res.status(400).json({ error: "كلمة المرور الجديدة قصيرة جداً" });
-      }
-
-      const user = await storage.getUser(userId);
-      if (!user || !user.password) {
-        return res.status(400).json({ error: "لا يمكن تغيير كلمة المرور لهذا الحساب" });
-      }
-
-      const isValid = await bcrypt.compare(currentPassword, user.password);
-      if (!isValid) {
-        return res.status(401).json({ error: "كلمة المرور الحالية غير صحيحة" });
-      }
-
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await storage.updateUser(userId, { password: hashedPassword } as any);
-
-      res.json({ success: true, message: "تم تغيير كلمة المرور بنجاح" });
-    } catch (error) {
-      console.error("Error changing password:", error);
-      res.status(500).json({ error: "فشل في تغيير كلمة المرور" });
-    }
-  });
-
-  // Get buyer addresses
-  app.get("/api/account/addresses", async (req, res) => {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
-    try {
-      const addresses = await storage.getBuyerAddresses(userId);
-      res.json(addresses);
-    } catch (error) {
-      console.error("Error fetching addresses:", error);
-      res.status(500).json({ error: "فشل في جلب العناوين" });
-    }
-  });
-
-  // Create buyer address
-  app.post("/api/account/addresses", async (req, res) => {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
-    try {
-      const addressData = {
-        ...req.body,
-        userId,
-      };
-      const validatedData = insertBuyerAddressSchema.parse(addressData);
-      const address = await storage.createBuyerAddress(validatedData);
-      res.status(201).json(address);
-    } catch (error) {
-      console.error("Error creating address:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "بيانات العنوان غير صحيحة", details: error.errors });
-      }
-      res.status(500).json({ error: "فشل في إضافة العنوان" });
-    }
-  });
-
-  // Update buyer address
-  app.put("/api/account/addresses/:id", async (req, res) => {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
-    try {
-      const addresses = await storage.getBuyerAddresses(userId);
-      const addressOwned = addresses.some(a => a.id === req.params.id);
-      if (!addressOwned) {
-        return res.status(403).json({ error: "لا يمكنك تعديل هذا العنوان" });
-      }
-
-      const address = await storage.updateBuyerAddress(req.params.id, req.body);
-      if (!address) {
-        return res.status(404).json({ error: "العنوان غير موجود" });
-      }
-      res.json(address);
-    } catch (error) {
-      console.error("Error updating address:", error);
-      res.status(500).json({ error: "فشل في تحديث العنوان" });
-    }
-  });
-
-  // Delete buyer address
-  app.delete("/api/account/addresses/:id", async (req, res) => {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
-    try {
-      const addresses = await storage.getBuyerAddresses(userId);
-      const addressOwned = addresses.some(a => a.id === req.params.id);
-      if (!addressOwned) {
-        return res.status(403).json({ error: "لا يمكنك حذف هذا العنوان" });
-      }
-
-      const success = await storage.deleteBuyerAddress(req.params.id);
-      if (!success) {
-        return res.status(404).json({ error: "العنوان غير موجود" });
-      }
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting address:", error);
-      res.status(500).json({ error: "فشل في حذف العنوان" });
-    }
-  });
-
-  // Set default address
-  app.post("/api/account/addresses/:id/default", async (req, res) => {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
-    try {
-      const success = await storage.setDefaultAddress(userId, req.params.id);
-      if (!success) {
-        return res.status(404).json({ error: "العنوان غير موجود" });
-      }
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error setting default address:", error);
-      res.status(500).json({ error: "فشل في تعيين العنوان الافتراضي" });
-    }
-  });
-
-  // Get buyer purchases (transactions where user is the buyer ONLY)
-  app.get("/api/account/purchases", async (req, res) => {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
-    try {
-      // Use optimized method with JOINs to avoid N+1 queries
-      const purchases = await storage.getPurchasesWithDetails(userId);
-      
-      // Get all reviews by this buyer to mark which purchases have reviews
-      const buyerReviews = await storage.getReviewsByBuyer(userId);
-      const reviewedListingIds = new Set(buyerReviews.map(r => r.listingId));
-      
-      // Add hasReview flag to each purchase
-      const purchasesWithReviewStatus = purchases.map(purchase => ({
-        ...purchase,
-        hasReview: reviewedListingIds.has(purchase.listingId),
+      const msgs = await storage.getMessagesForSeller(userId);
+      const messagesWithDetails = await Promise.all(msgs.map(async (msg) => {
+        const sender = await storage.getUser(msg.senderId);
+        const listing = msg.listingId ? await storage.getListing(msg.listingId) : null;
+        return {
+          ...msg,
+          senderName: sender?.displayName || "مستخدم",
+          listingTitle: listing?.title || null,
+          listingImage: listing?.images?.[0] || null,
+        };
       }));
-      
-      res.json(purchasesWithReviewStatus);
+      res.json(messagesWithDetails);
     } catch (error) {
-      console.error("Error fetching purchases:", error);
-      res.status(500).json({ error: "فشل في جلب المشتريات" });
+      console.error("Error fetching seller messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
 
-  // Get seller orders (transactions where user is the seller ONLY)
-  app.get("/api/account/seller-orders", async (req, res) => {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
+  // Product comments
+  app.get("/api/comments/:listingId", async (req, res) => {
     try {
-      const user = await storage.getUser(userId);
-      if (!user || !user.sellerApproved) {
-        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين المعتمدين فقط" });
-      }
+      const comments = await storage.getCommentsForListing(req.params.listingId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
 
-      // Use dedicated method that queries ONLY sales where user is seller
-      const sellerOrders = await storage.getSalesForSeller(userId);
+  app.post("/api/comments", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول للتعليق" });
+      }
       
-      // Enrich with listing and buyer details
-      const enrichedOrders = await Promise.all(
-        sellerOrders.map(async (order) => {
-          const listing = await storage.getListing(order.listingId);
-          const buyer = await storage.getUser(order.buyerId);
-          return {
-            ...order,
-            listing: listing ? {
-              id: listing.id,
-              title: listing.title,
-              price: listing.price,
-              images: listing.images,
-              productCode: listing.productCode,
-            } : undefined,
-            buyer: buyer ? {
-              id: buyer.id,
-              name: buyer.displayName,
-              phone: buyer.phone,
-              city: buyer.city,
-              district: buyer.district,
-              address: buyer.addressLine1,
-            } : undefined,
-          };
-        })
+      // Check if user is banned
+      const commenter = await storage.getUser(userId);
+      if (commenter?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك التعليق." });
+      }
+      
+      const validatedData = insertProductCommentSchema.parse(req.body);
+      
+      if (validatedData.userId !== userId) {
+        return res.status(403).json({ error: "غير مصرح" });
+      }
+      
+      const comment = await storage.createComment(validatedData);
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      res.status(400).json({ error: "فشل في إضافة التعليق", details: String(error) });
+    }
+  });
+
+  app.delete("/api/comments/:id", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+      
+      const success = await storage.deleteComment(req.params.id, userId);
+      if (!success) {
+        return res.status(404).json({ error: "التعليق غير موجود أو غير مصرح بحذفه" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      res.status(500).json({ error: "فشل في حذف التعليق" });
+    }
+  });
+
+  app.get("/api/reviews/seller/:sellerId", async (req, res) => {
+    try {
+      const reviews = await storage.getReviewsForSeller(req.params.sellerId);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      res.status(500).json({ error: "Failed to fetch reviews" });
+    }
+  });
+
+  app.post("/api/reviews", async (req, res) => {
+    try {
+      const validatedData = insertReviewSchema.parse(req.body);
+      
+      // Check if user already reviewed this listing
+      const alreadyReviewed = await storage.hasReviewForListing(
+        validatedData.reviewerId, 
+        validatedData.listingId
       );
-      
-      res.json(enrichedOrders);
-    } catch (error) {
-      console.error("Error fetching seller orders:", error);
-      res.status(500).json({ error: "فشل في جلب الطلبات" });
-    }
-  });
-
-  // Get seller summary (stats)
-  app.get("/api/account/seller-summary", async (req, res) => {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
-    try {
-      const user = await storage.getUser(userId);
-      if (!user || !user.sellerApproved) {
-        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين المعتمدين فقط" });
+      if (alreadyReviewed) {
+        return res.status(400).json({ error: "لقد قمت بتقييم هذا المنتج مسبقاً" });
       }
-
-      const summary = await storage.getSellerSummary(userId);
-      res.json(summary);
+      
+      const review = await storage.createReview(validatedData);
+      res.status(201).json(review);
     } catch (error) {
-      console.error("Error fetching seller summary:", error);
-      res.status(500).json({ error: "فشل في جلب بيانات البائع" });
+      console.error("Error creating review:", error);
+      res.status(400).json({ error: "فشل في إرسال التقييم", details: String(error) });
     }
   });
 
-  // Get buyer summary (stats) - ONLY purchases where user is buyer
-  app.get("/api/account/buyer-summary", async (req, res) => {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) {
-      return res.status(401).json({ error: "غير مسجل الدخول" });
-    }
-
+  app.get("/api/transactions/:userId", async (req, res) => {
     try {
-      // Use dedicated method that queries ONLY purchases where user is buyer
-      const purchases = await storage.getPurchasesForBuyer(userId);
-      const watchlistItems = await storage.getWatchlist(userId);
-      const offers = await storage.getOffersByBuyer(userId);
-      
-      const pendingOrders = purchases.filter(p => 
-        p.status === "pending" || p.status === "processing" || p.status === "in_transit"
-      ).length;
-      const completedOrders = purchases.filter(p => p.status === "completed" || p.status === "delivered").length;
-      const totalSpent = purchases
-        .filter(p => p.status === "completed" || p.status === "delivered")
-        .reduce((sum, p) => sum + (p.amount || 0), 0);
-      
-      res.json({
-        totalPurchases: purchases.length,
-        pendingOrders,
-        completedOrders,
-        totalSpent,
-        wishlistItems: watchlistItems.length,
-        activeOffers: offers.filter(o => o.status === "pending").length,
-      });
+      const transactions = await storage.getTransactionsForUser(req.params.userId);
+      res.json(transactions);
     } catch (error) {
-      console.error("Error fetching buyer summary:", error);
-      res.status(500).json({ error: "فشل في جلب بيانات المشتري" });
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ error: "Failed to fetch transactions" });
+    }
+  });
+
+  app.post("/api/transactions", async (req, res) => {
+    try {
+      const validatedData = insertTransactionSchema.parse(req.body);
+      const sessionUserId = await getUserIdFromRequest(req);
+      
+      // Check if user is banned
+      if (sessionUserId) {
+        const buyer = await storage.getUser(sessionUserId);
+        if (buyer?.isBanned) {
+          return res.status(403).json({ error: "حسابك محظور. لا يمكنك الشراء." });
+        }
+      }
+      
+      // Check if listing is still available
+      const listing = await storage.getListing(validatedData.listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      // Prevent sellers from buying their own products
+      if (sessionUserId && listing.sellerId === sessionUserId) {
+        return res.status(400).json({ error: "لا يمكنك شراء منتجك الخاص" });
+      }
+      
+      const availableQuantity = (listing.quantityAvailable || 1) - (listing.quantitySold || 0);
+      
+      if (availableQuantity <= 0) {
+        return res.status(400).json({ error: "المنتج نفد - غير متوفر للشراء" });
+      }
+      
+      const transaction = await storage.createTransaction(validatedData);
+      
+      // Update listing quantitySold
+      const newQuantitySold = (listing.quantitySold || 0) + 1;
+      await storage.updateListing(validatedData.listingId, {
+        quantitySold: newQuantitySold,
+        // Mark as inactive if sold out
+        isActive: newQuantitySold < (listing.quantityAvailable || 1)
+      });
+      
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error("Error creating transaction:", error);
+      res.status(400).json({ error: "Failed to create transaction", details: String(error) });
+    }
+  });
+
+  // Guest checkout - allows purchases without authentication
+  app.post("/api/transactions/guest", async (req, res) => {
+    try {
+      const { listingId, guestName, guestPhone, guestAddress, guestCity, amount } = req.body;
+      
+      if (!listingId || !guestName || !guestPhone || !guestAddress) {
+        return res.status(400).json({ error: "جميع الحقول مطلوبة" });
+      }
+      
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      const availableQuantity = (listing.quantityAvailable || 1) - (listing.quantitySold || 0);
+      
+      if (availableQuantity <= 0) {
+        return res.status(400).json({ error: "المنتج نفد - غير متوفر للشراء" });
+      }
+      
+      const deliveryAddress = `الاسم: ${guestName}\nالهاتف: ${guestPhone}\nالمدينة: ${guestCity}\nالعنوان: ${guestAddress}`;
+      
+      const transaction = await storage.createTransaction({
+        listingId,
+        sellerId: listing.sellerId || "",
+        buyerId: "", // Guest checkout - no buyer ID
+        amount: amount || listing.price,
+        status: "pending",
+        paymentMethod: "cash",
+        deliveryAddress,
+      });
+      
+      // Update listing quantitySold
+      const newQuantitySold = (listing.quantitySold || 0) + 1;
+      await storage.updateListing(listingId, {
+        quantitySold: newQuantitySold,
+        isActive: newQuantitySold < (listing.quantityAvailable || 1),
+      });
+      
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error("Error creating guest transaction:", error);
+      res.status(400).json({ error: "Failed to create transaction", details: String(error) });
     }
   });
 
@@ -4154,18 +2119,2221 @@ export async function registerRoutes(
     }
   });
 
-  // User bids with listing info
-  app.get("/api/account/my-bids", async (req, res) => {
+  // Reports - Create new report
+  app.post("/api/reports", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول للإبلاغ" });
+      }
+      
+      const { reportType, targetId, targetType, reason, details } = req.body;
+      
+      if (!reportType || !targetId || !targetType || !reason) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      if (targetType === "listing") {
+        const alreadyReported = await storage.hasUserReportedListing(userId, targetId);
+        if (alreadyReported) {
+          return res.status(400).json({ error: "لقد قمت بالإبلاغ عن هذا المنتج مسبقاً" });
+        }
+      }
+      
+      const report = await storage.createReport({
+        reporterId: userId,
+        reportType,
+        targetId,
+        targetType,
+        reason,
+        details: details || null,
+      });
+      
+      if (targetType === "listing") {
+        const reportCount = await storage.getReportCountForListing(targetId);
+        
+        if (reportCount >= 10) {
+          const listing = await storage.getListing(targetId);
+          if (listing?.sellerId) {
+            await storage.createNotification({
+              userId: listing.sellerId,
+              type: "warning",
+              title: "بلاغات على منتجك",
+              message: `تم استلام عدد كبير من البلاغات على منتجك "${listing.title}". سيتم مراجعته من قبل الإدارة.`,
+              linkUrl: `/product/${targetId}`,
+            });
+          }
+        }
+      }
+      
+      res.status(201).json({ success: true, message: "تم إرسال البلاغ بنجاح" });
+    } catch (error) {
+      console.error("Error creating report:", error);
+      res.status(500).json({ error: "فشل في إرسال البلاغ" });
+    }
+  });
+
+  // Cart routes
+  app.get("/api/cart", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const items = await storage.getCartItems(userId);
+      // Enrich cart items with listing data
+      const enrichedItems = await Promise.all(items.map(async (item) => {
+        const listing = await storage.getListing(item.listingId);
+        return {
+          ...item,
+          listing: listing ? {
+            id: listing.id,
+            title: listing.title,
+            price: listing.price,
+            images: listing.images,
+            saleType: listing.saleType,
+            quantityAvailable: listing.quantityAvailable,
+            isActive: listing.isActive,
+            sellerId: listing.sellerId,
+            sellerName: listing.sellerName,
+          } : null
+        };
+      }));
+      res.json(enrichedItems);
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+      res.status(500).json({ error: "فشل في جلب سلة التسوق" });
+    }
+  });
+
+  app.post("/api/cart", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      // Check if user is banned
+      const user = await storage.getUser(userId);
+      if (user?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك الشراء." });
+      }
+
+      const { listingId, quantity = 1 } = req.body;
+      if (!listingId) {
+        return res.status(400).json({ error: "معرف المنتج مطلوب" });
+      }
+
+      // Get listing to verify it exists and get price
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      // Prevent sellers from adding their own products to cart
+      if (listing.sellerId === userId) {
+        return res.status(400).json({ error: "لا يمكنك إضافة منتجك الخاص للسلة" });
+      }
+      
+      if (!listing.isActive) {
+        return res.status(400).json({ error: "هذا المنتج غير متاح حالياً" });
+      }
+      
+      if (listing.saleType === "auction") {
+        return res.status(400).json({ error: "لا يمكن إضافة منتجات المزاد إلى السلة" });
+      }
+
+      const item = await storage.addToCart({
+        userId,
+        listingId,
+        quantity,
+        priceSnapshot: listing.price,
+      });
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      res.status(500).json({ error: "فشل في إضافة المنتج للسلة" });
+    }
+  });
+
+  app.patch("/api/cart/:id", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { id } = req.params;
+      const { quantity } = req.body;
+      
+      if (typeof quantity !== "number" || quantity < 0) {
+        return res.status(400).json({ error: "الكمية غير صالحة" });
+      }
+
+      const updated = await storage.updateCartItemQuantity(id, quantity);
+      if (!updated && quantity > 0) {
+        return res.status(404).json({ error: "العنصر غير موجود" });
+      }
+      
+      res.json(updated || { deleted: true });
+    } catch (error) {
+      console.error("Error updating cart item:", error);
+      res.status(500).json({ error: "فشل في تحديث السلة" });
+    }
+  });
+
+  app.delete("/api/cart/:id", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { id } = req.params;
+      const deleted = await storage.removeFromCart(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "العنصر غير موجود" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing from cart:", error);
+      res.status(500).json({ error: "فشل في حذف العنصر من السلة" });
+    }
+  });
+
+  app.delete("/api/cart", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      await storage.clearCart(userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error clearing cart:", error);
+      res.status(500).json({ error: "فشل في إفراغ السلة" });
+    }
+  });
+
+  // ===== CHECKOUT API =====
+  app.post("/api/checkout", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "يجب تسجيل الدخول لإتمام الشراء" });
+    }
+
+    try {
+      // Check if user is banned
+      const buyer = await storage.getUser(userId);
+      if (buyer?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك الشراء." });
+      }
+
+      // PHONE VERIFICATION GATE: Check if phone is verified
+      if (buyer && !buyer.phoneVerified) {
+        return res.status(403).json({ 
+          error: "يجب التحقق من رقم هاتفك أولاً",
+          requiresPhoneVerification: true,
+          phone: buyer.phone,
+          message: "للشراء، يجب عليك التحقق من رقم هاتفك عبر WhatsApp أولاً",
+        });
+      }
+
+      const { fullName, phone, city, addressLine1, addressLine2, saveAddress } = req.body;
+      
+      if (!fullName || !phone || !city || !addressLine1) {
+        return res.status(400).json({ error: "جميع الحقول المطلوبة يجب ملؤها" });
+      }
+
+      // Get cart items
+      const cartItems = await storage.getCartItems(userId);
+      if (cartItems.length === 0) {
+        return res.status(400).json({ error: "سلة التسوق فارغة" });
+      }
+
+      // Process each cart item into a transaction
+      const transactions = [];
+      for (const item of cartItems) {
+        const listing = await storage.getListing(item.listingId);
+        if (!listing) {
+          continue; // Skip unavailable listings
+        }
+
+        // Check availability
+        const availableQuantity = (listing.quantityAvailable || 1) - (listing.quantitySold || 0);
+        if (availableQuantity < item.quantity) {
+          return res.status(400).json({ 
+            error: `الكمية المطلوبة من "${listing.title}" غير متوفرة. المتبقي: ${availableQuantity}` 
+          });
+        }
+
+        // Prevent sellers from buying their own products
+        if (listing.sellerId === userId) {
+          return res.status(400).json({ error: "لا يمكنك شراء منتجك الخاص" });
+        }
+
+        // Build delivery address string
+        const deliveryAddress = `الاسم: ${fullName}\nالهاتف: ${phone}\nالمدينة: ${city}\nالعنوان: ${addressLine1}${addressLine2 ? '\n' + addressLine2 : ''}`;
+
+        // Create transaction
+        const transaction = await storage.createTransaction({
+          listingId: item.listingId,
+          sellerId: listing.sellerId || "",
+          buyerId: userId,
+          amount: item.priceSnapshot * item.quantity,
+          status: "pending",
+          paymentMethod: "cash",
+          deliveryAddress,
+        });
+        transactions.push(transaction);
+
+        // Update listing quantitySold
+        const newQuantitySold = (listing.quantitySold || 0) + item.quantity;
+        await storage.updateListing(item.listingId, {
+          quantitySold: newQuantitySold,
+          isActive: newQuantitySold < (listing.quantityAvailable || 1),
+        });
+
+        // Notify seller via message system
+        if (listing.sellerId) {
+          try {
+            await storage.sendMessage({
+              senderId: userId,
+              receiverId: listing.sellerId,
+              content: `🛒 طلب جديد! تم شراء "${listing.title}" بقيمة ${(item.priceSnapshot * item.quantity).toLocaleString()} د.ع.\n\nبيانات التوصيل:\n${deliveryAddress}`,
+              listingId: item.listingId,
+            });
+          } catch (msgError) {
+            console.error("Error sending sale notification:", msgError);
+          }
+        }
+      }
+
+      // Update user's address info (but not phone - that's immutable)
+      await storage.updateUser(userId, {
+        displayName: fullName,
+        city,
+        addressLine1,
+        addressLine2: addressLine2 || null,
+      });
+
+      // Save address to buyer_addresses if requested
+      if (saveAddress) {
+        try {
+          // Check for duplicate address (same phone + addressLine1)
+          const existingAddresses = await storage.getBuyerAddresses(userId);
+          const isDuplicate = existingAddresses.some(
+            addr => addr.phone === phone && addr.addressLine1 === addressLine1
+          );
+          
+          if (!isDuplicate) {
+            await storage.createBuyerAddress({
+              userId,
+              label: "عنوان التوصيل",
+              recipientName: fullName,
+              phone,
+              city,
+              addressLine1,
+              addressLine2: addressLine2 || null,
+              isDefault: existingAddresses.length === 0, // First address becomes default
+            });
+          }
+        } catch (addrError) {
+          console.error("Error saving address:", addrError);
+          // Don't fail the checkout if address save fails
+        }
+      }
+
+      // Clear cart after successful checkout
+      await storage.clearCart(userId);
+
+      res.json({ success: true, transactions });
+    } catch (error) {
+      console.error("Error during checkout:", error);
+      res.status(500).json({ error: "فشل في إتمام الطلب" });
+    }
+  });
+
+  // ===== OFFERS API =====
+  
+  // Create a new offer
+  app.post("/api/offers", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "يجب تسجيل الدخول لتقديم عرض" });
+    }
+
+    try {
+      // Check if user is banned
+      const buyer = await storage.getUser(userId);
+      if (buyer?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك تقديم عروض." });
+      }
+
+      const { listingId, offerAmount, message } = req.body;
+      
+      if (!listingId || !offerAmount) {
+        return res.status(400).json({ error: "بيانات العرض غير مكتملة" });
+      }
+      
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      // Check if listing is still active and available
+      if (!listing.isActive || listing.isDeleted) {
+        return res.status(400).json({ error: "هذا المنتج غير متاح حالياً" });
+      }
+      
+      // Check if item is sold out
+      if (listing.quantityAvailable <= 0 || listing.quantitySold >= listing.quantityAvailable) {
+        return res.status(400).json({ error: "هذا المنتج غير متاح للشراء" });
+      }
+      
+      // Check if user already purchased this item
+      const existingPurchase = await storage.getUserTransactionForListing(userId, listingId);
+      if (existingPurchase && !["cancelled", "returned", "refunded"].includes(existingPurchase.status)) {
+        return res.status(400).json({ error: "لقد قمت بشراء هذا المنتج مسبقاً" });
+      }
+      
+      // Prevent sellers from making offers on their own products
+      if (listing.sellerId === userId) {
+        return res.status(400).json({ error: "لا يمكنك تقديم عرض على منتجك الخاص" });
+      }
+      
+      if (!listing.isNegotiable) {
+        return res.status(400).json({ error: "هذا المنتج لا يقبل التفاوض" });
+      }
+      
+      if (!listing.sellerId) {
+        return res.status(400).json({ error: "لا يمكن إرسال عرض لهذا المنتج" });
+      }
+
+      const offer = await storage.createOffer({
+        listingId,
+        buyerId: userId,
+        sellerId: listing.sellerId,
+        offerAmount: parseInt(offerAmount, 10),
+        message: message || null,
+        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours expiry
+      });
+      
+      res.status(201).json(offer);
+    } catch (error) {
+      console.error("Error creating offer:", error);
+      res.status(500).json({ error: "فشل في إنشاء العرض" });
+    }
+  });
+
+  // Get offers for a listing (seller view)
+  app.get("/api/listings/:id/offers", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const listing = await storage.getListing(req.params.id);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      // Only seller can see all offers for their listing
+      if (listing.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بعرض هذه العروض" });
+      }
+
+      const offers = await storage.getOffersForListing(req.params.id);
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching offers:", error);
+      res.status(500).json({ error: "فشل في جلب العروض" });
+    }
+  });
+
+  // Get my offers (buyer view)
+  app.get("/api/my-offers", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const offers = await storage.getOffersByBuyer(userId);
+      
+      // Enrich offers with listing details
+      const enrichedOffers = await Promise.all(
+        offers.map(async (offer) => {
+          const listing = await storage.getListing(offer.listingId);
+          return {
+            ...offer,
+            listing: listing ? {
+              id: listing.id,
+              title: listing.title,
+              price: listing.price,
+              images: listing.images,
+              sellerName: listing.sellerName,
+            } : undefined,
+          };
+        })
+      );
+      
+      res.json(enrichedOffers);
+    } catch (error) {
+      console.error("Error fetching my offers:", error);
+      res.status(500).json({ error: "فشل في جلب عروضي" });
+    }
+  });
+
+  // Get offers received (seller view)
+  app.get("/api/received-offers", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const offers = await storage.getOffersBySeller(userId);
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching received offers:", error);
+      res.status(500).json({ error: "فشل في جلب العروض المستلمة" });
+    }
+  });
+
+  // Respond to an offer (accept/reject/counter)
+  app.patch("/api/offers/:id", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { status, counterAmount, counterMessage } = req.body;
+      
+      if (!["accepted", "rejected", "countered"].includes(status)) {
+        return res.status(400).json({ error: "حالة العرض غير صالحة" });
+      }
+      
+      const offer = await storage.getOffer(req.params.id);
+      if (!offer) {
+        return res.status(404).json({ error: "العرض غير موجود" });
+      }
+      
+      if (offer.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بالرد على هذا العرض" });
+      }
+      
+      if (offer.status !== "pending") {
+        return res.status(400).json({ error: "تم الرد على هذا العرض مسبقاً" });
+      }
+
+      if (status === "countered" && !counterAmount) {
+        return res.status(400).json({ error: "يجب تحديد السعر المقترح" });
+      }
+
+      const updated = await storage.updateOfferStatus(
+        req.params.id, 
+        status, 
+        status === "countered" ? parseInt(counterAmount, 10) : undefined,
+        counterMessage
+      );
+      
+      // Get listing for notification message
+      const listing = await storage.getListing(offer.listingId);
+      const listingTitle = listing?.title || "منتج";
+      
+      // Send notification to buyer based on offer status
+      if (status === "accepted") {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: "offer_accepted",
+          title: "تم قبول عرضك! 🎉",
+          message: `تم قبول عرضك على "${listingTitle}" بقيمة ${offer.offerAmount.toLocaleString()} د.ع`,
+          relatedId: offer.listingId,
+        });
+        
+        // Create transaction record
+        const transaction = await storage.createTransaction({
+          listingId: offer.listingId,
+          sellerId: offer.sellerId,
+          buyerId: offer.buyerId,
+          amount: offer.offerAmount,
+          status: "pending",
+          paymentMethod: "cash",
+          deliveryStatus: "pending",
+        });
+        
+        // Update listing quantitySold and mark as inactive if sold out
+        if (listing) {
+          const newQuantitySold = (listing.quantitySold || 0) + 1;
+          const isSoldOut = newQuantitySold >= (listing.quantityAvailable || 1);
+          await storage.updateListing(offer.listingId, {
+            quantitySold: newQuantitySold,
+            isActive: !isSoldOut,
+          });
+        }
+        
+        console.log("Transaction created for accepted offer:", transaction.id);
+      } else if (status === "rejected") {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: "offer_rejected",
+          title: "تم رفض عرضك",
+          message: `للأسف، رفض البائع عرضك على "${listingTitle}"`,
+          relatedId: offer.listingId,
+        });
+      } else if (status === "countered") {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: "offer_countered",
+          title: "عرض مضاد من البائع! 💬",
+          message: `البائع أرسل عرضاً مضاداً على "${listingTitle}" بقيمة ${counterAmount?.toLocaleString()} د.ع`,
+          relatedId: offer.listingId,
+        });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating offer:", error);
+      res.status(500).json({ error: "فشل في تحديث العرض" });
+    }
+  });
+
+  // Notification routes
+  app.get("/api/notifications", async (req, res) => {
     try {
       const userId = await getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      const userBids = await storage.getUserBidsWithListings(userId);
-      res.json(userBids);
+      const notificationsList = await storage.getNotifications(userId);
+      res.json(notificationsList);
     } catch (error) {
-      console.error("Error fetching user bids:", error);
-      res.status(500).json({ error: "Failed to fetch bids" });
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get("/api/notifications/count", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.json({ count: 0 });
+      }
+      const count = await storage.getUnreadNotificationCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching notification count:", error);
+      res.status(500).json({ error: "Failed to fetch notification count" });
+    }
+  });
+
+  // Alias for /api/notifications/count (some clients may use this endpoint)
+  app.get("/api/notifications/unread-count", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.json({ count: 0 });
+      }
+      const count = await storage.getUnreadNotificationCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching notification count:", error);
+      res.status(500).json({ error: "Failed to fetch notification count" });
+    }
+  });
+
+  app.post("/api/notifications/:id/read", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const success = await storage.markNotificationAsRead(req.params.id);
+      res.json({ success });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  app.post("/api/notifications/read-all", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const success = await storage.markAllNotificationsAsRead(userId);
+      res.json({ success });
+    } catch (error) {
+      console.error("Error marking notifications as read:", error);
+      res.status(500).json({ error: "Failed to mark notifications as read" });
+    }
+  });
+
+  // Push notifications - get VAPID public key
+  app.get("/api/push/vapid-public-key", (_req, res) => {
+    const publicKey = process.env.VAPID_PUBLIC_KEY;
+    if (!publicKey) {
+      return res.status(500).json({ error: "VAPID key not configured" });
+    }
+    res.json({ publicKey });
+  });
+
+  // Push notifications - register native device token (FCM/APNS)
+  app.post("/api/push/register-native", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    try {
+      const { token, platform } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ error: "Token is required" });
+      }
+
+      // Store the native push token in the database
+      // For now, we'll use the same table as web push but with a different format
+      // In production, you'd want a separate table for native tokens
+      await storage.createPushSubscription(
+        userId,
+        `native:${platform}:${token}`, // Prefix to distinguish from web
+        '', // Not needed for native
+        '' // Not needed for native
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[push] Error saving native token:", error);
+      res.status(500).json({ error: "Failed to save push token" });
+    }
+  });
+
+  // Push notifications - subscribe
+  app.post("/api/push/subscribe", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { endpoint, keys } = req.body;
+      if (!endpoint || !keys?.p256dh || !keys?.auth) {
+        return res.status(400).json({ error: "Invalid subscription data" });
+      }
+      
+      await storage.createPushSubscription(userId, endpoint, keys.p256dh, keys.auth);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error creating push subscription:", error);
+      res.status(500).json({ error: "Failed to create push subscription" });
+    }
+  });
+
+  // Push notifications - unsubscribe
+  app.post("/api/push/unsubscribe", async (req, res) => {
+    try {
+      const { endpoint } = req.body;
+      if (!endpoint) {
+        return res.status(400).json({ error: "Endpoint required" });
+      }
+      
+      await storage.deletePushSubscription(endpoint);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting push subscription:", error);
+      res.status(500).json({ error: "Failed to unsubscribe" });
+    }
+  });
+
+  // Reports - Create new report
+  app.post("/api/reports", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول للإبلاغ" });
+      }
+      
+      const { reportType, targetId, targetType, reason, details } = req.body;
+      
+      if (!reportType || !targetId || !targetType || !reason) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      if (targetType === "listing") {
+        const alreadyReported = await storage.hasUserReportedListing(userId, targetId);
+        if (alreadyReported) {
+          return res.status(400).json({ error: "لقد قمت بالإبلاغ عن هذا المنتج مسبقاً" });
+        }
+      }
+      
+      const report = await storage.createReport({
+        reporterId: userId,
+        reportType,
+        targetId,
+        targetType,
+        reason,
+        details: details || null,
+      });
+      
+      if (targetType === "listing") {
+        const reportCount = await storage.getReportCountForListing(targetId);
+        
+        if (reportCount >= 10) {
+          const listing = await storage.getListing(targetId);
+          if (listing?.sellerId) {
+            await storage.createNotification({
+              userId: listing.sellerId,
+              type: "warning",
+              title: "بلاغات على منتجك",
+              message: `تم استلام عدد كبير من البلاغات على منتجك "${listing.title}". سيتم مراجعته من قبل الإدارة.`,
+              linkUrl: `/product/${targetId}`,
+            });
+          }
+        }
+      }
+      
+      res.status(201).json({ success: true, message: "تم إرسال البلاغ بنجاح" });
+    } catch (error) {
+      console.error("Error creating report:", error);
+      res.status(500).json({ error: "فشل في إرسال البلاغ" });
+    }
+  });
+
+  // Cart routes
+  app.get("/api/cart", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const items = await storage.getCartItems(userId);
+      // Enrich cart items with listing data
+      const enrichedItems = await Promise.all(items.map(async (item) => {
+        const listing = await storage.getListing(item.listingId);
+        return {
+          ...item,
+          listing: listing ? {
+            id: listing.id,
+            title: listing.title,
+            price: listing.price,
+            images: listing.images,
+            saleType: listing.saleType,
+            quantityAvailable: listing.quantityAvailable,
+            isActive: listing.isActive,
+            sellerId: listing.sellerId,
+            sellerName: listing.sellerName,
+          } : null
+        };
+      }));
+      res.json(enrichedItems);
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+      res.status(500).json({ error: "فشل في جلب سلة التسوق" });
+    }
+  });
+
+  app.post("/api/cart", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      // Check if user is banned
+      const user = await storage.getUser(userId);
+      if (user?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك الشراء." });
+      }
+
+      const { listingId, quantity = 1 } = req.body;
+      if (!listingId) {
+        return res.status(400).json({ error: "معرف المنتج مطلوب" });
+      }
+
+      // Get listing to verify it exists and get price
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      // Prevent sellers from adding their own products to cart
+      if (listing.sellerId === userId) {
+        return res.status(400).json({ error: "لا يمكنك إضافة منتجك الخاص للسلة" });
+      }
+      
+      if (!listing.isActive) {
+        return res.status(400).json({ error: "هذا المنتج غير متاح حالياً" });
+      }
+      
+      if (listing.saleType === "auction") {
+        return res.status(400).json({ error: "لا يمكن إضافة منتجات المزاد إلى السلة" });
+      }
+
+      const item = await storage.addToCart({
+        userId,
+        listingId,
+        quantity,
+        priceSnapshot: listing.price,
+      });
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      res.status(500).json({ error: "فشل في إضافة المنتج للسلة" });
+    }
+  });
+
+  app.patch("/api/cart/:id", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { id } = req.params;
+      const { quantity } = req.body;
+      
+      if (typeof quantity !== "number" || quantity < 0) {
+        return res.status(400).json({ error: "الكمية غير صالحة" });
+      }
+
+      const updated = await storage.updateCartItemQuantity(id, quantity);
+      if (!updated && quantity > 0) {
+        return res.status(404).json({ error: "العنصر غير موجود" });
+      }
+      
+      res.json(updated || { deleted: true });
+    } catch (error) {
+      console.error("Error updating cart item:", error);
+      res.status(500).json({ error: "فشل في تحديث السلة" });
+    }
+  });
+
+  app.delete("/api/cart/:id", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { id } = req.params;
+      const deleted = await storage.removeFromCart(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "العنصر غير موجود" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing from cart:", error);
+      res.status(500).json({ error: "فشل في حذف العنصر من السلة" });
+    }
+  });
+
+  app.delete("/api/cart", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      await storage.clearCart(userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error clearing cart:", error);
+      res.status(500).json({ error: "فشل في إفراغ السلة" });
+    }
+  });
+
+  // ===== CHECKOUT API =====
+  app.post("/api/checkout", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "يجب تسجيل الدخول لإتمام الشراء" });
+    }
+
+    try {
+      // Check if user is banned
+      const buyer = await storage.getUser(userId);
+      if (buyer?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك الشراء." });
+      }
+
+      // PHONE VERIFICATION GATE: Check if phone is verified
+      if (buyer && !buyer.phoneVerified) {
+        return res.status(403).json({ 
+          error: "يجب التحقق من رقم هاتفك أولاً",
+          requiresPhoneVerification: true,
+          phone: buyer.phone,
+          message: "للشراء، يجب عليك التحقق من رقم هاتفك عبر WhatsApp أولاً",
+        });
+      }
+
+      const { fullName, phone, city, addressLine1, addressLine2, saveAddress } = req.body;
+      
+      if (!fullName || !phone || !city || !addressLine1) {
+        return res.status(400).json({ error: "جميع الحقول المطلوبة يجب ملؤها" });
+      }
+
+      // Get cart items
+      const cartItems = await storage.getCartItems(userId);
+      if (cartItems.length === 0) {
+        return res.status(400).json({ error: "سلة التسوق فارغة" });
+      }
+
+      // Process each cart item into a transaction
+      const transactions = [];
+      for (const item of cartItems) {
+        const listing = await storage.getListing(item.listingId);
+        if (!listing) {
+          continue; // Skip unavailable listings
+        }
+
+        // Check availability
+        const availableQuantity = (listing.quantityAvailable || 1) - (listing.quantitySold || 0);
+        if (availableQuantity < item.quantity) {
+          return res.status(400).json({ 
+            error: `الكمية المطلوبة من "${listing.title}" غير متوفرة. المتبقي: ${availableQuantity}` 
+          });
+        }
+
+        // Prevent sellers from buying their own products
+        if (listing.sellerId === userId) {
+          return res.status(400).json({ error: "لا يمكنك شراء منتجك الخاص" });
+        }
+
+        // Build delivery address string
+        const deliveryAddress = `الاسم: ${fullName}\nالهاتف: ${phone}\nالمدينة: ${city}\nالعنوان: ${addressLine1}${addressLine2 ? '\n' + addressLine2 : ''}`;
+
+        // Create transaction
+        const transaction = await storage.createTransaction({
+          listingId: item.listingId,
+          sellerId: listing.sellerId || "",
+          buyerId: userId,
+          amount: item.priceSnapshot * item.quantity,
+          status: "pending",
+          paymentMethod: "cash",
+          deliveryAddress,
+        });
+        transactions.push(transaction);
+
+        // Update listing quantitySold
+        const newQuantitySold = (listing.quantitySold || 0) + item.quantity;
+        await storage.updateListing(item.listingId, {
+          quantitySold: newQuantitySold,
+          isActive: newQuantitySold < (listing.quantityAvailable || 1),
+        });
+
+        // Notify seller via message system
+        if (listing.sellerId) {
+          try {
+            await storage.sendMessage({
+              senderId: userId,
+              receiverId: listing.sellerId,
+              content: `🛒 طلب جديد! تم شراء "${listing.title}" بقيمة ${(item.priceSnapshot * item.quantity).toLocaleString()} د.ع.\n\nبيانات التوصيل:\n${deliveryAddress}`,
+              listingId: item.listingId,
+            });
+          } catch (msgError) {
+            console.error("Error sending sale notification:", msgError);
+          }
+        }
+      }
+
+      // Update user's address info (but not phone - that's immutable)
+      await storage.updateUser(userId, {
+        displayName: fullName,
+        city,
+        addressLine1,
+        addressLine2: addressLine2 || null,
+      });
+
+      // Save address to buyer_addresses if requested
+      if (saveAddress) {
+        try {
+          // Check for duplicate address (same phone + addressLine1)
+          const existingAddresses = await storage.getBuyerAddresses(userId);
+          const isDuplicate = existingAddresses.some(
+            addr => addr.phone === phone && addr.addressLine1 === addressLine1
+          );
+          
+          if (!isDuplicate) {
+            await storage.createBuyerAddress({
+              userId,
+              label: "عنوان التوصيل",
+              recipientName: fullName,
+              phone,
+              city,
+              addressLine1,
+              addressLine2: addressLine2 || null,
+              isDefault: existingAddresses.length === 0, // First address becomes default
+            });
+          }
+        } catch (addrError) {
+          console.error("Error saving address:", addrError);
+          // Don't fail the checkout if address save fails
+        }
+      }
+
+      // Clear cart after successful checkout
+      await storage.clearCart(userId);
+
+      res.json({ success: true, transactions });
+    } catch (error) {
+      console.error("Error during checkout:", error);
+      res.status(500).json({ error: "فشل في إتمام الطلب" });
+    }
+  });
+
+  // ===== OFFERS API =====
+  
+  // Create a new offer
+  app.post("/api/offers", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "يجب تسجيل الدخول لتقديم عرض" });
+    }
+
+    try {
+      // Check if user is banned
+      const buyer = await storage.getUser(userId);
+      if (buyer?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك تقديم عروض." });
+      }
+
+      const { listingId, offerAmount, message } = req.body;
+      
+      if (!listingId || !offerAmount) {
+        return res.status(400).json({ error: "بيانات العرض غير مكتملة" });
+      }
+      
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      // Check if listing is still active and available
+      if (!listing.isActive || listing.isDeleted) {
+        return res.status(400).json({ error: "هذا المنتج غير متاح حالياً" });
+      }
+      
+      // Check if item is sold out
+      if (listing.quantityAvailable <= 0 || listing.quantitySold >= listing.quantityAvailable) {
+        return res.status(400).json({ error: "هذا المنتج غير متاح للشراء" });
+      }
+      
+      // Check if user already purchased this item
+      const existingPurchase = await storage.getUserTransactionForListing(userId, listingId);
+      if (existingPurchase && !["cancelled", "returned", "refunded"].includes(existingPurchase.status)) {
+        return res.status(400).json({ error: "لقد قمت بشراء هذا المنتج مسبقاً" });
+      }
+      
+      // Prevent sellers from making offers on their own products
+      if (listing.sellerId === userId) {
+        return res.status(400).json({ error: "لا يمكنك تقديم عرض على منتجك الخاص" });
+      }
+      
+      if (!listing.isNegotiable) {
+        return res.status(400).json({ error: "هذا المنتج لا يقبل التفاوض" });
+      }
+      
+      if (!listing.sellerId) {
+        return res.status(400).json({ error: "لا يمكن إرسال عرض لهذا المنتج" });
+      }
+
+      const offer = await storage.createOffer({
+        listingId,
+        buyerId: userId,
+        sellerId: listing.sellerId,
+        offerAmount: parseInt(offerAmount, 10),
+        message: message || null,
+        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours expiry
+      });
+      
+      res.status(201).json(offer);
+    } catch (error) {
+      console.error("Error creating offer:", error);
+      res.status(500).json({ error: "فشل في إنشاء العرض" });
+    }
+  });
+
+  // Get offers for a listing (seller view)
+  app.get("/api/listings/:id/offers", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const listing = await storage.getListing(req.params.id);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      // Only seller can see all offers for their listing
+      if (listing.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بعرض هذه العروض" });
+      }
+
+      const offers = await storage.getOffersForListing(req.params.id);
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching offers:", error);
+      res.status(500).json({ error: "فشل في جلب العروض" });
+    }
+  });
+
+  // Get my offers (buyer view)
+  app.get("/api/my-offers", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const offers = await storage.getOffersByBuyer(userId);
+      
+      // Enrich offers with listing details
+      const enrichedOffers = await Promise.all(
+        offers.map(async (offer) => {
+          const listing = await storage.getListing(offer.listingId);
+          return {
+            ...offer,
+            listing: listing ? {
+              id: listing.id,
+              title: listing.title,
+              price: listing.price,
+              images: listing.images,
+              sellerName: listing.sellerName,
+            } : undefined,
+          };
+        })
+      );
+      
+      res.json(enrichedOffers);
+    } catch (error) {
+      console.error("Error fetching my offers:", error);
+      res.status(500).json({ error: "فشل في جلب عروضي" });
+    }
+  });
+
+  // Get offers received (seller view)
+  app.get("/api/received-offers", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const offers = await storage.getOffersBySeller(userId);
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching received offers:", error);
+      res.status(500).json({ error: "فشل في جلب العروض المستلمة" });
+    }
+  });
+
+  // Respond to an offer (accept/reject/counter)
+  app.patch("/api/offers/:id", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { status, counterAmount, counterMessage } = req.body;
+      
+      if (!["accepted", "rejected", "countered"].includes(status)) {
+        return res.status(400).json({ error: "حالة العرض غير صالحة" });
+      }
+      
+      const offer = await storage.getOffer(req.params.id);
+      if (!offer) {
+        return res.status(404).json({ error: "العرض غير موجود" });
+      }
+      
+      if (offer.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بالرد على هذا العرض" });
+      }
+      
+      if (offer.status !== "pending") {
+        return res.status(400).json({ error: "تم الرد على هذا العرض مسبقاً" });
+      }
+
+      if (status === "countered" && !counterAmount) {
+        return res.status(400).json({ error: "يجب تحديد السعر المقترح" });
+      }
+
+      const updated = await storage.updateOfferStatus(
+        req.params.id, 
+        status, 
+        status === "countered" ? parseInt(counterAmount, 10) : undefined,
+        counterMessage
+      );
+      
+      // Get listing for notification message
+      const listing = await storage.getListing(offer.listingId);
+      const listingTitle = listing?.title || "منتج";
+      
+      // Send notification to buyer based on offer status
+      if (status === "accepted") {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: "offer_accepted",
+          title: "تم قبول عرضك! 🎉",
+          message: `تم قبول عرضك على "${listingTitle}" بقيمة ${offer.offerAmount.toLocaleString()} د.ع`,
+          relatedId: offer.listingId,
+        });
+        
+        // Create transaction record
+        const transaction = await storage.createTransaction({
+          listingId: offer.listingId,
+          sellerId: offer.sellerId,
+          buyerId: offer.buyerId,
+          amount: offer.offerAmount,
+          status: "pending",
+          paymentMethod: "cash",
+          deliveryStatus: "pending",
+        });
+        
+        // Update listing quantitySold and mark as inactive if sold out
+        if (listing) {
+          const newQuantitySold = (listing.quantitySold || 0) + 1;
+          const isSoldOut = newQuantitySold >= (listing.quantityAvailable || 1);
+          await storage.updateListing(offer.listingId, {
+            quantitySold: newQuantitySold,
+            isActive: !isSoldOut,
+          });
+        }
+        
+        console.log("Transaction created for accepted offer:", transaction.id);
+      } else if (status === "rejected") {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: "offer_rejected",
+          title: "تم رفض عرضك",
+          message: `للأسف، رفض البائع عرضك على "${listingTitle}"`,
+          relatedId: offer.listingId,
+        });
+      } else if (status === "countered") {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: "offer_countered",
+          title: "عرض مضاد من البائع! 💬",
+          message: `البائع أرسل عرضاً مضاداً على "${listingTitle}" بقيمة ${counterAmount?.toLocaleString()} د.ع`,
+          relatedId: offer.listingId,
+        });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating offer:", error);
+      res.status(500).json({ error: "فشل في تحديث العرض" });
+    }
+  });
+
+  // Notification routes
+  app.get("/api/notifications", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const notificationsList = await storage.getNotifications(userId);
+      res.json(notificationsList);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get("/api/notifications/count", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.json({ count: 0 });
+      }
+      const count = await storage.getUnreadNotificationCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching notification count:", error);
+      res.status(500).json({ error: "Failed to fetch notification count" });
+    }
+  });
+
+  // Alias for /api/notifications/count (some clients may use this endpoint)
+  app.get("/api/notifications/unread-count", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.json({ count: 0 });
+      }
+      const count = await storage.getUnreadNotificationCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching notification count:", error);
+      res.status(500).json({ error: "Failed to fetch notification count" });
+    }
+  });
+
+  app.post("/api/notifications/:id/read", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const success = await storage.markNotificationAsRead(req.params.id);
+      res.json({ success });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  app.post("/api/notifications/read-all", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const success = await storage.markAllNotificationsAsRead(userId);
+      res.json({ success });
+    } catch (error) {
+      console.error("Error marking notifications as read:", error);
+      res.status(500).json({ error: "Failed to mark notifications as read" });
+    }
+  });
+
+  // Push notifications - get VAPID public key
+  app.get("/api/push/vapid-public-key", (_req, res) => {
+    const publicKey = process.env.VAPID_PUBLIC_KEY;
+    if (!publicKey) {
+      return res.status(500).json({ error: "VAPID key not configured" });
+    }
+    res.json({ publicKey });
+  });
+
+  // Push notifications - register native device token (FCM/APNS)
+  app.post("/api/push/register-native", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    try {
+      const { token, platform } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ error: "Token is required" });
+      }
+
+      // Store the native push token in the database
+      // For now, we'll use the same table as web push but with a different format
+      // In production, you'd want a separate table for native tokens
+      await storage.createPushSubscription(
+        userId,
+        `native:${platform}:${token}`, // Prefix to distinguish from web
+        '', // Not needed for native
+        '' // Not needed for native
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[push] Error saving native token:", error);
+      res.status(500).json({ error: "Failed to save push token" });
+    }
+  });
+
+  // Push notifications - subscribe
+  app.post("/api/push/subscribe", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { endpoint, keys } = req.body;
+      if (!endpoint || !keys?.p256dh || !keys?.auth) {
+        return res.status(400).json({ error: "Invalid subscription data" });
+      }
+      
+      await storage.createPushSubscription(userId, endpoint, keys.p256dh, keys.auth);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error creating push subscription:", error);
+      res.status(500).json({ error: "Failed to create push subscription" });
+    }
+  });
+
+  // Push notifications - unsubscribe
+  app.post("/api/push/unsubscribe", async (req, res) => {
+    try {
+      const { endpoint } = req.body;
+      if (!endpoint) {
+        return res.status(400).json({ error: "Endpoint required" });
+      }
+      
+      await storage.deletePushSubscription(endpoint);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting push subscription:", error);
+      res.status(500).json({ error: "Failed to unsubscribe" });
+    }
+  });
+
+  // Reports - Create new report
+  app.post("/api/reports", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول للإبلاغ" });
+      }
+      
+      const { reportType, targetId, targetType, reason, details } = req.body;
+      
+      if (!reportType || !targetId || !targetType || !reason) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      if (targetType === "listing") {
+        const alreadyReported = await storage.hasUserReportedListing(userId, targetId);
+        if (alreadyReported) {
+          return res.status(400).json({ error: "لقد قمت بالإبلاغ عن هذا المنتج مسبقاً" });
+        }
+      }
+      
+      const report = await storage.createReport({
+        reporterId: userId,
+        reportType,
+        targetId,
+        targetType,
+        reason,
+        details: details || null,
+      });
+      
+      if (targetType === "listing") {
+        const reportCount = await storage.getReportCountForListing(targetId);
+        
+        if (reportCount >= 10) {
+          const listing = await storage.getListing(targetId);
+          if (listing?.sellerId) {
+            await storage.createNotification({
+              userId: listing.sellerId,
+              type: "warning",
+              title: "بلاغات على منتجك",
+              message: `تم استلام عدد كبير من البلاغات على منتجك "${listing.title}". سيتم مراجعته من قبل الإدارة.`,
+              linkUrl: `/product/${targetId}`,
+            });
+          }
+        }
+      }
+      
+      res.status(201).json({ success: true, message: "تم إرسال البلاغ بنجاح" });
+    } catch (error) {
+      console.error("Error creating report:", error);
+      res.status(500).json({ error: "فشل في إرسال البلاغ" });
+    }
+  });
+        return res.status(400).json({ error: "رابط إعادة التعيين غير صالح" });
+      }
+      
+      // Hash new password and update
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await storage.updateUser(user.id, { 
+        password: hashedPassword,
+        authToken: null 
+      } as any);
+      
+      res.json({ success: true, message: "تم تغيير كلمة المرور بنجاح" });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ error: "فشل في إعادة تعيين كلمة المرور" });
+    }
+  });
+
+  // Cart routes
+  app.get("/api/cart", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const items = await storage.getCartItems(userId);
+      // Enrich cart items with listing data
+      const enrichedItems = await Promise.all(items.map(async (item) => {
+        const listing = await storage.getListing(item.listingId);
+        return {
+          ...item,
+          listing: listing ? {
+            id: listing.id,
+            title: listing.title,
+            price: listing.price,
+            images: listing.images,
+            saleType: listing.saleType,
+            quantityAvailable: listing.quantityAvailable,
+            isActive: listing.isActive,
+            sellerId: listing.sellerId,
+            sellerName: listing.sellerName,
+          } : null
+        };
+      }));
+      res.json(enrichedItems);
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+      res.status(500).json({ error: "فشل في جلب سلة التسوق" });
+    }
+  });
+
+  app.post("/api/cart", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      // Check if user is banned
+      const user = await storage.getUser(userId);
+      if (user?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك الشراء." });
+      }
+
+      const { listingId, quantity = 1 } = req.body;
+      if (!listingId) {
+        return res.status(400).json({ error: "معرف المنتج مطلوب" });
+      }
+
+      // Get listing to verify it exists and get price
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      // Prevent sellers from adding their own products to cart
+      if (listing.sellerId === userId) {
+        return res.status(400).json({ error: "لا يمكنك إضافة منتجك الخاص للسلة" });
+      }
+      
+      if (!listing.isActive) {
+        return res.status(400).json({ error: "هذا المنتج غير متاح حالياً" });
+      }
+      
+      if (listing.saleType === "auction") {
+        return res.status(400).json({ error: "لا يمكن إضافة منتجات المزاد إلى السلة" });
+      }
+
+      const item = await storage.addToCart({
+        userId,
+        listingId,
+        quantity,
+        priceSnapshot: listing.price,
+      });
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      res.status(500).json({ error: "فشل في إضافة المنتج للسلة" });
+    }
+  });
+
+  app.patch("/api/cart/:id", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { id } = req.params;
+      const { quantity } = req.body;
+      
+      if (typeof quantity !== "number" || quantity < 0) {
+        return res.status(400).json({ error: "الكمية غير صالحة" });
+      }
+
+      const updated = await storage.updateCartItemQuantity(id, quantity);
+      if (!updated && quantity > 0) {
+        return res.status(404).json({ error: "العنصر غير موجود" });
+      }
+      
+      res.json(updated || { deleted: true });
+    } catch (error) {
+      console.error("Error updating cart item:", error);
+      res.status(500).json({ error: "فشل في تحديث السلة" });
+    }
+  });
+
+  app.delete("/api/cart/:id", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { id } = req.params;
+      const deleted = await storage.removeFromCart(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "العنصر غير موجود" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing from cart:", error);
+      res.status(500).json({ error: "فشل في حذف العنصر من السلة" });
+    }
+  });
+
+  app.delete("/api/cart", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      await storage.clearCart(userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error clearing cart:", error);
+      res.status(500).json({ error: "فشل في إفراغ السلة" });
+    }
+  });
+
+  // ===== CHECKOUT API =====
+  app.post("/api/checkout", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "يجب تسجيل الدخول لإتمام الشراء" });
+    }
+
+    try {
+      // Check if user is banned
+      const buyer = await storage.getUser(userId);
+      if (buyer?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك الشراء." });
+      }
+
+      // PHONE VERIFICATION GATE: Check if phone is verified
+      if (buyer && !buyer.phoneVerified) {
+        return res.status(403).json({ 
+          error: "يجب التحقق من رقم هاتفك أولاً",
+          requiresPhoneVerification: true,
+          phone: buyer.phone,
+          message: "للشراء، يجب عليك التحقق من رقم هاتفك عبر WhatsApp أولاً",
+        });
+      }
+
+      const { fullName, phone, city, addressLine1, addressLine2, saveAddress } = req.body;
+      
+      if (!fullName || !phone || !city || !addressLine1) {
+        return res.status(400).json({ error: "جميع الحقول المطلوبة يجب ملؤها" });
+      }
+
+      // Get cart items
+      const cartItems = await storage.getCartItems(userId);
+      if (cartItems.length === 0) {
+        return res.status(400).json({ error: "سلة التسوق فارغة" });
+      }
+
+      // Process each cart item into a transaction
+      const transactions = [];
+      for (const item of cartItems) {
+        const listing = await storage.getListing(item.listingId);
+        if (!listing) {
+          continue; // Skip unavailable listings
+        }
+
+        // Check availability
+        const availableQuantity = (listing.quantityAvailable || 1) - (listing.quantitySold || 0);
+        if (availableQuantity < item.quantity) {
+          return res.status(400).json({ 
+            error: `الكمية المطلوبة من "${listing.title}" غير متوفرة. المتبقي: ${availableQuantity}` 
+          });
+        }
+
+        // Prevent sellers from buying their own products
+        if (listing.sellerId === userId) {
+          return res.status(400).json({ error: "لا يمكنك شراء منتجك الخاص" });
+        }
+
+        // Build delivery address string
+        const deliveryAddress = `الاسم: ${fullName}\nالهاتف: ${phone}\nالمدينة: ${city}\nالعنوان: ${addressLine1}${addressLine2 ? '\n' + addressLine2 : ''}`;
+
+        // Create transaction
+        const transaction = await storage.createTransaction({
+          listingId: item.listingId,
+          sellerId: listing.sellerId || "",
+          buyerId: userId,
+          amount: item.priceSnapshot * item.quantity,
+          status: "pending",
+          paymentMethod: "cash",
+          deliveryAddress,
+        });
+        transactions.push(transaction);
+
+        // Update listing quantitySold
+        const newQuantitySold = (listing.quantitySold || 0) + item.quantity;
+        await storage.updateListing(item.listingId, {
+          quantitySold: newQuantitySold,
+          isActive: newQuantitySold < (listing.quantityAvailable || 1),
+        });
+
+        // Notify seller via message system
+        if (listing.sellerId) {
+          try {
+            await storage.sendMessage({
+              senderId: userId,
+              receiverId: listing.sellerId,
+              content: `🛒 طلب جديد! تم شراء "${listing.title}" بقيمة ${(item.priceSnapshot * item.quantity).toLocaleString()} د.ع.\n\nبيانات التوصيل:\n${deliveryAddress}`,
+              listingId: item.listingId,
+            });
+          } catch (msgError) {
+            console.error("Error sending sale notification:", msgError);
+          }
+        }
+      }
+
+      // Update user's address info (but not phone - that's immutable)
+      await storage.updateUser(userId, {
+        displayName: fullName,
+        city,
+        addressLine1,
+        addressLine2: addressLine2 || null,
+      });
+
+      // Save address to buyer_addresses if requested
+      if (saveAddress) {
+        try {
+          // Check for duplicate address (same phone + addressLine1)
+          const existingAddresses = await storage.getBuyerAddresses(userId);
+          const isDuplicate = existingAddresses.some(
+            addr => addr.phone === phone && addr.addressLine1 === addressLine1
+          );
+          
+          if (!isDuplicate) {
+            await storage.createBuyerAddress({
+              userId,
+              label: "عنوان التوصيل",
+              recipientName: fullName,
+              phone,
+              city,
+              addressLine1,
+              addressLine2: addressLine2 || null,
+              isDefault: existingAddresses.length === 0, // First address becomes default
+            });
+          }
+        } catch (addrError) {
+          console.error("Error saving address:", addrError);
+          // Don't fail the checkout if address save fails
+        }
+      }
+
+      // Clear cart after successful checkout
+      await storage.clearCart(userId);
+
+      res.json({ success: true, transactions });
+    } catch (error) {
+      console.error("Error during checkout:", error);
+      res.status(500).json({ error: "فشل في إتمام الطلب" });
+    }
+  });
+
+  // ===== OFFERS API =====
+  
+  // Create a new offer
+  app.post("/api/offers", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "يجب تسجيل الدخول لتقديم عرض" });
+    }
+
+    try {
+      // Check if user is banned
+      const buyer = await storage.getUser(userId);
+      if (buyer?.isBanned) {
+        return res.status(403).json({ error: "حسابك محظور. لا يمكنك تقديم عروض." });
+      }
+
+      const { listingId, offerAmount, message } = req.body;
+      
+      if (!listingId || !offerAmount) {
+        return res.status(400).json({ error: "بيانات العرض غير مكتملة" });
+      }
+      
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      // Check if listing is still active and available
+      if (!listing.isActive || listing.isDeleted) {
+        return res.status(400).json({ error: "هذا المنتج غير متاح حالياً" });
+      }
+      
+      // Check if item is sold out
+      if (listing.quantityAvailable <= 0 || listing.quantitySold >= listing.quantityAvailable) {
+        return res.status(400).json({ error: "هذا المنتج غير متاح للشراء" });
+      }
+      
+      // Check if user already purchased this item
+      const existingPurchase = await storage.getUserTransactionForListing(userId, listingId);
+      if (existingPurchase && !["cancelled", "returned", "refunded"].includes(existingPurchase.status)) {
+        return res.status(400).json({ error: "لقد قمت بشراء هذا المنتج مسبقاً" });
+      }
+      
+      // Prevent sellers from making offers on their own products
+      if (listing.sellerId === userId) {
+        return res.status(400).json({ error: "لا يمكنك تقديم عرض على منتجك الخاص" });
+      }
+      
+      if (!listing.isNegotiable) {
+        return res.status(400).json({ error: "هذا المنتج لا يقبل التفاوض" });
+      }
+      
+      if (!listing.sellerId) {
+        return res.status(400).json({ error: "لا يمكن إرسال عرض لهذا المنتج" });
+      }
+
+      const offer = await storage.createOffer({
+        listingId,
+        buyerId: userId,
+        sellerId: listing.sellerId,
+        offerAmount: parseInt(offerAmount, 10),
+        message: message || null,
+        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours expiry
+      });
+      
+      res.status(201).json(offer);
+    } catch (error) {
+      console.error("Error creating offer:", error);
+      res.status(500).json({ error: "فشل في إنشاء العرض" });
+    }
+  });
+
+  // Get offers for a listing (seller view)
+  app.get("/api/listings/:id/offers", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const listing = await storage.getListing(req.params.id);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+      
+      // Only seller can see all offers for their listing
+      if (listing.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بعرض هذه العروض" });
+      }
+
+      const offers = await storage.getOffersForListing(req.params.id);
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching offers:", error);
+      res.status(500).json({ error: "فشل في جلب العروض" });
+    }
+  });
+
+  // Get my offers (buyer view)
+  app.get("/api/my-offers", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const offers = await storage.getOffersByBuyer(userId);
+      
+      // Enrich offers with listing details
+      const enrichedOffers = await Promise.all(
+        offers.map(async (offer) => {
+          const listing = await storage.getListing(offer.listingId);
+          return {
+            ...offer,
+            listing: listing ? {
+              id: listing.id,
+              title: listing.title,
+              price: listing.price,
+              images: listing.images,
+              sellerName: listing.sellerName,
+            } : undefined,
+          };
+        })
+      );
+      
+      res.json(enrichedOffers);
+    } catch (error) {
+      console.error("Error fetching my offers:", error);
+      res.status(500).json({ error: "فشل في جلب عروضي" });
+    }
+  });
+
+  // Get offers received (seller view)
+  app.get("/api/received-offers", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const offers = await storage.getOffersBySeller(userId);
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching received offers:", error);
+      res.status(500).json({ error: "فشل في جلب العروض المستلمة" });
+    }
+  });
+
+  // Respond to an offer (accept/reject/counter)
+  app.patch("/api/offers/:id", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const { status, counterAmount, counterMessage } = req.body;
+      
+      if (!["accepted", "rejected", "countered"].includes(status)) {
+        return res.status(400).json({ error: "حالة العرض غير صالحة" });
+      }
+      
+      const offer = await storage.getOffer(req.params.id);
+      if (!offer) {
+        return res.status(404).json({ error: "العرض غير موجود" });
+      }
+      
+      if (offer.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بالرد على هذا العرض" });
+      }
+      
+      if (offer.status !== "pending") {
+        return res.status(400).json({ error: "تم الرد على هذا العرض مسبقاً" });
+      }
+
+      if (status === "countered" && !counterAmount) {
+        return res.status(400).json({ error: "يجب تحديد السعر المقترح" });
+      }
+
+      const updated = await storage.updateOfferStatus(
+        req.params.id, 
+        status, 
+        status === "countered" ? parseInt(counterAmount, 10) : undefined,
+        counterMessage
+      );
+      
+      // Get listing for notification message
+      const listing = await storage.getListing(offer.listingId);
+      const listingTitle = listing?.title || "منتج";
+      
+      // Send notification to buyer based on offer status
+      if (status === "accepted") {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: "offer_accepted",
+          title: "تم قبول عرضك! 🎉",
+          message: `تم قبول عرضك على "${listingTitle}" بقيمة ${offer.offerAmount.toLocaleString()} د.ع`,
+          relatedId: offer.listingId,
+        });
+        
+        // Create transaction record
+        const transaction = await storage.createTransaction({
+          listingId: offer.listingId,
+          sellerId: offer.sellerId,
+          buyerId: offer.buyerId,
+          amount: offer.offerAmount,
+          status: "pending",
+          paymentMethod: "cash",
+          deliveryStatus: "pending",
+        });
+        
+        // Update listing quantitySold and mark as inactive if sold out
+        if (listing) {
+          const newQuantitySold = (listing.quantitySold || 0) + 1;
+          const isSoldOut = newQuantitySold >= (listing.quantityAvailable || 1);
+          await storage.updateListing(offer.listingId, {
+            quantitySold: newQuantitySold,
+            isActive: !isSoldOut,
+          });
+        }
+        
+        console.log("Transaction created for accepted offer:", transaction.id);
+      } else if (status === "rejected") {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: "offer_rejected",
+          title: "تم رفض عرضك",
+          message: `للأسف، رفض البائع عرضك على "${listingTitle}"`,
+          relatedId: offer.listingId,
+        });
+      } else if (status === "countered") {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: "offer_countered",
+          title: "عرض مضاد من البائع! 💬",
+          message: `البائع أرسل عرضاً مضاداً على "${listingTitle}" بقيمة ${counterAmount?.toLocaleString()} د.ع`,
+          relatedId: offer.listingId,
+        });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating offer:", error);
+      res.status(500).json({ error: "فشل في تحديث العرض" });
+    }
+  });
+
+  // Notification routes
+  app.get("/api/notifications", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const notificationsList = await storage.getNotifications(userId);
+      res.json(notificationsList);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get("/api/notifications/count", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.json({ count: 0 });
+      }
+      const count = await storage.getUnreadNotificationCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching notification count:", error);
+      res.status(500).json({ error: "Failed to fetch notification count" });
+    }
+  });
+
+  // Alias for /api/notifications/count (some clients may use this endpoint)
+  app.get("/api/notifications/unread-count", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.json({ count: 0 });
+      }
+      const count = await storage.getUnreadNotificationCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching notification count:", error);
+      res.status(500).json({ error: "Failed to fetch notification count" });
+    }
+  });
+
+  app.post("/api/notifications/:id/read", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const success = await storage.markNotificationAsRead(req.params.id);
+      res.json({ success });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  app.post("/api/notifications/read-all", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const success = await storage.markAllNotificationsAsRead(userId);
+      res.json({ success });
+    } catch (error) {
+      console.error("Error marking notifications as read:", error);
+      res.status(500).json({ error: "Failed to mark notifications as read" });
+    }
+  });
+
+  // Push notifications - get VAPID public key
+  app.get("/api/push/vapid-public-key", (_req, res) => {
+    const publicKey = process.env.VAPID_PUBLIC_KEY;
+    if (!publicKey) {
+      return res.status(500).json({ error: "VAPID key not configured" });
+    }
+    res.json({ publicKey });
+  });
+
+  // Push notifications - register native device token (FCM/APNS)
+  app.post("/api/push/register-native", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    try {
+      const { token, platform } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ error: "Token is required" });
+      }
+
+      // Store the native push token in the database
+      // For now, we'll use the same table as web push but with a different format
+      // In production, you'd want a separate table for native tokens
+      await storage.createPushSubscription(
+        userId,
+        `native:${platform}:${token}`, // Prefix to distinguish from web
+        '', // Not needed for native
+        '' // Not needed for native
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[push] Error saving native token:", error);
+      res.status(500).json({ error: "Failed to save push token" });
+    }
+  });
+
+  // Push notifications - subscribe
+  app.post("/api/push/subscribe", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { endpoint, keys } = req.body;
+      if (!endpoint || !keys?.p256dh || !keys?.auth) {
+        return res.status(400).json({ error: "Invalid subscription data" });
+      }
+      
+      await storage.createPushSubscription(userId, endpoint, keys.p256dh, keys.auth);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error creating push subscription:", error);
+      res.status(500).json({ error: "Failed to create push subscription" });
+    }
+  });
+
+  // Push notifications - unsubscribe
+  app.post("/api/push/unsubscribe", async (req, res) => {
+    try {
+      const { endpoint } = req.body;
+      if (!endpoint) {
+        return res.status(400).json({ error: "Endpoint required" });
+      }
+      
+      await storage.deletePushSubscription(endpoint);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting push subscription:", error);
+      res.status(500).json({ error: "Failed to unsubscribe" });
     }
   });
 
@@ -4253,12 +4421,6 @@ export async function registerRoutes(
       console.error("Error fetching reports:", error);
       res.status(500).json({ error: "Failed to fetch reports" });
     }
-  });
-
-  // Legacy verification-request endpoint (deprecated - returns empty object for cached requests)
-  app.get("/api/verification-request", async (req, res) => {
-    // This endpoint has been removed but we return an empty object to handle any cached client requests
-    res.json({ status: "deprecated", request: null });
   });
 
   // Seller approval request endpoint

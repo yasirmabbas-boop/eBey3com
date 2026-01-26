@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
+import { useListings } from "@/hooks/use-listings";
 import { useLanguage } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -102,21 +102,9 @@ export default function Home() {
 
   const sellerId = user?.id;
 
-  const { data: listingsData, isLoading } = useQuery({
-    queryKey: ["/api/listings", sellerId],
-    queryFn: async () => {
-      const url = sellerId 
-        ? `/api/listings?sellerId=${encodeURIComponent(sellerId)}&limit=24` 
-        : "/api/listings?limit=24";
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch listings");
-      return res.json();
-    },
-  });
+  const { data: listingsData, isLoading } = useListings({ limit: 24, sellerId });
   
-  const listings: Listing[] = Array.isArray(listingsData) 
-    ? listingsData 
-    : (listingsData?.listings || []);
+  const listings: Listing[] = listingsData || [];
 
   const displayProducts = listings
     .filter(l => {
