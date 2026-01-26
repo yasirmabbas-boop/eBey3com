@@ -61,7 +61,7 @@ export function setupFacebookAuth(app: Express): void {
       {
         clientID: FB_APP_ID,
         clientSecret: FB_APP_SECRET,
-        callbackURL: FB_CALLBACK_URL,
+        callbackURL: "https://ebey3.com/auth/facebook/callback",
         scope: ["public_profile", "email"],
         profileFields: ["id", "displayName", "photos", "email"],
       },
