@@ -141,16 +141,41 @@ export function setupFacebookAuth(app: Express): void {
         const hasAddress = fullUser.addressLine1 && fullUser.addressLine1.trim() !== "";
         console.log("[Facebook Auth] hasPhone:", hasPhone, "hasAddress:", hasAddress);
 
-        // Redirect to onboarding if data is missing, otherwise to home
-        // Pass authToken via URL so frontend can store it in localStorage
-        if (!hasPhone || !hasAddress) {
-          console.log("[Facebook Auth] Missing data, redirecting to /onboarding with token");
-          return res.redirect(`/onboarding?token=${authToken}`);
-        }
+        // Determine redirect URL
+        const needsOnboarding = !hasPhone || !hasAddress;
+        const redirectUrl = needsOnboarding ? `/onboarding?token=${authToken}` : `/?token=${authToken}`;
 
-        // User has all required data, redirect to home with token
-        console.log("[Facebook Auth] User complete, redirecting to / with token");
-        res.redirect(`/?token=${authToken}`);
+        // Check if this is a popup (has opener) - send message to parent window
+        // Otherwise do regular redirect for non-popup flows
+        const responseHtml = `
+          <!DOCTYPE html>
+          <html>
+            <head><title>تسجيل الدخول...</title></head>
+            <body>
+              <script>
+                const authData = {
+                  type: "FACEBOOK_LOGIN_SUCCESS",
+                  authToken: "${authToken}",
+                  needsOnboarding: ${needsOnboarding},
+                  redirectUrl: "${redirectUrl}"
+                };
+                
+                if (window.opener) {
+                  // Popup mode - message parent and close
+                  window.opener.postMessage(authData, window.location.origin);
+                  window.close();
+                } else {
+                  // Regular redirect mode
+                  window.location.href = "${redirectUrl}";
+                }
+              </script>
+              <p style="text-align: center; margin-top: 50px; font-family: sans-serif;">
+                جاري تسجيل الدخول...
+              </p>
+            </body>
+          </html>
+        `;
+        res.send(responseHtml);
       } catch (error) {
         console.error("Error in Facebook callback:", error);
         res.redirect("/signin?error=callback_error");

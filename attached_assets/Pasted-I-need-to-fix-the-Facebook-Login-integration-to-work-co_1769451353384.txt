@@ -1,0 +1,64 @@
+I need to fix the Facebook Login integration to work correctly on mobile (PWA) and use the correct domain. Please perform the following 2 tasks:
+
+Task 1: Backend - Fix Domain & Enable Popup Flow (server/auth-facebook.ts)
+
+    Open server/auth-facebook.ts (or the file where FacebookStrategy is defined).
+
+    Fix 1 (Domain): In the FacebookStrategy configuration, change the callbackURL to explicitly use the production domain: callbackURL: "https://ebey3.com/auth/facebook/callback"
+
+    Fix 2 (Popup Handling): In the route handler for the callback (router.get('/auth/facebook/callback', ...)), modify the success logic. Instead of res.redirect(...), send an HTML response that closes the popup and messages the main window.
+
+    Replace the success handler with this logic:
+    TypeScript
+
+    (req, res) => {
+      const user = req.user;
+      const responseHtml = `
+        <html>
+          <body>
+            <script>
+              window.opener.postMessage(
+                { type: "FACEBOOK_LOGIN_SUCCESS", user: ${JSON.stringify(user)} },
+                "https://ebey3.com"
+              );
+              window.close();
+            </script>
+          </body>
+        </html>
+      `;
+      res.send(responseHtml);
+    }
+
+Task 2: Frontend - Implement Popup Trigger (client/src/pages/signin.tsx)
+
+    Find the Facebook login link (currently an <a href="/auth/facebook">).
+
+    Replace it with a <button> that triggers a popup window.
+
+    Add this handler function:
+    TypeScript
+
+    const handleFacebookLogin = () => {
+      const width = 600, height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+
+      const popup = window.open(
+        "/auth/facebook",
+        "facebook_login",
+        \`width=\${width},height=\${height},left=\${left},top=\${top}\`
+      );
+
+      const handleMessage = (event: MessageEvent) => {
+        if (event.origin !== "https://ebey3.com") return; // Security check
+        if (event.data.type === "FACEBOOK_LOGIN_SUCCESS") {
+          window.removeEventListener("message", handleMessage);
+          popup?.close();
+          // Force reload or navigation to dashboard
+          window.location.href = "/dashboard"; 
+        }
+      };
+      window.addEventListener("message", handleMessage);
+    };
+
+    Ensure the button onClick calls handleFacebookLogin.

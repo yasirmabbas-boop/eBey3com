@@ -234,18 +234,47 @@ export default function SignIn() {
           <CardContent className="space-y-4">
             {step === "credentials" ? (
               <form onSubmit={handleSubmit} className="space-y-4">
-                <a
-                  href="/auth/facebook"
+                <button
+                  type="button"
+                  onClick={() => {
+                    const width = 600, height = 700;
+                    const left = window.screen.width / 2 - width / 2;
+                    const top = window.screen.height / 2 - height / 2;
+
+                    const popup = window.open(
+                      "/auth/facebook",
+                      "facebook_login",
+                      `width=${width},height=${height},left=${left},top=${top}`
+                    );
+
+                    const handleMessage = (event: MessageEvent) => {
+                      if (event.origin !== window.location.origin) return;
+                      if (event.data.type === "FACEBOOK_LOGIN_SUCCESS") {
+                        window.removeEventListener("message", handleMessage);
+                        popup?.close();
+                        
+                        // Store auth token
+                        if (event.data.authToken) {
+                          localStorage.setItem("authToken", event.data.authToken);
+                        }
+                        
+                        // Invalidate auth cache and redirect
+                        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+                        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+                        
+                        // Navigate to appropriate page
+                        navigate(event.data.needsOnboarding ? "/onboarding" : "/");
+                      }
+                    };
+                    window.addEventListener("message", handleMessage);
+                  }}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-white bg-[#1877F2] hover:bg-[#166FE5] transition-colors duration-200 shadow-sm hover:shadow-md"
-                  style={{ backgroundColor: '#1877F2' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#166FE5'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1877F2'}
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
                   </svg>
                   {tr("تسجيل الدخول مع فيسبوك", "چوونە ژوورەوە لەگەڵ فەیسبووک", "Connect with Facebook")}
-                </a>
+                </button>
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
