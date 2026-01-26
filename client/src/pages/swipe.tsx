@@ -37,7 +37,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
-  Tag
+  Tag,
+  MapPin,
+  AlertTriangle
 } from "lucide-react";
 import type { Listing, BuyerAddress } from "@shared/schema";
 

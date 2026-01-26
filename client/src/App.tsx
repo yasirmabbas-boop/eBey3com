@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, Router, useLocation } from "wouter";
 import { useEffect, Suspense, lazy } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -75,7 +75,7 @@ function ScrollToTop() {
 }
 
 
-function Router() {
+function AppRoutes() {
   return (
     <Switch>
       <Route path="/" component={HomePage} />
@@ -157,27 +157,29 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
           <TooltipProvider>
-            <NavVisibilityProvider>
-              <ScrollToTop />
-              <SocketNotifications />
-              <Toaster />
-              <BanBanner />
-              <SurveyManager />
-              <OnboardingTutorial />
-              <SwipeBackNavigation>
-                <Suspense
-                  fallback={
-                    <LoadingSpinner />
-                  }
-                >
-                  <Router />
-                </Suspense>
-              </SwipeBackNavigation>
-              <MobileNavBar />
-              {!isNative && <InstallPWAPrompt />}
-              {!isNative && <PWAUpdateBanner />}
-              <PushNotificationPrompt />
-            </NavVisibilityProvider>
+            <Router>
+              <NavVisibilityProvider>
+                <ScrollToTop />
+                <SocketNotifications />
+                <Toaster />
+                <BanBanner />
+                <SurveyManager />
+                <OnboardingTutorial />
+                <SwipeBackNavigation>
+                  <Suspense
+                    fallback={
+                      <LoadingSpinner />
+                    }
+                  >
+                    <AppRoutes />
+                  </Suspense>
+                </SwipeBackNavigation>
+                <MobileNavBar />
+                {!isNative && <InstallPWAPrompt />}
+                {!isNative && <PWAUpdateBanner />}
+                <PushNotificationPrompt />
+              </NavVisibilityProvider>
+            </Router>
           </TooltipProvider>
         </LanguageProvider>
       </QueryClientProvider>
