@@ -64,13 +64,6 @@ const SellerProfile = lazy(() => import("@/pages/seller-profile"));
 const NotificationsPage = lazy(() => import("@/pages/notifications"));
 const Onboarding = lazy(() => import("@/pages/onboarding"));
 
-// Wrapper to allow using the hook inside the JSX tree
-// Must be inside QueryClientProvider to access queryClient
-function SocketNotifications() {
-  useSocketNotifications();
-  return null;
-}
-
 function ScrollToTop() {
   const [location] = useLocation();
   
