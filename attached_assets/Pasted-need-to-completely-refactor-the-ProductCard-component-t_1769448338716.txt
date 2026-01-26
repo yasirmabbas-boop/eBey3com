@@ -1,3 +1,20 @@
+need to completely refactor the ProductCard component to align with a cleaner, 'Big Tech' design standard (like Airbnb or Stripe) that prioritizes conversion and mobile usability.
+
+Please open client/src/components/product-card.tsx (or the relevant file where ProductCard is defined) and replace the existing code with the following implementation.
+
+Key Design Changes to Apply:
+
+    Remove Visual Noise: Remove the 'Views' count and the hover-only 'Quick Actions' overlay.
+
+    Better Hierarchy: Make the Price more prominent than the Title.
+
+    Auction Timer: Move the countdown timer to an overlay at the bottom of the image for better visibility.
+
+    Action Button: Ensure the 'Add to Cart' / 'Bid' button is always visible on mobile and appears on hover for desktop, located in the card footer.
+
+Here is the exact code to use:
+TypeScript
+
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -68,9 +85,9 @@ export function ProductCard({
           {/* Bottom of Image: Auction Timer Overlay */}
           {isAuction && auctionEndTime && (
             <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-3 py-1.5 text-white backdrop-blur-md">
-              <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-white">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-medium">
                 <Timer className="h-3.5 w-3.5 text-yellow-400" />
-                <AuctionCountdown endTime={auctionEndTime} />
+                <AuctionCountdown endTime={auctionEndTime} className="text-white" />
               </div>
             </div>
           )}
@@ -109,6 +126,7 @@ export function ProductCard({
             size="sm"
             onClick={(e) => {
               e.preventDefault();
+              // Add to cart logic would go here if needed, or just let the Link handle navigation
             }}
           >
             {isAuction ? <Gavel className="h-3.5 w-3.5" /> : <ShoppingCart className="h-3.5 w-3.5" />}
@@ -119,3 +137,5 @@ export function ProductCard({
     </Link>
   );
 }
+
+Please verify that the component looks correct on both mobile and desktop viewports after applying the change.
