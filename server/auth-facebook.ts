@@ -122,6 +122,23 @@ export function setupFacebookAuth(app: Express): void {
           return res.redirect("/signin?error=authentication_failed");
         }
 
+        // CRITICAL: Set userId in session for compatibility with session-based auth checks
+        // This ensures getUserIdFromRequest() finds the user via session.userId
+        (req.session as any).userId = user.id;
+        
+        // Save session explicitly to ensure it persists
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err) => {
+            if (err) {
+              console.error("[Facebook Auth] Session save error:", err);
+              reject(err);
+            } else {
+              console.log("[Facebook Auth] Session saved with userId:", user.id);
+              resolve();
+            }
+          });
+        });
+
         // Fetch the full user record from database to check for phone and address
         const fullUser = await authStorage.getUser(user.id);
         console.log("[Facebook Auth] Full user from DB:", fullUser?.id, "phone:", fullUser?.phone, "address:", fullUser?.addressLine1);
@@ -132,6 +149,7 @@ export function setupFacebookAuth(app: Express): void {
         }
 
         // Generate an authToken for the frontend (same pattern as regular login)
+        // This token is used as a fallback for Safari ITP and PWA where cookies may be blocked
         const authToken = crypto.randomBytes(32).toString("hex");
         await authStorage.updateUser(user.id, { authToken } as any);
         console.log("[Facebook Auth] Generated authToken for user:", user.id);
