@@ -472,7 +472,6 @@ export default function MyPurchases() {
       const res = await authFetch(`/api/delivery/${transactionId}/accept`, {
         method: "POST",
       });
-      });
       if (!res.ok) throw new Error("Failed to confirm delivery");
       return res.json();
     },

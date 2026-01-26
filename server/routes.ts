@@ -2352,7 +2352,7 @@ export async function registerRoutes(
       }
       
       // Check if Twilio WhatsApp is configured
-      const { isWhatsAppConfigured, sendWhatsAppOTP } = await import("./whatsapp");
+      const { isWhatsAppConfigured, sendWhatsAppOTP, generateOTPCode } = await import("./whatsapp");
       try {
         isWhatsAppConfigured(); // Will throw if not configured
       } catch (configError: any) {
@@ -2377,7 +2377,6 @@ export async function registerRoutes(
       }
       
       // Generate secure OTP code
-      const { generateOTPCode, sendWhatsAppOTP } = await import("./whatsapp");
       const code = generateOTPCode();
       
       // Store OTP in database with 5-minute expiry

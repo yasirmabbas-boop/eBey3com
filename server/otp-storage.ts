@@ -1,4 +1,4 @@
-import { db } from "../db";
+import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
 import { otpVerifications, otpRateLimits } from "../shared/otp-schema";
 
