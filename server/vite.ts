@@ -57,13 +57,5 @@ export async function setupVite(server: Server, app: Express) {
   });
 }
 
-export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "..", "dist", "public");
-  if (!fs.existsSync(distPath)) {
-    throw new Error(`Could not find the build directory: ${distPath}`);
-  }
-  app.use(express.static(distPath));
-  app.use("*", (req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
-}
+// Note: serveStatic is now defined in server/static.ts
+// This file only handles Vite dev server setup

@@ -117,10 +117,8 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   } else {
     // In Prod: We serve static files, then fallback to index.html for SPA
+    // Note: serveStatic() already includes the catch-all route, so no need for duplicate
     serveStatic(app);
-    app.get("*", (req, res) => {
-      res.sendFile(path.resolve(__dirname, "..", "dist", "public", "index.html"));
-    });
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT

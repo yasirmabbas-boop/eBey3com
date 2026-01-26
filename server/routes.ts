@@ -27,21 +27,21 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   // Register routes in dependency order:
-  // 1. Infrastructure routes (object storage)
-  // 2. Auth routes (authentication endpoints needed by other routes)
-  // 3. Product routes (public and authenticated)
+  // 1. Auth routes (authentication endpoints needed by other routes)
+  // 2. Product routes (public and authenticated)
+  // 3. Infrastructure routes (object storage) - moved after product routes to avoid collision
   // 4. Bids routes (requires authentication)
   // 5. Users routes (public user profiles)
   // 6. Account routes (requires authentication)
 
-  // Infrastructure routes
-  registerObjectStorageRoutes(app);
-
   // Authentication routes (register early so /api/auth/* endpoints are available)
   registerAuthRoutes(app);
 
-  // Product routes
+  // Product routes (register before object storage to avoid route collision)
   registerProductRoutes(app);
+
+  // Infrastructure routes (object storage) - moved after product routes
+  registerObjectStorageRoutes(app);
 
   // Bids routes (requires authentication)
   registerBidsRoutes(app);

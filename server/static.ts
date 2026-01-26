@@ -11,8 +11,19 @@ export function serveStatic(app: Express) {
     );
   }
 
+  // Middleware to skip static file serving for API routes and object storage routes
+  // This ensures express.static doesn't interfere with API routes or /objects/ routes
+  app.use((req, res, next) => {
+    // Skip static file serving for API routes and object storage routes
+    if (req.path.startsWith('/api/') || req.path.startsWith('/objects/')) {
+      return next();
+    }
+    next();
+  });
+
   // Serve static files with long-term caching for assets (images, CSS, JS)
   // Cache-Control: max-age=31536000 (1 year) for better performance
+  // express.static will automatically call next() if file not found, allowing SPA routes to work
   app.use(express.static(distPath, {
     maxAge: 31536000, // 1 year in milliseconds
     setHeaders: (res, filePath) => {
@@ -25,8 +36,8 @@ export function serveStatic(app: Express) {
   }));
 
   // Catch-all route: Serve index.html for all non-API routes
-  // This allows React Router to handle client-side routing (e.g., /onboarding, /signin, etc.)
-  // API routes (starting with /api) are handled before this middleware
+  // This allows client-side routing (wouter) to handle /product/:id, /onboarding, /signin, etc.
+  // API routes (starting with /api) and object storage routes (/objects/) are handled before this middleware
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
