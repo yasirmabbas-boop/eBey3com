@@ -477,7 +477,7 @@ export function BiddingWindow({
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <MapPin className="h-4 w-4 text-green-600 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-green-700 font-semibold mb-1">📍 Ship to:</p>
+                  <p className="text-xs text-green-700 font-semibold mb-1">📍 Shipping to:</p>
                   <p className="text-sm text-green-800 truncate">
                     {selectedAddress.city} - {selectedAddress.addressLine1}
                   </p>

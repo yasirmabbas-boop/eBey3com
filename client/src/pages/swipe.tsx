@@ -828,15 +828,36 @@ export default function SwipePage() {
               <Button 
                 className="flex-1 bg-white text-black hover:bg-gray-200"
                 onClick={() => {
-                  if (isAuthenticated) {
-                    setIsBidOpen(true);
-                  } else {
+                  if (!isAuthenticated) {
                     toast({
                       title: language === "ar" ? "يجب تسجيل الدخول" : "دەبێت بچیتە ژوورەوە",
                       description: language === "ar" ? "سجل دخولك للمشاركة في المزاد" : "بۆ بەشداریکردن لە مزایدە بچۆ ژوورەوە",
                       variant: "destructive",
                     });
+                    return;
                   }
+                  
+                  // Check for address before opening bid dialog
+                  if (!selectedAddress && addresses && addresses.length > 0) {
+                    setShowAddressModal(true);
+                    toast({
+                      title: "عنوان الشحن مطلوب",
+                      description: "يرجى اختيار عنوان الشحن قبل المزايدة",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  if (!selectedAddress) {
+                    toast({
+                      title: "عنوان الشحن مطلوب",
+                      description: "يرجى إضافة عنوان الشحن من إعدادات الحساب",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  setIsBidOpen(true);
                 }}
                 data-testid="button-quick-bid"
               >
@@ -920,6 +941,47 @@ export default function SwipePage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handlePlaceBid} className="space-y-4">
+            {/* Address Summary */}
+            {isAuthenticated && !addressesLoading && selectedAddress && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-green-700 font-semibold mb-1">📍 Shipping to:</p>
+                    <p className="text-sm text-green-800 truncate">
+                      {selectedAddress.city} - {selectedAddress.addressLine1}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsBidOpen(false);
+                      setShowAddressModal(true);
+                    }}
+                    className="text-xs h-8 px-2 text-green-700 hover:text-green-800 hover:bg-green-100 shrink-0"
+                  >
+                    تغيير
+                  </Button>
+                </div>
+              </div>
+            )}
+            {isAuthenticated && !addressesLoading && !selectedAddress && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-yellow-800 mb-1">
+                      ⚠️ No shipping address selected
+                    </p>
+                    <p className="text-xs text-yellow-700">
+                      يجب إضافة عنوان الشحن قبل المزايدة
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">مبلغ المزايدة (د.ع)</label>
               <Input
@@ -936,7 +998,7 @@ export default function SwipePage() {
               <Button 
                 type="submit" 
                 className="flex-1"
-                disabled={!bidAmount || placeBidMutation.isPending}
+                disabled={!bidAmount || placeBidMutation.isPending || !selectedAddress}
                 data-testid="button-confirm-bid"
               >
                 {placeBidMutation.isPending ? (
