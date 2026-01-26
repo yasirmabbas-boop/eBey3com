@@ -1,4 +1,4 @@
-import { Switch, Route, Router, useLocation } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { useEffect, Suspense, lazy } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -22,15 +22,10 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { useSocketNotifications } from "@/hooks/use-socket-notifications";
 import HomePage from "@/pages/home";
-
-// Component to handle WebSocket notifications
-// Must be inside QueryClientProvider to access queryClient
-function SocketNotifications() {
-  useSocketNotifications();
-  return null;
-}
 import AuthPage from "@/pages/signin";
 import NotFound from "@/pages/not-found";
+
+// Lazy load pages for better performance
 const ProductPage = lazy(() => import("@/pages/product"));
 const Register = lazy(() => import("@/pages/register"));
 const SearchPage = lazy(() => import("@/pages/search"));
@@ -64,6 +59,13 @@ const SellerProfile = lazy(() => import("@/pages/seller-profile"));
 const NotificationsPage = lazy(() => import("@/pages/notifications"));
 const Onboarding = lazy(() => import("@/pages/onboarding"));
 
+// 1. Define SocketNotificationsWrapper BEFORE Router to avoid reference errors
+// This component must be inside QueryClientProvider and Switch (Router context)
+function SocketNotificationsWrapper() {
+  useSocketNotifications();
+  return null;
+}
+
 function ScrollToTop() {
   const [location] = useLocation();
   
@@ -74,8 +76,8 @@ function ScrollToTop() {
   return null;
 }
 
-
-function AppRoutes() {
+// 2. Define the main Router Logic
+function Router() {
   return (
     <Switch>
       <Route path="/" component={HomePage} />
@@ -118,6 +120,7 @@ function AppRoutes() {
   );
 }
 
+// 3. Export the App with ALL Providers in the correct order
 function App() {
   useEffect(() => {
     // Initialize native app features
@@ -157,29 +160,36 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
           <TooltipProvider>
-            <Router>
-              <NavVisibilityProvider>
-                <ScrollToTop />
-                <SocketNotifications />
-                <Toaster />
-                <BanBanner />
-                <SurveyManager />
-                <OnboardingTutorial />
-                <SwipeBackNavigation>
-                  <Suspense
-                    fallback={
-                      <LoadingSpinner />
-                    }
-                  >
-                    <AppRoutes />
-                  </Suspense>
-                </SwipeBackNavigation>
-                <MobileNavBar />
-                {!isNative && <InstallPWAPrompt />}
-                {!isNative && <PWAUpdateBanner />}
-                <PushNotificationPrompt />
-              </NavVisibilityProvider>
-            </Router>
+            <NavVisibilityProvider>
+              {/* Switch provides Router context - ALL components using useLocation MUST be inside Switch */}
+              <Switch>
+                <Route path="/:rest*">
+                  {() => (
+                    <>
+                      <ScrollToTop />
+                      <SocketNotificationsWrapper />
+                      <Toaster />
+                      <BanBanner />
+                      <SurveyManager />
+                      <OnboardingTutorial />
+                      <SwipeBackNavigation>
+                        <Suspense
+                          fallback={
+                            <LoadingSpinner />
+                          }
+                        >
+                          <Router />
+                        </Suspense>
+                      </SwipeBackNavigation>
+                      <MobileNavBar />
+                      {!isNative && <InstallPWAPrompt />}
+                      {!isNative && <PWAUpdateBanner />}
+                      <PushNotificationPrompt />
+                    </>
+                  )}
+                </Route>
+              </Switch>
+            </NavVisibilityProvider>
           </TooltipProvider>
         </LanguageProvider>
       </QueryClientProvider>
