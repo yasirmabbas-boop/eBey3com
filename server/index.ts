@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
 import path from "path";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";

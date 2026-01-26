@@ -3640,22 +3640,6 @@ export async function registerRoutes(
       res.status(500).json({ error: "فشل في إرسال البلاغ" });
     }
   });
-        return res.status(400).json({ error: "رابط إعادة التعيين غير صالح" });
-      }
-      
-      // Hash new password and update
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await storage.updateUser(user.id, { 
-        password: hashedPassword,
-        authToken: null 
-      } as any);
-      
-      res.json({ success: true, message: "تم تغيير كلمة المرور بنجاح" });
-    } catch (error) {
-      console.error("Error resetting password:", error);
-      res.status(500).json({ error: "فشل في إعادة تعيين كلمة المرور" });
-    }
-  });
 
   // Cart routes
   app.get("/api/cart", async (req, res) => {

@@ -35,6 +35,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const errorMessage = this.state.error?.message || "Unknown error";
+      const errorStack = this.state.error?.stack || "";
+      
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <div className="text-center max-w-md">
@@ -42,9 +45,18 @@ export class ErrorBoundary extends Component<Props, State> {
               <AlertTriangle className="h-8 w-8 text-destructive" />
             </div>
             <h1 className="text-2xl font-bold mb-2">حدث خطأ غير متوقع</h1>
-            <p className="text-muted-foreground mb-6">
+            <p className="text-muted-foreground mb-4">
               عذراً، حدث خطأ في التطبيق. يرجى المحاولة مرة أخرى.
             </p>
+            
+            {/* Debug info - visible for troubleshooting */}
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-left text-xs text-red-700 max-h-40 overflow-auto" dir="ltr">
+              <p className="font-bold mb-1">Error: {errorMessage}</p>
+              <pre className="whitespace-pre-wrap break-all text-[10px] text-red-500">
+                {errorStack.split('\n').slice(0, 5).join('\n')}
+              </pre>
+            </div>
+            
             <div className="flex gap-3 justify-center">
               <Button onClick={this.handleReload} variant="outline">
                 <RefreshCw className="h-4 w-4 ml-2" />
