@@ -1,3 +1,44 @@
+Here is the comprehensive prompt for your agent, followed by the specific location of the setting you are looking for in the Facebook console.
+Part 1: Comprehensive Agent Prompt
+
+Copy and paste this entire block into your Cursor chat. It covers both the functional fix (switching verification to phone-only) and the design overhaul (the new Product Card).
+
+Agent Prompt:
+
+"I have a series of critical updates to standardize my app's verification logic and elevate the UI design. Please perform the following 4 tasks strictly as described:
+
+Task 1: Backend Bidding Permission (server/routes.ts)
+
+    Locate the POST /api/bids endpoint (or the function handling bid submissions).
+
+    Find the permission check that currently looks like if (!user.isVerified).
+
+    Change it to: if (!user.phoneVerified).
+
+    Update the error message to: 'You must verify your phone number to bid.'
+
+Task 2: Frontend Bidding Gate (client/src/components/bidding-window.tsx)
+
+    Locate the needsVerification logic.
+
+    Change it to: const needsVerification = !phoneVerified; (Ignore allowedBidderType or isVerified).
+
+    Update the warning UI: If needsVerification is true, display: 'يجب التحقق من رقم هاتفك للمزايدة' (You must verify your phone number to bid) and ensure the button triggers onRequirePhoneVerification.
+
+Task 3: Profile UI Cleanup (client/src/pages/profile-page.tsx)
+
+    Search for the section labeled 'توثيق الحساب' or 'Request Account Verification'.
+
+    Remove or Comment Out this entire card/section. Users should not see a button asking for admin account verification anymore, as we have switched entirely to Phone Verification.
+
+Task 4: Product Card Redesign (client/src/components/product-card.tsx)
+
+    We are redesigning the card to be cleaner and higher-converting (Big Tech style).
+
+    Replace the entire file content with this exact code:
+
+TypeScript
+
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,28 +77,25 @@ export function ProductCard({
 
   return (
     <Link href={`/product/${id}`}>
-      <Card
+      <Card 
         className={cn(
           "group relative flex flex-col overflow-hidden border-border/50 bg-background transition-all hover:shadow-lg active:scale-[0.99]",
           className
-        )}
+        )} 
         data-testid={`card-product-${id}`}
       >
         {/* IMAGE SECTION */}
         <div className="relative aspect-[4/3] overflow-hidden bg-muted/20">
-          <OptimizedImage
-            src={image}
-            alt={title}
+          <OptimizedImage 
+            src={image} 
+            alt={title} 
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
-
+          
           {/* Top Left: Badges */}
           <div className="absolute left-2 top-2 flex flex-col gap-1">
             {isAuction && (
-              <Badge
-                variant="default"
-                className="w-fit bg-primary/90 px-2 py-0.5 text-[10px] backdrop-blur-sm hover:bg-primary"
-              >
+              <Badge variant="default" className="w-fit bg-primary/90 px-2 py-0.5 text-[10px] backdrop-blur-sm hover:bg-primary">
                 <Gavel className="mr-1 h-3 w-3" /> مزاد
               </Badge>
             )}
@@ -65,10 +103,7 @@ export function ProductCard({
 
           {/* Top Right: Favorite Action */}
           <div className="absolute right-2 top-2 z-10">
-            <FavoriteButton
-              listingId={id}
-              className="h-8 w-8 rounded-full bg-white/80 shadow-sm backdrop-blur-sm hover:bg-white"
-            />
+             <FavoriteButton listingId={id} className="h-8 w-8 rounded-full bg-white/80 shadow-sm backdrop-blur-sm hover:bg-white" />
           </div>
 
           {/* Bottom of Image: Auction Timer Overlay */}
@@ -76,12 +111,12 @@ export function ProductCard({
             <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-3 py-1.5 text-white backdrop-blur-md">
               <div className="flex items-center justify-center gap-1.5 text-xs font-medium">
                 <Timer className="h-3.5 w-3.5 text-yellow-400" />
-                <AuctionCountdown endTime={auctionEndTime} />
+                <AuctionCountdown endTime={auctionEndTime} className="text-white" />
               </div>
             </div>
           )}
         </div>
-
+        
         {/* CONTENT SECTION */}
         <CardContent className="flex flex-1 flex-col gap-2 p-3">
           {category && (
@@ -90,10 +125,7 @@ export function ProductCard({
             </span>
           )}
 
-          <h3
-            className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-tight text-foreground"
-            title={title}
-          >
+          <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-tight text-foreground" title={title}>
             {title}
           </h3>
 
@@ -102,28 +134,26 @@ export function ProductCard({
               {displayPrice.toLocaleString()}
             </span>
             <span className="text-xs font-medium text-muted-foreground">د.ع</span>
-
+            
             {isAuction && (
-              <span className="mr-auto text-[10px] text-muted-foreground">(سعر حالي)</span>
+              <span className="mr-auto text-[10px] text-muted-foreground">
+                (سعر حالي)
+              </span>
             )}
           </div>
         </CardContent>
 
         {/* FOOTER ACTION */}
         <div className="px-3 pb-3 pt-0">
-          <Button
-            className="w-full gap-2 rounded-lg bg-secondary/80 text-xs font-semibold text-secondary-foreground opacity-0 transition-opacity group-hover:opacity-100 max-md:opacity-100"
+          <Button 
+            className="w-full gap-2 rounded-lg bg-secondary/80 text-xs font-semibold text-secondary-foreground opacity-0 transition-opacity group-hover:opacity-100 max-md:opacity-100" 
             size="sm"
             onClick={(e) => {
               e.preventDefault();
-              // Add to cart logic would go here if needed, or just let the Link handle navigation
+              // Add to cart logic here if needed
             }}
           >
-            {isAuction ? (
-              <Gavel className="h-3.5 w-3.5" />
-            ) : (
-              <ShoppingCart className="h-3.5 w-3.5" />
-            )}
+            {isAuction ? <Gavel className="h-3.5 w-3.5" /> : <ShoppingCart className="h-3.5 w-3.5" />}
             {isAuction ? "زايد الآن" : "أضف للسلة"}
           </Button>
         </div>
@@ -131,3 +161,5 @@ export function ProductCard({
     </Link>
   );
 }
+
+Please confirm once all 4 tasks are complete.
