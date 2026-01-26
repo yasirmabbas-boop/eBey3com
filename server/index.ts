@@ -10,6 +10,11 @@ import { socialMetaMiddleware } from "./social-meta";
 import { registerOtpRoutes } from "./otp-routes";
 import { startOtpCleanupCron } from "./otp-cron";
 
+// Environment checks
+if (!process.env.VERIFYWAY_TOKEN) {
+  console.warn('WARNING: VERIFYWAY_TOKEN is missing - WhatsApp OTP will not work');
+}
+
 const app = express();
 app.set('trust proxy', 1);
 const httpServer = createServer(app);
@@ -118,6 +123,16 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
+  
+  httpServer.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`ERROR: Port ${port} is already in use. Please stop the other process or use a different port.`);
+      process.exit(1);
+    } else {
+      throw err;
+    }
+  });
+
   httpServer.listen(
     {
       port,

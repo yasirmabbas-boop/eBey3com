@@ -4,8 +4,7 @@
  */
 
 import type { Express } from "express";
-import { otpStorage } from "./otp-storage";
-import { generateOTPCode, sendWhatsAppOTP, formatIraqiPhoneForWhatsApp } from "./whatsapp";
+import { sendOTP, verifyOTP } from "./services/otp-service";
 import { storage } from "./storage";
 import jwt from "jsonwebtoken";
 
@@ -22,34 +21,12 @@ export function registerOtpRoutes(app: Express) {
         return res.status(400).json({ error: "رقم الهاتف مطلوب" });
       }
 
-      // Check rate limit (3 requests per 10 minutes)
-      const rateLimitCheck = await otpStorage.checkRateLimit(phoneNumber);
-      if (!rateLimitCheck.allowed) {
-        return res.status(429).json({
-          error: rateLimitCheck.reason,
-          retryAfter: rateLimitCheck.retryAfter
-        });
-      }
+      // Send OTP via in-memory service (handles generation, storage, and sending)
+      const success = await sendOTP(phoneNumber);
 
-      // Update rate limit record
-      await otpStorage.updateRateLimit(phoneNumber);
-
-      // Generate cryptographically secure 6-digit code
-      const otpCode = generateOTPCode();
-
-      // Set expiry to 5 minutes from now
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-      // Save to database
-      await otpStorage.createOTP(phoneNumber, otpCode, expiresAt);
-
-      // Send via WhatsApp
-      const result = await sendWhatsAppOTP(phoneNumber, otpCode);
-
-      if (!result.success) {
+      if (!success) {
         return res.status(500).json({
-          error: result.errorAr || "فشل في إرسال رمز التحقق",
-          details: result.error
+          error: "فشل في إرسال رمز التحقق"
         });
       }
 
@@ -78,13 +55,12 @@ export function registerOtpRoutes(app: Express) {
         });
       }
 
-      // Verify OTP with brute-force protection
-      const verifyResult = await otpStorage.verifyOTP(phoneNumber, code);
+      // Verify OTP using in-memory service
+      const isValid = verifyOTP(phoneNumber, code);
 
-      if (!verifyResult.success) {
+      if (!isValid) {
         return res.status(400).json({
-          error: verifyResult.errorAr || verifyResult.error,
-          retryAfter: verifyResult.retryAfter
+          error: "رمز التحقق غير صحيح أو منتهي الصلاحية"
         });
       }
 
