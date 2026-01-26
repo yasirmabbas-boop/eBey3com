@@ -29,6 +29,12 @@ async function getUserIdFromRequest(req: Request): Promise<string | null> {
     return sessionUserId;
   }
   
+  // Check for Passport.js authenticated user (Facebook OAuth)
+  const passportUser = (req as any).user;
+  if (passportUser && passportUser.id) {
+    return passportUser.id;
+  }
+  
   // Fallback to Authorization header token for Safari
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -2710,16 +2716,23 @@ export async function registerRoutes(
 
       // If user is logged in, update their phone verification status
       const userId = await getUserIdFromRequest(req);
+      console.log("[OTP Verify] User ID from request:", userId);
       if (userId) {
         const user = await storage.getUser(userId);
+        console.log("[OTP Verify] User found:", user?.id, "phone:", user?.phone);
         if (user) {
           // Update user's phone if different
           if (user.phone !== phone) {
+            console.log("[OTP Verify] Updating phone from", user.phone, "to", phone);
             await storage.updateUser(userId, { phone } as any);
           }
           // Mark phone as verified
+          console.log("[OTP Verify] Marking phone as verified for user:", userId);
           await storage.markPhoneAsVerified(userId);
+          console.log("[OTP Verify] Phone verified successfully");
         }
+      } else {
+        console.log("[OTP Verify] No user ID found in request - phone not linked to account");
       }
 
       return res.json({
