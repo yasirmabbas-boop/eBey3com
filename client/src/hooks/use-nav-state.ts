@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 
 const NAV_STATE_KEY = "nav_section_state";
 
-type NavSection = "home" | "favorites" | "swipe" | "search" | "account";
+type NavSection = "home" | "favorites" | "swipe" | "search" | "account" | "notifications";
 
 interface SectionState {
   path: string;
@@ -19,6 +19,7 @@ function getSectionFromPath(path: string): NavSection | null {
   if (path.startsWith("/favorites")) return "favorites";
   if (path.startsWith("/swipe")) return "swipe";
   if (path.startsWith("/search")) return "search";
+  if (path.startsWith("/notifications")) return "notifications";
   if (path.startsWith("/my-account") || path.startsWith("/signin") || path.startsWith("/signup") || path.startsWith("/register") || path.startsWith("/seller") || path.startsWith("/cart") || path.startsWith("/orders") || path.startsWith("/checkout") || path.startsWith("/my-") || path.startsWith("/security") || path.startsWith("/settings")) return "account";
   return null;
 }
