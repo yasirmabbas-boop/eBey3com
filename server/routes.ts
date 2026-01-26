@@ -2636,64 +2636,52 @@ export async function registerRoutes(
   });
 
   // Send OTP for phone verification (allows entering phone number)
-  // Uses Meta Cloud API with ebey3_auth_code template
+  // Uses VerifyWay API via in-memory OTP service
   app.post("/api/auth/send-otp", async (req, res) => {
     try {
-      const userId = await getUserIdFromRequest(req);
-      if (!userId) {
-        return res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
-      }
-
       const { phone } = req.body;
-      if (!phone) {
+      
+      // Try to get phone from body, fallback to logged-in user's phone
+      let phoneNumber = phone;
+      if (!phoneNumber) {
+        const userId = await getUserIdFromRequest(req);
+        if (userId) {
+          const user = await storage.getUser(userId);
+          phoneNumber = user?.phone;
+        }
+      }
+      
+      if (!phoneNumber) {
         return res.status(400).json({ error: "رقم الهاتف مطلوب" });
       }
 
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: "المستخدم غير موجود" });
+      // Check if user is logged in and already verified
+      const userId = await getUserIdFromRequest(req);
+      if (userId) {
+        const user = await storage.getUser(userId);
+        if (user?.phoneVerified && user?.phone === phoneNumber) {
+          return res.json({
+            success: true,
+            alreadyVerified: true,
+            message: "رقم هاتفك موثق بالفعل",
+          });
+        }
       }
 
-      // Check if already verified
-      if (user.phoneVerified) {
-        return res.json({
-          success: true,
-          alreadyVerified: true,
-          message: "رقم هاتفك موثق بالفعل",
-        });
-      }
-
-      // Check if Twilio WhatsApp is configured and generate OTP
-      const { generateOTPCode, sendWhatsAppOTP, isWhatsAppConfigured } = await import("./whatsapp");
+      // Use in-memory OTP service with VerifyWay
+      const { sendOTP } = await import("./services/otp-service");
+      const success = await sendOTP(phoneNumber);
       
-      try {
-        isWhatsAppConfigured(); // Will throw if not configured
-      } catch (configError: any) {
-        console.error("[Route] Twilio WhatsApp not configured:", configError.message);
-        return res.status(500).json({ error: "خدمة التحقق غير متاحة حالياً - الرجاء التواصل مع الدعم الفني" });
-      }
-      
-      // Generate secure OTP code
-      const otpCode = generateOTPCode();
-      
-      // Store OTP in database with 5-minute expiry
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-      await storage.createVerificationCode(phone, otpCode, "phone_verification", expiresAt);
-      
-      // Send via Twilio WhatsApp Messages API (Sandbox)
-      const result = await sendWhatsAppOTP(phone, otpCode);
-      
-      if (!result.success) {
+      if (!success) {
         return res.status(500).json({ 
-          error: result.errorAr || "فشل في إرسال رمز التحقق",
-          details: result.error
+          error: "فشل في إرسال رمز التحقق"
         });
       }
 
       return res.json({
         success: true,
         message: "تم إرسال رمز التحقق إلى واتساب",
-        phone: phone,
+        phone: phoneNumber,
       });
     } catch (error) {
       console.error("Error sending OTP:", error);
@@ -2702,47 +2690,37 @@ export async function registerRoutes(
   });
 
   // Simple OTP Verification Endpoint (for mandatory phone verification)
-  // Accepts phone number and code, verifies and marks user's phone as verified
+  // Accepts phone number and code, verifies using in-memory service
   app.post("/api/verify-otp", async (req, res) => {
     try {
-      const userId = await getUserIdFromRequest(req);
-      if (!userId) {
-        return res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
-      }
-
       const { phone, code } = req.body;
       if (!phone || !code) {
         return res.status(400).json({ error: "رقم الهاتف ورمز التحقق مطلوبان" });
       }
 
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: "المستخدم غير موجود" });
-      }
+      // Use in-memory OTP service for verification
+      const { verifyOTP } = await import("./services/otp-service");
+      const isValid = verifyOTP(phone, code);
 
-      // Verify OTP by checking database
-      const validCode = await storage.getValidVerificationCode(
-        phone,
-        code,
-        "phone_verification"
-      );
-
-      if (!validCode) {
+      if (!isValid) {
         return res.status(400).json({ 
           error: "رمز التحقق غير صحيح أو منتهي الصلاحية"
         });
       }
 
-      // Mark code as used to prevent reuse
-      await storage.markVerificationCodeUsed(validCode.id);
-
-      // Update user's phone if it's different (in case they're verifying a new number)
-      if (user.phone !== phone) {
-        await storage.updateUser(userId, { phone } as any);
+      // If user is logged in, update their phone verification status
+      const userId = await getUserIdFromRequest(req);
+      if (userId) {
+        const user = await storage.getUser(userId);
+        if (user) {
+          // Update user's phone if different
+          if (user.phone !== phone) {
+            await storage.updateUser(userId, { phone } as any);
+          }
+          // Mark phone as verified
+          await storage.markPhoneAsVerified(userId);
+        }
       }
-
-      // Mark phone as verified
-      await storage.markPhoneAsVerified(userId);
 
       return res.json({
         success: true,
