@@ -94,6 +94,7 @@ export function registerOtpRoutes(app: Express) {
       if (!user) {
         // Create new user if doesn't exist
         user = await storage.createUser({
+          displayName: `مستخدم ${phoneNumber.slice(-4)}`,
           username: `user_${phoneNumber.slice(-6)}`,
           email: `${phoneNumber}@temp.ebey3.com`,
           password: Math.random().toString(36),
