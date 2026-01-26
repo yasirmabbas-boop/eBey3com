@@ -1,184 +1,225 @@
 /**
- * WhatsApp Business Cloud API Integration
- * Used for phone verification and notifications via Meta Cloud API
+ * WhatsApp Verification via Twilio Messages API (Sandbox)
+ * Uses Twilio Sandbox for WhatsApp messaging
+ * OTP codes are generated and managed by our application
  */
 
-import axios from "axios";
+import twilio from "twilio";
 
-// Meta Cloud API Configuration (from Replit Secrets)
-const WHATSAPP_API_VERSION = "v21.0";
-const WHATSAPP_PHONE_NUMBER_ID = process.env.WA_PHONE_ID; // WhatsApp Business Phone Number ID from Replit Secrets
-const WHATSAPP_ACCOUNT_ID = process.env.WA_ACCOUNT_ID; // WhatsApp Business Account ID from Replit Secrets
-const WHATSAPP_ACCESS_TOKEN = process.env.WA_TOKEN; // WhatsApp Access Token from Replit Secrets
-const WHATSAPP_BASE_URL = `https://graph.facebook.com/${WHATSAPP_API_VERSION}`;
+// Twilio Configuration (from Replit Secrets)
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+// Twilio WhatsApp Sandbox number (standard for all accounts)
+const TWILIO_WHATSAPP_SANDBOX = process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886';
 
-interface WhatsAppMessageResponse {
-  messaging_product: string;
-  contacts: Array<{ input: string; wa_id: string }>;
-  messages: Array<{ id: string }>;
+// Initialize Twilio client
+let twilioClient: ReturnType<typeof twilio> | null = null;
+
+function getTwilioClient() {
+  if (!twilioClient && TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
+    twilioClient = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+  }
+  return twilioClient;
 }
 
 /**
- * Format phone number for WhatsApp (must be in international format without +)
- * Example: 07501234567 -> 9647501234567
+ * Iraqi Phone Number Formatter for WhatsApp
+ * Converts Iraqi phone numbers to E.164 format with whatsapp: prefix
+ * 
+ * Supported input formats:
+ * - 07501234567 → whatsapp:+9647501234567
+ * - 7501234567 (10 digits) → whatsapp:+9647501234567
+ * - 00964 7501234567 → whatsapp:+9647501234567
+ * - +964 7501234567 → whatsapp:+9647501234567
+ * - 964 7501234567 → whatsapp:+9647501234567
+ * 
+ * Handles spaces, dashes, and parentheses automatically
  */
-function formatPhoneForWhatsApp(phone: string): string {
-  let formatted = phone.replace(/\D/g, ""); // Remove all non-digits
+export function formatIraqiPhoneForWhatsApp(phone: string): string {
+  // Step 1: Remove all spaces, dashes, parentheses
+  let cleaned = phone.replace(/[\s\-\(\)]/g, "");
   
-  // If starts with 0, assume Iraq number and add country code
-  if (formatted.startsWith("0")) {
-    formatted = "964" + formatted.substring(1);
+  // Step 2: Remove leading + if present (we'll add it back in E.164 format)
+  if (cleaned.startsWith("+")) {
+    cleaned = cleaned.substring(1);
   }
-  // If starts with +, remove it
-  else if (formatted.startsWith("+")) {
-    formatted = formatted.substring(1);
-  }
-  // If already has 964 prefix, keep as is
   
-  return formatted;
+  // Step 3: Handle different Iraqi number formats
+  let formatted: string;
+  
+  if (cleaned.startsWith("00964")) {
+    // Format: 00964XXXXXXXXX → 964XXXXXXXXX
+    formatted = cleaned.substring(2);
+  } else if (cleaned.startsWith("964")) {
+    // Format: 964XXXXXXXXX → already correct
+    formatted = cleaned;
+  } else if (cleaned.startsWith("07")) {
+    // Format: 07XXXXXXXXX → 9647XXXXXXXXX
+    formatted = "964" + cleaned.substring(1);
+  } else if (cleaned.startsWith("7") && cleaned.length === 10) {
+    // Format: 7XXXXXXXXX (10 digits) → 9647XXXXXXXXX
+    formatted = "964" + cleaned;
+  } else if (cleaned.length === 9 && /^[0-9]+$/.test(cleaned)) {
+    // Format: XXXXXXXXX (9 digits, assuming it's missing the 964 prefix)
+    formatted = "964" + cleaned;
+  } else {
+    // If none of the above, assume it might already have 964 or is in a different format
+    formatted = cleaned.startsWith("964") ? cleaned : "964" + cleaned;
+  }
+  
+  // Step 4: Validate the final number (should be 964 + 10 digits = 13 digits total)
+  if (!formatted.startsWith("964") || formatted.length !== 13) {
+    console.warn(`[WhatsApp] Invalid Iraqi phone format: ${phone} → ${formatted}`);
+  }
+  
+  // Step 5: Return in whatsapp:+[number] E.164 format required by Twilio
+  return `whatsapp:+${formatted}`;
 }
 
 /**
- * Generate a random 6-digit OTP code
+ * Generate a cryptographically secure random 6-digit OTP code
+ * Uses crypto.randomInt for better security than Math.random()
  */
 export function generateOTPCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  const crypto = require('crypto');
+  return crypto.randomInt(100000, 999999).toString();
 }
 
 /**
- * Send WhatsApp OTP message for phone verification
+ * Send WhatsApp OTP using Twilio Messages API (Sandbox)
+ * 
+ * @param phone - Iraqi phone number in any format
+ * @param code - 6-digit OTP code to send
+ * @returns Object with success status and Arabic error message if failed
  */
-export async function sendWhatsAppOTP(phone: string, code: string): Promise<boolean> {
-  // DEBUG: Verify credentials are being read
-  console.log("[WhatsApp DEBUG] WA_PHONE_ID from process.env:", process.env.WA_PHONE_ID ? `${process.env.WA_PHONE_ID.substring(0, 8)}...` : "NOT SET");
-  console.log("[WhatsApp DEBUG] WA_TOKEN configured:", !!process.env.WA_TOKEN);
-  console.log("[WhatsApp DEBUG] WA_PHONE_NUMBER_ID constant:", WHATSAPP_PHONE_NUMBER_ID ? `${WHATSAPP_PHONE_NUMBER_ID.substring(0, 8)}...` : "NOT SET");
+export async function sendWhatsAppOTP(phone: string, code: string): Promise<{ success: boolean; error?: string; errorAr?: string }> {
+  console.log("[Twilio WhatsApp] Sending OTP via Messages API (Sandbox)...");
+  console.log("[Twilio DEBUG] Original phone input:", phone);
+  console.log("[Twilio DEBUG] OTP code:", code);
+  console.log("[Twilio DEBUG] TWILIO_ACCOUNT_SID configured:", !!TWILIO_ACCOUNT_SID);
+  console.log("[Twilio DEBUG] TWILIO_AUTH_TOKEN configured:", !!TWILIO_AUTH_TOKEN);
+  console.log("[Twilio DEBUG] Sandbox number:", TWILIO_WHATSAPP_SANDBOX);
   
-  if (!WHATSAPP_PHONE_NUMBER_ID || !WHATSAPP_ACCESS_TOKEN) {
-    console.error("[WhatsApp] API credentials not configured. Please set WA_PHONE_ID and WA_TOKEN in Replit Secrets");
-    return false;
+  // FORCE PRODUCTION MODE - Throw error if credentials missing
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+    const missingVars: string[] = [];
+    if (!TWILIO_ACCOUNT_SID) missingVars.push("TWILIO_ACCOUNT_SID");
+    if (!TWILIO_AUTH_TOKEN) missingVars.push("TWILIO_AUTH_TOKEN");
+    
+    const errorMsg = `[Twilio WhatsApp] CRITICAL ERROR - Cannot send OTP: Missing environment variables: ${missingVars.join(", ")}. ` +
+                     `Add these to Replit Secrets immediately.`;
+    
+    console.error(errorMsg);
+    throw new Error(`Twilio credentials not configured. Missing: ${missingVars.join(", ")}`);
   }
   
-  console.log(`[WhatsApp] Using Phone ID: ${WHATSAPP_PHONE_NUMBER_ID?.substring(0, 8)}...`);
-  console.log(`[WhatsApp] Token configured: ${!!WHATSAPP_ACCESS_TOKEN}`);
-
-  const formattedPhone = formatPhoneForWhatsApp(phone);
-  console.log(`[WhatsApp DEBUG] Formatted phone: ${formattedPhone}`);
-  console.log(`[WhatsApp DEBUG] Request URL: ${WHATSAPP_BASE_URL}/${WHATSAPP_PHONE_NUMBER_ID}/messages`);
+  // Format Iraqi phone number to E.164 WhatsApp format
+  const formattedPhone = formatIraqiPhoneForWhatsApp(phone);
+  console.log(`[Twilio DEBUG] Formatted phone: ${formattedPhone}`);
   
   try {
-    const response = await fetch(
-      `${WHATSAPP_BASE_URL}/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: formattedPhone,
-          type: "template",
-          template: {
-            name: "ebey3_auth_code", // Template must be pre-approved in Meta Business Manager
-            language: {
-              code: "ar", // Arabic
-            },
-            components: [
-              {
-                type: "body",
-                parameters: [
-                  {
-                    type: "text",
-                    text: code,
-                  },
-                ],
-              },
-            ],
-          },
-        }),
-      }
-    );
-
-    // FAIL-SAFE: Read as text first to avoid crash
-    const rawText = await response.text();
-    console.log("RAW META RESPONSE:", rawText);
-    
-    // Try to parse the JSON response
-    let data;
-    try {
-      data = JSON.parse(rawText);
-      console.log("[WhatsApp DEBUG] Successfully parsed JSON:", data);
-    } catch (e) {
-      console.error("JSON Parsing failed. The server sent back HTML instead of JSON.");
-      console.error("[WhatsApp DEBUG] Parse error:", e);
-      console.error("[WhatsApp DEBUG] This means Meta's API returned an error page, not JSON data.");
-      return false;
-    }
-
-    // DEBUG: Log response details
-    console.log("[WhatsApp DEBUG] Response status:", response.status);
-    console.log("[WhatsApp DEBUG] Response OK:", response.ok);
-    console.log("[WhatsApp DEBUG] Response Data:", data);
-    
-    // Success case
-    if (response.ok && response.status >= 200 && response.status < 300) {
-      console.log("[WhatsApp] OTP sent successfully");
-      return true;
+    const client = getTwilioClient();
+    if (!client) {
+      throw new Error("Failed to initialize Twilio client");
     }
     
-    console.error("[WhatsApp] API returned non-success status:", response.status);
-    return false;
+    // Send OTP via WhatsApp using Twilio Messages API
+    // IMPORTANT: Must match Sandbox pre-approved template format exactly
+    const message = await client.messages.create({
+      body: `Your Ebey3 code is ${code}`,
+      from: TWILIO_WHATSAPP_SANDBOX,
+      to: formattedPhone
+    });
+    
+    console.log("[Twilio WhatsApp] Message sent successfully");
+    console.log("[Twilio DEBUG] Message SID:", message.sid);
+    console.log("[Twilio DEBUG] Status:", message.status);
+    console.log("[Twilio DEBUG] To:", message.to);
+    
+    if (message.sid) {
+      return { success: true };
+    } else {
+      console.error("[Twilio WhatsApp] Unexpected response - no SID returned");
+      return {
+        success: false,
+        error: "No message SID returned",
+        errorAr: "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى."
+      };
+    }
   } catch (error: any) {
-    console.error("[WhatsApp DEBUG] Error caught in catch block");
-    console.error("[WhatsApp DEBUG] Error type:", error.constructor.name);
-    console.error("[WhatsApp DEBUG] Error message:", error.message);
-    console.error("[WhatsApp DEBUG] Full error:", error);
+    console.error("[Twilio WhatsApp] Error sending OTP:");
+    console.error("[Twilio DEBUG] Error code:", error.code);
+    console.error("[Twilio DEBUG] Error message:", error.message);
+    console.error("[Twilio DEBUG] Error status:", error.status);
+    console.error("[Twilio DEBUG] More info:", error.moreInfo);
     
-    console.error("[WhatsApp] Failed to send OTP:", error.message);
-    return false;
+    // Map Twilio error codes to Arabic error messages
+    let arabicError = "حدث خطأ في إرسال رمز التحقق. يرجى المحاولة مرة أخرى.";
+    
+    if (error.code === 63016 || error.message?.includes("not joined")) {
+      // Phone number hasn't joined the sandbox
+      arabicError = "يرجى الانضمام إلى Twilio Sandbox أولاً. أرسل رسالة WhatsApp إلى +1 415 523 8886 مع الرمز المطلوب.";
+      console.error("[Twilio DEBUG] Phone number has not joined Twilio Sandbox");
+    } else if (error.code === 21211 || error.message?.includes("Invalid 'To' Phone Number")) {
+      // Invalid phone number format
+      arabicError = "يرجى التأكد من رقم الهاتف المدخل.";
+      console.error("[Twilio DEBUG] Invalid phone number format");
+    } else if (error.code === 21608) {
+      // The number is not currently reachable via WhatsApp
+      arabicError = "رقم الهاتف غير متاح على واتساب. يرجى التحقق من الرقم.";
+      console.error("[Twilio DEBUG] Phone number not reachable on WhatsApp");
+    } else if (error.code === 20003 || error.code === 20404) {
+      // Authentication error
+      arabicError = "خدمة التحقق غير متاحة حالياً. يرجى المحاولة لاحقاً.";
+      console.error("[Twilio DEBUG] Authentication error");
+    } else if (error.code === 30007 || error.code === 30008) {
+      // Message delivery failed
+      arabicError = "فشل في تسليم الرسالة. يرجى التحقق من رقم الهاتف.";
+      console.error("[Twilio DEBUG] Message delivery failed");
+    } else if (error.message && error.message.includes("not a valid")) {
+      // Generic invalid number message
+      arabicError = "يرجى التأكد من رقم الهاتف المدخل.";
+      console.error("[Twilio DEBUG] Invalid number format");
+    }
+    
+    return {
+      success: false,
+      error: error.message || "Failed to send OTP",
+      errorAr: arabicError
+    };
   }
 }
 
 /**
- * Send WhatsApp text message (for notifications)
+ * Send WhatsApp text message using Twilio Messages API (for notifications)
  */
 export async function sendWhatsAppMessage(phone: string, message: string): Promise<boolean> {
-  // FORCE PRODUCTION MODE - Throw error instead of silent failure
-  if (!WHATSAPP_PHONE_NUMBER_ID || !WHATSAPP_ACCESS_TOKEN) {
-    const missingVars: string[] = [];
-    if (!WHATSAPP_PHONE_NUMBER_ID) missingVars.push("WA_PHONE_ID");
-    if (!WHATSAPP_ACCESS_TOKEN) missingVars.push("WA_TOKEN");
-    
-    throw new Error(`WhatsApp API credentials not configured. Missing: ${missingVars.join(", ")}`);
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+    throw new Error("Twilio credentials not configured");
   }
-
-  const formattedPhone = formatPhoneForWhatsApp(phone);
+  
+  const formattedPhone = formatIraqiPhoneForWhatsApp(phone);
   
   try {
-    const response = await axios.post<WhatsAppMessageResponse>(
-      `${WHATSAPP_BASE_URL}/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
-      {
-        messaging_product: "whatsapp",
-        to: formattedPhone,
-        type: "text",
-        text: {
-          preview_url: false,
-          body: message,
-        },
-      },
-      {
-        headers: {
-          "Authorization": `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    console.log("[WhatsApp] Message sent successfully:", response.data);
+    const client = getTwilioClient();
+    if (!client) {
+      throw new Error("Failed to initialize Twilio client");
+    }
+    
+    const messageResponse = await client.messages.create({
+      body: message,
+      from: TWILIO_WHATSAPP_SANDBOX,
+      to: formattedPhone
+    });
+    
+    console.log("[Twilio WhatsApp] Message sent successfully");
+    console.log("[Twilio DEBUG] Message SID:", messageResponse.sid);
+    console.log("[Twilio DEBUG] Status:", messageResponse.status);
+    
     return true;
   } catch (error: any) {
-    console.error("[WhatsApp] Failed to send message:", error.response?.data || error.message);
+    console.error("[Twilio WhatsApp] Failed to send message:", error.message);
+    console.error("[Twilio DEBUG] Error code:", error.code);
     return false;
   }
 }
@@ -194,22 +235,22 @@ export async function sendBiddingLimitIncreaseNotification(phone: string, newLim
 }
 
 /**
- * Check if WhatsApp API is properly configured
+ * Check if Twilio WhatsApp is properly configured
  * FORCE PRODUCTION MODE - Throws error if credentials are missing
  */
 export function isWhatsAppConfigured(): boolean {
-  const isConfigured = !!(WHATSAPP_PHONE_NUMBER_ID && WHATSAPP_ACCESS_TOKEN);
+  const isConfigured = !!(TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN);
   
   if (!isConfigured) {
     const missingVars: string[] = [];
-    if (!WHATSAPP_PHONE_NUMBER_ID) missingVars.push("WA_PHONE_ID");
-    if (!WHATSAPP_ACCESS_TOKEN) missingVars.push("WA_TOKEN");
+    if (!TWILIO_ACCOUNT_SID) missingVars.push("TWILIO_ACCOUNT_SID");
+    if (!TWILIO_AUTH_TOKEN) missingVars.push("TWILIO_AUTH_TOKEN");
     
-    const errorMsg = `[WhatsApp] PRODUCTION MODE REQUIRED: Missing environment variables: ${missingVars.join(", ")}. ` +
-                     `Please set these in Replit Secrets. See ENVIRONMENT_VARIABLES_REQUIRED.md for details.`;
+    const errorMsg = `[Twilio WhatsApp] PRODUCTION MODE REQUIRED: Missing environment variables: ${missingVars.join(", ")}. ` +
+                     `Please set these in Replit Secrets.`;
     
     console.error(errorMsg);
-    throw new Error(`WhatsApp API not configured. Missing: ${missingVars.join(", ")}`);
+    throw new Error(`Twilio not configured. Missing: ${missingVars.join(", ")}`);
   }
   
   return isConfigured;

@@ -7,6 +7,8 @@ import { setupFacebookAuth } from "./auth-facebook";
 import { setupWebSocket } from "./websocket";
 import { startAuctionProcessor } from "./auction-processor";
 import { socialMetaMiddleware } from "./social-meta";
+import { registerOtpRoutes } from "./otp-routes";
+import { startOtpCleanupCron } from "./otp-cron";
 
 const app = express();
 app.set('trust proxy', 1);
@@ -78,6 +80,12 @@ app.use((req, res, next) => {
   setupFacebookAuth(app);
   registerAuthRoutes(app);
   await registerRoutes(httpServer, app);
+  
+  // Register production OTP routes with security
+  registerOtpRoutes(app);
+  
+  // Start hourly cleanup cron job
+  startOtpCleanupCron();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

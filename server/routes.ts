@@ -2351,10 +2351,13 @@ export async function registerRoutes(
         return res.status(400).json({ error: "رقم الهاتف مطلوب" });
       }
       
-      // Check if WhatsApp is configured
-      const { isWhatsAppConfigured, generateOTPCode, sendWhatsAppOTP } = await import("./whatsapp");
-      if (!isWhatsAppConfigured()) {
-        return res.status(503).json({ error: "خدمة واتساب غير متاحة حالياً" });
+      // Check if Twilio WhatsApp is configured
+      const { isWhatsAppConfigured, sendWhatsAppOTP } = await import("./whatsapp");
+      try {
+        isWhatsAppConfigured(); // Will throw if not configured
+      } catch (configError: any) {
+        console.error("[Route] Twilio WhatsApp not configured:", configError.message);
+        return res.status(503).json({ error: "خدمة واتساب غير متاحة حالياً - الرجاء التواصل مع الدعم الفني" });
       }
       
       // For registration, check if phone is already registered
@@ -2373,16 +2376,21 @@ export async function registerRoutes(
         }
       }
       
-      // Generate and store verification code
+      // Generate secure OTP code
+      const { generateOTPCode, sendWhatsAppOTP } = await import("./whatsapp");
       const code = generateOTPCode();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
       
+      // Store OTP in database with 5-minute expiry
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
       await storage.createVerificationCode(phone, code, type, expiresAt);
       
-      // Send WhatsApp OTP
-      const sent = await sendWhatsAppOTP(phone, code);
-      if (!sent) {
-        return res.status(500).json({ error: "فشل في إرسال رمز التحقق عبر واتساب" });
+      // Send OTP via WhatsApp using Twilio Messages API (Sandbox)
+      const result = await sendWhatsAppOTP(phone, code);
+      if (!result.success) {
+        return res.status(500).json({ 
+          error: result.errorAr || "فشل في إرسال رمز التحقق عبر واتساب",
+          details: result.error
+        });
       }
       
       res.json({ success: true, message: "تم إرسال رمز التحقق عبر واتساب" });
@@ -2400,13 +2408,17 @@ export async function registerRoutes(
         return res.status(400).json({ error: "رقم الهاتف ورمز التحقق مطلوبان" });
       }
       
-      const verification = await storage.getValidVerificationCode(phone, code, type);
-      if (!verification) {
-        return res.status(400).json({ error: "رمز التحقق غير صحيح أو منتهي الصلاحية" });
+      // Verify OTP by checking database
+      const validCode = await storage.getValidVerificationCode(phone, code, type);
+      
+      if (!validCode) {
+        return res.status(400).json({ 
+          error: "رمز التحقق غير صحيح أو منتهي الصلاحية"
+        });
       }
       
-      // Mark code as used
-      await storage.markVerificationCodeUsed(verification.id);
+      // Mark code as used to prevent reuse
+      await storage.markVerificationCodeUsed(validCode.id);
       
       // If it's for password reset, return a one-time reset token
       if (type === "password_reset") {
@@ -2538,24 +2550,31 @@ export async function registerRoutes(
         });
       }
 
-      // Generate OTP
+      // Check if Twilio WhatsApp is configured and generate OTP
       const { generateOTPCode, sendWhatsAppOTP, isWhatsAppConfigured } = await import("./whatsapp");
       
-      if (!isWhatsAppConfigured()) {
-        return res.status(500).json({ error: "خدمة التحقق غير متاحة حالياً" });
+      try {
+        isWhatsAppConfigured(); // Will throw if not configured
+      } catch (configError: any) {
+        console.error("[Route] Twilio WhatsApp not configured:", configError.message);
+        return res.status(500).json({ error: "خدمة التحقق غير متاحة حالياً - الرجاء التواصل مع الدعم الفني" });
       }
       
+      // Generate secure OTP code
       const otpCode = generateOTPCode();
       
-      // Store OTP in database (expires in 10 minutes)
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      // Store OTP in database with 5-minute expiry
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
       await storage.createVerificationCode(user.phone, otpCode, "phone_verification", expiresAt);
       
-      // Send via WhatsApp
-      const sent = await sendWhatsAppOTP(user.phone, otpCode);
+      // Send via Twilio WhatsApp Messages API (Sandbox)
+      const result = await sendWhatsAppOTP(user.phone, otpCode);
       
-      if (!sent) {
-        return res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+      if (!result.success) {
+        return res.status(500).json({ 
+          error: result.errorAr || "فشل في إرسال رمز التحقق",
+          details: result.error
+        });
       }
 
       return res.json({
@@ -2587,7 +2606,7 @@ export async function registerRoutes(
         return res.status(404).json({ error: "المستخدم غير موجود" });
       }
 
-      // Verify OTP
+      // Verify OTP by checking database
       const validCode = await storage.getValidVerificationCode(
         user.phone,
         code,
@@ -2595,14 +2614,16 @@ export async function registerRoutes(
       );
 
       if (!validCode) {
-        return res.status(400).json({ error: "رمز التحقق غير صحيح أو منتهي الصلاحية" });
+        return res.status(400).json({ 
+          error: "رمز التحقق غير صحيح أو منتهي الصلاحية"
+        });
       }
 
+      // Mark code as used to prevent reuse
+      await storage.markVerificationCodeUsed(validCode.id);
+      
       // Mark phone as verified
       await storage.markPhoneAsVerified(userId);
-      
-      // Mark code as used
-      await storage.markVerificationCodeUsed(validCode.id);
 
       return res.json({
         success: true,
@@ -2643,24 +2664,31 @@ export async function registerRoutes(
         });
       }
 
-      // Generate OTP
+      // Check if Twilio WhatsApp is configured and generate OTP
       const { generateOTPCode, sendWhatsAppOTP, isWhatsAppConfigured } = await import("./whatsapp");
       
-      if (!isWhatsAppConfigured()) {
-        return res.status(500).json({ error: "خدمة التحقق غير متاحة حالياً" });
+      try {
+        isWhatsAppConfigured(); // Will throw if not configured
+      } catch (configError: any) {
+        console.error("[Route] Twilio WhatsApp not configured:", configError.message);
+        return res.status(500).json({ error: "خدمة التحقق غير متاحة حالياً - الرجاء التواصل مع الدعم الفني" });
       }
       
+      // Generate secure OTP code
       const otpCode = generateOTPCode();
       
-      // Store OTP in database (expires in 5 minutes)
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      // Store OTP in database with 5-minute expiry
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
       await storage.createVerificationCode(phone, otpCode, "phone_verification", expiresAt);
       
-      // Send via WhatsApp using Meta Cloud API
-      const sent = await sendWhatsAppOTP(phone, otpCode);
+      // Send via Twilio WhatsApp Messages API (Sandbox)
+      const result = await sendWhatsAppOTP(phone, otpCode);
       
-      if (!sent) {
-        return res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+      if (!result.success) {
+        return res.status(500).json({ 
+          error: result.errorAr || "فشل في إرسال رمز التحقق",
+          details: result.error
+        });
       }
 
       return res.json({
@@ -2693,7 +2721,7 @@ export async function registerRoutes(
         return res.status(404).json({ error: "المستخدم غير موجود" });
       }
 
-      // Verify OTP for the provided phone number
+      // Verify OTP by checking database
       const validCode = await storage.getValidVerificationCode(
         phone,
         code,
@@ -2701,8 +2729,13 @@ export async function registerRoutes(
       );
 
       if (!validCode) {
-        return res.status(400).json({ error: "رمز التحقق غير صحيح أو منتهي الصلاحية" });
+        return res.status(400).json({ 
+          error: "رمز التحقق غير صحيح أو منتهي الصلاحية"
+        });
       }
+
+      // Mark code as used to prevent reuse
+      await storage.markVerificationCodeUsed(validCode.id);
 
       // Update user's phone if it's different (in case they're verifying a new number)
       if (user.phone !== phone) {
@@ -2711,9 +2744,6 @@ export async function registerRoutes(
 
       // Mark phone as verified
       await storage.markPhoneAsVerified(userId);
-      
-      // Mark code as used
-      await storage.markVerificationCodeUsed(validCode.id);
 
       return res.json({
         success: true,

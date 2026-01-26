@@ -1,42 +1,56 @@
 # Required Environment Variables for Ebey3.com
 
-## Critical: WhatsApp Business API Configuration
+## ✅ UPDATED: Now Using Twilio WhatsApp Verify
+
+**Migration Complete**: System has been migrated from Meta WhatsApp Business API to Twilio Verify service.
 
 ### Required in Replit Secrets:
 
-1. **`WA_PHONE_ID`** (REQUIRED for phone verification)
-   - WhatsApp Business Phone Number ID from Meta Business Manager
-   - Example: `123456789012345`
-   - How to get: Meta Business Manager → WhatsApp → Phone Numbers → Copy Phone Number ID
+1. **`TWILIO_ACCOUNT_SID`** (REQUIRED for phone verification)
+   - Your Twilio Account SID
+   - Example: `ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+   - How to get: Twilio Console → Account Info → Account SID
+   - Format: Starts with `AC`
    - **Status**: ⚠️ MUST BE SET - System will throw error if missing
 
-2. **`WA_TOKEN`** (REQUIRED for phone verification)
-   - WhatsApp Business API Access Token from Meta Business Manager
-   - Example: `EAAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` (long string starting with EAA)
-   - How to get: Meta Business Manager → System Users → Generate Token
+2. **`TWILIO_AUTH_TOKEN`** (REQUIRED for phone verification)
+   - Your Twilio Auth Token
+   - Example: `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` (32 characters)
+   - How to get: Twilio Console → Account Info → Auth Token (click "View" to reveal)
+   - Security: Keep this secret!
    - **Status**: ⚠️ MUST BE SET - System will throw error if missing
 
-3. **`WA_ACCOUNT_ID`** (OPTIONAL)
-   - WhatsApp Business Account ID
-   - Used for analytics and reporting
-   - Not required for sending messages
+3. **`TWILIO_VERIFY_SERVICE_SID`** (REQUIRED for phone verification)
+   - Your Twilio Verify Service SID
+   - Example: `VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+   - How to get: Twilio Console → Verify → Services → [Your Service] → Service SID
+   - Format: Starts with `VA`
+   - **Status**: ⚠️ MUST BE SET - System will throw error if missing
 
-### Template Required:
+4. **`TWILIO_WHATSAPP_NUMBER`** (OPTIONAL)
+   - Your Twilio WhatsApp sender number (for custom notifications)
+   - Example: `whatsapp:+14155238886`
+   - Default: Uses Twilio sandbox if not set
+   - Only needed for sending custom messages
 
-- **Template Name**: `ebey3_auth_code`
-- **Language**: Arabic (ar)
-- **Status**: Must be APPROVED by Meta
-- **Content**: Should have 1 parameter placeholder for the OTP code
+### ❌ OLD (Meta - No Longer Needed):
+
+These environment variables are **no longer used** and can be removed:
+
+- ~~`WA_PHONE_ID`~~ - WhatsApp Business Phone Number ID
+- ~~`WA_TOKEN`~~ - WhatsApp Access Token
+- ~~`WA_ACCOUNT_ID`~~ - WhatsApp Business Account ID
+- ~~`ebey3_auth_code` template~~ - No longer needed (Twilio uses built-in templates)
 
 ## Current Configuration in Code
 
-The system looks for these exact environment variable names:
+The system now looks for these exact environment variable names:
 
 ```typescript
-// From server/whatsapp.ts
-const WHATSAPP_PHONE_NUMBER_ID = process.env.WA_PHONE_ID;
-const WHATSAPP_ACCOUNT_ID = process.env.WA_ACCOUNT_ID;
-const WHATSAPP_ACCESS_TOKEN = process.env.WA_TOKEN;
+// From server/whatsapp.ts (Updated to Twilio)
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
 ```
 
 ## Delivery API Configuration (Separate System)
