@@ -533,16 +533,6 @@ export default function Settings() {
               {profile && (profile as any).sellerApproved && (
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      {profile.isVerified ? (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <AlertCircle className="h-5 w-5 text-yellow-600" />
-                      )}
-                      <span className="font-semibold">
-                        {profile.isVerified ? "بائع موثق" : "بائع غير موثق"}
-                      </span>
-                    </div>
                     {profile?.rating !== undefined && profile.rating > 0 && (
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 text-yellow-500 fill-current" />

@@ -134,19 +134,11 @@ export default function SellerProfile() {
                     {seller.displayName.charAt(0)}
                   </div>
                 )}
-                {seller.isVerified && (
-                  <CheckCircle className="absolute bottom-0 left-0 h-6 w-6 text-green-500 bg-white rounded-full" />
-                )}
               </div>
 
               <div className="text-center md:text-right flex-1">
                 <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
                   <h1 className="text-2xl font-bold">{seller.displayName}</h1>
-                  {seller.isVerified && (
-                    <Badge className="bg-emerald-50 text-emerald-700 border-0">
-                      {language === "ar" ? "موثق" : "Verified"}
-                    </Badge>
-                  )}
                   {seller.isAuthenticated && (
                     <VerifiedBadge size="md" />
                   )}

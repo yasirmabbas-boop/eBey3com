@@ -17,14 +17,14 @@ interface PhoneVerificationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   phone: string;
-  isVerified: boolean;
+  phoneVerified: boolean;
 }
 
 export function PhoneVerificationModal({
   open,
   onOpenChange,
   phone,
-  isVerified,
+  phoneVerified,
 }: PhoneVerificationModalProps) {
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -179,7 +179,7 @@ export function PhoneVerificationModal({
             </div>
           </div>
 
-          {isVerified ? (
+          {phoneVerified ? (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
               <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
               <div className="text-sm text-green-800">

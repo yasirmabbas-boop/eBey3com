@@ -30,7 +30,6 @@ interface BiddingWindowProps {
   onRequirePhoneVerification?: () => void;
   isWinning?: boolean;
   isAuthLoading?: boolean;
-  isVerified?: boolean;
   phoneVerified?: boolean;
   allowedBidderType?: string;
 }
@@ -110,7 +109,6 @@ export function BiddingWindow({
   onRequirePhoneVerification,
   isWinning = false,
   isAuthLoading = false,
-  isVerified = false,
   phoneVerified = false,
   allowedBidderType = "verified_only",
 }: BiddingWindowProps) {

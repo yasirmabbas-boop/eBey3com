@@ -470,7 +470,7 @@ export default function MyAccount() {
         open={showPhoneVerification}
         onOpenChange={setShowPhoneVerification}
         phone={user.phone || ""}
-        isVerified={user.isVerified || false}
+        phoneVerified={user.phoneVerified || false}
       />
     </Layout>
   );
