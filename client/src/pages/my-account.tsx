@@ -139,6 +139,12 @@ interface SellerSummary {
   totalRevenue: number;
 }
 
+// Check if user likely has a session (optimistic check)
+function hasAuthToken(): boolean {
+  if (typeof window === "undefined") return false;
+  return !!localStorage.getItem("authToken");
+}
+
 export default function MyAccount() {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
@@ -147,6 +153,9 @@ export default function MyAccount() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
+  
+  // Optimistic: if we have a token, assume logged in until proven otherwise
+  const hasToken = hasAuthToken();
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -248,6 +257,7 @@ export default function MyAccount() {
   });
 
   useEffect(() => {
+    // Only redirect if auth check completed AND user is not authenticated
     if (!isLoading && !isAuthenticated) {
       toast({
         title: "يجب تسجيل الدخول",
@@ -258,12 +268,20 @@ export default function MyAccount() {
     }
   }, [isLoading, isAuthenticated, navigate, toast]);
 
+  // Optimistic rendering: if we have a token, show skeleton immediately
+  // This makes the page feel instant for logged-in users
+  if (isLoading && hasToken) {
+    return <AccountSkeleton />;
+  }
+
+  // No token and still loading - show skeleton briefly
   if (isLoading) {
     return <AccountSkeleton />;
   }
 
+  // Auth check completed but not authenticated - will redirect via useEffect
   if (!isAuthenticated || !user) {
-    return null;
+    return <AccountSkeleton />;
   }
 
   const handleLogout = async () => {
