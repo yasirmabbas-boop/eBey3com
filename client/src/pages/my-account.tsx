@@ -206,12 +206,6 @@ export default function MyAccount() {
 
   const sellingItems: AccountMenuItem[] = [
     {
-      icon: <Plus className="h-6 w-6" />,
-      label: "أضف منتج جديد",
-      description: "ابدأ ببيع منتجاتك",
-      href: "/sell",
-    },
-    {
       icon: <BarChart3 className="h-6 w-6" />,
       label: "لوحة البائع",
       description: "إدارة منتجاتك ومبيعاتك",
@@ -349,6 +343,22 @@ export default function MyAccount() {
             </div>
           </div>
 
+          {/* Sell Item - Featured CTA */}
+          <Link href="/sell">
+            <div className="bg-blue-500 px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b hover:bg-blue-600 transition-colors cursor-pointer" data-testid="menu-sell-item">
+              <div className="flex items-center gap-4 py-2">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <Plus className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-bold text-white text-lg">أضف منتج جديد</span>
+                  <p className="text-blue-100 text-sm mt-0.5">ابدأ ببيع منتجاتك الآن</p>
+                </div>
+                <ChevronLeft className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </Link>
+
           {/* Shopping Section */}
           <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
             <h2 className="text-lg font-bold text-gray-900 mb-2">التسوق</h2>
@@ -373,32 +383,17 @@ export default function MyAccount() {
             </Link>
           </div>
 
-          {/* Selling Section - Show for all users but highlight for sellers */}
-          <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">البيع</h2>
-            {!user.isVerified ? (
-              <div className="py-4">
-                <Link href="/sell">
-                  <div className="flex items-center gap-4 py-4 px-4 bg-primary/5 rounded-xl cursor-pointer hover:bg-primary/10 transition-colors border border-primary/20">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      <Plus className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <span className="font-bold text-primary">ابدأ البيع على E-بيع</span>
-                      <p className="text-sm text-gray-600 mt-0.5">تقدم بطلب للحصول على صلاحية البيع</p>
-                    </div>
-                    <ChevronLeft className="h-5 w-5 text-primary" />
-                  </div>
-                </Link>
-              </div>
-            ) : (
+          {/* Selling Section - Only show for verified sellers */}
+          {user.isVerified && (
+            <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
+              <h2 className="text-lg font-bold text-gray-900 mb-2">البيع</h2>
               <div className="divide-y">
                 {sellingItems.map((item, i) => (
                   <MenuItem key={i} item={item} />
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Settings Section */}
           <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 rounded-b-xl mb-8">
