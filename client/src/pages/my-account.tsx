@@ -31,7 +31,88 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PhoneVerificationModal } from "@/components/phone-verification-modal";
+
+// Skeleton loading component for the account page
+function AccountSkeleton() {
+  return (
+    <Layout>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-6 max-w-2xl">
+          
+          {/* Profile Header Skeleton */}
+          <div className="flex items-center gap-4 py-6 border-b bg-white rounded-t-xl px-4 -mx-4 md:mx-0 md:px-6">
+            <Skeleton className="w-16 h-16 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <Skeleton className="w-6 h-6 rounded" />
+          </div>
+
+          {/* Sell Item CTA - Static, shows immediately */}
+          <Link href="/sell">
+            <div className="bg-blue-500 px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b hover:bg-blue-600 transition-colors cursor-pointer">
+              <div className="flex items-center gap-4 py-2">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <Plus className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-bold text-white text-lg">أضف منتج جديد</span>
+                  <p className="text-blue-100 text-sm mt-0.5">ابدأ ببيع منتجاتك الآن</p>
+                </div>
+                <ChevronLeft className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </Link>
+
+          {/* Shopping Section - Static structure with skeleton badges */}
+          <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">التسوق</h2>
+            <Link href="/buyer-dashboard">
+              <div className="flex items-center gap-4 py-4 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
+                <Package className="h-6 w-6 text-gray-600" />
+                <div className="flex-1">
+                  <span className="font-medium text-gray-900">مركز المشتري</span>
+                  <p className="text-sm text-gray-500 mt-0.5">مشترياتك ومزايداتك وعروضك</p>
+                </div>
+                <ChevronLeft className="h-5 w-5 text-gray-400" />
+              </div>
+            </Link>
+          </div>
+
+          {/* Address Section - Static */}
+          <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
+            <Link href="/settings">
+              <div className="flex items-center gap-4 py-4 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
+                <MapPin className="h-6 w-6 text-gray-600" />
+                <div className="flex-1">
+                  <span className="font-medium text-gray-900">العنوان</span>
+                  <p className="text-sm text-gray-500 mt-0.5">إدارة عنوان التوصيل</p>
+                </div>
+                <ChevronLeft className="h-5 w-5 text-gray-400" />
+              </div>
+            </Link>
+          </div>
+
+          {/* Settings Section - Static */}
+          <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 rounded-b-xl mb-20">
+            <div className="flex items-center gap-4 py-4 px-2">
+              <Settings className="h-6 w-6 text-gray-600" />
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">الإعدادات</span>
+                <p className="text-sm text-gray-500 mt-0.5">إدارة حسابك والأمان والمساعدة</p>
+              </div>
+              <ChevronDown className="h-5 w-5 text-gray-400" />
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </Layout>
+  );
+}
 
 interface AccountMenuItem {
   icon: React.ReactNode;
@@ -150,16 +231,20 @@ export default function MyAccount() {
   const { data: buyerSummary } = useQuery<BuyerSummary>({
     queryKey: ["/api/account/buyer-summary"],
     enabled: !!user?.id,
+    staleTime: 1000 * 60 * 2, // 2 minutes - show cached data instantly
   });
 
   const { data: sellerSummary } = useQuery<SellerSummary>({
     queryKey: ["/api/account/seller-summary"],
     enabled: !!user?.id && user?.isVerified,
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
   const { data: unreadMessages = 0 } = useQuery<number>({
     queryKey: ["/api/messages/unread-count"],
     enabled: !!user?.id,
+    staleTime: 1000 * 30, // 30 seconds for messages
+    retry: false, // Don't retry if endpoint doesn't exist
   });
 
   useEffect(() => {
@@ -174,13 +259,7 @@ export default function MyAccount() {
   }, [isLoading, isAuthenticated, navigate, toast]);
 
   if (isLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
-    );
+    return <AccountSkeleton />;
   }
 
   if (!isAuthenticated || !user) {
