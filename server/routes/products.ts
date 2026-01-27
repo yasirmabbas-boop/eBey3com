@@ -371,7 +371,7 @@ export function registerProductRoutes(app: Express): void {
         sellerName: req.body.sellerName,
         sellerId: sessionUserId || req.body.sellerId || null,
         sellerPhone: req.body.sellerPhone || null,
-        city: req.body.city,
+        city: req.body.city || user.city,
         brand: req.body.brand || null,
         isNegotiable: req.body.isNegotiable === true,
         serialNumber: req.body.serialNumber || null,
@@ -379,6 +379,9 @@ export function registerProductRoutes(app: Express): void {
           ? req.body.quantityAvailable 
           : parseInt(req.body.quantityAvailable, 10) || 1,
         allowedBidderType: req.body.allowedBidderType || "verified_only",
+        locationLat: req.body.locationLat ?? user.locationLat ?? null,
+        locationLng: req.body.locationLng ?? user.locationLng ?? null,
+        mapUrl: req.body.mapUrl ?? user.mapUrl ?? null,
       };
 
       const validatedData = insertListingSchema.parse(listingData);
