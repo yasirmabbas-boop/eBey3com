@@ -75,4 +75,38 @@ export function registerUsersRoutes(app: Express): void {
       res.status(500).json({ error: "Failed to fetch watchlist" });
     }
   });
+
+  // Add to watchlist
+  app.post("/api/watchlist", async (req, res) => {
+    try {
+      const { userId, listingId } = req.body;
+      if (!userId || !listingId) {
+        return res.status(400).json({ error: "userId and listingId are required" });
+      }
+      
+      // Check if already in watchlist
+      const existing = await storage.isInWatchlist(userId, listingId);
+      if (existing) {
+        return res.json({ message: "Already in watchlist" });
+      }
+      
+      const item = await storage.addToWatchlist({ userId, listingId });
+      res.json(item);
+    } catch (error) {
+      console.error("Error adding to watchlist:", error);
+      res.status(500).json({ error: "Failed to add to watchlist" });
+    }
+  });
+
+  // Remove from watchlist
+  app.delete("/api/watchlist/:userId/:listingId", async (req, res) => {
+    try {
+      const { userId, listingId } = req.params;
+      await storage.removeFromWatchlist(userId, listingId);
+      res.json({ message: "Removed from watchlist" });
+    } catch (error) {
+      console.error("Error removing from watchlist:", error);
+      res.status(500).json({ error: "Failed to remove from watchlist" });
+    }
+  });
 }
