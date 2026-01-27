@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, MapPin, Phone, Plus, Pencil, Trash2, CheckCircle, Star } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { Layout } from "@/components/layout";
 import type { BuyerAddress } from "@shared/schema";
 
 const IRAQI_PROVINCES = [
@@ -189,25 +190,30 @@ export default function Settings() {
 
   if (authLoading || profileLoading || addressesLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
     );
   }
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">يجب تسجيل الدخول للوصول إلى العناوين</p>
-          </CardContent>
-        </Card>
-      </div>
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="py-8 text-center">
+              <p className="text-muted-foreground">يجب تسجيل الدخول للوصول إلى العناوين</p>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
     );
   }
 
   return (
+    <Layout>
     <div className="container mx-auto px-4 py-6 pb-24 max-w-2xl" dir="rtl">
       <div className="space-y-6">
         
@@ -419,5 +425,6 @@ export default function Settings() {
         </DialogContent>
       </Dialog>
     </div>
+    </Layout>
   );
 }
