@@ -9,12 +9,8 @@ import { share } from "@/lib/nativeShare";
 import { getUserAvatarSrc } from "@/lib/avatar";
 import { authFetch } from "@/lib/api";
 import {
-  Heart,
   Package,
   ShoppingBag,
-  Clock,
-  Gavel,
-  Tag,
   Plus,
   BarChart3,
   MessageSquare,
@@ -23,6 +19,7 @@ import {
   Shield,
   LogOut,
   ChevronLeft,
+  ChevronDown,
   Loader2,
   Star,
   User,
@@ -206,32 +203,20 @@ export default function MyAccount() {
     }
   };
 
-  const shoppingItems: AccountMenuItem[] = [
+  const [showPurchasesMenu, setShowPurchasesMenu] = useState(false);
+  
+  const purchasesSubItems = [
     {
-      icon: <Package className="h-6 w-6" />,
       label: "مشترياتي",
       description: "سجل طلباتك السابقة",
       href: "/my-purchases",
       badge: buyerSummary?.totalPurchases || undefined,
     },
     {
-      icon: <Gavel className="h-6 w-6" />,
       label: "المزايدات والعروض",
       description: "المزادات النشطة وعروضك",
       href: "/buyer-dashboard",
       badge: buyerSummary?.activeOffers || undefined,
-    },
-    {
-      icon: <Gavel className="h-6 w-6" />,
-      label: "مزايداتي",
-      description: "جميع المزايدات التي قدمتها",
-      href: "/my-bids",
-    },
-    {
-      icon: <Clock className="h-6 w-6" />,
-      label: "شوهدت مؤخراً",
-      description: "المنتجات التي زرتها",
-      href: "/search",
     },
   ];
 
@@ -249,12 +234,6 @@ export default function MyAccount() {
       href: "/seller-dashboard",
       badge: sellerSummary?.pendingOrders || undefined,
       badgeColor: "bg-red-500",
-    },
-    {
-      icon: <Tag className="h-6 w-6" />,
-      label: "منتجاتي النشطة",
-      description: `${sellerSummary?.activeListings || 0} منتج معروض`,
-      href: "/seller-dashboard",
     },
   ];
 
@@ -400,10 +379,51 @@ export default function MyAccount() {
           {/* Shopping Section */}
           <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
             <h2 className="text-lg font-bold text-gray-900 mb-2">التسوق</h2>
-            <div className="divide-y">
-              {shoppingItems.map((item, i) => (
-                <MenuItem key={i} item={item} />
-              ))}
+            <div>
+              <button
+                onClick={() => setShowPurchasesMenu(!showPurchasesMenu)}
+                className="flex items-center gap-4 py-4 px-2 w-full hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                data-testid="menu-purchases-dropdown"
+              >
+                <div className="text-gray-600">
+                  <Package className="h-6 w-6" />
+                </div>
+                <div className="flex-1 text-right">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900">مشترياتي وعروضي</span>
+                    {((buyerSummary?.totalPurchases || 0) + (buyerSummary?.activeOffers || 0)) > 0 && (
+                      <Badge className="bg-gray-500 text-white text-xs px-2 py-0.5">
+                        {(buyerSummary?.totalPurchases || 0) + (buyerSummary?.activeOffers || 0)}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-0.5">طلباتك ومزايداتك النشطة</p>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showPurchasesMenu ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showPurchasesMenu && (
+                <div className="mr-8 border-r border-gray-200 pr-4 divide-y">
+                  {purchasesSubItems.map((item, i) => (
+                    <Link key={i} href={item.href}>
+                      <div className="flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors" data-testid={`menu-${item.label}`}>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-700 text-sm">{item.label}</span>
+                            {item.badge && (
+                              <Badge className="bg-gray-500 text-white text-xs px-2 py-0.5">
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                        </div>
+                        <ChevronLeft className="h-4 w-4 text-gray-400" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
