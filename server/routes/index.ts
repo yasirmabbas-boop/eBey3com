@@ -6,6 +6,7 @@ import { registerProductRoutes } from "./products";
 import { registerUsersRoutes } from "./users";
 import { registerNotificationRoutes } from "./notifications";
 import { registerAdminRoutes } from "./admin";
+import { registerTransactionsRoutes } from "./transactions";
 import { registerObjectStorageRoutes } from "../replit_integrations/object_storage";
 
 export async function registerRoutes(server: Server, app: Express): Promise<void> {
@@ -16,4 +17,5 @@ export async function registerRoutes(server: Server, app: Express): Promise<void
   registerUsersRoutes(app);
   registerNotificationRoutes(app);
   registerAdminRoutes(app);
+  registerTransactionsRoutes(app);
 }
