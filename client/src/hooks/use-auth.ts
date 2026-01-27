@@ -21,6 +21,9 @@ export interface AuthUser {
   buyerRatingCount?: number;
   totalSales?: number;
   city?: string | null;
+  district?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
   createdAt?: string | Date;
   twoFactorEnabled?: boolean;
   phoneVerified?: boolean;
