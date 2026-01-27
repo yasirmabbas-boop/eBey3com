@@ -27,6 +27,12 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  
+  // Use conditional cookie settings based on environment
+  // Development (HTTP): secure=false, sameSite="lax" (allows session cookies)
+  // Production (HTTPS): secure=true, sameSite="none" (allows cross-domain)
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
@@ -34,8 +40,8 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
-      sameSite: "none" as const,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       maxAge: sessionTtl,
     },
   });
