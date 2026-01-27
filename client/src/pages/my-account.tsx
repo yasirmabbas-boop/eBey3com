@@ -208,13 +208,6 @@ export default function MyAccount() {
 
   const shoppingItems: AccountMenuItem[] = [
     {
-      icon: <Heart className="h-6 w-6" />,
-      label: "المفضلة",
-      description: "تابع المنتجات المحفوظة",
-      href: "/favorites",
-      badge: buyerSummary?.wishlistItems || undefined,
-    },
-    {
       icon: <Package className="h-6 w-6" />,
       label: "مشترياتي",
       description: "سجل طلباتك السابقة",
