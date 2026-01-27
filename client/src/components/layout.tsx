@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Loader2, HelpCircle } from "lucide-react";
-import { Logo } from "@/components/logo";
+import { Loader2 } from "lucide-react";
 import { AccountDropdown } from "@/components/account-dropdown";
 import { useAuth } from "@/hooks/use-auth";
 import { ImageSearchModal } from "@/components/image-search-modal";
 import { SmartSearch } from "@/components/smart-search";
 import { BackButton } from "@/components/back-button";
-import { TutorialTrigger } from "@/components/onboarding-tutorial";
 import { useLanguage } from "@/lib/i18n";
 import { isNative } from "@/lib/capacitor";
 
@@ -64,55 +62,14 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       <main className={`despia-content md:pb-0 md:flex-1 ${isNative ? "pb-6" : "pb-20"}`}>
         {children}
         
-        {/* Footer - Panda Black (inside scrollable content) */}
-        <footer className={`bg-[#141414] text-gray-300 ${isNative ? "py-6 mt-8" : "py-8 mt-20"}`}>
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-            <div className="flex items-center gap-3 md:flex-col md:items-start">
-              <Logo />
-              <p className="text-xs md:text-sm leading-relaxed md:mt-2">
-                منصتك الأولى للبيع والشراء في العراق
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-x-8 gap-y-4 md:flex md:gap-12">
-              <div>
-                <h3 className="font-bold text-white text-sm mb-2">روابط</h3>
-                <ul className="space-y-1 text-xs">
-                  <li><Link href="/" className="hover:text-white">الرئيسية</Link></li>
-                  <li><Link href="/terms" className="hover:text-white">الشروط</Link></li>
-                  <li><Link href="/privacy" className="hover:text-white">الخصوصية</Link></li>
-                  <li><Link href="/security" className="hover:text-white">الأمان</Link></li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-bold text-white text-sm mb-2">المساعدة</h3>
-                <ul className="space-y-1 text-xs">
-                  <li><Link href="/register" className="hover:text-white">ابدأ كبائع</Link></li>
-                  <li><Link href="/security-guide" className="hover:text-white">دليل الأمان</Link></li>
-                  <li><Link href="/contact" className="hover:text-white">اتصل بنا</Link></li>
-                  <li className="flex items-center gap-1">
-                    <HelpCircle className="h-3 w-3" />
-                    <TutorialTrigger />
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-bold text-white text-sm mb-2">تواصل معنا</h3>
-                <ul className="space-y-1 text-xs">
-                  <li><a href="mailto:info@ebey3.com" className="hover:text-white" data-testid="footer-email-info">info@ebey3.com</a></li>
-                  <li><a href="mailto:support@ebey3.com" className="hover:text-white" data-testid="footer-email-support">support@ebey3.com</a></li>
-                  <li><a href="mailto:security@ebey3.com" className="hover:text-white text-red-400 font-semibold" data-testid="footer-email-security">Privacy & Security</a></li>
-                </ul>
-              </div>
-            </div>
+        {/* Minimal App Footer */}
+        <footer className={`bg-[#141414] text-gray-400 ${isNative ? "py-4 mt-4" : "py-4 mt-8"}`}>
+          <div className="container mx-auto px-4 text-center">
+            <p className="text-xs">
+              © 2025 اي بيع | <Link href="/about" className="hover:text-white">حول التطبيق</Link>
+            </p>
           </div>
-          
-          <div className="mt-6 pt-4 border-t border-gray-800 text-center text-xs">
-            © 2025 اي بيع. جميع الحقوق محفوظة.
-          </div>
-        </div>
-      </footer>
+        </footer>
       </main>
     </div>
   );

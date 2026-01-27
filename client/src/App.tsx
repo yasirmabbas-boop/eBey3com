@@ -36,6 +36,7 @@ const ContactUs = lazy(() => import("@/pages/contact"));
 const SecurityGuide = lazy(() => import("@/pages/security-guide"));
 const Security = lazy(() => import("@/pages/security"));
 const Settings = lazy(() => import("@/pages/settings"));
+const About = lazy(() => import("@/pages/about"));
 const MyPurchases = lazy(() => import("@/pages/my-purchases"));
 const MySales = lazy(() => import("@/pages/my-sales"));
 const SellerDashboard = lazy(() => import("@/pages/seller-dashboard"));
@@ -97,6 +98,7 @@ function Router() {
       <Route path="/security" component={Security} />
       <Route path="/security-settings" component={SecuritySettings} />
       <Route path="/settings" component={Settings} />
+      <Route path="/about" component={About} />
       <Route path="/sell" component={SellWizardPage} />
       <Route path="/sell-old" component={SellPage} />
       <Route path="/deals-guide" component={DealsGuide} />
