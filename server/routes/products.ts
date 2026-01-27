@@ -294,8 +294,25 @@ export function registerProductRoutes(app: Express): void {
       }
       
       const user = await storage.getUser(sessionUserId);
-      if (!user || !user.isVerified) {
-        return res.status(403).json({ error: "يجب التحقق من رقم هاتفك لإضافة منتجات" });
+      if (!user) {
+        return res.status(403).json({ error: "المستخدم غير موجود" });
+      }
+      
+      // Require phone verification
+      if (!user.phoneVerified) {
+        return res.status(403).json({ 
+          error: "يجب التحقق من رقم هاتفك أولاً",
+          requiresPhoneVerification: true
+        });
+      }
+      
+      // Require seller approval
+      if (!user.sellerApproved) {
+        return res.status(403).json({ 
+          error: "يجب أن تكون بائعاً معتمداً لإضافة منتجات. يرجى تقديم طلب للحصول على صلاحية البيع.",
+          requiresSellerApproval: true,
+          sellerRequestStatus: user.sellerRequestStatus
+        });
       }
       
       // Check if user is banned
@@ -402,7 +419,7 @@ export function registerProductRoutes(app: Express): void {
       }
 
       const user = await storage.getUser(userId);
-      if (!user || !user.isVerified) {
+      if (!user || !user.phoneVerified) {
         return res.status(403).json({ error: "يجب التحقق من رقم هاتفك" });
       }
 

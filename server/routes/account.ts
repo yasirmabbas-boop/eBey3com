@@ -483,4 +483,50 @@ export function registerAccountRoutes(app: Express): void {
       res.status(500).json({ error: "Failed to fetch bids" });
     }
   });
+
+  // Request to become a seller - requires phone verification first
+  app.post("/api/seller-request", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+
+      // Require phone verification before requesting seller status
+      if (!user.phoneVerified) {
+        return res.status(403).json({ 
+          error: "يجب التحقق من رقم هاتفك أولاً قبل طلب أن تصبح بائعاً",
+          requiresPhoneVerification: true
+        });
+      }
+
+      // Check if already approved
+      if (user.sellerApproved) {
+        return res.status(400).json({ error: "أنت بائع معتمد بالفعل" });
+      }
+
+      // Check if already pending
+      if (user.sellerRequestStatus === "pending") {
+        return res.status(400).json({ error: "طلبك قيد المراجعة بالفعل" });
+      }
+
+      // Submit seller request
+      await storage.updateUserStatus(userId, { 
+        sellerRequestStatus: "pending" 
+      });
+
+      res.json({ 
+        success: true, 
+        message: "تم تقديم طلبك بنجاح. سيتم مراجعته من قبل الإدارة." 
+      });
+    } catch (error) {
+      console.error("Error submitting seller request:", error);
+      res.status(500).json({ error: "فشل في تقديم الطلب" });
+    }
+  });
 }
