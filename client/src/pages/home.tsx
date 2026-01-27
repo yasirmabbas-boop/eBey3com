@@ -3,10 +3,9 @@ import { Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { useListings } from "@/hooks/use-listings";
 import { useLanguage } from "@/lib/i18n";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Clock, Search as SearchIcon, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel } from "lucide-react";
-import { AuctionCountdown } from "@/components/auction-countdown";
 import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
 import type { Listing } from "@shared/schema";
@@ -61,11 +60,6 @@ function ProductCard({ product }: ProductCardProps) {
             {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} <span className="text-[9px]">د.ع</span>
           </p>
         </CardContent>
-        {product.saleType === "auction" && product.auctionEndTime && (
-          <CardFooter className="px-1.5 py-1 bg-orange-50">
-            <AuctionCountdown endTime={product.auctionEndTime} />
-          </CardFooter>
-        )}
       </Card>
     </Link>
   );
