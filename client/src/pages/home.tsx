@@ -158,6 +158,57 @@ export default function Home() {
 
   return (
     <Layout>
+      {/* Featured Items - New Arrivals (Prime Real Estate) */}
+      <section className="pt-3 pb-6 sm:pt-4 sm:pb-8 bg-muted/40">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="flex justify-between items-center mb-3 sm:mb-4">
+            <h2 className="text-base sm:text-xl font-bold text-primary">{language === "ar" ? "وصل حديثاً" : "تازە گەیشتوو"}</h2>
+            <Link href="/search" className="text-accent hover:underline font-medium text-xs sm:text-sm">{t("viewAll")}</Link>
+          </div>
+          
+          {isLoading ? (
+            <ProductGridSkeleton count={10} />
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
+              {displayProducts.slice(0, 12).map((product) => (
+                <Link key={product.id} href={`/product/${product.id}`}>
+                  <Card className="overflow-hidden cursor-pointer group soft-border hover-elevate active:scale-[0.98]" data-testid={`card-product-${product.id}`}>
+                    <div className="relative aspect-square overflow-hidden bg-gray-100">
+                      <OptimizedImage 
+                        src={product.image} 
+                        alt={product.title} 
+                        className="w-full h-full group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {product.currentBid && (
+                        <Badge className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-primary text-white text-[10px] sm:text-xs px-1.5 py-0.5 z-10">
+                          مزاد
+                        </Badge>
+                      )}
+                      <div className="absolute top-1 left-1 sm:top-2 sm:left-2">
+                        <FavoriteButton listingId={product.id} size="sm" />
+                      </div>
+                    </div>
+                    <CardContent className="p-2 sm:p-3">
+                      <h3 className="font-bold text-xs sm:text-sm mb-1 line-clamp-1 group-hover:text-primary transition-colors leading-tight">
+                        {product.title}
+                      </h3>
+                      <p className="font-bold text-sm sm:text-base text-primary">
+                        {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} <span className="text-[10px] sm:text-xs">د.ع</span>
+                      </p>
+                    </CardContent>
+                    {product.saleType === "auction" && (
+                      <CardFooter className="px-2 py-1.5 bg-orange-50">
+                        <AuctionCountdown endTime={product.auctionEndTime} />
+                      </CardFooter>
+                    )}
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Categories - Horizontal Sliding Strip */}
       <section className="py-2 bg-gradient-to-l from-primary/5 to-primary/10 overflow-hidden border-b border-border/30">
         <div className="container mx-auto px-3 sm:px-4">
@@ -297,57 +348,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
-      {/* Featured Items - New Arrivals */}
-      <section className="py-6 sm:py-12 bg-muted/40">
-        <div className="container mx-auto px-3 sm:px-4">
-          <div className="flex justify-between items-center mb-4 sm:mb-8">
-            <h2 className="text-lg sm:text-2xl font-bold text-primary">{language === "ar" ? "وصل حديثاً" : "تازە گەیشتوو"}</h2>
-            <Link href="/search" className="text-accent hover:underline font-medium text-sm">{t("viewAll")}</Link>
-          </div>
-          
-          {isLoading ? (
-            <ProductGridSkeleton count={10} />
-          ) : (
-            <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
-              {displayProducts.map((product) => (
-                <Link key={product.id} href={`/product/${product.id}`} className="snap-start">
-                  <Card className="overflow-hidden cursor-pointer group soft-border hover-elevate active:scale-[0.98] flex-shrink-0 w-40 sm:w-52" data-testid={`card-product-${product.id}`}>
-                    <div className="relative aspect-square overflow-hidden bg-gray-100">
-                      <OptimizedImage 
-                        src={product.image} 
-                        alt={product.title} 
-                        className="w-full h-full group-hover:scale-105 transition-transform duration-500"
-                      />
-                      {product.currentBid && (
-                        <Badge className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-primary text-white text-[10px] sm:text-xs px-1.5 py-0.5 z-10">
-                          مزاد
-                        </Badge>
-                      )}
-                      <div className="absolute top-1 left-1 sm:top-2 sm:left-2">
-                        <FavoriteButton listingId={product.id} size="sm" />
-                      </div>
-                    </div>
-                    <CardContent className="p-2 sm:p-3">
-                      <h3 className="font-bold text-xs sm:text-sm mb-1 line-clamp-1 group-hover:text-primary transition-colors leading-tight">
-                        {product.title}
-                      </h3>
-                      <p className="font-bold text-sm sm:text-base text-primary">
-                        {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} <span className="text-[10px] sm:text-xs">د.ع</span>
-                      </p>
-                    </CardContent>
-                    {product.saleType === "auction" && (
-                      <CardFooter className="px-2 py-1.5 bg-orange-50">
-                        <AuctionCountdown endTime={product.auctionEndTime} />
-                      </CardFooter>
-                    )}
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
 
       {/* Category-Based Recommendations - Horizontal Scroll */}
       {categoriesWithProducts.length > 0 && (
