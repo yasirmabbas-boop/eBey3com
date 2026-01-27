@@ -433,26 +433,6 @@ export default function Home() {
       )}
 
 
-      {/* Trust Banner */}
-      <section className="py-8 sm:py-12 bg-white border-t">
-        <div className="container mx-auto px-3 sm:px-4 text-center">
-          <h2 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-8 text-primary">لماذا تختارنا؟</h2>
-          <div className="grid grid-cols-1 gap-3 sm:gap-8 md:grid-cols-3">
-            <div className="p-4 sm:p-6 bg-gray-50 rounded-xl">
-              <h3 className="text-base sm:text-xl font-bold mb-1 sm:mb-2">موثوق وآمن</h3>
-              <p className="opacity-80 text-gray-600 text-sm sm:text-base">جميع البائعين يتم التحقق من هوياتهم لضمان تجربة شراء آمنة.</p>
-            </div>
-            <div className="p-4 sm:p-6 bg-gray-50 rounded-xl">
-              <h3 className="text-base sm:text-xl font-bold mb-1 sm:mb-2">خصوصية تامة</h3>
-              <p className="opacity-80 text-gray-600 text-sm sm:text-base">بياناتك الشخصية وأرقام هواتفك محمية ومشفرة.</p>
-            </div>
-            <div className="p-4 sm:p-6 bg-gray-50 rounded-xl">
-              <h3 className="text-base sm:text-xl font-bold mb-1 sm:mb-2">دعم محلي</h3>
-              <p className="opacity-80 text-gray-600 text-sm sm:text-base">فريق دعم عراقي جاهز لمساعدتك في أي وقت.</p>
-            </div>
-          </div>
-        </div>
-      </section>
     </Layout>
   );
 }
