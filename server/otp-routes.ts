@@ -141,6 +141,9 @@ export function registerOtpRoutes(app: Express) {
         { expiresIn: "30d" }
       );
 
+      // Store the token in the user's authToken field for lookup by /api/auth/me
+      await storage.updateUser(user.id, { authToken: token });
+
       // Create session for session-based authentication (like regular login)
       if (req.session) {
         req.session.userId = user.id;
