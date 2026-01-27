@@ -158,30 +158,21 @@ function App() {
         <LanguageProvider>
           <TooltipProvider>
             <NavVisibilityProvider>
-              {/* Switch provides Router context - components using useLocation MUST be inside Switch */}
-              <Switch>
-                <Route path="/:rest*">
-                  {() => (
-                    <>
-                      <ScrollToTop />
-                      <SocketNotificationsWrapper />
-                      <Toaster />
-                      <BanBanner />
-                      <SurveyManager />
-                      <OnboardingTutorial />
-                      <SwipeBackNavigation>
-                        <Suspense fallback={<LoadingSpinner />}>
-                          <Router />
-                        </Suspense>
-                      </SwipeBackNavigation>
-                      <MobileNavBar />
-                      {!isNative && <InstallPWAPrompt />}
-                      {!isNative && <PWAUpdateBanner />}
-                      <PushNotificationPrompt />
-                    </>
-                  )}
-                </Route>
-              </Switch>
+              <ScrollToTop />
+              <SocketNotificationsWrapper />
+              <Toaster />
+              <BanBanner />
+              <SurveyManager />
+              <OnboardingTutorial />
+              <SwipeBackNavigation>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Router />
+                </Suspense>
+              </SwipeBackNavigation>
+              <MobileNavBar />
+              {!isNative && <InstallPWAPrompt />}
+              {!isNative && <PWAUpdateBanner />}
+              <PushNotificationPrompt />
             </NavVisibilityProvider>
           </TooltipProvider>
         </LanguageProvider>
