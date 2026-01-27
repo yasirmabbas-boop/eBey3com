@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, Loader2, HelpCircle } from "lucide-react";
+import { Loader2, HelpCircle } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { AccountDropdown } from "@/components/account-dropdown";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
-import { useCart } from "@/hooks/use-cart";
 import { ImageSearchModal } from "@/components/image-search-modal";
 import { SmartSearch } from "@/components/smart-search";
 import { BackButton } from "@/components/back-button";
@@ -13,19 +11,15 @@ import { TutorialTrigger } from "@/components/onboarding-tutorial";
 import { useLanguage } from "@/lib/i18n";
 import { isNative } from "@/lib/capacitor";
 
-// Feature flag for exchange option - set to true to enable
-const ENABLE_EXCHANGE_FEATURE = false;
-
 interface LayoutProps {
   children: React.ReactNode;
   hideHeader?: boolean;
 }
 
 export function Layout({ children, hideHeader = false }: LayoutProps) {
-  const { user, isLoading, isAuthenticated } = useAuth();
-  const { totalItems } = useCart();
+  const { isLoading } = useAuth();
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
-  const { language, setLanguage, t } = useLanguage();
+  const { language } = useLanguage();
 
   const isRtl = language === "ar" || language === "ku";
 
@@ -35,55 +29,6 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 
-      {/* Combined Top Bar with Logo */}
-      {!hideHeader && (
-      <div className={`despia-topbar ${isAuthenticated && user?.isVerified ? 'bg-emerald-600/95' : 'bg-primary'} text-white py-2 px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]`}>
-        <div className="container mx-auto flex justify-between items-center">
-          {/* Logo - Now in top bar */}
-          <Link href="/" className="flex-shrink-0 flex items-center">
-            <Logo className="h-8 md:h-10 brightness-0 invert" />
-          </Link>
-
-          {/* Navigation Links - Desktop only */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/" className="hover:opacity-80 transition-colors font-medium">{t("home")}</Link>
-            <Link href="/search?saleType=auction" className="hover:opacity-80 transition-colors font-medium">{t("auctions")}</Link>
-            <Link href="/search?saleType=fixed" className="hover:opacity-80 transition-colors font-medium">{t("buyNow")}</Link>
-            {ENABLE_EXCHANGE_FEATURE && <Link href="/search?exchange=true" className="hover:opacity-80 transition-colors font-medium">مراوس</Link>}
-            <Link href="/search" className="hover:opacity-80 transition-colors font-medium">{t("viewAll")}</Link>
-          </div>
-          
-          {/* User Actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* User actions removed - only language and cart remain */}
-            {/* Compact Language Switcher */}
-            <Select
-              value={language}
-              onValueChange={(value) => {
-                setLanguage(value as typeof language);
-              }}
-            >
-              <SelectTrigger
-                className="h-6 w-14 bg-white/20 text-white border-0 text-[10px] font-bold px-2"
-                data-testid="select-language"
-              >
-                <SelectValue placeholder={language === "ar" ? "AR" : "کو"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ar">AR</SelectItem>
-                <SelectItem value="ku">کو</SelectItem>
-              </SelectContent>
-            </Select>
-            <Link href="/cart" className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-colors" data-testid="link-cart">
-              <ShoppingCart className="h-4 w-4" />
-              {totalItems > 0 && (
-                <span className="bg-red-500 text-white text-[10px] rounded-full px-1.5 h-4 flex items-center justify-center font-bold">{totalItems > 99 ? '99+' : totalItems}</span>
-              )}
-            </Link>
-          </div>
-        </div>
-      </div>
-      )}
 
       {/* Main Header - Search Only */}
       {!hideHeader && (

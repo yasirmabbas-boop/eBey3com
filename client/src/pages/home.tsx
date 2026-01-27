@@ -13,7 +13,6 @@ import { AuctionCountdown } from "@/components/auction-countdown";
 import { OptimizedImage, ProductGridSkeleton } from "@/components/optimized-image";
 import { CategoryCarousel } from "@/components/category-carousel";
 import { FavoriteButton } from "@/components/favorite-button";
-import { HeroBanner } from "@/components/hero-banner";
 import heroBg from "@assets/generated_images/hero_background_abstract.png";
 import type { Listing } from "@shared/schema";
 
@@ -198,44 +197,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Hero Banner */}
-      <section className="relative bg-gradient-to-l from-primary via-[#1b2b5a] to-[#0f172a] text-white py-12 md:py-20 overflow-hidden">
-        <div className="absolute inset-0 opacity-15">
-          <div className="absolute top-8 right-10 w-32 h-32 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-8 left-10 w-48 h-48 bg-amber-400 rounded-full blur-3xl"></div>
-        </div>
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-3xl md:text-5xl font-bold mb-4" style={{ fontFamily: "Cairo, sans-serif" }}>
-              {language === "ar" ? "بيع واشتري بأمان" : "بە پارێزراوی بکڕە و بفرۆشە"}
-            </h1>
-            <p className="text-sm md:text-base text-blue-200 mb-8">
-              {language === "ar" ? "منصتك الأولى للمزادات والتسوق الآمن في العراق" : "یەکەم پلاتفۆرمی مزایدە و کڕین بە پارێزراوی لە عێراق"}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/sell">
-                <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-bold px-8 shadow-[var(--shadow-2)]">
-                  <Tag className="h-5 w-5 ml-2" />
-                  {language === "ar" ? "ابدأ البيع" : "دەست بە فرۆشتن بکە"}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured/Hot Products Banner */}
-      <section className="py-4 sm:py-6 bg-gradient-to-b from-muted/60 to-background">
-        <div className="container mx-auto px-3 sm:px-4">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-orange-500" />
-              <h2 className="text-lg sm:text-xl font-bold text-primary">{language === "ar" ? "المنتجات المميزة والرائجة" : "بەرهەمە تایبەت و باوەکان"}</h2>
-            </div>
-          </div>
-          <HeroBanner />
-        </div>
-      </section>
 
       {/* Recently Viewed Section */}
       {recentlyViewedProducts.length > 0 && (
