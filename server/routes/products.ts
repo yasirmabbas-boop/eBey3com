@@ -847,13 +847,20 @@ export function registerProductRoutes(app: Express): void {
 
       // Broadcast via WebSocket if available
       const { broadcastBidUpdate } = await import("../websocket");
+      const auctionEndStr = newEndTime?.toISOString() || 
+        (listing.auctionEndTime instanceof Date 
+          ? listing.auctionEndTime.toISOString() 
+          : listing.auctionEndTime || undefined);
       broadcastBidUpdate({
+        type: "bid_update",
         listingId,
         currentBid: amount,
         totalBids: (updatedListing?.totalBids || 0),
-        highestBidderId: userId,
-        auctionEndTime: newEndTime?.toISOString() || listing.auctionEndTime,
-        extended: newEndTime !== endTime,
+        bidderId: userId,
+        bidderName: user.displayName || "مستخدم",
+        timestamp: new Date().toISOString(),
+        auctionEndTime: auctionEndStr,
+        timeExtended: newEndTime !== endTime,
       });
 
       console.log(`[bid] User ${userId} placed bid of ${amount} on listing ${listingId}`);
