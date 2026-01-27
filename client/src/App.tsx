@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { useEffect, Suspense, lazy } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -158,23 +158,30 @@ function App() {
         <LanguageProvider>
           <TooltipProvider>
             <NavVisibilityProvider>
-              <WouterRouter>
-                <ScrollToTop />
-                <SocketNotificationsWrapper />
-                <Toaster />
-                <BanBanner />
-                <SurveyManager />
-                <OnboardingTutorial />
-                <SwipeBackNavigation>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Router />
-                  </Suspense>
-                </SwipeBackNavigation>
-                <MobileNavBar />
-                {!isNative && <InstallPWAPrompt />}
-                {!isNative && <PWAUpdateBanner />}
-                <PushNotificationPrompt />
-              </WouterRouter>
+              {/* Switch provides Router context - components using useLocation MUST be inside Switch */}
+              <Switch>
+                <Route path="/:rest*">
+                  {() => (
+                    <>
+                      <ScrollToTop />
+                      <SocketNotificationsWrapper />
+                      <Toaster />
+                      <BanBanner />
+                      <SurveyManager />
+                      <OnboardingTutorial />
+                      <SwipeBackNavigation>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Router />
+                        </Suspense>
+                      </SwipeBackNavigation>
+                      <MobileNavBar />
+                      {!isNative && <InstallPWAPrompt />}
+                      {!isNative && <PWAUpdateBanner />}
+                      <PushNotificationPrompt />
+                    </>
+                  )}
+                </Route>
+              </Switch>
             </NavVisibilityProvider>
           </TooltipProvider>
         </LanguageProvider>
