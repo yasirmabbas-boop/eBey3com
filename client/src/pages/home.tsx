@@ -13,7 +13,6 @@ import { AuctionCountdown } from "@/components/auction-countdown";
 import { OptimizedImage, ProductGridSkeleton } from "@/components/optimized-image";
 import { CategoryCarousel } from "@/components/category-carousel";
 import { FavoriteButton } from "@/components/favorite-button";
-import heroBg from "@assets/generated_images/hero_background_abstract.png";
 import type { Listing } from "@shared/schema";
 
 const CATEGORIES = [
@@ -433,30 +432,6 @@ export default function Home() {
         </section>
       )}
 
-      {/* Browse Products CTA */}
-      <section className="relative py-10 sm:py-16 w-full overflow-hidden bg-primary">
-        <div 
-          className="absolute inset-0 bg-cover bg-center opacity-20"
-          style={{ backgroundImage: `url(${heroBg})` }}
-        />
-        <div className="container mx-auto px-4 relative text-center text-white">
-          <Badge className="mb-3 sm:mb-4 bg-accent text-white hover:bg-accent/90 border-none px-3 sm:px-4 py-0.5 sm:py-1 text-xs sm:text-md">
-            سوق العراق الأول
-          </Badge>
-          <h2 className="text-xl sm:text-2xl md:text-4xl font-bold mb-3 sm:mb-4 leading-tight px-4">
-            اكتشف <span className="text-accent">آلاف المنتجات المميزة</span>
-          </h2>
-          <p className="text-sm sm:text-lg opacity-90 mb-4 sm:mb-6 max-w-xl mx-auto px-4">
-            سجل الآن وابدأ التسوق من أفضل البائعين في العراق
-          </p>
-          <Link href="/search">
-            <Button size="default" className="bg-accent text-white hover:bg-accent/90 font-bold px-6 sm:px-8 h-10 sm:h-12 text-sm sm:text-lg flex items-center gap-2 mx-auto">
-              <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
-              تصفح المنتجات
-            </Button>
-          </Link>
-        </div>
-      </section>
 
       {/* Trust Banner */}
       <section className="py-8 sm:py-12 bg-white border-t">
