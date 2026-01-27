@@ -578,4 +578,40 @@ export function registerAccountRoutes(app: Express): void {
       res.status(500).json({ error: "فشل في تقديم الطلب" });
     }
   });
+
+  // Get buyer's offers with listing details
+  app.get("/api/my-offers", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const offers = await storage.getOffersByBuyer(userId);
+      
+      // Enrich offers with listing details
+      const enrichedOffers = await Promise.all(
+        offers.map(async (offer) => {
+          const listing = await storage.getListing(offer.listingId);
+          const seller = listing ? await storage.getUser(listing.sellerId) : null;
+          
+          return {
+            ...offer,
+            listing: listing ? {
+              id: listing.id,
+              title: listing.title,
+              price: listing.price,
+              images: listing.images || [],
+              sellerName: seller?.displayName || seller?.username || "بائع",
+            } : null,
+          };
+        })
+      );
+
+      res.json(enrichedOffers);
+    } catch (error) {
+      console.error("Error fetching buyer offers:", error);
+      res.status(500).json({ error: "فشل في جلب العروض" });
+    }
+  });
 }

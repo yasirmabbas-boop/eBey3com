@@ -152,7 +152,7 @@ function SwipeCard({
         )}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 pb-40 safe-area-bottom">
+      <div className="absolute bottom-16 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 pb-24 safe-area-bottom">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <Link href={`/product/${listing.id}`}>
