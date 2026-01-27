@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Lock, LogIn, Loader2, Shield, Eye, EyeOff } from "lucide-react";
+import { Phone, Lock, LogIn, Loader2, Shield, Eye, EyeOff, MessageSquare } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -14,7 +14,7 @@ import { useLanguage } from "@/lib/i18n";
 import { FormError } from "@/components/form-error";
 import { validatePhone, validatePassword } from "@/lib/form-validation";
 
-type Step = "credentials" | "2fa";
+type Step = "credentials" | "2fa" | "otp" | "otp-verify";
 
 export default function SignIn() {
   const [, navigate] = useLocation();
@@ -28,6 +28,9 @@ export default function SignIn() {
   const [pendingToken, setPendingToken] = useState("");
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [otpPhone, setOtpPhone] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -183,6 +186,122 @@ export default function SignIn() {
     } catch (error: any) {
       toast({
         title: tr("خطأ في التحقق", "هەڵە لە پشتڕاستکردنەوە", "Verification error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendOtp = async () => {
+    if (!otpPhone) {
+      toast({
+        title: t("error"),
+        description: tr(
+          "يرجى إدخال رقم الهاتف",
+          "تکایە ژمارەی مۆبایل بنووسە",
+          "Please enter your phone number"
+        ),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingOtp(true);
+
+    try {
+      const response = await fetch("/api/request-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber: otpPhone }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || tr(
+          "فشل في إرسال رمز التحقق",
+          "ناردنی کۆدی پشتڕاستکردنەوە سەرکەوتوو نەبوو",
+          "Failed to send verification code"
+        ));
+      }
+
+      setStep("otp-verify");
+      toast({
+        title: tr("تم إرسال الرمز", "کۆد نێردرا", "Code sent"),
+        description: tr(
+          "تم إرسال رمز التحقق إلى واتساب الخاص بك",
+          "کۆدی پشتڕاستکردنەوە بۆ واتسئاپەکەت نێردرا",
+          "Verification code sent to your WhatsApp"
+        ),
+      });
+    } catch (error: any) {
+      toast({
+        title: t("error"),
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (otpCode.length !== 6) {
+      toast({
+        title: t("error"),
+        description: tr(
+          "يرجى إدخال رمز التحقق المكون من 6 أرقام",
+          "تکایە کۆدی پشتڕاستکردنەوەی ٦ ژمارە بنووسە",
+          "Please enter the 6-digit verification code"
+        ),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber: otpPhone, code: otpCode }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || tr(
+          "رمز التحقق غير صحيح",
+          "کۆدی پشتڕاستکردنەوە هەڵەیە",
+          "Invalid verification code"
+        ));
+      }
+
+      if (data.token) {
+        localStorage.setItem("authToken", data.token);
+      }
+
+      toast({
+        title: tr("تم تسجيل الدخول بنجاح", "بە سەرکەوتوویی چوویتە ژوورەوە", "Signed in successfully"),
+        description: tr(
+          "مرحباً بك في إي-بيع",
+          "بەخێربێیت بۆ ئی-بێع",
+          "Welcome to E-Bay Iraq"
+        ),
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: t("error"),
         description: error.message,
         variant: "destructive",
       });
@@ -353,6 +472,139 @@ export default function SignIn() {
                     {t("forgotPassword")}
                   </Link>
                 </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">
+                      {tr("أو", "یان", "or")}
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setStep("otp")}
+                  data-testid="button-otp-login"
+                >
+                  <MessageSquare className="h-4 w-4 ml-2" />
+                  {tr("تسجيل الدخول بواتساب", "چوونە ژوورەوە بە واتسئاپ", "Sign in with WhatsApp")}
+                </Button>
+              </form>
+            ) : step === "otp" ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="otp-phone">{t("phone")}</Label>
+                  <div className="relative">
+                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="otp-phone"
+                      type="tel"
+                      placeholder="07xxxxxxxxx"
+                      value={otpPhone}
+                      onChange={(e) => setOtpPhone(e.target.value)}
+                      className="pr-10"
+                      dir="ltr"
+                      data-testid="input-otp-phone"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  className="w-full elev-1"
+                  onClick={handleSendOtp}
+                  disabled={isSendingOtp}
+                  data-testid="button-send-otp"
+                >
+                  {isSendingOtp ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                      {tr("جاري الإرسال...", "ناردن...", "Sending...")}
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquare className="h-4 w-4 ml-2" />
+                      {tr("إرسال رمز التحقق عبر واتساب", "ناردنی کۆد بە واتسئاپ", "Send code via WhatsApp")}
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    setStep("credentials");
+                    setOtpPhone("");
+                  }}
+                  data-testid="button-back-to-credentials"
+                >
+                  {tr("العودة لتسجيل الدخول", "گەڕانەوە بۆ چوونە ژوورەوە", "Back to sign in")}
+                </Button>
+              </div>
+            ) : step === "otp-verify" ? (
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>{tr("رمز التحقق", "کۆدی پشتڕاستکردنەوە", "Verification code")}</Label>
+                  <div className="flex justify-center" dir="ltr">
+                    <InputOTP
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(value) => setOtpCode(value)}
+                      data-testid="input-otp-code"
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+                  <p className="text-sm text-muted-foreground text-center mt-2">
+                    {tr(
+                      `أدخل رمز التحقق المرسل إلى ${otpPhone}`,
+                      `کۆدی پشتڕاستکردنەوە بۆ ${otpPhone} نێردرا`,
+                      `Enter the code sent to ${otpPhone}`
+                    )}
+                  </p>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full elev-1"
+                  disabled={isLoading || otpCode.length !== 6}
+                  data-testid="button-verify-otp"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                      {tr("جاري التحقق...", "پشتڕاستکردنەوە...", "Verifying...")}
+                    </>
+                  ) : (
+                    tr("تأكيد", "دڵنیاکردنەوە", "Confirm")
+                  )}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    setStep("otp");
+                    setOtpCode("");
+                  }}
+                  data-testid="button-resend-otp"
+                >
+                  {tr("إعادة إرسال الرمز", "دووبارە ناردنی کۆد", "Resend code")}
+                </Button>
               </form>
             ) : (
               <form onSubmit={handleVerify2FA} className="space-y-4">
