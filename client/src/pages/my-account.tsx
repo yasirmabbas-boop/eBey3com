@@ -10,7 +10,6 @@ import { getUserAvatarSrc } from "@/lib/avatar";
 import { authFetch } from "@/lib/api";
 import {
   Package,
-  ShoppingBag,
   Plus,
   BarChart3,
   MessageSquare,
@@ -203,22 +202,7 @@ export default function MyAccount() {
     }
   };
 
-  const [showPurchasesMenu, setShowPurchasesMenu] = useState(false);
-  
-  const purchasesSubItems = [
-    {
-      label: "مشترياتي",
-      description: "سجل طلباتك السابقة",
-      href: "/my-purchases",
-      badge: buyerSummary?.totalPurchases || undefined,
-    },
-    {
-      label: "المزايدات والعروض",
-      description: "المزادات النشطة وعروضك",
-      href: "/buyer-dashboard",
-      badge: buyerSummary?.activeOffers || undefined,
-    },
-  ];
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
   const sellingItems: AccountMenuItem[] = [
     {
@@ -237,29 +221,21 @@ export default function MyAccount() {
     },
   ];
 
-  const shortcutItems: AccountMenuItem[] = [
+  const settingsSubItems = [
     {
-      icon: <MessageSquare className="h-6 w-6" />,
-      label: "الرسائل",
-      description: "محادثاتك مع البائعين والمشترين",
-      href: "/messages",
-      badge: unreadMessages || undefined,
-      badgeColor: "bg-primary",
-    },
-    {
-      icon: <Settings className="h-6 w-6" />,
+      icon: <Settings className="h-5 w-5" />,
       label: "الإعدادات",
       description: "إدارة حسابك وتفضيلاتك",
       href: "/settings",
     },
     {
-      icon: <Shield className="h-6 w-6" />,
+      icon: <Shield className="h-5 w-5" />,
       label: "إعدادات الأمان",
       description: "المصادقة الثنائية وكلمة المرور",
       href: "/security-settings",
     },
     {
-      icon: <HelpCircle className="h-6 w-6" />,
+      icon: <HelpCircle className="h-5 w-5" />,
       label: "المساعدة",
       description: "الأسئلة الشائعة والدعم",
       href: "/contact",
@@ -370,61 +346,31 @@ export default function MyAccount() {
                   )}
                 </div>
               </Link>
-              <Link href="/cart">
-                <ShoppingBag className="h-6 w-6 text-gray-600" />
-              </Link>
             </div>
           </div>
 
           {/* Shopping Section */}
           <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
             <h2 className="text-lg font-bold text-gray-900 mb-2">التسوق</h2>
-            <div>
-              <button
-                onClick={() => setShowPurchasesMenu(!showPurchasesMenu)}
-                className="flex items-center gap-4 py-4 px-2 w-full hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
-                data-testid="menu-purchases-dropdown"
-              >
+            <Link href="/buyer-dashboard">
+              <div className="flex items-center gap-4 py-4 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors" data-testid="menu-buyer-center">
                 <div className="text-gray-600">
                   <Package className="h-6 w-6" />
                 </div>
-                <div className="flex-1 text-right">
+                <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">مشترياتي وعروضي</span>
-                    {((buyerSummary?.totalPurchases || 0) + (buyerSummary?.activeOffers || 0)) > 0 && (
-                      <Badge className="bg-gray-500 text-white text-xs px-2 py-0.5">
-                        {(buyerSummary?.totalPurchases || 0) + (buyerSummary?.activeOffers || 0)}
+                    <span className="font-medium text-gray-900">مركز المشتري</span>
+                    {(buyerSummary?.activeOffers || 0) > 0 && (
+                      <Badge className="bg-primary text-white text-xs px-2 py-0.5">
+                        {buyerSummary?.activeOffers}
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 mt-0.5">طلباتك ومزايداتك النشطة</p>
+                  <p className="text-sm text-gray-500 mt-0.5">مشترياتك ومزايداتك وعروضك</p>
                 </div>
-                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showPurchasesMenu ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {showPurchasesMenu && (
-                <div className="mr-8 border-r border-gray-200 pr-4 divide-y">
-                  {purchasesSubItems.map((item, i) => (
-                    <Link key={i} href={item.href}>
-                      <div className="flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors" data-testid={`menu-${item.label}`}>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-700 text-sm">{item.label}</span>
-                            {item.badge && (
-                              <Badge className="bg-gray-500 text-white text-xs px-2 py-0.5">
-                                {item.badge}
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
-                        </div>
-                        <ChevronLeft className="h-4 w-4 text-gray-400" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+                <ChevronLeft className="h-5 w-5 text-gray-400" />
+              </div>
+            </Link>
           </div>
 
           {/* Selling Section - Show for all users but highlight for sellers */}
@@ -454,26 +400,50 @@ export default function MyAccount() {
             )}
           </div>
 
-          {/* Shortcuts Section */}
-          <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">اختصارات</h2>
-            <div className="divide-y">
-              {shortcutItems.map((item, i) => (
-                <MenuItem key={i} item={item} />
-              ))}
-            </div>
-          </div>
-
-          {/* Logout Button */}
+          {/* Settings Section */}
           <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 rounded-b-xl mb-8">
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-4 py-4 px-2 w-full hover:bg-red-50 rounded-lg cursor-pointer transition-colors text-red-600"
-              data-testid="button-logout"
-            >
-              <LogOut className="h-6 w-6" />
-              <span className="font-medium">تسجيل الخروج</span>
-            </button>
+            <div>
+              <button
+                onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                className="flex items-center gap-4 py-4 px-2 w-full hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                data-testid="menu-settings-dropdown"
+              >
+                <div className="text-gray-600">
+                  <Settings className="h-6 w-6" />
+                </div>
+                <div className="flex-1 text-right">
+                  <span className="font-medium text-gray-900">الإعدادات والمساعدة</span>
+                  <p className="text-sm text-gray-500 mt-0.5">إدارة حسابك والدعم</p>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showSettingsMenu ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showSettingsMenu && (
+                <div className="mr-8 border-r border-gray-200 pr-4">
+                  {settingsSubItems.map((item, i) => (
+                    <Link key={i} href={item.href}>
+                      <div className="flex items-center gap-3 py-3 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors" data-testid={`menu-${item.label}`}>
+                        <div className="text-gray-500">{item.icon}</div>
+                        <div className="flex-1">
+                          <span className="font-medium text-gray-700 text-sm">{item.label}</span>
+                          <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                        </div>
+                        <ChevronLeft className="h-4 w-4 text-gray-400" />
+                      </div>
+                    </Link>
+                  ))}
+                  
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 py-3 px-2 w-full hover:bg-red-50 rounded-lg cursor-pointer transition-colors text-red-600 mt-2 border-t border-gray-100 pt-3"
+                    data-testid="button-logout"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    <span className="font-medium text-sm">تسجيل الخروج</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
         </div>
