@@ -18,6 +18,7 @@ interface PhoneVerificationModalProps {
   onOpenChange: (open: boolean) => void;
   phone: string;
   phoneVerified: boolean;
+  onVerified?: () => void;
 }
 
 export function PhoneVerificationModal({
@@ -25,6 +26,7 @@ export function PhoneVerificationModal({
   onOpenChange,
   phone,
   phoneVerified,
+  onVerified,
 }: PhoneVerificationModalProps) {
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -138,8 +140,10 @@ export function PhoneVerificationModal({
       });
 
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       queryClient.invalidateQueries({ queryKey: ["/api/account/profile"] });
       
+      onVerified?.();
       onOpenChange(false);
     } catch (error: any) {
       toast({

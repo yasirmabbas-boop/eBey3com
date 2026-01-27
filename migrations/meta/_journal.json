@@ -43,6 +43,13 @@
       "when": 1768815360082,
       "tag": "0004_restore_offers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1769521289263,
+      "tag": "0006_gigantic_chat",
+      "breakpoints": true
     }
   ]
 }

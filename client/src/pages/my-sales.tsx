@@ -49,7 +49,15 @@ import type { Transaction, Listing, Offer } from "@shared/schema";
 
 interface EnrichedTransaction extends Transaction {
   listing?: Listing;
-  buyerInfo?: { displayName?: string; username?: string; city?: string };
+  buyerInfo?: { 
+    displayName?: string; 
+    username?: string; 
+    city?: string;
+    district?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    phone?: string;
+  };
 }
 
 interface EnrichedOffer extends Offer {
@@ -886,11 +894,14 @@ export default function MySales() {
             productTitle: selectedSale.listing?.title || "منتج",
             productCode: (selectedSale.listing as any)?.productCode || "",
             sellerName: user?.displayName || (user as any)?.username || "",
-            sellerCity: (user as any)?.city || "",
+            sellerPhone: user?.phone || "",
+            sellerCity: user?.city || "",
+            sellerAddress: user?.addressLine1 || "",
             buyerName: selectedSale.buyerInfo.displayName || selectedSale.buyerInfo.username || "مشتري",
-            deliveryAddress: selectedSale.deliveryAddress || "",
+            buyerPhone: selectedSale.buyerInfo.phone || "",
+            deliveryAddress: selectedSale.deliveryAddress || selectedSale.buyerInfo.addressLine1 || "",
             city: selectedSale.buyerInfo.city || "",
-            district: "",
+            district: selectedSale.buyerInfo.district || "",
             price: selectedSale.amount,
             saleDate: new Date(selectedSale.createdAt),
             paymentMethod: selectedSale.paymentMethod || "الدفع عند الاستلام",

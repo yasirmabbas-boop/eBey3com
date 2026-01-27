@@ -153,12 +153,12 @@ export function MandatoryPhoneVerificationModal({
       });
 
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       
       onVerified();
       onOpenChange(false);
       
-      // Refresh the page to unlock bidding features
-      window.location.reload();
+      // Do NOT refresh; callers can continue seamlessly (e.g., open offer dialog).
     } catch (error: any) {
       toast({
         title: tr("خطأ", "هەڵە", "Error"),

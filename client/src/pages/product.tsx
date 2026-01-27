@@ -71,6 +71,7 @@ export default function ProductPage() {
   const [offerDialogOpen, setOfferDialogOpen] = useState(false);
   const [offerAmount, setOfferAmount] = useState("");
   const [offerMessage, setOfferMessage] = useState("");
+  const [pendingOfferAfterVerify, setPendingOfferAfterVerify] = useState(false);
 
   // Guest checkout dialog state
   const [guestCheckoutOpen, setGuestCheckoutOpen] = useState(false);
@@ -137,7 +138,7 @@ export default function ProductPage() {
     mutationFn: async (data: { listingId: string; offerAmount: number; message?: string }) => {
       const res = await fetch("/api/offers", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         credentials: "include",
         body: JSON.stringify(data),
       });
@@ -1161,12 +1162,19 @@ export default function ProductPage() {
                           className="w-full h-14 text-lg font-medium"
                           onClick={() => {
                             if (!requireAuth("offer")) return;
+                            if (!user?.phoneVerified) {
+                              setPendingOfferAfterVerify(true);
+                              setPhoneVerificationOpen(true);
+                              return;
+                            }
                             setOfferAmount(Math.floor(product.price * 0.9).toString());
                             setOfferDialogOpen(true);
                           }}
                           data-testid="button-make-offer"
                         >
-                          {t("makeOffer")}
+                          {!user?.phoneVerified
+                            ? (language === "ar" ? "وثّق الهاتف لتقديم عرض" : "پشتڕاستکردنەوەی مۆبایل بۆ پێشنیار")
+                            : t("makeOffer")}
                         </Button>
                       )}
                     </>
@@ -1661,7 +1669,12 @@ export default function ProductPage() {
         open={phoneVerificationOpen}
         onOpenChange={setPhoneVerificationOpen}
         onVerified={() => {
-          // User will be verified, page will refresh automatically
+          // Seamless flow: reopen offer dialog if user clicked "offer" while unverified
+          if (pendingOfferAfterVerify && product) {
+            setPendingOfferAfterVerify(false);
+            setOfferAmount(Math.floor(product.price * 0.9).toString());
+            setOfferDialogOpen(true);
+          }
         }}
       />
 
