@@ -495,97 +495,46 @@ export default function SearchPage() {
           </div>
         )}
 
-        {/* Quick Filters Bar */}
-        <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-border/60">
-          <span className="text-sm font-medium text-muted-foreground ml-2">{t("quickFilter")}</span>
-          <Button
-            variant={appliedFilters.saleTypes.includes("auction") ? "default" : "outline"}
-            size="sm"
-            className="gap-1.5 rounded-full"
-            onClick={() => quickToggleSaleType("auction")}
-            data-testid="quick-filter-auction"
-          >
-            <Gavel className="h-3.5 w-3.5" />
-            {t("auctions")}
-          </Button>
-          <Button
-            variant={appliedFilters.saleTypes.includes("fixed") ? "default" : "outline"}
-            size="sm"
-            className="gap-1.5 rounded-full"
-            onClick={() => quickToggleSaleType("fixed")}
-            data-testid="quick-filter-fixed"
-          >
-            <ShoppingBag className="h-3.5 w-3.5" />
-            {t("buyNow")}
-          </Button>
-          <div className="h-4 w-px bg-border/70 mx-1" />
-          {CATEGORIES.slice(0, 4).map((cat) => (
-            <Button
-              key={cat.id}
-              variant={appliedFilters.category === cat.id ? "default" : "outline"}
-              size="sm"
-              className="gap-1.5 rounded-full"
-              onClick={() => quickToggleCategory(cat.id)}
-              data-testid={`quick-filter-${cat.id}`}
-            >
-              <cat.icon className="h-3.5 w-3.5" />
-              {language === "ar" ? cat.nameAr : cat.nameKu}
-            </Button>
-          ))}
-        </div>
-
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground" data-testid="search-title">
+        {/* Compact Search Header */}
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/40">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-sm font-bold text-foreground truncate" data-testid="search-title">
               {getPageTitle()}
             </h1>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-[10px]">
               {filteredProducts.length} {t("productAvailable")}
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link href={`/swipe${categoryParam ? `?category=${categoryParam}` : ""}${filteredProducts[0]?.id ? `${categoryParam ? "&" : "?"}id=${filteredProducts[0].id}` : ""}`}>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-28 h-8 text-xs soft-border" data-testid="select-sort">
+              <ArrowUpDown className="h-3 w-3 ml-1" />
+              <SelectValue placeholder={t("sortBy")} />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {language === "ar" ? option.labelAr : option.labelKu}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+            <SheetTrigger asChild>
               <Button 
                 variant="outline" 
-                size="icon"
-                className="shrink-0"
-                data-testid="button-swipe-view"
-                title={t("browseMode")}
+                size="sm"
+                onClick={openFilters}
+                className="gap-1 h-8 px-2"
+                data-testid="open-filters"
               >
-                <Smartphone className="h-4 w-4" />
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                {activeFiltersCount > 0 && (
+                  <Badge className="bg-primary text-white text-[10px] px-1 py-0 h-4 min-w-4">{activeFiltersCount}</Badge>
+                )}
               </Button>
-            </Link>
-            
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-44 text-sm soft-border" data-testid="select-sort">
-                <ArrowUpDown className="h-3.5 w-3.5 ml-1" />
-                <SelectValue placeholder={t("sortBy")} />
-              </SelectTrigger>
-              <SelectContent>
-                {SORT_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {language === "ar" ? option.labelAr : option.labelKu}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-              <SheetTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  onClick={openFilters}
-                  className="gap-1.5"
-                  data-testid="open-filters"
-                >
-                  <SlidersHorizontal className="h-4 w-4" />
-                  {t("moreFilters")}
-                  {activeFiltersCount > 0 && (
-                    <Badge className="bg-primary text-white text-xs px-1.5">{activeFiltersCount}</Badge>
-                  )}
-                </Button>
-              </SheetTrigger>
+            </SheetTrigger>
               <SheetContent side="right" className="w-full sm:w-96 p-0 flex flex-col" dir="rtl">
                 <SheetHeader className="p-4 border-b border-border/60 bg-muted/60">
                   <SheetTitle className="flex items-center gap-2 text-xl">
@@ -801,7 +750,6 @@ export default function SearchPage() {
                 </SheetFooter>
               </SheetContent>
             </Sheet>
-          </div>
         </div>
 
         {activeFiltersCount > 0 && (
@@ -944,22 +892,13 @@ export default function SearchPage() {
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 loading="lazy"
                               />
-                              <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex flex-col gap-1">
-                                {!product.isActive && (
+                              {!product.isActive && (
+                                <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
                                   <Badge className="bg-gray-700 text-white border-0 text-[9px] sm:text-xs shadow-md">
                                     {t("sold")}
                                   </Badge>
-                                )}
-                                {product.saleType === "auction" ? (
-                                  <Badge className="bg-purple-600 text-white border-0 text-[9px] sm:text-xs shadow-md">
-                                    {t("auction")}
-                                  </Badge>
-                                ) : (
-                                  <Badge className="bg-green-600 text-white border-0 text-[9px] sm:text-xs shadow-md">
-                                    {t("buyNow")}
-                                  </Badge>
-                                )}
-                              </div>
+                                </div>
+                              )}
                               <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
                                 <FavoriteButton listingId={product.id} size="sm" />
                               </div>
@@ -997,18 +936,6 @@ export default function SearchPage() {
                               <p className="font-bold text-sm sm:text-base text-primary">
                                 {(product.currentBid || product.price).toLocaleString()} <span className="text-[9px] sm:text-xs font-normal text-gray-600">د.ع</span>
                               </p>
-                              <div className="flex items-center justify-between text-[9px] sm:text-xs text-gray-500 mt-1">
-                                {product.city && (
-                                  <span className="flex items-center gap-0.5">
-                                    <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                                    {product.city}
-                                  </span>
-                                )}
-                                <span className="flex items-center gap-0.5">
-                                  <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                                  {(product as any).views || 0}
-                                </span>
-                              </div>
                             </div>
                           </Card>
                         </Link>

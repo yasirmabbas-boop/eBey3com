@@ -109,23 +109,23 @@ export function FavoriteButton({ listingId, className, size = "md" }: FavoriteBu
       className={cn(
         buttonSize,
         "rounded-full flex items-center justify-center transition-all",
-        "bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md",
         "hover:scale-110 active:scale-95",
-        isFavorite && "bg-red-50",
         className
       )}
+      style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))" }}
       data-testid={`favorite-button-${listingId}`}
       aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
     >
       {toggleMutation.isPending ? (
-        <Loader2 className={cn(iconSize, "animate-spin text-gray-400")} />
+        <Loader2 className={cn(iconSize, "animate-spin text-white")} style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.3))" }} />
       ) : (
         <Heart
           className={cn(
             iconSize,
             "transition-colors",
-            isFavorite ? "fill-red-500 text-red-500" : "text-gray-400 hover:text-red-400"
+            isFavorite ? "fill-red-500 text-red-500" : "text-white hover:text-red-400"
           )}
+          style={{ filter: isFavorite ? "none" : "drop-shadow(0 1px 1px rgba(0,0,0,0.3))" }}
         />
       )}
     </button>
