@@ -55,7 +55,7 @@ export const users = pgTable("users", {
   facebookId: text("facebook_id").unique(),
   facebookLongLivedToken: text("facebook_long_lived_token"),
   phoneVerified: boolean("phone_verified").notNull().default(false),
-  biddingLimit: integer("bidding_limit").notNull().default(100000), // IQD
+  biddingLimit: integer("bidding_limit").notNull().default(0), // Deprecated - no bidding limits
   completedPurchases: integer("completed_purchases").notNull().default(0),
 }, (table) => ({
   usersPhoneIdx: index("users_phone_idx").on(table.phone),

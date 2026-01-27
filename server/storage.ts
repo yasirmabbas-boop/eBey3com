@@ -393,7 +393,7 @@ export class DatabaseStorage implements IStorage {
           authProviderId: data.facebookId,
           accountCode,
           phone: null, // Leave phone NULL so onboarding flow triggers
-          biddingLimit: 100000, // Set initial bidding limit to 100,000 IQD
+          biddingLimit: 0, // Bidding limits removed - no restrictions
           phoneVerified: false, // Require phone verification
           completedPurchases: 0,
         })
@@ -1635,26 +1635,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async checkAndNotifyLimitUpgrade(userId: string): Promise<void> {
-    const user = await this.getUser(userId);
-    if (!user) return;
-    
-    // Check if just reached 10 purchases and limit was upgraded to 250k
-    if (user.completedPurchases >= 10 && user.biddingLimit === 250000) {
-      // Send WhatsApp notification
-      if (user.phone && user.phoneVerified) {
-        const { sendBiddingLimitIncreaseNotification } = await import("./whatsapp");
-        await sendBiddingLimitIncreaseNotification(user.phone, 250000);
-        
-        // Also create in-app notification
-        await this.createNotification({
-          userId: user.id,
-          type: "bidding_limit_increase",
-          title: "🎉 تم رفع حد المزايدة!",
-          message: "تهانينا! تم رفع حد المزايدة الخاص بك إلى 250,000 د.ع بعد إكمال 10 عمليات شراء ناجحة.",
-          linkUrl: "/my-account",
-        });
-      }
-    }
+    // Bidding limits removed - no restrictions on bidding except phone verification
+    return;
   }
 
   async deleteExpiredVerificationCodes(): Promise<number> {
