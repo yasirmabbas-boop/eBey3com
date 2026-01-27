@@ -23,6 +23,9 @@ export interface AuthUser {
   createdAt?: string | Date;
   twoFactorEnabled?: boolean;
   phoneVerified?: boolean;
+  locationLat?: number | null;
+  locationLng?: number | null;
+  mapUrl?: string | null;
 }
 
 function getAuthToken(): string | null {

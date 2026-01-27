@@ -54,7 +54,7 @@ export function registerAccountRoutes(app: Express): void {
     }
 
     try {
-      const allowedFields = ["displayName", "city", "district", "addressLine1", "addressLine2", "phone", "mapUrl", "ageBracket", "interests", "surveyCompleted", "avatar"];
+      const allowedFields = ["displayName", "city", "district", "addressLine1", "addressLine2", "phone", "mapUrl", "locationLat", "locationLng", "ageBracket", "interests", "surveyCompleted", "avatar"];
       const updates: Record<string, any> = {};
       
       for (const field of allowedFields) {
@@ -106,6 +106,8 @@ export function registerAccountRoutes(app: Express): void {
         addressLine1: user.addressLine1,
         addressLine2: user.addressLine2,
         mapUrl: user.mapUrl,
+        locationLat: user.locationLat,
+        locationLng: user.locationLng,
         ageBracket: user.ageBracket,
         interests: user.interests,
         surveyCompleted: user.surveyCompleted,
@@ -114,6 +116,12 @@ export function registerAccountRoutes(app: Express): void {
       console.error("Error updating profile:", error);
       res.status(500).json({ error: "فشل في تحديث الملف الشخصي" });
     }
+  });
+
+  // PATCH is alias for PUT
+  app.patch("/api/account/profile", async (req, res, next) => {
+    req.method = "PUT";
+    next();
   });
 
   // Change password
