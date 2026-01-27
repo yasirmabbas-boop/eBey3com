@@ -1,15 +1,16 @@
-import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, User, Phone, Home, Save, CheckCircle } from "lucide-react";
+import { Loader2, MapPin, Phone, Plus, Pencil, Trash2, CheckCircle, Star } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import type { BuyerAddress } from "@shared/schema";
 
 const IRAQI_PROVINCES = [
   "بغداد", "البصرة", "أربيل", "السليمانية", "دهوك", "الموصل",
@@ -20,17 +21,7 @@ const IRAQI_PROVINCES = [
 interface ProfileData {
   id: string;
   phone: string;
-  displayName: string;
-  avatar: string | null;
   phoneVerified: boolean;
-  city: string | null;
-  district: string | null;
-  addressLine1: string | null;
-  addressLine2: string | null;
-  locationLat: number | null;
-  locationLng: number | null;
-  mapUrl: string | null;
-  phoneVerified: boolean | null;
 }
 
 export default function Settings() {
@@ -38,107 +29,165 @@ export default function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [displayName, setDisplayName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [showAddressDialog, setShowAddressDialog] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<BuyerAddress | null>(null);
+  
+  const [label, setLabel] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [addressPhone, setAddressPhone] = useState("");
   const [city, setCity] = useState("");
-  const [district, setDistrict] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
-  const [locationLat, setLocationLat] = useState<string>("");
-  const [locationLng, setLocationLng] = useState<string>("");
-  const [mapUrl, setMapUrl] = useState("");
+  const [notes, setNotes] = useState("");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
 
   const { data: profile, isLoading: profileLoading } = useQuery<ProfileData>({
     queryKey: ["/api/account/profile"],
     enabled: !!user,
   });
 
-  useEffect(() => {
-    if (profile) {
-      setDisplayName(profile.displayName || "");
-      setPhone(profile.phone || "");
-      setCity(profile.city || "");
-      setDistrict(profile.district || "");
-      setAddressLine1(profile.addressLine1 || "");
-      setAddressLine2(profile.addressLine2 || "");
-      setLocationLat(profile.locationLat?.toString() || "");
-      setLocationLng(profile.locationLng?.toString() || "");
-      setMapUrl(profile.mapUrl || "");
-    }
-  }, [profile]);
+  const { data: addresses = [], isLoading: addressesLoading } = useQuery<BuyerAddress[]>({
+    queryKey: ["/api/account/addresses"],
+    enabled: !!user,
+  });
 
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data: Partial<ProfileData>) => {
-      const response = await apiRequest("PUT", "/api/account/profile", data);
+  const createAddressMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/account/addresses", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/account/profile"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      toast({
-        title: "تم الحفظ",
-        description: "تم حفظ بياناتك بنجاح",
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/account/addresses"] });
+      setShowAddressDialog(false);
+      resetForm();
+      toast({ title: "تم إضافة العنوان بنجاح" });
     },
-    onError: (error: any) => {
-      toast({
-        title: "خطأ",
-        description: error.message || "فشل في حفظ البيانات",
-        variant: "destructive",
-      });
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في إضافة العنوان", variant: "destructive" });
     },
   });
 
-  const handleSave = () => {
-    const updates: Record<string, any> = {
-      displayName,
-      city,
-      district,
-      addressLine1,
-      addressLine2,
-      mapUrl,
-    };
+  const updateAddressMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await apiRequest("PUT", `/api/account/addresses/${id}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/account/addresses"] });
+      setShowAddressDialog(false);
+      setEditingAddress(null);
+      resetForm();
+      toast({ title: "تم تحديث العنوان بنجاح" });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في تحديث العنوان", variant: "destructive" });
+    },
+  });
 
-    if (locationLat) {
-      updates.locationLat = parseFloat(locationLat);
-    }
-    if (locationLng) {
-      updates.locationLng = parseFloat(locationLng);
-    }
+  const deleteAddressMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/account/addresses/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/account/addresses"] });
+      toast({ title: "تم حذف العنوان" });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في حذف العنوان", variant: "destructive" });
+    },
+  });
 
-    updateProfileMutation.mutate(updates);
+  const setDefaultMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("POST", `/api/account/addresses/${id}/default`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/account/addresses"] });
+      toast({ title: "تم تعيين العنوان الافتراضي" });
+    },
+  });
+
+  const resetForm = () => {
+    setLabel("");
+    setRecipientName("");
+    setAddressPhone("");
+    setCity("");
+    setAddressLine1("");
+    setAddressLine2("");
+    setNotes("");
+    setLatitude(null);
+    setLongitude(null);
   };
 
-  const handleGetCurrentLocation = () => {
+  const openAddDialog = () => {
+    resetForm();
+    setEditingAddress(null);
+    if (profile?.phone) {
+      setAddressPhone(profile.phone);
+    }
+    setShowAddressDialog(true);
+  };
+
+  const openEditDialog = (address: BuyerAddress) => {
+    setEditingAddress(address);
+    setLabel(address.label);
+    setRecipientName(address.recipientName);
+    setAddressPhone(address.phone);
+    setCity(address.city);
+    setAddressLine1(address.addressLine1);
+    setAddressLine2(address.addressLine2 || "");
+    setNotes(address.notes || "");
+    setLatitude(address.latitude);
+    setLongitude(address.longitude);
+    setShowAddressDialog(true);
+  };
+
+  const handleSaveAddress = () => {
+    if (!label || !recipientName || !addressPhone || !city || !addressLine1) {
+      toast({ title: "خطأ", description: "يرجى ملء جميع الحقول المطلوبة", variant: "destructive" });
+      return;
+    }
+
+    const data = {
+      label,
+      recipientName,
+      phone: addressPhone,
+      city,
+      addressLine1,
+      addressLine2: addressLine2 || null,
+      notes: notes || null,
+      latitude,
+      longitude,
+      isDefault: addresses.length === 0,
+    };
+
+    if (editingAddress) {
+      updateAddressMutation.mutate({ id: editingAddress.id, data });
+    } else {
+      createAddressMutation.mutate(data);
+    }
+  };
+
+  const handleGetLocation = () => {
     if (!navigator.geolocation) {
-      toast({
-        title: "غير مدعوم",
-        description: "المتصفح لا يدعم تحديد الموقع",
-        variant: "destructive",
-      });
+      toast({ title: "غير مدعوم", description: "المتصفح لا يدعم تحديد الموقع", variant: "destructive" });
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLocationLat(position.coords.latitude.toFixed(6));
-        setLocationLng(position.coords.longitude.toFixed(6));
-        toast({
-          title: "تم تحديد الموقع",
-          description: "تم الحصول على إحداثيات موقعك الحالي",
-        });
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+        toast({ title: "تم تحديد الموقع" });
       },
-      (error) => {
-        toast({
-          title: "خطأ",
-          description: "فشل في الحصول على الموقع. يرجى التحقق من صلاحيات الموقع.",
-          variant: "destructive",
-        });
+      () => {
+        toast({ title: "خطأ", description: "فشل في الحصول على الموقع", variant: "destructive" });
       }
     );
   };
 
-  if (authLoading || profileLoading) {
+  if (authLoading || profileLoading || addressesLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -151,7 +200,7 @@ export default function Settings() {
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">يجب تسجيل الدخول للوصول إلى الإعدادات</p>
+            <p className="text-muted-foreground">يجب تسجيل الدخول للوصول إلى العناوين</p>
           </CardContent>
         </Card>
       </div>
@@ -159,72 +208,152 @@ export default function Settings() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 pb-24 max-w-2xl" dir="rtl">
-      <h1 className="text-2xl font-bold mb-6">الإعدادات</h1>
-
+    <div className="container mx-auto px-4 py-6 pb-24 max-w-2xl" dir="rtl">
       <div className="space-y-6">
+        
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              المعلومات الشخصية
-            </CardTitle>
-            <CardDescription>اسمك ورقم هاتفك</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="displayName">الاسم</Label>
-              <Input
-                id="displayName"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="أدخل اسمك"
-                data-testid="input-display-name"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Label htmlFor="phone">رقم الهاتف</Label>
-                {profile?.phoneVerified && (
-                  <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                    <CheckCircle className="h-3 w-3" />
-                    موثق
-                  </span>
-                )}
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Phone className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{profile?.phone}</p>
+                  <p className="text-sm text-muted-foreground">رقم الهاتف</p>
+                </div>
               </div>
-              <Input
-                id="phone"
-                value={phone}
-                disabled
-                className="bg-muted"
-                data-testid="input-phone"
-              />
-              {profile?.phoneVerified ? (
-                <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
+              {profile?.phoneVerified && (
+                <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
                   <CheckCircle className="h-3 w-3" />
-                  تم التحقق من رقم هاتفك - يمكنك البيع على المنصة
-                </p>
-              ) : (
-                <p className="text-sm text-amber-600 mt-1">
-                  لم يتم التحقق من رقم هاتفك بعد. توجه لصفحة البيع للتحقق.
-                </p>
+                  موثق
+                </span>
               )}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Home className="h-5 w-5" />
-              عنوان التوصيل
-            </CardTitle>
-            <CardDescription>عنوانك الكامل للتوصيل</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold">العناوين</h2>
+            <Button size="sm" onClick={openAddDialog} data-testid="button-add-address">
+              <Plus className="h-4 w-4 ml-1" />
+              إضافة عنوان
+            </Button>
+          </div>
+
+          {addresses.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">لا توجد عناوين محفوظة</p>
+                <Button className="mt-4" onClick={openAddDialog}>
+                  <Plus className="h-4 w-4 ml-1" />
+                  أضف عنوانك الأول
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {addresses.map((address) => (
+                <Card key={address.id} className={address.isDefault ? "border-primary" : ""}>
+                  <CardContent className="py-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-bold">{address.label}</span>
+                          {address.isDefault && (
+                            <span className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                              <Star className="h-3 w-3 fill-primary" />
+                              افتراضي
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{address.recipientName}</p>
+                        <p className="text-sm">{address.city} - {address.addressLine1}</p>
+                        {address.addressLine2 && (
+                          <p className="text-sm text-muted-foreground">{address.addressLine2}</p>
+                        )}
+                        <p className="text-sm text-muted-foreground mt-1">{address.phone}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {!address.isDefault && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDefaultMutation.mutate(address.id)}
+                            className="text-xs"
+                          >
+                            تعيين افتراضي
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(address)}
+                          data-testid={`button-edit-address-${address.id}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteAddressMutation.mutate(address.id)}
+                          className="text-red-500 hover:text-red-600"
+                          data-testid={`button-delete-address-${address.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>{editingAddress ? "تعديل العنوان" : "إضافة عنوان جديد"}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
             <div>
-              <Label htmlFor="city">المحافظة</Label>
+              <Label htmlFor="label">اسم العنوان *</Label>
+              <Input
+                id="label"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="مثال: المنزل، العمل"
+                data-testid="input-address-label"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="recipientName">اسم المستلم *</Label>
+              <Input
+                id="recipientName"
+                value={recipientName}
+                onChange={(e) => setRecipientName(e.target.value)}
+                placeholder="الاسم الكامل للمستلم"
+                data-testid="input-recipient-name"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="addressPhone">رقم الهاتف *</Label>
+              <Input
+                id="addressPhone"
+                value={addressPhone}
+                onChange={(e) => setAddressPhone(e.target.value)}
+                placeholder="07xxxxxxxxx"
+                data-testid="input-address-phone"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="city">المحافظة *</Label>
               <Select value={city} onValueChange={setCity}>
                 <SelectTrigger id="city" data-testid="select-city">
                   <SelectValue placeholder="اختر المحافظة" />
@@ -240,123 +369,55 @@ export default function Settings() {
             </div>
 
             <div>
-              <Label htmlFor="district">المنطقة / الحي</Label>
-              <Input
-                id="district"
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-                placeholder="مثال: الكرادة، المنصور، الزبير"
-                data-testid="input-district"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="addressLine1">العنوان التفصيلي</Label>
+              <Label htmlFor="addressLine1">العنوان التفصيلي *</Label>
               <Input
                 id="addressLine1"
                 value={addressLine1}
                 onChange={(e) => setAddressLine1(e.target.value)}
-                placeholder="اسم الشارع، رقم المبنى أو المنزل"
+                placeholder="الحي، الشارع، رقم المبنى، أقرب معلم"
                 data-testid="input-address-line1"
               />
             </div>
 
             <div>
-              <Label htmlFor="addressLine2">تفاصيل إضافية (اختياري)</Label>
+              <Label htmlFor="addressLine2">تفاصيل إضافية</Label>
               <Input
                 id="addressLine2"
                 value={addressLine2}
                 onChange={(e) => setAddressLine2(e.target.value)}
-                placeholder="رقم الشقة، معلم قريب، توجيهات للسائق"
+                placeholder="رقم الشقة، توجيهات للسائق"
                 data-testid="input-address-line2"
               />
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              الموقع الجغرافي (GPS)
-            </CardTitle>
-            <CardDescription>إحداثيات موقعك لتسهيل التوصيل</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <Button
               type="button"
               variant="outline"
-              onClick={handleGetCurrentLocation}
+              onClick={handleGetLocation}
               className="w-full"
               data-testid="button-get-location"
             >
               <MapPin className="h-4 w-4 ml-2" />
-              تحديد موقعي الحالي
+              تحديد موقعي
             </Button>
+            {latitude && longitude && (
+              <p className="text-xs text-green-600 text-center">تم تحديد الموقع بنجاح</p>
+            )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="locationLat">خط العرض (Latitude)</Label>
-                <Input
-                  id="locationLat"
-                  value={locationLat}
-                  onChange={(e) => setLocationLat(e.target.value)}
-                  placeholder="33.3152"
-                  type="text"
-                  data-testid="input-latitude"
-                />
-              </div>
-              <div>
-                <Label htmlFor="locationLng">خط الطول (Longitude)</Label>
-                <Input
-                  id="locationLng"
-                  value={locationLng}
-                  onChange={(e) => setLocationLng(e.target.value)}
-                  placeholder="44.3661"
-                  type="text"
-                  data-testid="input-longitude"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="mapUrl">رابط خرائط Google (اختياري)</Label>
-              <Input
-                id="mapUrl"
-                value={mapUrl}
-                onChange={(e) => setMapUrl(e.target.value)}
-                placeholder="https://maps.google.com/..."
-                data-testid="input-map-url"
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                يمكنك نسخ رابط موقعك من تطبيق خرائط Google
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Button
-          onClick={handleSave}
-          className="w-full"
-          disabled={updateProfileMutation.isPending}
-          data-testid="button-save-settings"
-        >
-          {updateProfileMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin ml-2" />
-          ) : (
-            <Save className="h-4 w-4 ml-2" />
-          )}
-          حفظ التغييرات
-        </Button>
-
-        {updateProfileMutation.isSuccess && (
-          <div className="flex items-center justify-center gap-2 text-green-600">
-            <CheckCircle className="h-4 w-4" />
-            <span>تم حفظ البيانات بنجاح</span>
+            <Button
+              onClick={handleSaveAddress}
+              className="w-full"
+              disabled={createAddressMutation.isPending || updateAddressMutation.isPending}
+              data-testid="button-save-address"
+            >
+              {(createAddressMutation.isPending || updateAddressMutation.isPending) ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+              ) : null}
+              {editingAddress ? "حفظ التغييرات" : "إضافة العنوان"}
+            </Button>
           </div>
-        )}
-
-      </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
