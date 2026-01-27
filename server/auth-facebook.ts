@@ -7,15 +7,16 @@ import { authStorage } from "./replit_integrations/auth/storage";
 import type { User } from "@shared/schema";
 
 // Validate environment variables
-if (!process.env.FB_APP_ID || !process.env.FB_APP_SECRET || !process.env.FB_CALLBACK_URL) {
+if (!process.env.FB_APP_ID || !process.env.FB_APP_SECRET) {
   throw new Error(
-    "Missing Facebook OAuth environment variables. Please set FB_APP_ID, FB_APP_SECRET, and FB_CALLBACK_URL"
+    "Missing Facebook OAuth environment variables. Please set FB_APP_ID and FB_APP_SECRET"
   );
 }
 
 const FB_APP_ID = process.env.FB_APP_ID;
 const FB_APP_SECRET = process.env.FB_APP_SECRET;
-const FB_CALLBACK_URL = process.env.FB_CALLBACK_URL;
+// CRITICAL: Use hardcoded production URL - DO NOT change to env var (breaks production)
+const FB_CALLBACK_URL = "https://ebey3.com/auth/facebook/callback";
 
 /**
  * Exchange short-lived Facebook access token (1 hour) for long-lived token (60 days)
