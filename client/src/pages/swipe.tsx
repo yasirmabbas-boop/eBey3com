@@ -374,7 +374,7 @@ export default function SwipePage() {
 
   if (isLoading && allListings.length === 0) {
     return (
-      <Layout hideBottomNav>
+      <Layout>
         <div className="flex items-center justify-center h-[calc(100vh-60px)] bg-black">
           <Loader2 className="h-8 w-8 animate-spin text-white" />
         </div>
@@ -407,7 +407,7 @@ export default function SwipePage() {
   }
 
   return (
-    <Layout hideBottomNav>
+    <Layout>
       <div 
         ref={containerRef}
         className="h-[calc(100vh-60px)] overflow-y-scroll snap-y snap-mandatory"
