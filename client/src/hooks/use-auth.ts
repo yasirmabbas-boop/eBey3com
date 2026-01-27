@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import type { User } from "@shared/models/auth";
+import { authFetch } from "@/lib/queryClient";
 
 export interface AuthUser {
   id: string;
@@ -59,19 +60,14 @@ function checkAndStoreUrlToken(): boolean {
 checkAndStoreUrlToken();
 
 async function fetchUser(): Promise<AuthUser | null> {
-  // Try custom auth first with token fallback for Safari
+  // authFetch automatically includes Authorization: Bearer <token> when present
   const authToken = getAuthToken();
-  console.log("[DEBUG useAuth] authToken from localStorage:", authToken ? `${authToken.substring(0, 8)}...` : "NULL");
-  
-  const headers: HeadersInit = {};
-  if (authToken) {
-    headers["Authorization"] = `Bearer ${authToken}`;
-  }
-  
-  const meResponse = await fetch("/api/auth/me", {
-    credentials: "include",
-    headers,
-  });
+  console.log(
+    "[DEBUG useAuth] authToken from localStorage:",
+    authToken ? `${authToken.substring(0, 8)}...` : "NULL",
+  );
+
+  const meResponse = await authFetch("/api/auth/me");
 
   console.log("[DEBUG useAuth] /api/auth/me response status:", meResponse.status);
 
@@ -83,10 +79,7 @@ async function fetchUser(): Promise<AuthUser | null> {
 
   // Fall back to Replit auth (also include Bearer token for unified auth)
   console.log("[DEBUG useAuth] Falling back to /api/auth/user");
-  const response = await fetch("/api/auth/user", {
-    credentials: "include",
-    headers,
-  });
+  const response = await authFetch("/api/auth/user");
 
   console.log("[DEBUG useAuth] /api/auth/user response status:", response.status);
 

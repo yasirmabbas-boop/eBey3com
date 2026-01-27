@@ -83,32 +83,45 @@ class AuthStorage implements IAuthStorage {
 
   async upsertFacebookUser(userData: FacebookUserData): Promise<User> {
     const displayName = userData.displayName || userData.email || "مستخدم";
-    
-    // Try to find existing user by Facebook ID
-    const existingUser = await this.getUserByFacebookId(userData.facebookId);
-    
-    if (existingUser) {
-      // Update existing user
-      const [updatedUser] = await db
-        .update(users)
-        .set({
-          facebookLongLivedToken: userData.facebookLongLivedToken,
-          email: userData.email || sql`${users.email}`,
-          displayName: displayName,
-          avatar: sql`COALESCE(${users.avatar}, ${userData.avatar || null})`,
-          lastLoginAt: new Date(),
-        })
-        .where(eq(users.id, existingUser.id))
-        .returning();
-      return updatedUser;
-    } else {
+
+    console.log("[DB-TRACE] Attempting upsert for user:", userData.id, {
+      facebookId: userData.facebookId,
+      hasEmail: !!userData.email,
+      hasAvatar: !!userData.avatar,
+    });
+
+    try {
+      // Try to find existing user by Facebook ID
+      const existingUser = await this.getUserByFacebookId(userData.facebookId);
+
+      if (existingUser) {
+        // Update existing user
+        const [updatedUser] = await db
+          .update(users)
+          .set({
+            facebookLongLivedToken: userData.facebookLongLivedToken,
+            email: userData.email || sql`${users.email}`,
+            displayName,
+            avatar: sql`COALESCE(${users.avatar}, ${userData.avatar || null})`,
+            lastLoginAt: new Date(),
+          })
+          .where(eq(users.id, existingUser.id))
+          .returning();
+
+        console.log("[DB-TRACE] Upsert successful for:", userData.id, {
+          dbId: updatedUser?.id,
+          existing: true,
+        });
+        return updatedUser;
+      }
+
       // Create new user
       const [newUser] = await db
         .insert(users)
         .values({
           id: userData.id,
           email: userData.email || null,
-          displayName: displayName,
+          displayName,
           avatar: userData.avatar || null,
           authProvider: "facebook",
           authProviderId: userData.facebookId,
@@ -119,7 +132,7 @@ class AuthStorage implements IAuthStorage {
           target: users.id,
           set: {
             email: userData.email || sql`${users.email}`,
-            displayName: displayName,
+            displayName,
             avatar: sql`COALESCE(${users.avatar}, ${userData.avatar || null})`,
             authProvider: "facebook",
             authProviderId: userData.facebookId,
@@ -128,7 +141,20 @@ class AuthStorage implements IAuthStorage {
           },
         })
         .returning();
+
+      console.log("[DB-TRACE] Upsert successful for:", userData.id, {
+        dbId: newUser?.id,
+        existing: false,
+      });
       return newUser;
+    } catch (error) {
+      console.error("[DB-TRACE] Upsert FAILED for:", userData.id, {
+        facebookId: userData.facebookId,
+        email: userData.email,
+        displayName,
+        error,
+      });
+      throw error;
     }
   }
 
