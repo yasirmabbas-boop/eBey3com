@@ -37,7 +37,7 @@ interface ProductCardProps {
 function ProductCard({ product }: ProductCardProps) {
   return (
     <Link href={`/product/${product.id}`}>
-      <Card className="overflow-hidden cursor-pointer group soft-border hover-elevate active:scale-[0.98] flex-shrink-0 w-[calc(40vw-12px)] sm:w-[180px]" data-testid={`card-product-${product.id}`}>
+      <Card className="overflow-hidden cursor-pointer group soft-border hover-elevate active:scale-[0.98] flex-shrink-0 w-[calc(40vw-8px)] sm:w-[170px]" data-testid={`card-product-${product.id}`}>
         <div className="relative aspect-square overflow-hidden bg-gray-100">
           <OptimizedImage 
             src={product.image} 
@@ -45,24 +45,24 @@ function ProductCard({ product }: ProductCardProps) {
             className="w-full h-full group-hover:scale-105 transition-transform duration-500"
           />
           {product.currentBid && (
-            <Badge className="absolute top-1.5 right-1.5 bg-primary text-white text-[10px] px-1.5 py-0.5 z-10">
+            <Badge className="absolute top-1 right-1 bg-primary text-white text-[9px] px-1 py-0.5 z-10">
               مزاد
             </Badge>
           )}
-          <div className="absolute top-1 left-1">
+          <div className="absolute top-0.5 left-0.5">
             <FavoriteButton listingId={product.id} size="sm" />
           </div>
         </div>
-        <CardContent className="p-2">
-          <h3 className="font-bold text-xs mb-1 line-clamp-1 group-hover:text-primary transition-colors leading-tight">
+        <CardContent className="p-1.5">
+          <h3 className="font-bold text-[11px] mb-0.5 line-clamp-1 group-hover:text-primary transition-colors leading-tight">
             {product.title}
           </h3>
-          <p className="font-bold text-sm text-primary">
-            {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} <span className="text-[10px]">د.ع</span>
+          <p className="font-bold text-xs text-primary">
+            {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} <span className="text-[9px]">د.ع</span>
           </p>
         </CardContent>
         {product.saleType === "auction" && product.auctionEndTime && (
-          <CardFooter className="px-2 py-1.5 bg-orange-50">
+          <CardFooter className="px-1.5 py-1 bg-orange-50">
             <AuctionCountdown endTime={product.auctionEndTime} />
           </CardFooter>
         )}
@@ -79,14 +79,14 @@ interface SectionProps {
 
 function Section({ title, icon, children }: SectionProps) {
   return (
-    <section className="py-4">
-      <div className="container mx-auto px-3">
-        <div className="flex items-center gap-2 mb-3">
+    <section className="py-3">
+      <div className="container mx-auto px-2">
+        <div className="flex items-center gap-1.5 mb-2">
           {icon}
-          <h2 className="text-sm font-bold text-primary">{title}</h2>
+          <h2 className="text-xs font-bold text-primary">{title}</h2>
         </div>
         <div 
-          className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory" 
+          className="flex gap-2 overflow-x-auto pb-1.5 snap-x snap-mandatory" 
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
         >
           {children}
