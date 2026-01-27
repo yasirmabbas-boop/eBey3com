@@ -121,10 +121,72 @@ export function registerAccountRoutes(app: Express): void {
     }
   });
 
-  // PATCH is alias for PUT
-  app.patch("/api/account/profile", async (req, res, next) => {
-    req.method = "PUT";
-    next();
+  // PATCH handler - same as PUT
+  app.patch("/api/account/profile", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const allowedFields = ["displayName", "city", "district", "addressLine1", "addressLine2", "phone", "mapUrl", "locationLat", "locationLng", "ageBracket", "interests", "surveyCompleted", "avatar"];
+      const updates: Record<string, any> = {};
+      
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) {
+          updates[field] = req.body[field];
+        }
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: "لم يتم تقديم أي حقول للتحديث" });
+      }
+
+      if (updates.phone) {
+        const existingUserWithPhone = await storage.getUserByPhone(updates.phone);
+        if (existingUserWithPhone && existingUserWithPhone.id !== userId) {
+          return res.status(409).json({ error: "This phone number is already in use" });
+        }
+      }
+
+      const user = await storage.updateUser(userId, updates);
+      if (!user) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+
+      if (req.body.avatar) {
+        try {
+          const objectStorageService = new ObjectStorageService();
+          await objectStorageService.trySetObjectEntityAclPolicy(req.body.avatar, {
+            owner: userId,
+            visibility: "public",
+          });
+        } catch (err) {
+          console.error("Failed to set avatar ACL:", err);
+        }
+      }
+
+      console.log("[Profile Update PATCH] User updated:", user.id);
+      res.json({
+        id: user.id,
+        phone: user.phone,
+        displayName: user.displayName,
+        avatar: user.avatar,
+        city: user.city,
+        district: user.district,
+        addressLine1: user.addressLine1,
+        addressLine2: user.addressLine2,
+        mapUrl: user.mapUrl,
+        locationLat: user.locationLat,
+        locationLng: user.locationLng,
+        ageBracket: user.ageBracket,
+        interests: user.interests,
+        surveyCompleted: user.surveyCompleted,
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ error: "فشل في تحديث الملف الشخصي" });
+    }
   });
 
   // Change password
