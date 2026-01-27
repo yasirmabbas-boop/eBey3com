@@ -159,3 +159,58 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     return;
   }
 };
+
+// Unified authentication middleware - checks Bearer token first, then session
+export const isAuthenticatedUnified: RequestHandler = async (req: any, res, next) => {
+  // Check 1: Bearer token in Authorization header
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.substring(7);
+    console.log("[isAuthenticatedUnified] Checking Bearer token:", token.substring(0, 8) + "...");
+    
+    try {
+      const user = await authStorage.getUserByAuthToken(token);
+      if (user) {
+        console.log("[isAuthenticatedUnified] Found user by token:", user.id);
+        req.user = user;
+        return next();
+      }
+    } catch (error) {
+      console.error("[isAuthenticatedUnified] Error looking up token:", error);
+    }
+  }
+  
+  // Check 2: Session-based auth (Replit Auth or Facebook session)
+  if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+    const claims = (req.user as any).claims;
+    if (claims?.sub) {
+      try {
+        const user = await authStorage.getUser(claims.sub);
+        if (user) {
+          console.log("[isAuthenticatedUnified] Found user by Replit session:", user.id);
+          req.user = user;
+          return next();
+        }
+      } catch (error) {
+        console.error("[isAuthenticatedUnified] Error looking up session user:", error);
+      }
+    }
+  }
+  
+  // Check 3: Session userId (set by Facebook auth callback)
+  const sessionUserId = (req.session as any)?.userId;
+  if (sessionUserId) {
+    try {
+      const user = await authStorage.getUser(sessionUserId);
+      if (user) {
+        console.log("[isAuthenticatedUnified] Found user by session userId:", user.id);
+        req.user = user;
+        return next();
+      }
+    } catch (error) {
+      console.error("[isAuthenticatedUnified] Error looking up session userId:", error);
+    }
+  }
+  
+  return res.status(401).json({ message: "Unauthorized" });
+};

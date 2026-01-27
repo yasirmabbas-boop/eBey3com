@@ -78,10 +78,11 @@ async function fetchUser(): Promise<AuthUser | null> {
     return userData;
   }
 
-  // Fall back to Replit auth
+  // Fall back to Replit auth (also include Bearer token for unified auth)
   console.log("[DEBUG useAuth] Falling back to /api/auth/user");
   const response = await fetch("/api/auth/user", {
     credentials: "include",
+    headers,
   });
 
   console.log("[DEBUG useAuth] /api/auth/user response status:", response.status);

@@ -21,6 +21,7 @@ export interface FacebookUserData {
 
 export interface IAuthStorage {
   getUser(id: string): Promise<User | undefined>;
+  getUserByAuthToken(token: string): Promise<User | undefined>;
   upsertUser(userData: OIDCUserData): Promise<User>;
   getUserByFacebookId(facebookId: string): Promise<User | undefined>;
   upsertFacebookUser(userData: FacebookUserData): Promise<User>;
@@ -30,6 +31,14 @@ export interface IAuthStorage {
 class AuthStorage implements IAuthStorage {
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByAuthToken(token: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.authToken, token));
     return user;
   }
 
