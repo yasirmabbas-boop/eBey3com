@@ -2,6 +2,8 @@ import { useLocation } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const MAIN_NAV_PAGES = ["/", "/favorites", "/swipe", "/notifications", "/my-account", "/signin", "/cart"];
+
 interface BackButtonProps {
   fallbackPath?: string;
   className?: string;
@@ -18,7 +20,8 @@ export function BackButton({ fallbackPath = "/", className = "" }: BackButtonPro
     }
   };
 
-  if (location === "/") return null;
+  const isMainNavPage = MAIN_NAV_PAGES.includes(location);
+  if (isMainNavPage) return null;
 
   return (
     <Button
