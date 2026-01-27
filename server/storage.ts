@@ -84,6 +84,7 @@ export interface IStorage {
   getListingsByCategory(category: string): Promise<Listing[]>;
   getListingsBySeller(sellerId: string): Promise<Listing[]>;
   getListing(id: string): Promise<Listing | undefined>;
+  getListingsByIds(ids: string[]): Promise<Listing[]>;
   getDeletedListings(): Promise<Listing[]>;
   getPurchasesWithDetails(buyerId: string): Promise<any[]>;
   getUserBidsWithDetails(userId: string): Promise<any[]>;
@@ -723,6 +724,11 @@ export class DatabaseStorage implements IStorage {
   async getListing(id: string): Promise<Listing | undefined> {
     const [listing] = await db.select().from(listings).where(eq(listings.id, id));
     return listing;
+  }
+
+  async getListingsByIds(ids: string[]): Promise<Listing[]> {
+    if (ids.length === 0) return [];
+    return db.select().from(listings).where(inArray(listings.id, ids));
   }
 
   async getDeletedListings(): Promise<Listing[]> {

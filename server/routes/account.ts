@@ -50,6 +50,52 @@ export function registerAccountRoutes(app: Express): void {
     });
   });
 
+  // Get user favorites with full listing details
+  app.get("/api/account/favorites", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const watchlistItems = await storage.getWatchlist(userId);
+      const listingIds = watchlistItems.map(item => item.listingId);
+      
+      if (listingIds.length === 0) {
+        return res.json([]);
+      }
+      
+      const listings = await storage.getListingsByIds(listingIds);
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+      res.status(500).json({ error: "Failed to fetch favorites" });
+    }
+  });
+
+  // Get watchlist listings (alias for favorites)
+  app.get("/api/watchlist/listings", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const watchlistItems = await storage.getWatchlist(userId);
+      const listingIds = watchlistItems.map(item => item.listingId);
+      
+      if (listingIds.length === 0) {
+        return res.json([]);
+      }
+      
+      const listings = await storage.getListingsByIds(listingIds);
+      res.json(listings);
+    } catch (error) {
+      console.error("Error fetching watchlist listings:", error);
+      res.status(500).json({ error: "Failed to fetch watchlist listings" });
+    }
+  });
+
   // Update profile
   app.put("/api/account/profile", async (req, res) => {
     const userId = await getUserIdFromRequest(req);
