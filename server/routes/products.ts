@@ -755,6 +755,123 @@ export function registerProductRoutes(app: Express): void {
     }
   });
 
+  // Place a bid on a listing
+  app.post("/api/listings/:id/bid", async (req: any, res) => {
+    try {
+      const listingId = req.params.id;
+      const { amount } = req.body;
+
+      // Get user from session or token
+      const userId = req.user?.id || (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول للمزايدة" });
+      }
+
+      // Get user to check phone verification
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ error: "المستخدم غير موجود" });
+      }
+
+      if (!user.phoneVerified) {
+        return res.status(403).json({ error: "يجب التحقق من رقم الهاتف للمزايدة" });
+      }
+
+      // Get the listing
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+
+      // Check if user is trying to bid on their own listing
+      if (listing.sellerId === userId) {
+        return res.status(400).json({ error: "لا يمكنك المزايدة على منتجاتك" });
+      }
+
+      // Check if listing is an auction
+      if (listing.saleType !== "auction") {
+        return res.status(400).json({ error: "هذا المنتج ليس مزاداً" });
+      }
+
+      // Check if listing is active
+      if (!listing.isActive) {
+        return res.status(400).json({ error: "هذا المزاد غير نشط" });
+      }
+
+      // Check if auction has ended
+      if (listing.auctionEndTime && new Date(listing.auctionEndTime) < new Date()) {
+        return res.status(400).json({ error: "انتهى وقت المزاد" });
+      }
+
+      // Validate bid amount
+      if (!amount || typeof amount !== "number" || amount <= 0) {
+        return res.status(400).json({ error: "مبلغ المزايدة غير صالح" });
+      }
+
+      const currentBid = listing.currentBid || listing.price;
+      const minBid = currentBid + 1000; // Minimum increment of 1000 IQD
+
+      if (amount < minBid) {
+        return res.status(400).json({ 
+          error: `الحد الأدنى للمزايدة هو ${minBid.toLocaleString()} د.ع` 
+        });
+      }
+
+      // Create the bid
+      const bid = await storage.createBid({
+        listingId,
+        userId,
+        amount,
+      });
+
+      // Check if we need to extend the auction (anti-sniping)
+      const now = new Date();
+      const endTime = listing.auctionEndTime ? new Date(listing.auctionEndTime) : null;
+      let newEndTime = endTime;
+      
+      if (endTime) {
+        const timeRemaining = endTime.getTime() - now.getTime();
+        const twoMinutes = 2 * 60 * 1000;
+        
+        if (timeRemaining < twoMinutes && timeRemaining > 0) {
+          // Extend by 2 minutes from now
+          newEndTime = new Date(now.getTime() + twoMinutes);
+          await storage.updateListing(listingId, { 
+            auctionEndTime: newEndTime 
+          });
+        }
+      }
+
+      // Get updated listing for response
+      const updatedListing = await storage.getListing(listingId);
+
+      // Broadcast via WebSocket if available
+      const { broadcastBidUpdate } = await import("../websocket");
+      broadcastBidUpdate({
+        listingId,
+        currentBid: amount,
+        totalBids: (updatedListing?.totalBids || 0),
+        highestBidderId: userId,
+        auctionEndTime: newEndTime?.toISOString() || listing.auctionEndTime,
+        extended: newEndTime !== endTime,
+      });
+
+      console.log(`[bid] User ${userId} placed bid of ${amount} on listing ${listingId}`);
+
+      res.json({
+        success: true,
+        bid,
+        currentBid: amount,
+        totalBids: updatedListing?.totalBids || 0,
+        extended: newEndTime !== endTime,
+        newEndTime: newEndTime?.toISOString(),
+      });
+    } catch (error) {
+      console.error("Error placing bid:", error);
+      res.status(500).json({ error: "فشل في تقديم المزايدة" });
+    }
+  });
+
   // Get bids with bidder information (for seller dashboard)
   app.get("/api/listings/:id/bids/detailed", async (req, res) => {
     try {
