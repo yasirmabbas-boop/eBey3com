@@ -279,7 +279,7 @@ function SwipeCard({
       <Link href={`/product/${listing.id}`}>
         <Button 
           className="absolute left-4 right-20 bg-primary hover:bg-primary/90"
-          style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
+          style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
           size="lg"
         >
           {listing.saleType === "auction" 
