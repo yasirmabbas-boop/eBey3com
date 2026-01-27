@@ -6,11 +6,22 @@ import { useListings } from "@/hooks/use-listings";
 import { useLanguage } from "@/lib/i18n";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Clock, Search as SearchIcon } from "lucide-react";
+import { Eye, Clock, Search as SearchIcon, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
 import type { Listing } from "@shared/schema";
+
+const CATEGORIES = [
+  { id: "ساعات", name: "ساعات", nameEn: "watches" },
+  { id: "إلكترونيات", name: "إلكترونيات", nameEn: "electronics" },
+  { id: "ملابس", name: "ملابس", nameEn: "clothing" },
+  { id: "تحف وأثاث", name: "تحف وأثاث", nameEn: "antiques" },
+  { id: "مجوهرات", name: "مجوهرات", nameEn: "jewelry" },
+  { id: "آلات موسيقية", name: "آلات موسيقية", nameEn: "music" },
+  { id: "مقتنيات", name: "مقتنيات", nameEn: "collectibles" },
+  { id: "أخرى", name: "أخرى", nameEn: "other" },
+];
 
 interface ProductCardProps {
   product: {
@@ -139,6 +150,43 @@ export default function Home() {
 
   return (
     <Layout>
+      {/* Categories - Horizontal Sliding Strip */}
+      <section className="py-2 bg-gradient-to-l from-primary/5 to-primary/10 overflow-hidden border-b border-border/30">
+        <div className="container mx-auto px-3">
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {CATEGORIES.map((cat, i) => (
+              <Link key={i} href={`/search?category=${encodeURIComponent(cat.id)}`}>
+                <div 
+                  className="group cursor-pointer flex items-center gap-2 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full soft-border hover:shadow-md transition-all whitespace-nowrap active:scale-95 hover:bg-primary hover:text-white"
+                  data-testid={`category-top-${cat.id}`}
+                >
+                  <div className={`h-5 w-5 ${
+                    cat.nameEn === "watches" ? "bg-blue-100 group-hover:bg-blue-200" :
+                    cat.nameEn === "electronics" ? "bg-amber-100 group-hover:bg-amber-200" :
+                    cat.nameEn === "clothing" ? "bg-purple-100 group-hover:bg-purple-200" :
+                    cat.nameEn === "antiques" ? "bg-rose-100 group-hover:bg-rose-200" :
+                    cat.nameEn === "jewelry" ? "bg-pink-100 group-hover:bg-pink-200" :
+                    cat.nameEn === "music" ? "bg-indigo-100 group-hover:bg-indigo-200" :
+                    cat.nameEn === "collectibles" ? "bg-teal-100 group-hover:bg-teal-200" :
+                    "bg-gray-100 group-hover:bg-gray-200"
+                  } rounded-full flex items-center justify-center transition-all`}>
+                    {cat.nameEn === "watches" ? <Clock className="h-3 w-3 text-blue-600" /> :
+                     cat.nameEn === "electronics" ? <Zap className="h-3 w-3 text-amber-600" /> :
+                     cat.nameEn === "clothing" ? <Tag className="h-3 w-3 text-purple-600" /> :
+                     cat.nameEn === "antiques" ? <Sparkles className="h-3 w-3 text-rose-600" /> :
+                     cat.nameEn === "jewelry" ? <Heart className="h-3 w-3 text-pink-600" /> :
+                     cat.nameEn === "music" ? <Gavel className="h-3 w-3 text-indigo-600" /> :
+                     cat.nameEn === "collectibles" ? <ShoppingBag className="h-3 w-3 text-teal-600" /> :
+                     <Tag className="h-3 w-3 text-gray-600" />}
+                  </div>
+                  <span className="font-medium text-xs text-gray-800 group-hover:text-white transition-colors">{cat.name}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <div className="min-h-screen bg-background">
         {recentlyViewedProducts.length > 0 && (
           <Section 
