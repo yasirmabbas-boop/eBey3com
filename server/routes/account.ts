@@ -592,7 +592,7 @@ export function registerAccountRoutes(app: Express): void {
       // Enrich offers with listing details
       const enrichedOffers = await Promise.all(
         offers.map(async (offer) => {
-          const listing = await storage.getListing(offer.listingId);
+          const listing = offer.listingId ? await storage.getListing(offer.listingId) : null;
           const seller = listing ? await storage.getUser(listing.sellerId) : null;
           
           return {
