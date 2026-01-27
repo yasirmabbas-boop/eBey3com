@@ -851,7 +851,7 @@ export default function SearchPage() {
               {/* Responsive Grid View - 2 cols mobile, 3 tablet, 4-5 desktop */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
                 {displayedProducts.map((product) => {
-                  const isLastItem = product.quantityAvailable === 1;
+                  const isLastItem = product.quantityAvailable === 1 && (product.quantitySold || 0) > 0;
                   const isEndingSoon = product.saleType === "auction" && product.auctionEndTime && 
                     new Date(product.auctionEndTime).getTime() - Date.now() < 24 * 60 * 60 * 1000;
                   const isHotItem = (product.views || 0) > 50 || ((product as any).totalBids || 0) > 5;
@@ -867,29 +867,14 @@ export default function SearchPage() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"
                           />
-                          {/* Urgency Tags - Top Right */}
-                          <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex flex-col gap-1">
-                            {!product.isActive && (
+                          {/* Sold overlay only */}
+                          {!product.isActive && (
+                            <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
                               <Badge className="bg-gray-700 text-white border-0 text-[9px] sm:text-xs shadow-md">
                                 {t("sold")}
                               </Badge>
-                            )}
-                            {product.isActive && isEndingSoon && (
-                              <Badge className="bg-red-500 text-white border-0 text-[8px] sm:text-[10px] shadow-md px-1.5 py-0.5">
-                                {t("endingSoon")}
-                              </Badge>
-                            )}
-                            {product.isActive && isLastItem && (
-                              <Badge className="bg-purple-500 text-white border-0 text-[8px] sm:text-[10px] shadow-md px-1.5 py-0.5">
-                                {t("lastItem")}
-                              </Badge>
-                            )}
-                            {product.isActive && isHotItem && !isEndingSoon && !isLastItem && (
-                              <Badge className="bg-orange-500 text-white border-0 text-[8px] sm:text-[10px] shadow-md px-1.5 py-0.5">
-                                {t("hotItem")}
-                              </Badge>
-                            )}
-                          </div>
+                            </div>
+                          )}
                           {/* Favorite Button - Top Left */}
                           <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
                             <FavoriteButton listingId={product.id} size="sm" />
@@ -902,9 +887,29 @@ export default function SearchPage() {
                         </div>
                         
                         <div className="p-2 sm:p-3 flex-1 flex flex-col">
-                          <h3 className="font-medium text-[11px] sm:text-xs text-gray-700 line-clamp-2 group-hover:text-primary transition-colors leading-tight mb-1.5 flex-1">
+                          <h3 className="font-normal text-sm sm:text-base text-gray-700 line-clamp-2 group-hover:text-primary transition-colors leading-tight mb-1.5 flex-1">
                             {product.title}
                           </h3>
+                          {/* Urgency Tags - In card body */}
+                          {product.isActive && (isEndingSoon || isLastItem || isHotItem) && (
+                            <div className="flex flex-wrap gap-1 mb-1.5">
+                              {isEndingSoon && (
+                                <Badge className="bg-red-500 text-white border-0 text-[8px] sm:text-[10px] px-1.5 py-0.5">
+                                  {t("endingSoon")}
+                                </Badge>
+                              )}
+                              {isLastItem && (
+                                <Badge className="bg-purple-500 text-white border-0 text-[8px] sm:text-[10px] px-1.5 py-0.5">
+                                  {t("lastItem")}
+                                </Badge>
+                              )}
+                              {isHotItem && !isEndingSoon && !isLastItem && (
+                                <Badge className="bg-orange-500 text-white border-0 text-[8px] sm:text-[10px] px-1.5 py-0.5">
+                                  {t("hotItem")}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
                           <div>
                             <p className="text-gray-900 font-bold text-sm sm:text-base">
                               {(product.currentBid || product.price || 0).toLocaleString()} {t("currency")}
