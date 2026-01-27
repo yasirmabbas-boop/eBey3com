@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "wouter";
 import { Loader2 } from "lucide-react";
 import { AccountDropdown } from "@/components/account-dropdown";
 import { useAuth } from "@/hooks/use-auth";
@@ -62,14 +61,6 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       <main className={`despia-content md:pb-0 md:flex-1 ${isNative ? "pb-6" : "pb-20"}`}>
         {children}
         
-        {/* Minimal App Footer */}
-        <footer className={`bg-[#141414] text-gray-400 ${isNative ? "py-4 mt-4" : "py-4 mt-8"}`}>
-          <div className="container mx-auto px-4 text-center">
-            <p className="text-xs">
-              © 2025 اي بيع | <Link href="/about" className="hover:text-white">حول التطبيق</Link>
-            </p>
-          </div>
-        </footer>
       </main>
     </div>
   );
