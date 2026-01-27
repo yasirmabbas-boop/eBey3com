@@ -1162,7 +1162,8 @@ export default function ProductPage() {
                           className="w-full h-14 text-lg font-medium"
                           onClick={() => {
                             if (!requireAuth("offer")) return;
-                            if (!user?.phoneVerified) {
+                            const needsPhoneVerification = !!user && !user.phoneVerified;
+                            if (needsPhoneVerification) {
                               setPendingOfferAfterVerify(true);
                               setPhoneVerificationOpen(true);
                               return;
@@ -1172,7 +1173,7 @@ export default function ProductPage() {
                           }}
                           data-testid="button-make-offer"
                         >
-                          {!user?.phoneVerified
+                          {!!user && !user.phoneVerified
                             ? (language === "ar" ? "وثّق الهاتف لتقديم عرض" : "پشتڕاستکردنەوەی مۆبایل بۆ پێشنیار")
                             : t("makeOffer")}
                         </Button>
