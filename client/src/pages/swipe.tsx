@@ -152,7 +152,7 @@ function SwipeCard({
         )}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 pb-32 safe-area-bottom">
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 pb-40 safe-area-bottom">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <Link href={`/product/${listing.id}`}>
@@ -279,7 +279,7 @@ function SwipeCard({
       <Link href={`/product/${listing.id}`}>
         <Button 
           className="absolute left-4 right-20 bg-primary hover:bg-primary/90"
-          style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+          style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
           size="lg"
         >
           {listing.saleType === "auction" 
