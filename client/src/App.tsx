@@ -2,6 +2,8 @@ import { Switch, Route, useLocation } from "wouter";
 import { useEffect, Suspense, lazy } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+
+console.log("[DEBUG] App.tsx loading...");
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SurveyManager } from "@/components/survey-manager";
@@ -122,7 +124,9 @@ function Router() {
 
 // 3. Export the App with ALL Providers in the correct order
 function App() {
+  console.log("[DEBUG] App function rendering...");
   useEffect(() => {
+    console.log("[DEBUG] App useEffect running...");
     // Initialize native app features
     if (isNative) {
       document.body.classList.add("capacitor-native");
@@ -155,40 +159,32 @@ function App() {
     };
   }, []);
 
+  console.log("[DEBUG] App return about to render JSX");
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
           <TooltipProvider>
             <NavVisibilityProvider>
-              {/* Switch provides Router context - ALL components using useLocation MUST be inside Switch */}
-              <Switch>
-                <Route path="/:rest*">
-                  {() => (
-                    <>
-                      <ScrollToTop />
-                      <SocketNotificationsWrapper />
-                      <Toaster />
-                      <BanBanner />
-                      <SurveyManager />
-                      <OnboardingTutorial />
-                      <SwipeBackNavigation>
-                        <Suspense
-                          fallback={
-                            <LoadingSpinner />
-                          }
-                        >
-                          <Router />
-                        </Suspense>
-                      </SwipeBackNavigation>
-                      <MobileNavBar />
-                      {!isNative && <InstallPWAPrompt />}
-                      {!isNative && <PWAUpdateBanner />}
-                      <PushNotificationPrompt />
-                    </>
-                  )}
-                </Route>
-              </Switch>
+              <ScrollToTop />
+              <SocketNotificationsWrapper />
+              <Toaster />
+              <BanBanner />
+              <SurveyManager />
+              <OnboardingTutorial />
+              <SwipeBackNavigation>
+                <Suspense
+                  fallback={
+                    <LoadingSpinner />
+                  }
+                >
+                  <Router />
+                </Suspense>
+              </SwipeBackNavigation>
+              <MobileNavBar />
+              {!isNative && <InstallPWAPrompt />}
+              {!isNative && <PWAUpdateBanner />}
+              <PushNotificationPrompt />
             </NavVisibilityProvider>
           </TooltipProvider>
         </LanguageProvider>
