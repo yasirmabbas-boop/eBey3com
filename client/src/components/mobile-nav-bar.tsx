@@ -38,7 +38,7 @@ export function MobileNavBar() {
     { href: "/favorites", icon: Heart, label: language === "ar" ? "المفضلة" : "دڵخوازەکان", testId: "nav-favorites", section: "favorites" },
     { href: "/swipe", icon: Play, label: language === "ar" ? "تصفح" : "گەڕان", testId: "nav-swipe", section: "swipe" },
     { href: "/notifications", icon: Bell, label: language === "ar" ? "الإشعارات" : "ئاگادارییەکان", testId: "nav-notifications", section: "notifications", badge: unreadCount },
-    { href: isAuthenticated ? "/my-account" : "/signin", icon: User, label: language === "ar" ? "حسابي" : "هەژمارەکەم", testId: "nav-account", section: "account" },
+    { href: isAuthenticated ? "/my-account" : "/signin", icon: User, label: language === "ar" ? "حسابي" : "هەژمارەکەم", testId: "nav-account", section: "account", skipRestore: true },
   ];
 
   const isActiveSection = (section: string) => {
@@ -73,7 +73,12 @@ export function MobileNavBar() {
               key={item.section}
               onClick={() => {
                 hapticLight();
-                navigateToSection(item.section, item.href);
+                // For account section, always navigate directly to avoid stale cached paths
+                if ((item as any).skipRestore) {
+                  window.location.href = item.href;
+                } else {
+                  navigateToSection(item.section, item.href);
+                }
               }}
               className={`flex flex-col items-center justify-center flex-1 py-2 relative transition-colors active:scale-95 ${
                 active ? "text-blue-600" : "text-gray-600"
