@@ -368,6 +368,33 @@ export default function ProductPage() {
         // Keep only last 20 items
         recentIds = recentIds.slice(0, 20);
         localStorage.setItem("recentlyViewed", JSON.stringify(recentIds));
+        
+        // Track preferred categories for personalization
+        if (listing.category) {
+          const catStored = localStorage.getItem("userPreferredCategories");
+          let categories: string[] = catStored ? JSON.parse(catStored) : [];
+          // Move category to front if exists, or add it
+          categories = categories.filter(c => c !== listing.category);
+          categories.unshift(listing.category);
+          // Keep top 5 categories
+          categories = categories.slice(0, 5);
+          localStorage.setItem("userPreferredCategories", JSON.stringify(categories));
+        }
+        
+        // Track price range for personalization
+        const price = listing.currentBid || listing.price;
+        if (price) {
+          const priceStored = localStorage.getItem("userPriceRange");
+          let priceRange = priceStored ? JSON.parse(priceStored) : { min: price, max: price, count: 0 };
+          // Running average for price range
+          const newCount = priceRange.count + 1;
+          priceRange = {
+            min: Math.min(priceRange.min, price),
+            max: Math.max(priceRange.max, price),
+            count: newCount
+          };
+          localStorage.setItem("userPriceRange", JSON.stringify(priceRange));
+        }
       } catch (e) {
         console.log("Error saving recently viewed:", e);
       }
