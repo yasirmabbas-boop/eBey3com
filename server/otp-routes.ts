@@ -83,8 +83,8 @@ export function registerOtpRoutes(app: Express) {
     }
   });
 
-  // POST /api/verify-otp - Verify OTP code
-  app.post("/api/verify-otp", async (req, res) => {
+  // POST /api/verify-otp - Verify OTP code (for login)
+  app.post("/api/verify-otp", async (req: any, res) => {
     try {
       const { phoneNumber, phone, code } = req.body ?? {};
       const normalizedInput = phoneNumber || phone;
@@ -141,13 +141,29 @@ export function registerOtpRoutes(app: Express) {
         { expiresIn: "30d" }
       );
 
+      // Create session for session-based authentication (like regular login)
+      if (req.session) {
+        req.session.userId = user.id;
+        req.session.user = {
+          id: user.id,
+          displayName: user.displayName,
+          username: user.username,
+          phone: user.phone,
+          phoneVerified: true,
+          role: user.role
+        };
+      }
+
       return res.json({
         success: true,
         message: "تم التحقق من رقم الهاتف بنجاح",
         user: {
           id: user.id,
+          displayName: user.displayName,
+          username: user.username,
           phone: user.phone,
-          phoneVerified: true
+          phoneVerified: true,
+          role: user.role
         },
         token
       });
