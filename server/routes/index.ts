@@ -4,8 +4,10 @@ import { registerAccountRoutes } from "./account";
 import { registerProductRoutes } from "./products";
 import { registerUsersRoutes } from "./users";
 import { registerNotificationRoutes } from "./notifications";
+import { registerObjectStorageRoutes } from "../replit_integrations/object_storage";
 
 export async function registerRoutes(server: Server, app: Express): Promise<void> {
+  registerObjectStorageRoutes(app);
   registerAccountRoutes(app);
   registerProductRoutes(app);
   registerUsersRoutes(app);
