@@ -218,12 +218,6 @@ export default function MyAccount() {
 
   const settingsSubItems = [
     {
-      icon: <Settings className="h-5 w-5" />,
-      label: "الإعدادات",
-      description: "إدارة حسابك وتفضيلاتك",
-      href: "/settings",
-    },
-    {
       icon: <Shield className="h-5 w-5" />,
       label: "إعدادات الأمان",
       description: "المصادقة الثنائية وكلمة المرور",
@@ -413,7 +407,7 @@ export default function MyAccount() {
           )}
 
           {/* Settings Section */}
-          <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 rounded-b-xl mb-8">
+          <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 rounded-b-xl mb-20">
             <div>
               <button
                 onClick={() => setShowSettingsMenu(!showSettingsMenu)}
@@ -424,8 +418,8 @@ export default function MyAccount() {
                   <Settings className="h-6 w-6" />
                 </div>
                 <div className="flex-1 text-right">
-                  <span className="font-medium text-gray-900">الإعدادات والمساعدة</span>
-                  <p className="text-sm text-gray-500 mt-0.5">إدارة حسابك والدعم</p>
+                  <span className="font-medium text-gray-900">الإعدادات</span>
+                  <p className="text-sm text-gray-500 mt-0.5">إدارة حسابك والأمان والمساعدة</p>
                 </div>
                 <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showSettingsMenu ? 'rotate-180' : ''}`} />
               </button>
