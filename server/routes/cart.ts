@@ -1,6 +1,17 @@
 import type { Express } from "express";
+import { z } from "zod";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
+
+const checkoutSchema = z.object({
+  fullName: z.string().min(1),
+  phone: z.string().min(1),
+  city: z.string().min(1),
+  addressLine1: z.string().min(1),
+  addressLine2: z.string().optional(),
+  shippingCost: z.number().int().min(0),
+  saveAddress: z.boolean().optional(),
+});
 
 export function registerCartRoutes(app: Express): void {
   // Get cart items for current user
@@ -159,6 +170,141 @@ export function registerCartRoutes(app: Express): void {
     } catch (error) {
       console.error("Error clearing cart:", error);
       res.status(500).json({ error: "Failed to clear cart" });
+    }
+  });
+
+  // Checkout - complete purchase from cart items
+  app.post("/api/checkout", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const parsed = checkoutSchema.parse(req.body);
+
+      // Get user's cart items
+      const cartItems = await storage.getCartItems(userId);
+      if (cartItems.length === 0) {
+        return res.status(400).json({ error: "السلة فارغة" });
+      }
+
+      const transactions = [];
+      const errors = [];
+
+      // Process each cart item
+      for (const cartItem of cartItems) {
+        const listing = await storage.getListing(cartItem.listingId);
+        
+        if (!listing) {
+          errors.push(`المنتج غير موجود: ${cartItem.listingId}`);
+          continue;
+        }
+
+        if (!listing.isActive) {
+          errors.push(`المنتج غير متاح: ${listing.title}`);
+          continue;
+        }
+
+        if (listing.quantityAvailable < cartItem.quantity) {
+          errors.push(`الكمية غير متوفرة: ${listing.title}`);
+          continue;
+        }
+
+        if (listing.sellerId === userId) {
+          errors.push(`لا يمكنك شراء منتجك الخاص: ${listing.title}`);
+          continue;
+        }
+
+        if (!listing.sellerId) {
+          errors.push(`البائع غير معروف: ${listing.title}`);
+          continue;
+        }
+
+        // Create transaction
+        const transaction = await storage.createTransaction({
+          listingId: cartItem.listingId,
+          sellerId: listing.sellerId,
+          buyerId: userId,
+          amount: listing.price * cartItem.quantity,
+          status: "pending",
+          paymentMethod: "cash",
+          deliveryAddress: `${parsed.addressLine1}${parsed.addressLine2 ? ', ' + parsed.addressLine2 : ''}`,
+          deliveryPhone: parsed.phone,
+          deliveryCity: parsed.city,
+        });
+
+        transactions.push(transaction);
+
+        // Update listing quantity
+        const newQuantity = listing.quantityAvailable - cartItem.quantity;
+        if (newQuantity <= 0) {
+          await storage.updateListing(cartItem.listingId, { 
+            isActive: false,
+            quantityAvailable: 0,
+            quantitySold: (listing.quantitySold || 0) + cartItem.quantity,
+          } as any);
+        } else {
+          await storage.updateListing(cartItem.listingId, { 
+            quantityAvailable: newQuantity,
+            quantitySold: (listing.quantitySold || 0) + cartItem.quantity,
+          } as any);
+        }
+
+        // Notify seller
+        if (listing.sellerId) {
+          await storage.createNotification({
+            userId: listing.sellerId,
+            type: "new_order",
+            title: "طلب جديد",
+            message: `لديك طلب جديد على "${listing.title}"`,
+            linkUrl: `/my-sales`,
+            relatedId: transaction.id,
+          });
+        }
+      }
+
+      // If all items failed, return error
+      if (transactions.length === 0 && errors.length > 0) {
+        return res.status(400).json({ 
+          error: "فشل في إتمام الطلب", 
+          details: errors 
+        });
+      }
+
+      // Save address if requested
+      if (parsed.saveAddress) {
+        try {
+          await storage.createBuyerAddress({
+            userId,
+            label: "عنوان التوصيل",
+            recipientName: parsed.fullName,
+            phone: parsed.phone,
+            city: parsed.city,
+            addressLine1: parsed.addressLine1,
+            addressLine2: parsed.addressLine2 || "",
+            isDefault: false,
+          });
+        } catch (e) {
+          console.error("Error saving address:", e);
+        }
+      }
+
+      // Clear the cart
+      await storage.clearCart(userId);
+
+      res.status(201).json({
+        success: true,
+        message: "تم إنشاء الطلب بنجاح",
+        transactions,
+        errors: errors.length > 0 ? errors : undefined,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "بيانات غير صالحة", details: error.errors });
+      }
+      console.error("Error in checkout:", error);
+      res.status(500).json({ error: "فشل في إتمام الطلب" });
     }
   });
 }
