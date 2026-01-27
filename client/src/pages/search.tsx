@@ -847,103 +847,49 @@ export default function SearchPage() {
               </div>
             )
           ) : (
-            <div className="space-y-6">
-              {/* Group products by category for carousel view */}
-              {(() => {
-                const productsByCategory = CATEGORIES.reduce((acc, cat) => {
-                  const catProducts = displayedProducts.filter(p => p.category === cat.id);
-                  if (catProducts.length > 0) {
-                    acc[cat.id] = { nameAr: cat.nameAr, nameKu: cat.nameKu, icon: cat.icon, products: catProducts };
-                  }
-                  return acc;
-                }, {} as Record<string, { nameAr: string; nameKu: string; icon: any; products: Listing[] }>);
-
-                const categoriesWithProducts = Object.entries(productsByCategory);
-
-                if (categoriesWithProducts.length === 0) {
-                  return (
-                    <EmptySearchState 
-                      query={searchQuery || undefined}
-                      language={language}
-                    />
-                  );
-                }
-
-                return categoriesWithProducts.map(([catId, { nameAr, nameKu, icon: CatIcon, products }]) => (
-                  <div key={catId} className="bg-gray-50 rounded-xl p-3 sm:p-4">
-                    <div className="flex justify-between items-center mb-3 sm:mb-4">
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="h-7 w-7 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center bg-primary/10">
-                          <CatIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+            <div>
+              {/* Responsive Grid View - 2 cols mobile, 3 tablet, 4-5 desktop */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
+                {displayedProducts.map((product) => (
+                  <Link key={product.id} href={`/product/${product.id}`}>
+                    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 bg-white active:scale-[0.98]" data-testid={`search-result-${product.id}`}>
+                      <div className="relative aspect-square overflow-hidden bg-gray-100">
+                        <img 
+                          src={product.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"} 
+                          alt={product.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                        {!product.isActive && (
+                          <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
+                            <Badge className="bg-gray-700 text-white border-0 text-[9px] sm:text-xs shadow-md">
+                              {t("sold")}
+                            </Badge>
+                          </div>
+                        )}
+                        <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
+                          <FavoriteButton listingId={product.id} size="sm" />
                         </div>
-                        <h3 className="text-sm sm:text-lg font-bold text-primary">{language === "ar" ? nameAr : nameKu}</h3>
-                        <Badge variant="secondary" className="text-xs">{products.length}</Badge>
+                        {!product.isActive && (
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                            <span className="text-white font-bold text-xs sm:text-sm bg-black/50 px-2 py-1 rounded-lg">{t("sold")}</span>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    
-                    <CategoryCarousel>
-                      {products.map((product) => (
-                        <Link key={product.id} href={`/product/${product.id}`} className="snap-start">
-                          <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 bg-white flex-shrink-0 w-36 sm:w-56 active:scale-[0.98]" data-testid={`search-result-${product.id}`}>
-                            <div className="relative aspect-square overflow-hidden bg-gray-100">
-                              <img 
-                                src={product.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"} 
-                                alt={product.title} 
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                loading="lazy"
-                              />
-                              {!product.isActive && (
-                                <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
-                                  <Badge className="bg-gray-700 text-white border-0 text-[9px] sm:text-xs shadow-md">
-                                    {t("sold")}
-                                  </Badge>
-                                </div>
-                              )}
-                              <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
-                                <FavoriteButton listingId={product.id} size="sm" />
-                              </div>
-                              {!product.isActive && (
-                                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                                  <span className="text-white font-bold text-sm sm:text-lg bg-black/50 px-2 sm:px-4 py-1 sm:py-2 rounded-lg">{t("sold")}</span>
-                                </div>
-                              )}
-                              {product.saleType === "auction" && product.auctionEndTime && (
-                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 sm:p-2">
-                                  <div className="text-[9px] sm:text-xs text-white font-medium">
-                                    <AuctionCountdown endTime={product.auctionEndTime} />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="p-2 sm:p-3">
-                              <h3 className="font-semibold text-[10px] sm:text-sm text-gray-900 line-clamp-1 group-hover:text-primary transition-colors leading-tight mb-1">
-                                {product.title}
-                              </h3>
-                              {product.tags && product.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mb-1">
-                                  {product.tags.slice(0, 3).map((tag) => (
-                                    <Badge
-                                      key={tag}
-                                      variant="outline"
-                                      className="text-[8px] sm:text-[10px] px-1.5 py-0.5 text-muted-foreground border-border/60"
-                                    >
-                                      {tag}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-                              <p className="font-bold text-sm sm:text-base text-primary">
-                                {(product.currentBid || product.price).toLocaleString()} <span className="text-[9px] sm:text-xs font-normal text-gray-600">د.ع</span>
-                              </p>
-                            </div>
-                          </Card>
-                        </Link>
-                      ))}
-                    </CategoryCarousel>
-                  </div>
-                ));
-              })()}
+                      
+                      <div className="p-2 sm:p-3">
+                        <h3 className="font-semibold text-[11px] sm:text-sm text-gray-900 line-clamp-2 group-hover:text-primary transition-colors leading-tight mb-1">
+                          {product.title}
+                        </h3>
+                        <p className="text-primary font-bold text-sm sm:text-base">
+                          {(product.currentBid || product.price || 0).toLocaleString()} {t("currency")}
+                        </p>
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+
             </div>
           )}
 

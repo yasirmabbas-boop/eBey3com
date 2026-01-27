@@ -70,15 +70,15 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
     const term = searchTerm || query;
     if (term.trim()) {
       navigate(`/search?q=${encodeURIComponent(term.trim())}`);
-    } else {
-      navigate("/search");
+      setShowDropdown(false);
     }
-    setShowDropdown(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleSearch();
+    if (query.trim()) {
+      handleSearch();
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
