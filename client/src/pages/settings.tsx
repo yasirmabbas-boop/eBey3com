@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, User, Phone, Home, Save, CheckCircle, Info } from "lucide-react";
+import { Loader2, MapPin, User, Phone, Home, Save, CheckCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 const IRAQI_PROVINCES = [
@@ -356,15 +356,6 @@ export default function Settings() {
           </div>
         )}
 
-        <Link href="/about">
-          <div className="flex items-center justify-between p-4 bg-muted/50 border rounded-lg hover:bg-muted transition-colors cursor-pointer mt-6">
-            <div className="flex items-center gap-3">
-              <Info className="h-5 w-5 text-muted-foreground" />
-              <span className="font-medium">حول التطبيق</span>
-            </div>
-            <span className="text-muted-foreground">←</span>
-          </div>
-        </Link>
       </div>
     </div>
   );

@@ -27,6 +27,7 @@ import {
   BadgeCheck,
   AlertCircle,
   MapPin,
+  Info,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -228,6 +229,12 @@ export default function MyAccount() {
       label: "المساعدة",
       description: "الأسئلة الشائعة والدعم",
       href: "/contact",
+    },
+    {
+      icon: <Info className="h-5 w-5" />,
+      label: "حول التطبيق",
+      description: "معلومات عن E-بيع",
+      href: "/about",
     },
   ];
 
