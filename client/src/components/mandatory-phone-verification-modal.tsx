@@ -143,6 +143,12 @@ export function MandatoryPhoneVerificationModal({
         ));
       }
 
+      // Store the new auth token if returned (contains phoneVerified: true)
+      if (data.token) {
+        localStorage.setItem("authToken", data.token);
+        console.log("[PhoneVerification] New auth token stored after verification");
+      }
+
       toast({
         title: tr("تم التحقق بنجاح", "پشتڕاستکرایەوە", "Verified successfully"),
         description: tr(
@@ -152,13 +158,13 @@ export function MandatoryPhoneVerificationModal({
         ),
       });
 
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      // Invalidate and refetch user data to get updated phoneVerified status
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
       
       onVerified();
       onOpenChange(false);
-      
-      // Do NOT refresh; callers can continue seamlessly (e.g., open offer dialog).
     } catch (error: any) {
       toast({
         title: tr("خطأ", "هەڵە", "Error"),

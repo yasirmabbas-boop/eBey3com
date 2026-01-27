@@ -139,9 +139,11 @@ export function PhoneVerificationModal({
         ),
       });
 
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/account/profile"] });
+      // Invalidate and refetch user data to get updated phoneVerified status
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/account/profile"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
       
       onVerified?.();
       onOpenChange(false);
