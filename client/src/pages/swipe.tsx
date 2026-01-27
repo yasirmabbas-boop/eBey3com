@@ -217,6 +217,18 @@ function SwipeCard({
                 <span>{listing.sellerName}</span>
               </div>
             </Link>
+
+            <Link href={`/product/${listing.id}`} className="mt-4">
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90"
+                size="lg"
+              >
+                {listing.saleType === "auction" 
+                  ? (language === "ar" ? "مزايدة الآن" : "ئێستا مزایەدە بکە")
+                  : (language === "ar" ? "شراء الآن" : "ئێستا بکڕە")
+                }
+              </Button>
+            </Link>
           </div>
 
           <div className="flex flex-col items-center gap-4">
@@ -275,19 +287,6 @@ function SwipeCard({
           </div>
         </div>
       </div>
-
-      <Link href={`/product/${listing.id}`}>
-        <Button 
-          className="absolute left-4 right-20 bg-primary hover:bg-primary/90"
-          style={{ bottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))' }}
-          size="lg"
-        >
-          {listing.saleType === "auction" 
-            ? (language === "ar" ? "مزايدة الآن" : "ئێستا مزایەدە بکە")
-            : (language === "ar" ? "شراء الآن" : "ئێستا بکڕە")
-          }
-        </Button>
-      </Link>
     </div>
   );
 }
