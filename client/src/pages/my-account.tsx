@@ -153,6 +153,7 @@ export default function MyAccount() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   
   // Optimistic: if we have a token, assume logged in until proven otherwise
   const hasToken = hasAuthToken();
@@ -300,8 +301,6 @@ export default function MyAccount() {
       });
     }
   };
-
-  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
   const sellingItems: AccountMenuItem[] = [
     {
