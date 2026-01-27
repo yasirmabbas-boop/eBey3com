@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Loader2, Plus, Store, LogOut, HelpCircle } from "lucide-react";
+import { ShoppingCart, Loader2, HelpCircle } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { AccountDropdown } from "@/components/account-dropdown";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,7 +22,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children, hideHeader = false }: LayoutProps) {
-  const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const { totalItems } = useCart();
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
@@ -55,45 +55,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
           
           {/* User Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {isAuthenticated ? (
-              <>
-                <span className="hidden sm:flex items-center gap-2 font-bold text-base">
-                  {user?.isVerified ? <Store className="h-4 w-4" /> : <User className="h-4 w-4" />}
-                  {user?.displayName || user?.phone}
-                </span>
-                <Link href="/my-account" className="hidden sm:inline hover:opacity-80 font-medium">{t("myAccount")}</Link>
-                {user?.isVerified ? (
-                  <Link href="/seller-dashboard" className="hidden sm:inline hover:opacity-80 font-medium">{t("myShop")}</Link>
-                ) : (
-                  <Link href="/my-purchases" className="hidden sm:inline hover:opacity-80 font-medium">{t("myPurchases")}</Link>
-                )}
-                <button 
-                  onClick={() => logout()}
-                  className="hover:opacity-80 font-medium flex items-center gap-2 text-base"
-                  data-testid="button-logout"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t("logout")}</span>
-                </button>
-                {user?.isVerified && (
-                  <Link 
-                    href="/sell" 
-                    className="hidden sm:flex bg-white/95 text-primary hover:bg-white px-4 py-1.5 rounded-full font-bold items-center gap-2 transition-colors text-sm shadow-[var(--shadow-1)]"
-                    data-testid="button-sell-item"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {t("addProduct")}
-                  </Link>
-                )}
-              </>
-            ) : (
-              !isLoading && (
-                <Link href="/signin" className="hover:opacity-80 transition-colors flex items-center gap-1.5 text-sm font-medium" data-testid="button-login">
-                  <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t("login")}</span>
-                </Link>
-              )
-            )}
+            {/* User actions removed - only language and cart remain */}
             {/* Compact Language Switcher */}
             <Select
               value={language}
