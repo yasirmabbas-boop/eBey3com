@@ -26,6 +26,7 @@ import {
   Share2,
   BadgeCheck,
   AlertCircle,
+  MapPin,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -377,6 +378,22 @@ export default function MyAccount() {
                     )}
                   </div>
                   <p className="text-sm text-gray-500 mt-0.5">مشترياتك ومزايداتك وعروضك</p>
+                </div>
+                <ChevronLeft className="h-5 w-5 text-gray-400" />
+              </div>
+            </Link>
+          </div>
+
+          {/* Address Section */}
+          <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
+            <Link href="/settings">
+              <div className="flex items-center gap-4 py-4 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors" data-testid="menu-address">
+                <div className="text-gray-600">
+                  <MapPin className="h-6 w-6" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-medium text-gray-900">العنوان</span>
+                  <p className="text-sm text-gray-500 mt-0.5">إدارة عنوان التوصيل</p>
                 </div>
                 <ChevronLeft className="h-5 w-5 text-gray-400" />
               </div>
