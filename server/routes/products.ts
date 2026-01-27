@@ -298,20 +298,11 @@ export function registerProductRoutes(app: Express): void {
         return res.status(403).json({ error: "المستخدم غير موجود" });
       }
       
-      // Require phone verification
+      // Require phone verification to sell
       if (!user.phoneVerified) {
         return res.status(403).json({ 
-          error: "يجب التحقق من رقم هاتفك أولاً",
+          error: "يجب التحقق من رقم هاتفك أولاً لتتمكن من البيع",
           requiresPhoneVerification: true
-        });
-      }
-      
-      // Require seller approval
-      if (!user.sellerApproved) {
-        return res.status(403).json({ 
-          error: "يجب أن تكون بائعاً معتمداً لإضافة منتجات. يرجى تقديم طلب للحصول على صلاحية البيع.",
-          requiresSellerApproval: true,
-          sellerRequestStatus: user.sellerRequestStatus
         });
       }
       

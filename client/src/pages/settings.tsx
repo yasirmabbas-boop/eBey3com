@@ -21,6 +21,7 @@ interface ProfileData {
   phone: string;
   displayName: string;
   avatar: string | null;
+  phoneVerified: boolean;
   city: string | null;
   district: string | null;
   addressLine1: string | null;
@@ -28,6 +29,7 @@ interface ProfileData {
   locationLat: number | null;
   locationLng: number | null;
   mapUrl: string | null;
+  phoneVerified: boolean | null;
 }
 
 export default function Settings() {
@@ -181,7 +183,15 @@ export default function Settings() {
             </div>
 
             <div>
-              <Label htmlFor="phone">رقم الهاتف</Label>
+              <div className="flex items-center gap-2 mb-1">
+                <Label htmlFor="phone">رقم الهاتف</Label>
+                {profile?.phoneVerified && (
+                  <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                    <CheckCircle className="h-3 w-3" />
+                    موثق
+                  </span>
+                )}
+              </div>
               <Input
                 id="phone"
                 value={phone}
@@ -189,7 +199,16 @@ export default function Settings() {
                 className="bg-muted"
                 data-testid="input-phone"
               />
-              <p className="text-sm text-muted-foreground mt-1">لا يمكن تغيير رقم الهاتف</p>
+              {profile?.phoneVerified ? (
+                <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" />
+                  تم التحقق من رقم هاتفك - يمكنك البيع على المنصة
+                </p>
+              ) : (
+                <p className="text-sm text-amber-600 mt-1">
+                  لم يتم التحقق من رقم هاتفك بعد. توجه لصفحة البيع للتحقق.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

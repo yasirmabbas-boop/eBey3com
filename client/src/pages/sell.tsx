@@ -736,189 +736,42 @@ export default function SellPage() {
     );
   }
 
-  // If user is not an approved seller, show seller request option
-  if (!authLoading && user && !user.sellerApproved) {
-    // First check if phone is verified - required before requesting seller status
-    if (!user.phoneVerified) {
-      return (
-        <Layout>
-          <div className="container mx-auto px-4 py-16 max-w-md text-center">
-            <Card>
-              <CardHeader>
-                <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center">
-                  <Phone className="h-8 w-8 text-amber-600" />
-                </div>
-                <CardTitle className="text-2xl">{language === "ar" ? "التحقق من رقم الهاتف مطلوب" : "پشتڕاستکردنی ژمارەی مۆبایل پێویستە"}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-muted-foreground">
-                  {language === "ar" 
-                    ? "يجب التحقق من رقم هاتفك أولاً قبل التقدم لتصبح بائعاً على منصة إي-بيع"
-                    : "پێویستە سەرەتا ژمارەی مۆبایلەکەت پشتڕاست بکەیت پێش پێشکەشکردنی داوا بۆ فرۆشیاربوون"
-                  }
-                </p>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-right">
-                  <p className="text-sm text-blue-700 mb-2">
-                    {language === "ar" ? "خطوات التحقق:" : "هەنگاوەکانی پشتڕاستکردنەوە:"}
-                  </p>
-                  <ol className="text-sm text-blue-600 space-y-1 list-decimal list-inside">
-                    <li>{language === "ar" ? "انتقل إلى الإعدادات" : "بڕۆ بۆ ڕێکخستنەکان"}</li>
-                    <li>{language === "ar" ? "أضف رقم هاتفك" : "ژمارەی مۆبایلەکەت زیاد بکە"}</li>
-                    <li>{language === "ar" ? "اضغط على 'التحقق عبر واتساب'" : "کلیک بکە لەسەر 'پشتڕاستکردن بە واتسئاپ'"}</li>
-                    <li>{language === "ar" ? "أدخل رمز التحقق المرسل" : "کۆدی نێردراو بنووسە"}</li>
-                  </ol>
-                </div>
-                <Link href="/settings">
-                  <Button className="w-full">
-                    <Settings className="h-4 w-4 ml-2" />
-                    {language === "ar" ? "انتقل إلى الإعدادات" : "بڕۆ بۆ ڕێکخستنەکان"}
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-        </Layout>
-      );
-    }
-
+  // If user's phone is not verified, show verification prompt
+  if (!authLoading && user && !user.phoneVerified) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 max-w-md text-center">
           <Card>
             <CardHeader>
-              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">
-                <Package className="h-8 w-8 text-blue-600" />
+              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center">
+                <Phone className="h-8 w-8 text-amber-600" />
               </div>
-              <CardTitle className="text-2xl">{language === "ar" ? "طلب التسجيل كبائع" : "داواکردنی تۆمارکردن وەک فرۆشیار"}</CardTitle>
+              <CardTitle className="text-2xl">{language === "ar" ? "التحقق من رقم الهاتف مطلوب" : "پشتڕاستکردنی ژمارەی مۆبایل پێویستە"}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {user.sellerRequestStatus === "pending" ? (
-                <>
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-amber-700 mb-2">
-                      <Clock className="h-5 w-5" />
-                      <span className="font-medium">{language === "ar" ? "طلبك قيد المراجعة" : "داواکەت لە چاوپێکەوتندایە"}</span>
-                    </div>
-                    <p className="text-sm text-amber-600">
-                      {language === "ar" ? "تم تقديم طلبك للتسجيل كبائع. سيتم إعلامك عند الموافقة على طلبك." : "داواکارییەکەت بۆ فرۆشیاربوون پێشکەشکرا. ئاگاداری دەکەینەوە کاتێک داواکەت پەسەند دەکرێت."}
-                    </p>
-                  </div>
-                  <Link href="/">
-                    <Button variant="outline" className="w-full">{language === "ar" ? "العودة للصفحة الرئيسية" : "گەڕانەوە بۆ سەرەکی"}</Button>
-                  </Link>
-                </>
-              ) : user.sellerRequestStatus === "rejected" ? (
-                <>
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-red-700 mb-2">
-                      <AlertTriangle className="h-5 w-5" />
-                      <span className="font-medium">{language === "ar" ? "تم رفض الطلب" : "داواکەت ڕەتکرایەوە"}</span>
-                    </div>
-                    <p className="text-sm text-red-600">
-                      {language === "ar" ? "للأسف تم رفض طلبك للتسجيل كبائع. يمكنك التواصل مع الدعم لمزيد من المعلومات." : "بەداخەوە داواکارییەکەت بۆ فرۆشیاربوون ڕەتکرایەوە. دەتوانیت پەیوەندی بە پشتگیری بکەیت."}
-                    </p>
-                  </div>
-                  <Link href="/">
-                    <Button variant="outline" className="w-full">{language === "ar" ? "العودة للصفحة الرئيسية" : "گەڕانەوە بۆ سەرەکی"}</Button>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <p className="text-muted-foreground text-sm">
-                    {language === "ar" ? "أكمل النموذج التالي للتسجيل كبائع على منصة اي-بيع" : "فۆرمی خوارەوە تەواو بکە بۆ تۆمارکردن وەک فرۆشیار"}
-                  </p>
-                  
-                  <div className="space-y-4 text-right">
-                    <div>
-                      <Label htmlFor="shopName" className="text-sm font-medium">
-                        {language === "ar" ? "اسم المتجر / النشاط التجاري" : "ناوی دوکان / چالاکی بازرگانی"} <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="shopName"
-                        placeholder={language === "ar" ? "مثال: متجر الساعات الفاخرة" : "نموونە: دوکانی کاتژمێری لوکس"}
-                        value={sellerFormData.shopName}
-                        onChange={(e) => setSellerFormData(prev => ({ ...prev, shopName: e.target.value }))}
-                        className="mt-1"
-                        data-testid="input-shop-name"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="phone" className="text-sm font-medium">
-                        {t("phone")} <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="07XX XXX XXXX"
-                        value={sellerFormData.phone}
-                        onChange={(e) => setSellerFormData(prev => ({ ...prev, phone: e.target.value }))}
-                        className="mt-1"
-                        dir="ltr"
-                        data-testid="input-seller-phone"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="city" className="text-sm font-medium">
-                        {language === "ar" ? "المحافظة" : "پارێزگا"} <span className="text-red-500">*</span>
-                      </Label>
-                      <Select
-                        value={sellerFormData.city}
-                        onValueChange={(value) => setSellerFormData(prev => ({ ...prev, city: value }))}
-                      >
-                        <SelectTrigger className="mt-1" data-testid="select-seller-city">
-                          <SelectValue placeholder={language === "ar" ? "اختر المحافظة" : "پارێزگا هەڵبژێرە"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {IRAQI_CITIES.map((city) => (
-                            <SelectItem key={city} value={city}>{city}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="description" className="text-sm font-medium">
-                        {language === "ar" ? "وصف المنتجات التي ستبيعها" : "وەسفی بەرهەمەکانی کە دەیانفرۆشیت"}
-                      </Label>
-                      <Textarea
-                        id="description"
-                        placeholder={language === "ar" ? "مثال: ساعات أصلية، ملابس فاخرة، إلكترونيات..." : "نموونە: کاتژمێری ئەسڵی، جلوبەرگی لوکس، ئەلیکترۆنیات..."}
-                        value={sellerFormData.description}
-                        onChange={(e) => setSellerFormData(prev => ({ ...prev, description: e.target.value }))}
-                        className="mt-1 min-h-[80px]"
-                        data-testid="input-seller-description"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-right">
-                    <h4 className="font-medium text-blue-800 mb-1 text-sm">{language === "ar" ? "مميزات البائع:" : "تایبەتمەندیەکانی فرۆشیار:"}</h4>
-                    <ul className="text-xs text-blue-700 space-y-0.5">
-                      <li>• {language === "ar" ? "إضافة منتجات للبيع المباشر أو المزاد" : "زیادکردنی بەرهەم بۆ فرۆشتنی ڕاستەوخۆ یان مزایدە"}</li>
-                      <li>• {language === "ar" ? "لوحة تحكم متقدمة للبائع" : "داشبۆردی پێشکەوتوو بۆ فرۆشیار"}</li>
-                      <li>• {language === "ar" ? "التواصل المباشر مع المشترين" : "پەیوەندی ڕاستەوخۆ لەگەڵ کڕیاران"}</li>
-                    </ul>
-                  </div>
-
-                  <Button 
-                    className="w-full" 
-                    onClick={handleRequestSellerAccess}
-                    disabled={isRequestingSellerAccess}
-                    data-testid="button-submit-seller-request"
-                  >
-                    {isRequestingSellerAccess ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                        {language === "ar" ? "جاري إرسال الطلب..." : "داواکە دەنێردرێت..."}
-                      </>
-                    ) : (
-                      language === "ar" ? "تقديم طلب التسجيل كبائع" : "داواکاری تۆمارکردن وەک فرۆشیار"
-                    )}
-                  </Button>
-                </>
-              )}
+              <p className="text-muted-foreground">
+                {language === "ar" 
+                  ? "يجب التحقق من رقم هاتفك أولاً لتتمكن من البيع على منصة إي-بيع"
+                  : "پێویستە سەرەتا ژمارەی مۆبایلەکەت پشتڕاست بکەیت بۆ فرۆشتن لە ئی-بێع"
+                }
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-right">
+                <p className="text-sm text-blue-700 mb-2">
+                  {language === "ar" ? "خطوات التحقق:" : "هەنگاوەکانی پشتڕاستکردنەوە:"}
+                </p>
+                <ol className="text-sm text-blue-600 space-y-1 list-decimal list-inside">
+                  <li>{language === "ar" ? "انتقل إلى الإعدادات" : "بڕۆ بۆ ڕێکخستنەکان"}</li>
+                  <li>{language === "ar" ? "أضف رقم هاتفك" : "ژمارەی مۆبایلەکەت زیاد بکە"}</li>
+                  <li>{language === "ar" ? "اضغط على 'التحقق عبر واتساب'" : "کلیک بکە لەسەر 'پشتڕاستکردن بە واتسئاپ'"}</li>
+                  <li>{language === "ar" ? "أدخل رمز التحقق المرسل" : "کۆدی نێردراو بنووسە"}</li>
+                </ol>
+              </div>
+              <Link href="/settings">
+                <Button className="w-full">
+                  <Settings className="h-4 w-4 ml-2" />
+                  {language === "ar" ? "انتقل إلى الإعدادات" : "بڕۆ بۆ ڕێکخستنەکان"}
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
@@ -926,6 +779,65 @@ export default function SellPage() {
     );
   }
 
+  // Check if user is banned from selling (admin revoked privileges)
+  if (!authLoading && user && user.isBanned) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 max-w-md text-center">
+          <Card>
+            <CardHeader>
+              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="h-8 w-8 text-red-600" />
+              </div>
+              <CardTitle className="text-2xl">{language === "ar" ? "تم تعليق حسابك" : "هەژمارەکەت هەڵپەسێردرا"}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                {language === "ar" 
+                  ? "تم تعليق صلاحية البيع لحسابك. يرجى التواصل مع الدعم لمزيد من المعلومات."
+                  : "مافی فرۆشتنت هەڵپەسێردراوە. تکایە پەیوەندی بە پشتگیری بکە."
+                }
+              </p>
+              <Link href="/">
+                <Button variant="outline" className="w-full">{language === "ar" ? "العودة للصفحة الرئيسية" : "گەڕانەوە بۆ سەرەکی"}</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Legacy seller request handling - keep for backwards compatibility but not required anymore
+  if (!authLoading && user && user.sellerRequestStatus === "rejected") {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 max-w-md text-center">
+          <Card>
+            <CardHeader>
+              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="h-8 w-8 text-red-600" />
+              </div>
+              <CardTitle className="text-2xl">{language === "ar" ? "تم رفض طلبك" : "داواکەت ڕەتکرایەوە"}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                {language === "ar" 
+                  ? "للأسف تم رفض طلبك للتسجيل كبائع. يمكنك التواصل مع الدعم لمزيد من المعلومات."
+                  : "بەداخەوە داواکارییەکەت بۆ فرۆشیاربوون ڕەتکرایەوە. دەتوانیت پەیوەندی بە پشتگیری بکەیت."
+                }
+              </p>
+              <Link href="/">
+                <Button variant="outline" className="w-full">{language === "ar" ? "العودة للصفحة الرئيسية" : "گەڕانەوە بۆ سەرەکی"}</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
+  // If we reach here, user is phone-verified and can sell! Show the sell form.
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8 pb-24 max-w-4xl">
