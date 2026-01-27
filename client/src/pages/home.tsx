@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Clock, Search as SearchIcon, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel, Star, TrendingUp, Timer, DollarSign, ChevronLeft } from "lucide-react";
+import { Eye, Clock, Search as SearchIcon, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel, Star, TrendingUp, Timer, DollarSign } from "lucide-react";
 import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
 import type { Listing } from "@shared/schema";
@@ -96,18 +96,6 @@ function Section({ title, icon, children, seeAllLink, seeAllText }: SectionProps
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
         >
           {children}
-          {seeAllLink && (
-            <Link href={seeAllLink} className="snap-start flex-shrink-0">
-              <Card className="w-[calc(40vw-8px)] sm:w-[170px] h-full min-h-[180px] flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-                <div className="text-center p-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
-                    <ChevronLeft className="h-5 w-5 text-primary" />
-                  </div>
-                  <p className="text-xs font-medium text-primary">{seeAllText || "عرض الكل"}</p>
-                </div>
-              </Card>
-            </Link>
-          )}
         </div>
       </div>
     </section>
@@ -384,7 +372,7 @@ export default function Home() {
           <Section 
             title={language === "ar" ? "ينتهي قريباً" : "زوو دەکوژرێتەوە"}
             icon={<Timer className="h-4 w-4 text-orange-600" />}
-            seeAllLink="/search?saleType=auction&sort=ending"
+            seeAllLink="/search?saleType=auction&sort=ending_soon"
             seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
           >
             {endingSoon.map((product) => (

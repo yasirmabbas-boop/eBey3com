@@ -84,6 +84,7 @@ const CITIES = [
 const SORT_OPTIONS = [
   { value: "relevance", labelAr: "الأكثر صلة", labelKu: "پەیوەندیدارترین" },
   { value: "newest", labelAr: "الأحدث", labelKu: "نوێترین" },
+  { value: "views", labelAr: "الأكثر مشاهدة", labelKu: "زۆرترین بینراو" },
   { value: "price_low", labelAr: "السعر: من الأقل للأعلى", labelKu: "نرخ: لە کەمەوە بۆ زۆر" },
   { value: "price_high", labelAr: "السعر: من الأعلى للأقل", labelKu: "نرخ: لە زۆرەوە بۆ کەم" },
   { value: "ending_soon", labelAr: "ينتهي قريباً", labelKu: "بە زووی تەواو دەبێت" },
@@ -134,6 +135,7 @@ export default function SearchPage() {
   const sellerIdParam = params.get("sellerId");
   const saleTypeParam = params.get("saleType");
   const exchangeParam = params.get("exchange");
+  const sortParam = params.get("sort");
   
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({
     category: categoryParam,
@@ -146,7 +148,10 @@ export default function SearchPage() {
   });
   
   const [draftFilters, setDraftFilters] = useState<FilterState>(appliedFilters);
-  const [sortBy, setSortBy] = useState(searchQuery ? "relevance" : "newest");
+  const [sortBy, setSortBy] = useState(() => {
+    if (sortParam) return sortParam;
+    return searchQuery ? "relevance" : "newest";
+  });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [mergedListings, setMergedListings] = useState<Listing[]>([]);
@@ -293,6 +298,9 @@ export default function SearchPage() {
         break;
       case "most_bids":
         sortedProducts.sort((a, b) => (b.totalBids || 0) - (a.totalBids || 0));
+        break;
+      case "views":
+        sortedProducts.sort((a, b) => (b.views || 0) - (a.views || 0));
         break;
       case "newest":
       default:
