@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Clock, Search as SearchIcon, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel, Star, TrendingUp, Timer, DollarSign } from "lucide-react";
+import { Eye, Clock, Search as SearchIcon, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel, Star, TrendingUp, Timer, DollarSign, ChevronLeft } from "lucide-react";
 import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
 import type { Listing } from "@shared/schema";
@@ -72,21 +72,42 @@ interface SectionProps {
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
+  seeAllLink?: string;
+  seeAllText?: string;
 }
 
-function Section({ title, icon, children }: SectionProps) {
+function Section({ title, icon, children, seeAllLink, seeAllText }: SectionProps) {
   return (
     <section className="py-3">
       <div className="container mx-auto px-2">
-        <div className="flex items-center gap-1.5 mb-2">
-          {icon}
-          <h2 className="text-xs font-bold text-primary">{title}</h2>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            {icon}
+            <h2 className="text-xs font-bold text-primary">{title}</h2>
+          </div>
+          {seeAllLink && (
+            <Link href={seeAllLink} className="text-[10px] text-primary font-medium hover:underline">
+              {seeAllText || "عرض الكل"}
+            </Link>
+          )}
         </div>
         <div 
           className="flex gap-2 overflow-x-auto pb-1.5 snap-x snap-mandatory" 
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
         >
           {children}
+          {seeAllLink && (
+            <Link href={seeAllLink} className="snap-start flex-shrink-0">
+              <Card className="w-[calc(40vw-8px)] sm:w-[170px] h-full min-h-[180px] flex items-center justify-center cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+                <div className="text-center p-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
+                    <ChevronLeft className="h-5 w-5 text-primary" />
+                  </div>
+                  <p className="text-xs font-medium text-primary">{seeAllText || "عرض الكل"}</p>
+                </div>
+              </Card>
+            </Link>
+          )}
         </div>
       </div>
     </section>
@@ -292,6 +313,8 @@ export default function Home() {
           <Section 
             title={language === "ar" ? "شوهد مؤخراً" : "تازە بینراوەکان"}
             icon={<Eye className="h-4 w-4 text-blue-600" />}
+            seeAllLink="/favorites"
+            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
           >
             {recentlyViewedProducts.map((product) => (
               <div key={product.id} className="snap-start">
@@ -306,6 +329,8 @@ export default function Home() {
           <Section 
             title={language === "ar" ? "المفضلة" : "دڵخوازەکان"}
             icon={<Heart className="h-4 w-4 text-red-500" />}
+            seeAllLink="/favorites"
+            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
           >
             {favoriteProducts.map((product) => (
               <div key={product.id} className="snap-start">
@@ -342,6 +367,8 @@ export default function Home() {
         <Section 
           title={language === "ar" ? "جديد الآن" : "تازەکان"}
           icon={<Sparkles className="h-4 w-4 text-purple-600" />}
+          seeAllLink="/search?sort=newest"
+          seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
         >
           {isLoading ? <LoadingSkeleton /> : (
             newArrivals.map((product) => (
@@ -357,6 +384,8 @@ export default function Home() {
           <Section 
             title={language === "ar" ? "ينتهي قريباً" : "زوو دەکوژرێتەوە"}
             icon={<Timer className="h-4 w-4 text-orange-600" />}
+            seeAllLink="/search?saleType=auction&sort=ending"
+            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
           >
             {endingSoon.map((product) => (
               <div key={product.id} className="snap-start">
@@ -370,6 +399,8 @@ export default function Home() {
         <Section 
           title={language === "ar" ? "الأكثر مشاهدة" : "زۆرترین بینراو"}
           icon={<TrendingUp className="h-4 w-4 text-indigo-600" />}
+          seeAllLink="/search?sort=views"
+          seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
         >
           {isLoading ? <LoadingSkeleton /> : (
             mostViewed.map((product) => (
@@ -384,6 +415,8 @@ export default function Home() {
         <Section 
           title={language === "ar" ? "أفضل الأسعار" : "باشترین نرخەکان"}
           icon={<DollarSign className="h-4 w-4 text-green-600" />}
+          seeAllLink="/search?sort=price_low"
+          seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
         >
           {isLoading ? <LoadingSkeleton /> : (
             bestPrices.map((product) => (
@@ -400,6 +433,8 @@ export default function Home() {
             key={category.id}
             title={category.name}
             icon={<category.icon className={`h-4 w-4 text-${category.color}-600`} />}
+            seeAllLink={`/search?category=${encodeURIComponent(category.id)}`}
+            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
           >
             {products.map((product) => (
               <div key={product.id} className="snap-start">
@@ -413,6 +448,8 @@ export default function Home() {
         <Section 
           title={language === "ar" ? "منتجات مقترحة" : "بەرهەمە پێشنیارکراوەکان"}
           icon={<Star className="h-4 w-4 text-amber-500" />}
+          seeAllLink="/search"
+          seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
         >
           {isLoading ? <LoadingSkeleton /> : (
             relevantProducts.map((product) => (
