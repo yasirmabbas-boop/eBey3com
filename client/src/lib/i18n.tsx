@@ -284,6 +284,7 @@ export const translations: Translations = {
   conditionLabel: { ar: "الحالة", ku: "دۆخ", en: "Condition" },
   categoriesLabel: { ar: "الفئات", ku: "پۆلەکان", en: "Categories" },
   priceLabel: { ar: "السعر:", ku: "نرخ:", en: "Price:" },
+  currency: { ar: "د.ع", ku: "د.ع", en: "IQD" },
   vintageAntique: { ar: "فينتاج / أنتيك", ku: "ڤینتەیج / کۆن", en: "Vintage / Antique" },
   almostNew: { ar: "شبه جديد", ku: "وەک نوێ", en: "Almost new" },
   anbar: { ar: "الأنبار", ku: "ئەنبار" },
