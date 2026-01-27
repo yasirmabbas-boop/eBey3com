@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
-import { useAuth } from "@/hooks/use-auth";
 import { useListings } from "@/hooks/use-listings";
 import { useLanguage } from "@/lib/i18n";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -101,7 +100,6 @@ export default function Home() {
   const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>([]);
   const [previousSearches, setPreviousSearches] = useState<string[]>([]);
   const [, navigate] = useLocation();
-  const { user } = useAuth();
   const { language } = useLanguage();
 
   useEffect(() => {
@@ -122,8 +120,7 @@ export default function Home() {
     }
   }, []);
 
-  const sellerId = user?.id;
-  const { data: listingsData, isLoading } = useListings({ limit: 30, sellerId });
+  const { data: listingsData, isLoading } = useListings({ limit: 30 });
   const listings: Listing[] = listingsData?.listings || [];
 
   const displayProducts = listings
