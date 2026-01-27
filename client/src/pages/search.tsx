@@ -850,44 +850,80 @@ export default function SearchPage() {
             <div>
               {/* Responsive Grid View - 2 cols mobile, 3 tablet, 4-5 desktop */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
-                {displayedProducts.map((product) => (
-                  <Link key={product.id} href={`/product/${product.id}`}>
-                    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 bg-white active:scale-[0.98]" data-testid={`search-result-${product.id}`}>
-                      <div className="relative aspect-square overflow-hidden bg-gray-100">
-                        <img 
-                          src={product.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"} 
-                          alt={product.title} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                        />
-                        {!product.isActive && (
-                          <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
-                            <Badge className="bg-gray-700 text-white border-0 text-[9px] sm:text-xs shadow-md">
-                              {t("sold")}
-                            </Badge>
+                {displayedProducts.map((product) => {
+                  const isLastItem = product.quantityAvailable === 1;
+                  const isEndingSoon = product.saleType === "auction" && product.auctionEndTime && 
+                    new Date(product.auctionEndTime).getTime() - Date.now() < 24 * 60 * 60 * 1000;
+                  const isHotItem = (product.views || 0) > 50 || ((product as any).totalBids || 0) > 5;
+                  const shippingCost = product.shippingCost || 0;
+                  
+                  return (
+                    <Link key={product.id} href={`/product/${product.id}`}>
+                      <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 bg-white active:scale-[0.98] h-full flex flex-col" data-testid={`search-result-${product.id}`}>
+                        <div className="relative aspect-square overflow-hidden bg-gray-100">
+                          <img 
+                            src={product.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"} 
+                            alt={product.title} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          />
+                          {/* Urgency Tags - Top Right */}
+                          <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex flex-col gap-1">
+                            {!product.isActive && (
+                              <Badge className="bg-gray-700 text-white border-0 text-[9px] sm:text-xs shadow-md">
+                                {t("sold")}
+                              </Badge>
+                            )}
+                            {product.isActive && isEndingSoon && (
+                              <Badge className="bg-red-500 text-white border-0 text-[8px] sm:text-[10px] shadow-md px-1.5 py-0.5">
+                                {t("endingSoon")}
+                              </Badge>
+                            )}
+                            {product.isActive && isLastItem && (
+                              <Badge className="bg-purple-500 text-white border-0 text-[8px] sm:text-[10px] shadow-md px-1.5 py-0.5">
+                                {t("lastItem")}
+                              </Badge>
+                            )}
+                            {product.isActive && isHotItem && !isEndingSoon && !isLastItem && (
+                              <Badge className="bg-orange-500 text-white border-0 text-[8px] sm:text-[10px] shadow-md px-1.5 py-0.5">
+                                {t("hotItem")}
+                              </Badge>
+                            )}
                           </div>
-                        )}
-                        <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
-                          <FavoriteButton listingId={product.id} size="sm" />
+                          {/* Favorite Button - Top Left */}
+                          <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
+                            <FavoriteButton listingId={product.id} size="sm" />
+                          </div>
+                          {!product.isActive && (
+                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                              <span className="text-white font-bold text-xs sm:text-sm bg-black/50 px-2 py-1 rounded-lg">{t("sold")}</span>
+                            </div>
+                          )}
                         </div>
-                        {!product.isActive && (
-                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                            <span className="text-white font-bold text-xs sm:text-sm bg-black/50 px-2 py-1 rounded-lg">{t("sold")}</span>
+                        
+                        <div className="p-2 sm:p-3 flex-1 flex flex-col">
+                          <h3 className="font-medium text-[11px] sm:text-xs text-gray-700 line-clamp-2 group-hover:text-primary transition-colors leading-tight mb-1.5 flex-1">
+                            {product.title}
+                          </h3>
+                          <div>
+                            <p className="text-gray-900 font-bold text-sm sm:text-base">
+                              {(product.currentBid || product.price || 0).toLocaleString()} {t("currency")}
+                            </p>
+                            {shippingCost > 0 ? (
+                              <p className="text-[10px] sm:text-xs text-gray-400">
+                                + {shippingCost.toLocaleString()} {t("shipping")}
+                              </p>
+                            ) : (
+                              <p className="text-[10px] sm:text-xs text-green-600">
+                                {t("freeShipping")}
+                              </p>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      
-                      <div className="p-2 sm:p-3">
-                        <h3 className="font-semibold text-[11px] sm:text-sm text-gray-900 line-clamp-2 group-hover:text-primary transition-colors leading-tight mb-1">
-                          {product.title}
-                        </h3>
-                        <p className="text-primary font-bold text-sm sm:text-base">
-                          {(product.currentBid || product.price || 0).toLocaleString()} {t("currency")}
-                        </p>
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                })}
               </div>
 
             </div>
