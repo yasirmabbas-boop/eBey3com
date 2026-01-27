@@ -308,8 +308,8 @@ export function registerAccountRoutes(app: Express): void {
 
     try {
       const user = await storage.getUser(userId);
-      if (!user || !user.sellerApproved) {
-        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين المعتمدين فقط" });
+      if (!user || !user.isVerified) {
+        return res.status(403).json({ error: "يجب التحقق من رقم هاتفك للوصول لهذه الميزة" });
       }
 
       // Use dedicated method that queries ONLY sales where user is seller
@@ -357,8 +357,8 @@ export function registerAccountRoutes(app: Express): void {
 
     try {
       const user = await storage.getUser(userId);
-      if (!user || !user.sellerApproved) {
-        return res.status(403).json({ error: "هذه الميزة متاحة للبائعين المعتمدين فقط" });
+      if (!user || !user.isVerified) {
+        return res.status(403).json({ error: "يجب التحقق من رقم هاتفك للوصول لهذه الميزة" });
       }
 
       const summary = await storage.getSellerSummary(userId);

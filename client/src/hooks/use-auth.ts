@@ -24,6 +24,7 @@ export interface AuthUser {
   createdAt?: string | Date;
   twoFactorEnabled?: boolean;
   phoneVerified?: boolean;
+  isVerified?: boolean;
   locationLat?: number | null;
   locationLng?: number | null;
   mapUrl?: string | null;

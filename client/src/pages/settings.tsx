@@ -133,7 +133,7 @@ export default function Settings() {
                 </CardTitle>
               </div>
               <CardDescription>
-                {user?.sellerApproved 
+                {user?.isVerified 
                   ? tr(
                       "موقع استلام الطلبات للمشترين وموقع التوصيل للطلبات",
                       "شوێنی وەرگرتنی داواکاری بۆ کڕیاران و شوێنی گەیاندن بۆ داواکارییەکان",

@@ -294,8 +294,8 @@ export function registerProductRoutes(app: Express): void {
       }
       
       const user = await storage.getUser(sessionUserId);
-      if (!user || !user.sellerApproved) {
-        return res.status(403).json({ error: "يجب أن يكون حسابك معتمداً كبائع لإضافة منتجات" });
+      if (!user || !user.isVerified) {
+        return res.status(403).json({ error: "يجب التحقق من رقم هاتفك لإضافة منتجات" });
       }
       
       // Check if user is banned
@@ -402,8 +402,8 @@ export function registerProductRoutes(app: Express): void {
       }
 
       const user = await storage.getUser(userId);
-      if (!user || !user.sellerApproved) {
-        return res.status(403).json({ error: "يجب أن تكون بائعاً معتمداً" });
+      if (!user || !user.isVerified) {
+        return res.status(403).json({ error: "يجب التحقق من رقم هاتفك" });
       }
 
       if (!req.file) {

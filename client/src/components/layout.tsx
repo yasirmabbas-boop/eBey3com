@@ -37,7 +37,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
 
       {/* Combined Top Bar with Logo */}
       {!hideHeader && (
-      <div className={`despia-topbar ${isAuthenticated && user?.sellerApproved ? 'bg-emerald-600/95' : 'bg-primary'} text-white py-2 px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]`}>
+      <div className={`despia-topbar ${isAuthenticated && user?.isVerified ? 'bg-emerald-600/95' : 'bg-primary'} text-white py-2 px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]`}>
         <div className="container mx-auto flex justify-between items-center">
           {/* Logo - Now in top bar */}
           <Link href="/" className="flex-shrink-0 flex items-center">
@@ -58,11 +58,11 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
             {isAuthenticated ? (
               <>
                 <span className="hidden sm:flex items-center gap-2 font-bold text-base">
-                  {user?.sellerApproved ? <Store className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                  {user?.isVerified ? <Store className="h-4 w-4" /> : <User className="h-4 w-4" />}
                   {user?.displayName || user?.phone}
                 </span>
                 <Link href="/my-account" className="hidden sm:inline hover:opacity-80 font-medium">{t("myAccount")}</Link>
-                {user?.sellerApproved ? (
+                {user?.isVerified ? (
                   <Link href="/seller-dashboard" className="hidden sm:inline hover:opacity-80 font-medium">{t("myShop")}</Link>
                 ) : (
                   <Link href="/my-purchases" className="hidden sm:inline hover:opacity-80 font-medium">{t("myPurchases")}</Link>
@@ -75,7 +75,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
                   <LogOut className="h-4 w-4" />
                   <span className="hidden sm:inline">{t("logout")}</span>
                 </button>
-                {user?.sellerApproved && (
+                {user?.isVerified && (
                   <Link 
                     href="/sell" 
                     className="hidden sm:flex bg-white/95 text-primary hover:bg-white px-4 py-1.5 rounded-full font-bold items-center gap-2 transition-colors text-sm shadow-[var(--shadow-1)]"
