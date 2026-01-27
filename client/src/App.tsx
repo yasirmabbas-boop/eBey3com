@@ -2,8 +2,6 @@ import { Switch, Route, useLocation } from "wouter";
 import { useEffect, Suspense, lazy } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-
-console.log("[DEBUG] App.tsx loading...");
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SurveyManager } from "@/components/survey-manager";
@@ -61,8 +59,7 @@ const SellerProfile = lazy(() => import("@/pages/seller-profile"));
 const NotificationsPage = lazy(() => import("@/pages/notifications"));
 const Onboarding = lazy(() => import("@/pages/onboarding"));
 
-// 1. Define SocketNotificationsWrapper BEFORE Router to avoid reference errors
-// This component must be inside QueryClientProvider and Switch (Router context)
+// Define SocketNotificationsWrapper BEFORE Router - must be inside QueryClientProvider and Switch
 function SocketNotificationsWrapper() {
   useSocketNotifications();
   return null;
@@ -78,7 +75,7 @@ function ScrollToTop() {
   return null;
 }
 
-// 2. Define the main Router Logic
+// Main Router component - all routes inside Switch
 function Router() {
   return (
     <Switch>
@@ -122,11 +119,9 @@ function Router() {
   );
 }
 
-// 3. Export the App with ALL Providers in the correct order
+// Main App component with proper provider nesting
 function App() {
-  console.log("[DEBUG] App function rendering...");
   useEffect(() => {
-    console.log("[DEBUG] App useEffect running...");
     // Initialize native app features
     if (isNative) {
       document.body.classList.add("capacitor-native");
@@ -144,12 +139,10 @@ function App() {
       initAppLifecycle({
         onDeepLink: (path) => {
           console.log('Deep link:', path);
-          // Navigate to the path
           window.location.href = path;
         },
         onAppStateChange: (isActive) => {
           console.log('App state changed:', isActive ? 'active' : 'background');
-          // Handle app becoming active/inactive
         }
       });
     }
@@ -159,32 +152,36 @@ function App() {
     };
   }, []);
 
-  console.log("[DEBUG] App return about to render JSX");
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
           <TooltipProvider>
             <NavVisibilityProvider>
-              <ScrollToTop />
-              <SocketNotificationsWrapper />
-              <Toaster />
-              <BanBanner />
-              <SurveyManager />
-              <OnboardingTutorial />
-              <SwipeBackNavigation>
-                <Suspense
-                  fallback={
-                    <LoadingSpinner />
-                  }
-                >
-                  <Router />
-                </Suspense>
-              </SwipeBackNavigation>
-              <MobileNavBar />
-              {!isNative && <InstallPWAPrompt />}
-              {!isNative && <PWAUpdateBanner />}
-              <PushNotificationPrompt />
+              {/* Switch provides Router context - components using useLocation MUST be inside Switch */}
+              <Switch>
+                <Route path="/:rest*">
+                  {() => (
+                    <>
+                      <ScrollToTop />
+                      <SocketNotificationsWrapper />
+                      <Toaster />
+                      <BanBanner />
+                      <SurveyManager />
+                      <OnboardingTutorial />
+                      <SwipeBackNavigation>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Router />
+                        </Suspense>
+                      </SwipeBackNavigation>
+                      <MobileNavBar />
+                      {!isNative && <InstallPWAPrompt />}
+                      {!isNative && <PWAUpdateBanner />}
+                      <PushNotificationPrompt />
+                    </>
+                  )}
+                </Route>
+              </Switch>
             </NavVisibilityProvider>
           </TooltipProvider>
         </LanguageProvider>
