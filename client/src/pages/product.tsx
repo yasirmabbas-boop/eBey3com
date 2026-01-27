@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send, Trophy, AlertCircle, Eye, Flag, Globe, Zap } from "lucide-react";
+import { Clock, ShieldCheck, Heart, Share2, Star, Banknote, Truck, RotateCcw, Tag, Printer, Loader2, Send, Trophy, AlertCircle, Eye, Flag, Globe, Zap, MapPin } from "lucide-react";
 import { ProductDetailSkeleton } from "@/components/optimized-image";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -335,6 +335,9 @@ export default function ProductPage() {
     internationalCountries: listing.internationalCountries || [],
     area: listing.area || null,
     buyNowPrice: (listing as any).buyNowPrice || null,
+    locationLat: (listing as any).locationLat || null,
+    locationLng: (listing as any).locationLng || null,
+    mapUrl: (listing as any).mapUrl || null,
   } : null;
 
   // Track view when product loads - reset ref on listing change
@@ -891,7 +894,21 @@ export default function ProductPage() {
           {product.city && (
             <div className="flex items-center justify-between">
               <span className="text-gray-500 text-sm">{t("location")}</span>
-              <span className="text-sm font-medium">{product.city}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">{product.city}</span>
+                {product.locationLat && product.locationLng && (
+                  <a
+                    href={product.mapUrl || `https://www.google.com/maps?q=${product.locationLat},${product.locationLng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary text-sm hover:underline flex items-center gap-1"
+                    data-testid="link-google-maps"
+                  >
+                    <MapPin className="h-3 w-3" />
+                    {language === "ar" ? "الموقع" : "شوێن"}
+                  </a>
+                )}
+              </div>
             </div>
           )}
           <div className="flex items-center justify-between">
@@ -1354,7 +1371,19 @@ export default function ProductPage() {
             {product.city && (
               <div className="flex justify-between py-2">
                 <span className="text-gray-500">{t("location")}</span>
-                <span className="font-medium">{product.city}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{product.city}</span>
+                  {product.locationLat && product.locationLng && (
+                    <a
+                      href={product.mapUrl || `https://www.google.com/maps?q=${product.locationLat},${product.locationLng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary text-sm hover:underline flex items-center gap-1"
+                    >
+                      <MapPin className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
               </div>
             )}
           </div>
