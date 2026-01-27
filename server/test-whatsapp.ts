@@ -7,7 +7,7 @@
  * Example: tsx server/test-whatsapp.ts 07501234567
  */
 
-import { sendWhatsAppOTP, verifyWhatsAppOTP, isWhatsAppConfigured } from "./whatsapp";
+import { sendWhatsAppOTP, isWhatsAppConfigured } from "./whatsapp";
 import readline from 'readline';
 
 // ANSI color codes for terminal output

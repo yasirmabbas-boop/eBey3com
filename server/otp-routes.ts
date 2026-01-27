@@ -7,6 +7,7 @@ import type { Express } from "express";
 import { sendOTP, verifyOTP } from "./services/otp-service";
 import { storage } from "./storage";
 import jwt from "jsonwebtoken";
+import { isAuthenticatedUnified } from "./replit_integrations/auth";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
 
@@ -15,14 +16,20 @@ export function registerOtpRoutes(app: Express) {
   // POST /api/request-otp - Request new OTP code
   app.post("/api/request-otp", async (req, res) => {
     try {
-      const { phoneNumber } = req.body;
+      const { phoneNumber, phone } = req.body ?? {};
+      const normalizedInput = phoneNumber || phone;
       
-      if (!phoneNumber) {
+      console.log("[OTP] /api/request-otp body:", {
+        hasPhoneNumber: !!phoneNumber,
+        hasPhone: !!phone,
+      });
+
+      if (!normalizedInput) {
         return res.status(400).json({ error: "رقم الهاتف مطلوب" });
       }
 
       // Send OTP via in-memory service (handles generation, storage, and sending)
-      const success = await sendOTP(phoneNumber);
+      const success = await sendOTP(normalizedInput);
 
       if (!success) {
         return res.status(500).json({
@@ -44,19 +51,58 @@ export function registerOtpRoutes(app: Express) {
     }
   });
 
+  // Legacy alias used by some frontend components
+  app.post("/api/auth/send-otp", async (req, res) => {
+    // Same behavior as /api/request-otp, but body is typically { phone }
+    try {
+      const { phone, phoneNumber } = req.body ?? {};
+      const normalizedInput = phoneNumber || phone;
+
+      console.log("[OTP] /api/auth/send-otp body:", {
+        hasPhoneNumber: !!phoneNumber,
+        hasPhone: !!phone,
+      });
+
+      if (!normalizedInput) {
+        return res.status(400).json({ error: "رقم الهاتف مطلوب" });
+      }
+
+      const success = await sendOTP(normalizedInput);
+      if (!success) {
+        return res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+      }
+
+      return res.json({
+        success: true,
+        message: "تم إرسال رمز التحقق إلى واتساب",
+        expiresIn: 300,
+      });
+    } catch (error: any) {
+      console.error("[OTP /api/auth/send-otp Error]:", error);
+      return res.status(500).json({ error: "حدث خطأ أثناء إرسال رمز التحقق" });
+    }
+  });
+
   // POST /api/verify-otp - Verify OTP code
   app.post("/api/verify-otp", async (req, res) => {
     try {
-      const { phoneNumber, code } = req.body;
+      const { phoneNumber, phone, code } = req.body ?? {};
+      const normalizedInput = phoneNumber || phone;
 
-      if (!phoneNumber || !code) {
+      console.log("[OTP] /api/verify-otp body:", {
+        hasPhoneNumber: !!phoneNumber,
+        hasPhone: !!phone,
+        hasCode: !!code,
+      });
+
+      if (!normalizedInput || !code) {
         return res.status(400).json({
           error: "رقم الهاتف ورمز التحقق مطلوبان"
         });
       }
 
       // Verify OTP using in-memory service
-      const isValid = verifyOTP(phoneNumber, code);
+      const isValid = verifyOTP(normalizedInput, code);
 
       if (!isValid) {
         return res.status(400).json({
@@ -65,16 +111,16 @@ export function registerOtpRoutes(app: Express) {
       }
 
       // OTP verified! Now get or create user
-      let user = await storage.getUserByPhone(phoneNumber);
+      let user = await storage.getUserByPhone(normalizedInput);
 
       if (!user) {
         // Create new user if doesn't exist
         user = await storage.createUser({
-          displayName: `مستخدم ${phoneNumber.slice(-4)}`,
-          username: `user_${phoneNumber.slice(-6)}`,
-          email: `${phoneNumber}@temp.ebey3.com`,
+          displayName: `مستخدم ${normalizedInput.slice(-4)}`,
+          username: `user_${normalizedInput.slice(-6)}`,
+          email: `${normalizedInput}@temp.ebey3.com`,
           password: Math.random().toString(36),
-          phone: phoneNumber,
+          phone: normalizedInput,
           phoneVerified: true,
           role: "buyer"
         });
@@ -88,7 +134,7 @@ export function registerOtpRoutes(app: Express) {
       const token = jwt.sign(
         {
           userId: user.id,
-          phone: phoneNumber,
+          phone: normalizedInput,
           phoneVerified: true
         },
         JWT_SECRET,
@@ -111,6 +157,73 @@ export function registerOtpRoutes(app: Express) {
       return res.status(500).json({
         error: "حدث خطأ أثناء التحقق من الرمز"
       });
+    }
+  });
+
+  // Legacy alias used by some frontend components (verify phone for current logged-in user)
+  app.post("/api/auth/verify-phone-otp", isAuthenticatedUnified as any, async (req: any, res) => {
+    try {
+      const { code } = req.body ?? {};
+      if (!code) {
+        return res.status(400).json({ error: "رمز التحقق مطلوب" });
+      }
+
+      const userId = req.user?.id || (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user?.phone) {
+        return res.status(400).json({ error: "رقم الهاتف غير موجود في الحساب" });
+      }
+
+      const isValid = verifyOTP(user.phone, code);
+      if (!isValid) {
+        return res.status(400).json({ error: "رمز التحقق غير صحيح أو منتهي الصلاحية" });
+      }
+
+      await storage.markPhoneAsVerified(user.id);
+      return res.json({ success: true, message: "تم التحقق من رقم الهاتف بنجاح" });
+    } catch (error: any) {
+      console.error("[OTP /api/auth/verify-phone-otp Error]:", error);
+      return res.status(500).json({ error: "حدث خطأ أثناء التحقق من الرمز" });
+    }
+  });
+
+  // Legacy alias used by some frontend components (send OTP to current user's phone)
+  app.post("/api/auth/send-phone-otp", isAuthenticatedUnified as any, async (req: any, res) => {
+    try {
+      const userId = req.user?.id || (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user?.phone) {
+        return res.status(400).json({ error: "رقم الهاتف غير موجود في الحساب" });
+      }
+
+      if (user.phoneVerified) {
+        return res.json({
+          alreadyVerified: true,
+          message: "رقم هاتفك موثق بالفعل",
+        });
+      }
+
+      const success = await sendOTP(user.phone);
+      if (!success) {
+        return res.status(500).json({ error: "فشل في إرسال رمز التحقق" });
+      }
+
+      return res.json({
+        success: true,
+        message: "تم إرسال رمز التحقق إلى واتساب",
+        expiresIn: 300,
+      });
+    } catch (error: any) {
+      console.error("[OTP /api/auth/send-phone-otp Error]:", error);
+      return res.status(500).json({ error: "حدث خطأ أثناء إرسال رمز التحقق" });
     }
   });
 }

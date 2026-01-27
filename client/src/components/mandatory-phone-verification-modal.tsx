@@ -61,11 +61,11 @@ export function MandatoryPhoneVerificationModal({
     setIsSendingOtp(true);
     
     try {
-      const response = await fetch("/api/auth/send-otp", {
+      const response = await fetch("/api/request-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ phone: phone.trim() }),
+        body: JSON.stringify({ phoneNumber: phone.trim() }),
       });
 
       const data = await response.json();
@@ -130,7 +130,7 @@ export function MandatoryPhoneVerificationModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ phone: phone.trim(), code: otpCode }),
+        body: JSON.stringify({ phoneNumber: phone.trim(), code: otpCode }),
       });
 
       const data = await response.json();
