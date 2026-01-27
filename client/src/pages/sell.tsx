@@ -38,7 +38,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   Lock,
-  Loader2
+  Loader2,
+  Phone,
+  Settings
 } from "lucide-react";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
@@ -736,6 +738,49 @@ export default function SellPage() {
 
   // If user is not an approved seller, show seller request option
   if (!authLoading && user && !user.sellerApproved) {
+    // First check if phone is verified - required before requesting seller status
+    if (!user.phoneVerified) {
+      return (
+        <Layout>
+          <div className="container mx-auto px-4 py-16 max-w-md text-center">
+            <Card>
+              <CardHeader>
+                <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center">
+                  <Phone className="h-8 w-8 text-amber-600" />
+                </div>
+                <CardTitle className="text-2xl">{language === "ar" ? "التحقق من رقم الهاتف مطلوب" : "پشتڕاستکردنی ژمارەی مۆبایل پێویستە"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground">
+                  {language === "ar" 
+                    ? "يجب التحقق من رقم هاتفك أولاً قبل التقدم لتصبح بائعاً على منصة إي-بيع"
+                    : "پێویستە سەرەتا ژمارەی مۆبایلەکەت پشتڕاست بکەیت پێش پێشکەشکردنی داوا بۆ فرۆشیاربوون"
+                  }
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-right">
+                  <p className="text-sm text-blue-700 mb-2">
+                    {language === "ar" ? "خطوات التحقق:" : "هەنگاوەکانی پشتڕاستکردنەوە:"}
+                  </p>
+                  <ol className="text-sm text-blue-600 space-y-1 list-decimal list-inside">
+                    <li>{language === "ar" ? "انتقل إلى الإعدادات" : "بڕۆ بۆ ڕێکخستنەکان"}</li>
+                    <li>{language === "ar" ? "أضف رقم هاتفك" : "ژمارەی مۆبایلەکەت زیاد بکە"}</li>
+                    <li>{language === "ar" ? "اضغط على 'التحقق عبر واتساب'" : "کلیک بکە لەسەر 'پشتڕاستکردن بە واتسئاپ'"}</li>
+                    <li>{language === "ar" ? "أدخل رمز التحقق المرسل" : "کۆدی نێردراو بنووسە"}</li>
+                  </ol>
+                </div>
+                <Link href="/settings">
+                  <Button className="w-full">
+                    <Settings className="h-4 w-4 ml-2" />
+                    {language === "ar" ? "انتقل إلى الإعدادات" : "بڕۆ بۆ ڕێکخستنەکان"}
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </Layout>
+      );
+    }
+
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 max-w-md text-center">

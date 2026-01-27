@@ -373,7 +373,7 @@ export function registerAccountRoutes(app: Express): void {
 
     try {
       const user = await storage.getUser(userId);
-      if (!user || !user.isVerified) {
+      if (!user || !user.phoneVerified) {
         return res.status(403).json({ error: "يجب التحقق من رقم هاتفك للوصول لهذه الميزة" });
       }
 
@@ -422,7 +422,7 @@ export function registerAccountRoutes(app: Express): void {
 
     try {
       const user = await storage.getUser(userId);
-      if (!user || !user.isVerified) {
+      if (!user || !user.phoneVerified) {
         return res.status(403).json({ error: "يجب التحقق من رقم هاتفك للوصول لهذه الميزة" });
       }
 
