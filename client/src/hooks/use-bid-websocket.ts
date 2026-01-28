@@ -7,7 +7,10 @@ interface BidUpdate {
   totalBids: number;
   bidderName: string;
   bidderId: string;
+  previousHighBidderId: string | null;
   timestamp: string;
+  auctionEndTime?: string;
+  timeExtended?: boolean;
 }
 
 interface UseBidWebSocketOptions {

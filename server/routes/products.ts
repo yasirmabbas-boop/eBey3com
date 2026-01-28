@@ -901,6 +901,7 @@ export function registerProductRoutes(app: Express): void {
         totalBids: (updatedListing?.totalBids || 0),
         bidderId: userId,
         bidderName: user.displayName || "مستخدم",
+        previousHighBidderId: highestBid?.userId || null,
         timestamp: new Date().toISOString(),
         auctionEndTime: auctionEndStr,
         timeExtended: newEndTime !== endTime,

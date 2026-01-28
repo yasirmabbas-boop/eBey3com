@@ -1099,6 +1099,7 @@ export default function ProductPage() {
                       })()}
                       onRequireAuth={() => requireAuth("bid")}
                       onRequirePhoneVerification={() => setPhoneVerificationOpen(true)}
+                      onBidSuccess={() => setWasOutbid(false)}
                       isWinning={!!isWinning}
                       isAuthLoading={isAuthLoading}
                       phoneVerified={user?.phoneVerified || false}
