@@ -505,4 +505,209 @@ export function registerTransactionsRoutes(app: Express): void {
       return res.status(500).json({ error: "فشل في إلغاء الطلب" });
     }
   });
+
+  // ============ RETURN REQUESTS ============
+
+  // Helper to parse return policy days
+  function getReturnPolicyDays(policy: string): number {
+    if (policy === "لا يوجد إرجاع") return 0;
+    if (policy === "يوم واحد") return 1;
+    if (policy === "3 أيام") return 3;
+    if (policy === "7 أيام") return 7;
+    if (policy === "14 يوم") return 14;
+    if (policy === "30 يوم") return 30;
+    if (policy === "استبدال فقط") return 7; // Allow exchange requests within 7 days
+    return 0;
+  }
+
+  // Create return request
+  app.post("/api/return-requests", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const { transactionId, reason, details } = req.body;
+
+      if (!transactionId || !reason) {
+        return res.status(400).json({ error: "بيانات ناقصة" });
+      }
+
+      // Get transaction
+      const transaction = await storage.getTransactionById(transactionId);
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+
+      // Check if user is the buyer
+      if (transaction.buyerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
+      }
+
+      // Check if order is delivered or completed
+      if (!["delivered", "completed"].includes(transaction.status)) {
+        return res.status(400).json({ error: "لا يمكن طلب إرجاع إلا للطلبات المستلمة" });
+      }
+
+      // Check if there's already a return request
+      const existingRequest = await storage.getReturnRequestByTransaction(transactionId);
+      if (existingRequest) {
+        return res.status(400).json({ error: "يوجد طلب إرجاع مسبق لهذا الطلب" });
+      }
+
+      // Get listing to check return policy
+      const listing = await storage.getListing(transaction.listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "المنتج غير موجود" });
+      }
+
+      // Check if within return policy period
+      const returnPolicyDays = getReturnPolicyDays((listing as any).returnPolicy || "لا يوجد إرجاع");
+      const deliveredAt = transaction.completedAt || transaction.createdAt;
+      const daysSinceDelivery = Math.floor((Date.now() - new Date(deliveredAt).getTime()) / (1000 * 60 * 60 * 24));
+
+      // If reason is "damaged" or "different_from_description", allow even if return policy is 0
+      const isQualityIssue = ["damaged", "different_from_description", "missing_parts"].includes(reason);
+      
+      if (!isQualityIssue && returnPolicyDays === 0) {
+        return res.status(400).json({ error: "هذا المنتج لا يقبل الإرجاع" });
+      }
+
+      if (!isQualityIssue && daysSinceDelivery > returnPolicyDays) {
+        return res.status(400).json({ 
+          error: `انتهت فترة الإرجاع المسموح بها (${returnPolicyDays} أيام)` 
+        });
+      }
+
+      // Create return request
+      const returnRequest = await storage.createReturnRequest({
+        transactionId,
+        buyerId: userId,
+        sellerId: transaction.sellerId,
+        listingId: transaction.listingId,
+        reason,
+        details: details || null,
+      });
+
+      // Send notification to seller
+      const notification = await storage.createNotification({
+        userId: transaction.sellerId,
+        type: "return_request",
+        title: "طلب إرجاع جديد",
+        message: `لديك طلب إرجاع جديد للمنتج "${(listing as any).title}"`,
+        linkUrl: "/seller-dashboard",
+      });
+
+      sendToUser(transaction.sellerId, "NOTIFICATION", {
+        notification: {
+          id: notification.id,
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+          linkUrl: notification.linkUrl,
+        },
+      });
+
+      return res.status(201).json(returnRequest);
+    } catch (error) {
+      console.error("Error creating return request:", error);
+      return res.status(500).json({ error: "فشل في إنشاء طلب الإرجاع" });
+    }
+  });
+
+  // Get buyer's return requests
+  app.get("/api/return-requests/my", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const requests = await storage.getReturnRequestsForBuyer(userId);
+      
+      // Enrich with listing details
+      const enrichedRequests = await Promise.all(
+        requests.map(async (request) => {
+          const listing = await storage.getListing(request.listingId);
+          const transaction = await storage.getTransactionById(request.transactionId);
+          return {
+            ...request,
+            listing: listing ? {
+              id: (listing as any).id,
+              title: (listing as any).title,
+              images: (listing as any).images,
+            } : null,
+            transaction: transaction ? {
+              amount: transaction.amount,
+              createdAt: transaction.createdAt,
+            } : null,
+          };
+        })
+      );
+
+      return res.json(enrichedRequests);
+    } catch (error) {
+      console.error("Error fetching return requests:", error);
+      return res.status(500).json({ error: "فشل في جلب طلبات الإرجاع" });
+    }
+  });
+
+  // Check if return is allowed for a transaction
+  app.get("/api/transactions/:id/return-eligibility", async (req, res) => {
+    try {
+      const userId = getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const transaction = await storage.getTransactionById(req.params.id);
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+
+      if (transaction.buyerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك" });
+      }
+
+      // Check if already has return request
+      const existingRequest = await storage.getReturnRequestByTransaction(req.params.id);
+      if (existingRequest) {
+        return res.json({
+          eligible: false,
+          reason: "existing_request",
+          existingRequest,
+        });
+      }
+
+      // Check order status
+      if (!["delivered", "completed"].includes(transaction.status)) {
+        return res.json({
+          eligible: false,
+          reason: "not_delivered",
+        });
+      }
+
+      // Get listing return policy
+      const listing = await storage.getListing(transaction.listingId);
+      const returnPolicy = (listing as any)?.returnPolicy || "لا يوجد إرجاع";
+      const returnPolicyDays = getReturnPolicyDays(returnPolicy);
+
+      const deliveredAt = transaction.completedAt || transaction.createdAt;
+      const daysSinceDelivery = Math.floor((Date.now() - new Date(deliveredAt).getTime()) / (1000 * 60 * 60 * 24));
+      const daysRemaining = returnPolicyDays - daysSinceDelivery;
+
+      return res.json({
+        eligible: returnPolicyDays > 0 && daysRemaining > 0,
+        returnPolicy,
+        returnPolicyDays,
+        daysSinceDelivery,
+        daysRemaining: Math.max(0, daysRemaining),
+        canReportIssue: true, // Always allow reporting quality issues
+      });
+    } catch (error) {
+      console.error("Error checking return eligibility:", error);
+      return res.status(500).json({ error: "فشل في التحقق" });
+    }
+  });
 }
