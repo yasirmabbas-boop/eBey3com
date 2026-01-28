@@ -20,10 +20,10 @@ interface ImageProcessingOptions {
 }
 
 const DEFAULT_OPTIONS: ImageProcessingOptions = {
-  maxWidth: 1200,
-  maxHeight: 1200,
+  maxWidth: 1600,
+  maxHeight: 1600,
   quality: 80,
-  format: "jpeg",
+  format: "webp",
   generateThumbnail: true,
   thumbnailWidth: 400,
 };
