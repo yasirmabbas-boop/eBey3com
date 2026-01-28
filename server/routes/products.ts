@@ -889,11 +889,13 @@ export function registerProductRoutes(app: Express): void {
       const updatedListing = await storage.getListing(listingId);
 
       // Broadcast via WebSocket if available
-      const { broadcastBidUpdate } = await import("../websocket");
+      const { broadcastBidUpdate, broadcastListingUpdate } = await import("../websocket");
       const auctionEndStr = newEndTime?.toISOString() || 
         (listing.auctionEndTime instanceof Date 
           ? listing.auctionEndTime.toISOString() 
           : listing.auctionEndTime || undefined);
+      
+      // Broadcast to users on the product page (subscribed to this listing)
       broadcastBidUpdate({
         type: "bid_update",
         listingId,
@@ -905,6 +907,13 @@ export function registerProductRoutes(app: Express): void {
         timestamp: new Date().toISOString(),
         auctionEndTime: auctionEndStr,
         timeExtended: newEndTime !== endTime,
+      });
+      
+      // Broadcast to ALL users so they see consistent prices on home/search pages
+      broadcastListingUpdate({
+        listingId,
+        currentBid: amount,
+        totalBids: (updatedListing?.totalBids || 0),
       });
 
       console.log(`[bid] User ${userId} placed bid of ${amount} on listing ${listingId}`);

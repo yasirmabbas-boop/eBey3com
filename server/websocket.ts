@@ -177,6 +177,33 @@ export function broadcastAuctionEnd(update: Omit<AuctionEndUpdate, "type">) {
  * @param type - The message type (e.g., 'NOTIFICATION')
  * @param payload - The notification payload (title, message, etc.)
  */
+interface ListingUpdate {
+  type: "listing_update";
+  listingId: string;
+  currentBid: number;
+  totalBids: number;
+}
+
+/**
+ * Broadcast a listing update to ALL connected clients
+ * This ensures everyone sees consistent prices across the app
+ */
+export function broadcastListingUpdate(update: Omit<ListingUpdate, "type">): void {
+  if (!wss) return;
+
+  const message = JSON.stringify({ ...update, type: "listing_update" });
+  let sentCount = 0;
+
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+      sentCount++;
+    }
+  });
+
+  log(`Broadcast listing update for ${update.listingId} to ${sentCount} clients`, "ws");
+}
+
 export function sendToUser(userId: string, type: string, payload: any): void {
   const userWsSet = userConnections.get(userId);
   if (!userWsSet || userWsSet.size === 0) {
