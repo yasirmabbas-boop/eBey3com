@@ -7,6 +7,7 @@ import { useNavState } from "@/hooks/use-nav-state";
 import { hapticLight } from "@/lib/despia";
 import { isNative } from "@/lib/capacitor";
 import { useQuery } from "@tanstack/react-query";
+import { getAuthHeaders } from "@/lib/queryClient";
 
 const HIDDEN_NAV_PATHS: string[] = [];
 
@@ -21,7 +22,10 @@ export function MobileNavBar() {
   const { data: notificationData } = useQuery({
     queryKey: ["/api/notifications/count"],
     queryFn: async () => {
-      const res = await fetch("/api/notifications/count");
+      const res = await fetch("/api/notifications/count", {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
       if (!res.ok) return { count: 0 };
       return res.json();
     },
