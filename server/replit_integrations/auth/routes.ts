@@ -210,6 +210,11 @@ export function registerAuthRoutes(app: Express): void {
   });
   // Primary auth endpoint - checks Bearer token first, then session
   app.get("/api/auth/me", async (req: any, res) => {
+    // Disable caching to ensure fresh user data (especially phoneVerified status)
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
     try {
       // Check for Bearer token in Authorization header
       const authHeader = req.headers.authorization;
@@ -220,7 +225,7 @@ export function registerAuthRoutes(app: Express): void {
         // Look up user by authToken in database
         const user = await authStorage.getUserByAuthToken(token);
         if (user) {
-          console.log("[api/auth/me] Found user by token:", user.id);
+          console.log("[api/auth/me] Found user by token:", user.id, "phoneVerified:", user.phoneVerified);
           return res.json(user);
         }
         console.log("[api/auth/me] No user found for token");
