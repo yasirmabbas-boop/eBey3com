@@ -848,15 +848,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBid(insertBid: InsertBid): Promise<Bid> {
-    const [bid] = await db.insert(bids).values(insertBid).returning();
-    await db.update(bids).set({ isWinning: false }).where(eq(bids.listingId, insertBid.listingId));
-    await db.update(bids).set({ isWinning: true }).where(eq(bids.id, bid.id));
-    await db.update(listings).set({ 
-      currentBid: insertBid.amount,
-      totalBids: sql`${listings.totalBids} + 1`,
-      highestBidderId: insertBid.userId
-    }).where(eq(listings.id, insertBid.listingId));
-    return bid;
+    return await db.transaction(async (tx) => {
+      // 1. First, set ALL existing bids for this listing to isWinning: false
+      await tx.update(bids)
+        .set({ isWinning: false })
+        .where(eq(bids.listingId, insertBid.listingId));
+      
+      // 2. Insert the new bid with isWinning: true
+      const [bid] = await tx.insert(bids)
+        .values({ ...insertBid, isWinning: true })
+        .returning();
+      
+      // 3. Update the listing with current bid, total bids, and highest bidder
+      await tx.update(listings).set({ 
+        currentBid: insertBid.amount,
+        totalBids: sql`${listings.totalBids} + 1`,
+        highestBidderId: insertBid.userId
+      }).where(eq(listings.id, insertBid.listingId));
+      
+      return bid;
+    });
   }
 
   async getHighestBid(listingId: string): Promise<Bid | undefined> {
