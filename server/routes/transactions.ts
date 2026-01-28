@@ -590,13 +590,14 @@ export function registerTransactionsRoutes(app: Express): void {
         details: details || null,
       });
 
-      // Send notification to seller
+      // Send notification to seller with deep link to returns tab
       const notification = await storage.createNotification({
         userId: transaction.sellerId,
         type: "return_request",
         title: "طلب إرجاع جديد",
         message: `لديك طلب إرجاع جديد للمنتج "${(listing as any).title}"`,
-        linkUrl: "/seller-dashboard",
+        linkUrl: `/seller-dashboard?tab=returns&returnId=${returnRequest.id}`,
+        relatedId: returnRequest.id,
       });
 
       sendToUser(transaction.sellerId, "NOTIFICATION", {
@@ -806,6 +807,7 @@ export function registerTransactionsRoutes(app: Express): void {
         message: status === "approved" 
           ? `تم قبول طلب إرجاع "${listingTitle}". سيتم التواصل معك لترتيب الإرجاع.`
           : `تم رفض طلب إرجاع "${listingTitle}". ${sellerResponse || ""}`,
+        linkUrl: `/buyer-dashboard?tab=purchases&orderId=${request.transactionId}`,
         relatedId: request.id,
       });
 

@@ -75,7 +75,7 @@ export function registerOffersRoutes(app: Express): void {
 
       const created = await storage.createOffer(offerToCreate);
 
-      // Send notification to seller
+      // Send notification to seller with deep link to offers tab
       const buyerName = user.displayName || user.username || "مشتري";
       await storage.createNotification({
         userId: (listing as any).sellerId,
@@ -83,7 +83,7 @@ export function registerOffersRoutes(app: Express): void {
         title: "عرض سعر جديد",
         message: `${buyerName} قدم عرض سعر ${formatPrice(parsed.offerAmount)} على "${listing.title}"`,
         relatedId: created.id,
-        linkUrl: `/seller-dashboard`,
+        linkUrl: `/seller-dashboard?tab=offers&offerId=${created.id}`,
       });
 
       return res.status(201).json(created);
@@ -238,7 +238,7 @@ export function registerOffersRoutes(app: Express): void {
                   title: "تم إلغاء عرضك",
                   message: `تم بيع "${listing.title}" لمشتري آخر وتم إلغاء عرضك تلقائياً`,
                   relatedId: otherOffer.id,
-                  linkUrl: "/buyer-dashboard",
+                  linkUrl: `/buyer-dashboard?tab=offers&offerId=${otherOffer.id}`,
                 });
               }
             }
@@ -248,7 +248,7 @@ export function registerOffersRoutes(app: Express): void {
         }
       }
 
-      // Send notification to buyer
+      // Send notification to buyer with deep link to offers tab
       if (offer.buyerId) {
         await storage.createNotification({
           userId: offer.buyerId,
@@ -256,7 +256,7 @@ export function registerOffersRoutes(app: Express): void {
           title: notificationTitle,
           message: notificationMessage,
           relatedId: offerId,
-          linkUrl: `/buyer-dashboard`,
+          linkUrl: `/buyer-dashboard?tab=offers&offerId=${offerId}`,
         });
       }
 
@@ -358,7 +358,7 @@ export function registerOffersRoutes(app: Express): void {
                   title: "تم إلغاء عرضك",
                   message: `تم بيع "${listing.title}" لمشتري آخر وتم إلغاء عرضك تلقائياً`,
                   relatedId: otherOffer.id,
-                  linkUrl: "/buyer-dashboard",
+                  linkUrl: `/buyer-dashboard?tab=offers&offerId=${otherOffer.id}`,
                 });
               }
             }
@@ -368,7 +368,7 @@ export function registerOffersRoutes(app: Express): void {
         }
       }
 
-      // Send notification to seller
+      // Send notification to seller with deep link to offers tab
       if (offer.sellerId) {
         await storage.createNotification({
           userId: offer.sellerId,
@@ -376,7 +376,7 @@ export function registerOffersRoutes(app: Express): void {
           title: notificationTitle,
           message: notificationMessage,
           relatedId: offerId,
-          linkUrl: `/seller-dashboard`,
+          linkUrl: `/seller-dashboard?tab=offers&offerId=${offerId}`,
         });
       }
 
