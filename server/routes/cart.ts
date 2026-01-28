@@ -221,12 +221,19 @@ export function registerCartRoutes(app: Express): void {
           continue;
         }
 
+        // Determine the purchase amount
+        // For auctions with buyNowPrice, use the buyNowPrice
+        const isAuctionBuyNow = listing.saleType === "auction" && (listing as any).buyNowPrice;
+        const purchaseAmount = isAuctionBuyNow 
+          ? (listing as any).buyNowPrice 
+          : listing.price * cartItem.quantity;
+
         // Create transaction
         const transaction = await storage.createTransaction({
           listingId: cartItem.listingId,
           sellerId: listing.sellerId,
           buyerId: userId,
-          amount: listing.price * cartItem.quantity,
+          amount: purchaseAmount,
           status: "pending",
           paymentMethod: "cash",
           deliveryAddress: `${parsed.addressLine1}${parsed.addressLine2 ? ', ' + parsed.addressLine2 : ''}`,
@@ -238,12 +245,33 @@ export function registerCartRoutes(app: Express): void {
 
         // Update listing quantity
         const newQuantity = listing.quantityAvailable - cartItem.quantity;
-        if (newQuantity <= 0) {
+        if (newQuantity <= 0 || isAuctionBuyNow) {
+          // For auctions, always mark as sold when Buy Now is used
           await storage.updateListing(cartItem.listingId, { 
             isActive: false,
             quantityAvailable: 0,
             quantitySold: (listing.quantitySold || 0) + cartItem.quantity,
+            currentBid: isAuctionBuyNow ? (listing as any).buyNowPrice : listing.currentBid,
           } as any);
+          
+          // For auction Buy Now, notify all bidders that auction ended
+          if (isAuctionBuyNow) {
+            const allBids = await storage.getBidsForListing(cartItem.listingId);
+            const uniqueBidderIds = [...new Set(allBids.map(b => b.userId))];
+            
+            for (const bidderId of uniqueBidderIds) {
+              if (bidderId !== userId) { // Don't notify the buyer themselves
+                await storage.createNotification({
+                  userId: bidderId,
+                  type: "auction_ended",
+                  title: "انتهى المزاد",
+                  message: `تم بيع "${listing.title}" عبر خيار الشراء الفوري`,
+                  linkUrl: `/product/${cartItem.listingId}`,
+                  relatedId: cartItem.listingId,
+                });
+              }
+            }
+          }
         } else {
           await storage.updateListing(cartItem.listingId, { 
             quantityAvailable: newQuantity,
