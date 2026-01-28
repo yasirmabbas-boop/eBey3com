@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Phone, Lock, User, UserPlus, Loader2, Eye, EyeOff } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, AUTH_QUERY_KEY } from "@/hooks/use-auth";
 import { useLanguage } from "@/lib/i18n";
 import { FormError } from "@/components/form-error";
 import { validatePhone, validatePassword } from "@/lib/form-validation";
@@ -119,8 +119,7 @@ export default function Register() {
         description: tr("مرحباً بك في E-بيع!", "بەخێربێیت بۆ E-بیع!", "Welcome to E-Bay Iraq!"),
       });
 
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
 
       navigate("/");
     } catch (error: any) {
@@ -199,7 +198,7 @@ export default function Register() {
                       }
                       
                       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-                      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+                      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
                       
                       navigate(event.data.needsOnboarding ? "/onboarding" : "/");
                     }

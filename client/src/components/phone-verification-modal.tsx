@@ -12,6 +12,7 @@ import { CheckCircle, Loader2, Shield, AlertCircle, MessageSquare } from "lucide
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLanguage } from "@/lib/i18n";
+import { AUTH_QUERY_KEY } from "@/hooks/use-auth";
 
 interface PhoneVerificationModalProps {
   open: boolean;
@@ -71,7 +72,7 @@ export function PhoneVerificationModal({
           title: tr("موثق بالفعل", "پێشتر پشتڕاستکراوە", "Already verified"),
           description: data.message,
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
         onOpenChange(false);
         return;
       }
@@ -140,10 +141,9 @@ export function PhoneVerificationModal({
       });
 
       // Invalidate and refetch user data to get updated phoneVerified status
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      await queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
       await queryClient.invalidateQueries({ queryKey: ["/api/account/profile"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
+      await queryClient.refetchQueries({ queryKey: AUTH_QUERY_KEY });
       
       onVerified?.();
       onOpenChange(false);

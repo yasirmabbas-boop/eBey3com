@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Phone, Lock, LogIn, Loader2, Shield, Eye, EyeOff, MessageSquare } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, AUTH_QUERY_KEY } from "@/hooks/use-auth";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useLanguage } from "@/lib/i18n";
 import { FormError } from "@/components/form-error";
@@ -112,8 +112,7 @@ export default function SignIn() {
         description: `${t("welcome")} ${data.displayName}`,
       });
 
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
 
       navigate("/");
     } catch (error: any) {
@@ -179,8 +178,7 @@ export default function SignIn() {
         description: `${t("welcome")} ${data.displayName}`,
       });
 
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
 
       navigate("/");
     } catch (error: any) {
@@ -295,8 +293,7 @@ export default function SignIn() {
         ),
       });
 
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
 
       navigate("/");
     } catch (error: any) {
@@ -379,7 +376,7 @@ export default function SignIn() {
                         
                         // Invalidate auth cache and redirect
                         queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-                        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+                        queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
                         
                         // Navigate to appropriate page
                         navigate(event.data.needsOnboarding ? "/onboarding" : "/");

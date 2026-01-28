@@ -12,6 +12,7 @@ import { Loader2, Shield, MessageSquare, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLanguage } from "@/lib/i18n";
+import { AUTH_QUERY_KEY } from "@/hooks/use-auth";
 
 interface MandatoryPhoneVerificationModalProps {
   open: boolean;
@@ -159,9 +160,8 @@ export function MandatoryPhoneVerificationModal({
       });
 
       // Invalidate and refetch user data to get updated phoneVerified status
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
+      await queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+      await queryClient.refetchQueries({ queryKey: AUTH_QUERY_KEY });
       
       onVerified();
       onOpenChange(false);

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, AUTH_QUERY_KEY } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@/hooks/use-upload";
 import { share } from "@/lib/nativeShare";
@@ -203,7 +203,7 @@ export default function MyAccount() {
         const profileResult = await res.json();
         console.log("[Avatar] Profile update result:", profileResult);
         toast({ title: "تم تحديث الصورة بنجاح" });
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: ["/api/account/profile"] });
       } else {
         const errorText = await res.text();
