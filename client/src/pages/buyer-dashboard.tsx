@@ -382,12 +382,10 @@ export default function BuyerDashboard() {
                       {(purchase.status === "delivered" || purchase.status === "completed") && (
                         <div className="mt-2">
                           {purchase.sellerRating ? (
-                            <div className="flex items-center gap-0.5" title="تم التقييم">
-                              {Array.from({ length: purchase.sellerRating }).map((_, i) => (
-                                <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
-                              ))}
-                              <CheckCircle className="h-3 w-3 text-emerald-500 mr-1" />
-                            </div>
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                              <CheckCircle className="h-3 w-3" />
+                              تم التقييم
+                            </span>
                           ) : (
                             <Button
                               size="sm"
