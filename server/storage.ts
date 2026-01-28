@@ -631,6 +631,8 @@ export class DatabaseStorage implements IStorage {
       trackingNumber: transactions.trackingNumber,
       createdAt: transactions.createdAt,
       completedAt: transactions.completedAt,
+      sellerRating: transactions.sellerRating,
+      sellerFeedback: transactions.sellerFeedback,
       listingTitle: listings.title,
       listingPrice: listings.price,
       listingImages: listings.images,
@@ -658,6 +660,8 @@ export class DatabaseStorage implements IStorage {
       trackingNumber: r.trackingNumber,
       createdAt: r.createdAt,
       completedAt: r.completedAt,
+      sellerRating: r.sellerRating,
+      sellerFeedback: r.sellerFeedback,
       listing: {
         id: r.listingId,
         title: r.listingTitle,
