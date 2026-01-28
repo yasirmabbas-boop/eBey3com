@@ -737,6 +737,12 @@ export default function SellPage() {
   }
 
   // If user's phone is not verified, show verification prompt
+  console.log("[sell.tsx] Phone verification check:", { 
+    authLoading, 
+    hasUser: !!user, 
+    phoneVerified: user?.phoneVerified, 
+    phone: user?.phone 
+  });
   if (!authLoading && user && !user.phoneVerified) {
     return (
       <Layout>
