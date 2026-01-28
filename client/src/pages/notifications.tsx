@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/hooks/use-auth";
+import { getAuthHeaders } from "@/lib/queryClient";
 import { useLanguage } from "@/lib/i18n";
 import { 
   Bell, 
@@ -122,7 +123,10 @@ export default function NotificationsPage() {
     queryKey: ["/api/messages", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const res = await fetch(`/api/messages/${user.id}`, { credentials: "include" });
+      const res = await fetch(`/api/messages/${user.id}`, { 
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) return [];
       return res.json();
     },
@@ -132,7 +136,10 @@ export default function NotificationsPage() {
   const { data: systemNotifications = [], isLoading: notificationsLoading } = useQuery<DBNotification[]>({
     queryKey: ["/api/notifications"],
     queryFn: async () => {
-      const res = await fetch("/api/notifications", { credentials: "include" });
+      const res = await fetch("/api/notifications", { 
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) return [];
       return res.json();
     },
@@ -144,6 +151,7 @@ export default function NotificationsPage() {
       const res = await fetch(`/api/notifications/${notificationId}/read`, {
         method: "POST",
         credentials: "include",
+        headers: getAuthHeaders(),
       });
       if (!res.ok) throw new Error("Failed to mark as read");
       return res.json();
@@ -159,6 +167,7 @@ export default function NotificationsPage() {
       const res = await fetch("/api/notifications/read-all", {
         method: "POST",
         credentials: "include",
+        headers: getAuthHeaders(),
       });
       if (!res.ok) throw new Error("Failed to mark all as read");
       return res.json();
