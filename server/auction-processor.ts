@@ -88,7 +88,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
           title: "انتهى المزاد بدون مزايدات",
           message: `انتهى المزاد على "${listing.title}" بدون أي مزايدات. يمكنك إعادة عرض المنتج.`,
           relatedId: listing.id,
-          linkUrl: "/seller-dashboard",
+          linkUrl: `/seller-dashboard?tab=products&listingId=${listing.id}`,
         });
         sendPushNotification(listing.sellerId, {
           title: "انتهى المزاد بدون مزايدات",
@@ -133,7 +133,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
           title: "انتهى المزاد - لم يصل للسعر الاحتياطي",
           message: `انتهى المزاد على "${listing.title}" بأعلى مزايدة ${highestBid.amount.toLocaleString("ar-IQ")} د.ع، لكنها لم تصل للسعر الاحتياطي ${listing.reservePrice.toLocaleString("ar-IQ")} د.ع. يمكنك إعادة عرض المنتج.`,
           relatedId: listing.id,
-          linkUrl: "/seller-dashboard",
+          linkUrl: `/seller-dashboard?tab=products&listingId=${listing.id}`,
         });
         sendPushNotification(listing.sellerId, {
           title: "المزاد انتهى بدون بيع",
@@ -232,7 +232,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
       title: "مبروك! فزت بالمزاد 🎉",
       message: `فزت بالمزاد على "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع. سيتم شحن طلبك قريباً.`,
       relatedId: listing.id,
-      linkUrl: "/buyer-dashboard",
+      linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transaction.id}`,
     });
     sendPushNotification(winner.id, {
       title: "مبروك! فزت بالمزاد 🎉",
@@ -248,7 +248,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
         title: "تم بيع منتجك في المزاد! 🎉",
         message: `تهانينا! تم بيع "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع للمشتري ${winner.displayName || winner.phone}. يرجى شحن المنتج.`,
         relatedId: listing.id,
-        linkUrl: "/seller-dashboard",
+        linkUrl: `/seller-dashboard?tab=sales&orderId=${transaction.id}`,
       });
       sendPushNotification(listing.sellerId, {
         title: "تم بيع منتجك في المزاد! 🎉",

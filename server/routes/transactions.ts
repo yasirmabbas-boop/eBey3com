@@ -82,19 +82,19 @@ export function registerTransactionsRoutes(app: Express): void {
               title: "تم إلغاء عرضك",
               message: `تم بيع "${listing.title}" لمشتري آخر وتم إلغاء عرضك تلقائياً`,
               relatedId: offer.id,
-              linkUrl: "/buyer-dashboard",
+              linkUrl: `/buyer-dashboard?tab=offers&offerId=${offer.id}`,
             });
           }
         }
       }
 
-      // Create notification for seller
+      // Create notification for seller with deep link to sales tab
       await storage.createNotification({
         userId: (listing as any).sellerId,
         type: "new_order",
         title: "طلب جديد",
         message: `لديك طلب جديد على "${listing.title}"`,
-        linkUrl: `/my-sales`,
+        linkUrl: `/seller-dashboard?tab=sales&orderId=${transaction.id}`,
         relatedId: transaction.id,
       });
 
@@ -149,7 +149,7 @@ export function registerTransactionsRoutes(app: Express): void {
       // Get listing for notification message
       const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
       
-      // Notify buyer
+      // Notify buyer with deep link to purchases tab
       if (transaction.buyerId) {
         const notification = await storage.createNotification({
           userId: transaction.buyerId,
@@ -157,7 +157,7 @@ export function registerTransactionsRoutes(app: Express): void {
           title: "تم شحن طلبك 📦",
           message: `تم شحن طلبك "${listing?.title || "المنتج"}" وسيصلك قريباً`,
           relatedId: transactionId,
-          linkUrl: "/buyer-dashboard",
+          linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
         });
         
         // Broadcast notification via WebSocket
@@ -205,7 +205,7 @@ export function registerTransactionsRoutes(app: Express): void {
       // Get listing for notification message
       const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
       
-      // Notify the other party
+      // Notify the other party with deep links
       if (userId === transaction.sellerId && transaction.buyerId) {
         // Seller confirmed, notify buyer
         const notification = await storage.createNotification({
@@ -214,7 +214,7 @@ export function registerTransactionsRoutes(app: Express): void {
           title: "تم تسليم طلبك ✅",
           message: `تم تسليم طلبك "${listing?.title || "المنتج"}" بنجاح`,
           relatedId: transactionId,
-          linkUrl: "/buyer-dashboard",
+          linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
         });
         
         sendToUser(transaction.buyerId, "NOTIFICATION", {
@@ -234,7 +234,7 @@ export function registerTransactionsRoutes(app: Express): void {
           title: "تم تأكيد التسليم ✅",
           message: `أكد المشتري استلام "${listing?.title || "المنتج"}"`,
           relatedId: transactionId,
-          linkUrl: "/seller-dashboard",
+          linkUrl: `/seller-dashboard?tab=sales&orderId=${transactionId}`,
         });
         
         sendToUser(transaction.sellerId, "NOTIFICATION", {
@@ -299,7 +299,7 @@ export function registerTransactionsRoutes(app: Express): void {
         other: "مشكلة أخرى",
       };
       
-      // Notify buyer about the issue
+      // Notify buyer about the issue with deep link
       if (transaction.buyerId) {
         const notification = await storage.createNotification({
           userId: transaction.buyerId,
@@ -307,7 +307,7 @@ export function registerTransactionsRoutes(app: Express): void {
           title: "مشكلة في طلبك ⚠️",
           message: `واجه البائع مشكلة في توصيل "${listing?.title || "المنتج"}": ${issueLabels[issueType] || issueType}`,
           relatedId: transactionId,
-          linkUrl: "/buyer-dashboard",
+          linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
         });
         
         sendToUser(transaction.buyerId, "NOTIFICATION", {
@@ -412,7 +412,7 @@ export function registerTransactionsRoutes(app: Express): void {
           title: "تقييم جديد",
           message: `لديك تقييم جديد على "${listing?.title || "المنتج"}"`,
           relatedId: transactionId,
-          linkUrl: "/seller-dashboard",
+          linkUrl: `/seller-dashboard?tab=sales&orderId=${transactionId}`,
         });
         
         sendToUser(transaction.sellerId, "NOTIFICATION", {
@@ -465,14 +465,14 @@ export function registerTransactionsRoutes(app: Express): void {
         notifyUserId = transaction.buyerId;
         notificationTitle = "تم إلغاء طلبك ❌";
         notificationMessage = `قام البائع بإلغاء طلبك على "${listing?.title || "المنتج"}"${reason ? `: ${reason}` : ""}`;
-        notificationLink = "/buyer-dashboard";
+        notificationLink = `/buyer-dashboard?tab=purchases&orderId=${transactionId}`;
       } else if (transaction.buyerId === userId) {
         // Buyer cancelling
         updated = await storage.cancelTransactionByBuyer(transactionId, reason || "تم الإلغاء من قبل المشتري");
         notifyUserId = transaction.sellerId;
         notificationTitle = "تم إلغاء الطلب ❌";
         notificationMessage = `قام المشتري بإلغاء طلبه على "${listing?.title || "المنتج"}"${reason ? `: ${reason}` : ""}`;
-        notificationLink = "/seller-dashboard";
+        notificationLink = `/seller-dashboard?tab=sales&orderId=${transactionId}`;
       } else {
         return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
       }

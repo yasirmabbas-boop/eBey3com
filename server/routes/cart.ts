@@ -251,14 +251,14 @@ export function registerCartRoutes(app: Express): void {
           } as any);
         }
 
-        // Notify seller
+        // Notify seller with deep link to sales tab
         if (listing.sellerId) {
           await storage.createNotification({
             userId: listing.sellerId,
             type: "new_order",
             title: "طلب جديد",
             message: `لديك طلب جديد على "${listing.title}"`,
-            linkUrl: `/my-sales`,
+            linkUrl: `/seller-dashboard?tab=sales&orderId=${transaction.id}`,
             relatedId: transaction.id,
           });
         }
