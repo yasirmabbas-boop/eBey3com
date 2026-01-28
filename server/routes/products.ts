@@ -924,6 +924,25 @@ export function registerProductRoutes(app: Express): void {
         totalBids: (updatedListing?.totalBids || 0),
       });
 
+      // Milestone notifications for seller (5, 10, 20, 50 bids)
+      const totalBids = updatedListing?.totalBids || 0;
+      const milestones = [5, 10, 20, 50];
+      if (milestones.includes(totalBids) && listing.sellerId) {
+        try {
+          await storage.createNotification({
+            userId: listing.sellerId,
+            type: "auction_milestone",
+            title: `مزادك حقق ${totalBids} مزايدة!`,
+            message: `منتجك "${listing.title}" وصل إلى ${totalBids} مزايدة. أعلى سعر حالياً: ${amount.toLocaleString()} د.ع`,
+            linkUrl: `/product/${listingId}`,
+            relatedId: listingId,
+          });
+          console.log(`[bid] Milestone notification (${totalBids} bids) sent to seller ${listing.sellerId}`);
+        } catch (notifError) {
+          console.error("[bid] Failed to send milestone notification:", notifError);
+        }
+      }
+
       console.log(`[bid] User ${userId} placed bid of ${amount} on listing ${listingId}`);
 
       res.json({
