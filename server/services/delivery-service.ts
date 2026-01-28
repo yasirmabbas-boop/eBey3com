@@ -70,7 +70,7 @@ class DeliveryService {
         orderId: transactionId,
         pickupAddress: seller.addressLine1 || seller.city || "بغداد",
         pickupCity: seller.city || "بغداد",
-        pickupPhone: seller.phone,
+        pickupPhone: seller.phone || "",
         pickupContactName: seller.displayName,
         deliveryAddress: transaction.deliveryAddress || "",
         deliveryCity: transaction.deliveryCity || "",
@@ -92,7 +92,7 @@ class DeliveryService {
           externalTrackingNumber: deliveryResponse.trackingNumber,
           pickupAddress: seller.addressLine1 || seller.city || "بغداد",
           pickupCity: seller.city || "بغداد",
-          pickupPhone: seller.phone,
+          pickupPhone: seller.phone || "",
           pickupContactName: seller.displayName,
           deliveryAddress: transaction.deliveryAddress || "",
           deliveryCity: transaction.deliveryCity || "",
@@ -458,4 +458,3 @@ class DeliveryService {
 }
 
 export const deliveryService = new DeliveryService();
-export type { DriverCancellationReason };
