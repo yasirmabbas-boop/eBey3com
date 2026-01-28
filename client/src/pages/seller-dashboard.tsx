@@ -424,6 +424,9 @@ export default function SellerDashboard() {
   const [returnResponseOpen, setReturnResponseOpen] = useState(false);
   const [selectedReturnRequest, setSelectedReturnRequest] = useState<SellerReturnRequest | null>(null);
   const [returnResponseText, setReturnResponseText] = useState("");
+  const [counterOfferDialogOpen, setCounterOfferDialogOpen] = useState(false);
+  const [selectedOfferForCounter, setSelectedOfferForCounter] = useState<(Offer & { listing?: Listing }) | null>(null);
+  const [counterOfferAmount, setCounterOfferAmount] = useState("");
 
   const returnResponseMutation = useMutation({
     mutationFn: async ({ id, status, sellerResponse }: { id: string; status: "approved" | "rejected"; sellerResponse?: string }) => {
@@ -545,32 +548,35 @@ export default function SellerDashboard() {
   });
 
   const offerResponseMutation = useMutation({
-    mutationFn: async ({ offerId, status, counterAmount }: { offerId: string; status: string; counterAmount?: number }) => {
+    mutationFn: async ({ offerId, action, counterAmount, counterMessage }: { offerId: string; action: "accept" | "reject" | "counter"; counterAmount?: number; counterMessage?: string }) => {
       const authToken = localStorage.getItem("authToken");
-      const res = await fetch(`/api/offers/${offerId}`, {
-        method: "PATCH",
+      const res = await fetch(`/api/offers/${offerId}/respond`, {
+        method: "PUT",
         headers: { 
           "Content-Type": "application/json",
           ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
         },
         credentials: "include",
-        body: JSON.stringify({ status, counterAmount }),
+        body: JSON.stringify({ action, counterAmount, counterMessage }),
       });
       if (!res.ok) throw new Error("Failed to respond to offer");
       return res.json();
     },
     onSuccess: (_, variables) => {
       const messages: Record<string, { ar: string; ku: string }> = {
-        accepted: { ar: "تم قبول العرض بنجاح - تم إنشاء طلب جديد", ku: "پێشنیار قبوڵکرا - داواکارییەکی نوێ دروستکرا" },
-        rejected: { ar: "تم رفض العرض", ku: "پێشنیار ڕەتکرایەوە" },
-        countered: { ar: "تم إرسال عرض مقابل", ku: "پێشنیارێکی بەرامبەر نێردرا" },
+        accept: { ar: "تم قبول العرض بنجاح - تم إنشاء طلب جديد", ku: "پێشنیار قبوڵکرا - داواکارییەکی نوێ دروستکرا" },
+        reject: { ar: "تم رفض العرض", ku: "پێشنیار ڕەتکرایەوە" },
+        counter: { ar: "تم إرسال عرض مقابل", ku: "پێشنیارێکی بەرامبەر نێردرا" },
       };
-      toast({ title: t("success"), description: messages[variables.status]?.[language] || (language === "ar" ? "تم تحديث العرض" : "پێشنیار نوێکرایەوە") });
+      toast({ title: t("success"), description: messages[variables.action]?.[language] || (language === "ar" ? "تم تحديث العرض" : "پێشنیار نوێکرایەوە") });
       queryClient.invalidateQueries({ queryKey: ["/api/received-offers"] });
-      if (variables.status === "accepted") {
+      if (variables.action === "accept") {
         queryClient.invalidateQueries({ queryKey: ["/api/account/seller-orders"] });
         queryClient.invalidateQueries({ queryKey: ["/api/account/seller-summary"] });
       }
+      setCounterOfferDialogOpen(false);
+      setSelectedOfferForCounter(null);
+      setCounterOfferAmount("");
     },
     onError: () => {
       toast({ title: t("error"), description: language === "ar" ? "فشل في الرد على العرض" : "شکستی هێنا لە وەڵامدانەوە بۆ پێشنیار", variant: "destructive" });
@@ -1599,7 +1605,7 @@ export default function SellerDashboard() {
                                     size="sm"
                                     onClick={() => offerResponseMutation.mutate({ 
                                       offerId: offer.id, 
-                                      status: "accepted" 
+                                      action: "accept" 
                                     })}
                                     disabled={offerResponseMutation.isPending}
                                     className="bg-green-600 hover:bg-green-700"
@@ -1610,10 +1616,24 @@ export default function SellerDashboard() {
                                   </Button>
                                   <Button
                                     size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedOfferForCounter(offer);
+                                      setCounterOfferAmount("");
+                                      setCounterOfferDialogOpen(true);
+                                    }}
+                                    disabled={offerResponseMutation.isPending}
+                                    data-testid={`button-counter-offer-${offer.id}`}
+                                  >
+                                    <ArrowRight className="h-4 w-4 ml-1" />
+                                    عرض مقابل
+                                  </Button>
+                                  <Button
+                                    size="sm"
                                     variant="destructive"
                                     onClick={() => offerResponseMutation.mutate({ 
                                       offerId: offer.id, 
-                                      status: "rejected" 
+                                      action: "reject" 
                                     })}
                                     disabled={offerResponseMutation.isPending}
                                     data-testid={`button-reject-offer-${offer.id}`}
@@ -2618,6 +2638,84 @@ export default function SellerDashboard() {
                 <CheckCircle className="h-4 w-4 ml-1" />
               )}
               قبول الإرجاع
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Counter Offer Dialog */}
+      <Dialog open={counterOfferDialogOpen} onOpenChange={setCounterOfferDialogOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <HandCoins className="h-5 w-5 text-primary" />
+              إرسال عرض مقابل
+            </DialogTitle>
+            <DialogDescription>
+              قدم سعراً مختلفاً للمشتري
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedOfferForCounter && (
+            <div className="space-y-4 py-4">
+              <div className="bg-gray-50 p-3 rounded">
+                <p className="font-medium text-sm">
+                  {listings.find(l => l.id === selectedOfferForCounter.listingId)?.title || "المنتج"}
+                </p>
+                <div className="flex justify-between items-center mt-2 text-sm">
+                  <span className="text-gray-500">السعر الأصلي:</span>
+                  <span>{listings.find(l => l.id === selectedOfferForCounter.listingId)?.price?.toLocaleString()} د.ع</span>
+                </div>
+                <div className="flex justify-between items-center mt-1 text-sm">
+                  <span className="text-gray-500">عرض المشتري:</span>
+                  <span className="text-primary font-bold">{selectedOfferForCounter.offerAmount?.toLocaleString()} د.ع</span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>السعر المقترح (د.ع)</Label>
+                <Input
+                  type="number"
+                  value={counterOfferAmount}
+                  onChange={(e) => setCounterOfferAmount(e.target.value)}
+                  placeholder="أدخل السعر الذي تقترحه..."
+                  data-testid="input-counter-offer-amount"
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCounterOfferDialogOpen(false);
+                setSelectedOfferForCounter(null);
+                setCounterOfferAmount("");
+              }}
+              data-testid="button-cancel-counter-offer"
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedOfferForCounter && counterOfferAmount) {
+                  offerResponseMutation.mutate({
+                    offerId: selectedOfferForCounter.id,
+                    action: "counter",
+                    counterAmount: parseInt(counterOfferAmount),
+                  });
+                }
+              }}
+              disabled={offerResponseMutation.isPending || !counterOfferAmount}
+              data-testid="button-send-counter-offer"
+            >
+              {offerResponseMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-1" />
+              ) : (
+                <ArrowRight className="h-4 w-4 ml-1" />
+              )}
+              إرسال العرض
             </Button>
           </DialogFooter>
         </DialogContent>
