@@ -788,8 +788,14 @@ export function registerProductRoutes(app: Express): void {
         return res.status(400).json({ error: "لا يمكنك المزايدة على منتجاتك" });
       }
 
+      // Get existing bids to check highest bidder
+      const existingBids = await storage.getBidsForListing(listingId);
+      const highestBid = existingBids.length > 0 
+        ? existingBids.reduce((max, bid) => bid.amount > max.amount ? bid : max, existingBids[0])
+        : null;
+      
       // Check if user is already the highest bidder
-      if ((listing as any).highestBidderId === userId) {
+      if (highestBid && highestBid.userId === userId) {
         return res.status(400).json({ error: "أنت بالفعل صاحب أعلى مزايدة" });
       }
 
@@ -828,6 +834,28 @@ export function registerProductRoutes(app: Express): void {
         userId,
         amount,
       });
+
+      // Send outbid notification to previous highest bidder
+      if (highestBid && highestBid.userId !== userId) {
+        try {
+          await storage.createNotification({
+            userId: highestBid.userId,
+            type: "outbid",
+            title: "تمت مزايدة أعلى منك",
+            message: `شخص ما زايد بمبلغ ${amount.toLocaleString()} د.ع على "${listing.title}"`,
+            data: JSON.stringify({
+              listingId,
+              listingTitle: listing.title,
+              newBidAmount: amount,
+              yourBidAmount: highestBid.amount,
+            }),
+            link: `/listing/${listingId}`,
+          });
+          console.log(`[bid] Outbid notification sent to user ${highestBid.userId}`);
+        } catch (notifError) {
+          console.error("[bid] Failed to send outbid notification:", notifError);
+        }
+      }
 
       // Check if we need to extend the auction (anti-sniping)
       const now = new Date();
