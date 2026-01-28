@@ -837,6 +837,14 @@ export function registerProductRoutes(app: Express): void {
         });
       }
 
+      // Check if bid meets or exceeds buyNowPrice - should use Buy Now instead
+      const buyNowPrice = (listing as any).buyNowPrice;
+      if (buyNowPrice && amount >= buyNowPrice) {
+        return res.status(400).json({ 
+          error: `مبلغ المزايدة يساوي أو يتجاوز سعر الشراء الفوري (${buyNowPrice.toLocaleString()} د.ع). استخدم خيار "اشتر الآن" بدلاً من ذلك.` 
+        });
+      }
+
       // Create the bid
       const bid = await storage.createBid({
         listingId,
