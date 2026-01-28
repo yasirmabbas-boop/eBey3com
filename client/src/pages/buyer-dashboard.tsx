@@ -550,7 +550,7 @@ export default function BuyerDashboard() {
 
         {/* Order Detail Sheet */}
         <Sheet open={orderDetailOpen} onOpenChange={setOrderDetailOpen}>
-          <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl" dir="rtl">
+          <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl pb-20 safe-area-bottom" dir="rtl">
             {selectedOrder && (
               <div className="flex flex-col h-full">
                 {/* Header */}
@@ -569,7 +569,7 @@ export default function BuyerDashboard() {
                 </SheetHeader>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto py-4 pb-24 space-y-6">
+                <div className="flex-1 overflow-y-auto py-4 pb-32 space-y-6">
                   {/* Product Info */}
                   <div className="flex gap-4">
                     {selectedOrder.listing?.images?.[0] ? (
