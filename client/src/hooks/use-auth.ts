@@ -71,21 +71,10 @@ async function fetchUser(): Promise<AuthUser | null> {
     authToken ? `${authToken.substring(0, 8)}...` : "NULL",
   );
 
-  const meResponse = await authFetch("/api/auth/me");
+  // Use only the WhatsApp OTP-based auth endpoint
+  const response = await authFetch("/api/auth/me");
 
-  console.log("[DEBUG useAuth] /api/auth/me response status:", meResponse.status);
-
-  if (meResponse.ok) {
-    const userData = await meResponse.json();
-    console.log("[DEBUG useAuth] User data from /api/auth/me:", JSON.stringify(userData, null, 2));
-    return userData;
-  }
-
-  // Fall back to Replit auth (also include Bearer token for unified auth)
-  console.log("[DEBUG useAuth] Falling back to /api/auth/user");
-  const response = await authFetch("/api/auth/user");
-
-  console.log("[DEBUG useAuth] /api/auth/user response status:", response.status);
+  console.log("[DEBUG useAuth] /api/auth/me response status:", response.status);
 
   if (response.status === 401) {
     return null;
@@ -96,7 +85,7 @@ async function fetchUser(): Promise<AuthUser | null> {
   }
 
   const userData = await response.json();
-  console.log("[DEBUG useAuth] User data from /api/auth/user:", JSON.stringify(userData, null, 2));
+  console.log("[DEBUG useAuth] User data from /api/auth/me:", JSON.stringify(userData, null, 2));
   return userData;
 }
 
@@ -104,33 +93,32 @@ async function logout(): Promise<void> {
   // Clear auth token from localStorage
   localStorage.removeItem("authToken");
   
-  // Try custom logout first
+  // Call logout endpoint to clear session
   try {
-    const response = await fetch("/api/auth/logout", {
+    await fetch("/api/auth/logout", {
       method: "POST",
       credentials: "include",
     });
-    if (response.ok) {
-      // Custom auth logout successful, just reload
-      window.location.href = "/";
-      return;
-    }
   } catch (e) {
-    // Ignore errors, try Replit logout
+    // Ignore errors
   }
-  // Fall back to Replit logout only if custom logout didn't work
-  window.location.href = "/api/logout";
+  
+  // Redirect to home
+  window.location.href = "/";
 }
+
+// Consistent query key for auth - used by all components
+export const AUTH_QUERY_KEY = ["/api/auth/me"];
 
 export function useAuth() {
   const queryClient = useQueryClient();
   const hasCheckedToken = useRef(false);
   
   const { data: user, isLoading, refetch } = useQuery<AuthUser | null>({
-    queryKey: ["/api/auth/user"],
+    queryKey: AUTH_QUERY_KEY,
     queryFn: fetchUser,
     retry: false,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0, // Always fetch fresh data for auth
   });
 
   // Check for token in URL on every mount (handles SPA navigation after OAuth redirect)
@@ -142,14 +130,14 @@ export function useAuth() {
     if (tokenFound) {
       console.log("[DEBUG useAuth] Token found in URL, invalidating auth cache and refetching");
       // Invalidate the cache and refetch with the new token
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
     }
   }, [queryClient]);
 
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      queryClient.setQueryData(["/api/auth/user"], null);
+      queryClient.setQueryData(AUTH_QUERY_KEY, null);
     },
   });
 
