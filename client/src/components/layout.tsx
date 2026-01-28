@@ -26,14 +26,14 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
   const isRtl = language === "ar" || language === "ku";
 
   return (
-    <div className="despia-app bg-background font-sans md:min-h-screen md:block overflow-x-hidden max-w-full" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="app-container bg-background font-sans md:min-h-screen md:block overflow-x-hidden max-w-full" dir={isRtl ? "rtl" : "ltr"}>
             
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 
       {/* Top Bar with Logo, Language, Cart */}
       {!hideHeader && (
-      <div className="despia-topbar bg-primary text-white py-2 px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]">
+      <div className="app-topbar bg-primary text-white py-2 px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]">
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="flex-shrink-0 flex items-center">
             <Logo className="h-8 md:h-10 brightness-0 invert" />
@@ -69,7 +69,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       {/* Main Header - Search Only */}
       {!hideHeader && (
       <header className="sticky top-0 z-50 glass-surface border-b border-border/60 shadow-[var(--shadow-1)]">
-        <div className="container mx-auto px-3 py-2" style={{ paddingTop: "calc(var(--safe-area-top) + 0.5rem)" }}>
+        <div className="container mx-auto px-3 py-2" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}>
           {/* Full Width Search Bar */}
           <div className="flex items-center gap-2">
             {/* Back Button - Mobile */}
@@ -97,7 +97,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       )}
 
       {/* Main Content */}
-      <main className={`despia-content md:pb-0 md:flex-1 ${isNative ? "pb-6" : "pb-20"}`}>
+      <main className={`app-content md:pb-0 md:flex-1 ${isNative ? "pb-6" : "pb-20"}`}>
         {children}
         
       </main>
