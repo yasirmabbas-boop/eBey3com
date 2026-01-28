@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
+import { sendToUser } from "../websocket";
 
 const guestCheckoutSchema = z.object({
   listingId: z.string().min(1),
@@ -130,13 +131,24 @@ export function registerTransactionsRoutes(app: Express): void {
       
       // Notify buyer
       if (transaction.buyerId) {
-        await storage.createNotification({
+        const notification = await storage.createNotification({
           userId: transaction.buyerId,
           type: "order_shipped",
           title: "تم شحن طلبك 📦",
           message: `تم شحن طلبك "${listing?.title || "المنتج"}" وسيصلك قريباً`,
           relatedId: transactionId,
           linkUrl: "/buyer-dashboard",
+        });
+        
+        // Broadcast notification via WebSocket
+        sendToUser(transaction.buyerId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
         });
       }
 
@@ -176,7 +188,7 @@ export function registerTransactionsRoutes(app: Express): void {
       // Notify the other party
       if (userId === transaction.sellerId && transaction.buyerId) {
         // Seller confirmed, notify buyer
-        await storage.createNotification({
+        const notification = await storage.createNotification({
           userId: transaction.buyerId,
           type: "order_delivered",
           title: "تم تسليم طلبك ✅",
@@ -184,15 +196,35 @@ export function registerTransactionsRoutes(app: Express): void {
           relatedId: transactionId,
           linkUrl: "/buyer-dashboard",
         });
+        
+        sendToUser(transaction.buyerId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
+        });
       } else if (userId === transaction.buyerId && transaction.sellerId) {
         // Buyer confirmed, notify seller
-        await storage.createNotification({
+        const notification = await storage.createNotification({
           userId: transaction.sellerId,
           type: "order_delivered",
           title: "تم تأكيد التسليم ✅",
           message: `أكد المشتري استلام "${listing?.title || "المنتج"}"`,
           relatedId: transactionId,
           linkUrl: "/seller-dashboard",
+        });
+        
+        sendToUser(transaction.sellerId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
         });
       }
 
@@ -249,13 +281,23 @@ export function registerTransactionsRoutes(app: Express): void {
       
       // Notify buyer about the issue
       if (transaction.buyerId) {
-        await storage.createNotification({
+        const notification = await storage.createNotification({
           userId: transaction.buyerId,
           type: "order_issue",
           title: "مشكلة في طلبك ⚠️",
           message: `واجه البائع مشكلة في توصيل "${listing?.title || "المنتج"}": ${issueLabels[issueType] || issueType}`,
           relatedId: transactionId,
           linkUrl: "/buyer-dashboard",
+        });
+        
+        sendToUser(transaction.buyerId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
         });
       }
 
@@ -353,13 +395,23 @@ export function registerTransactionsRoutes(app: Express): void {
       
       // Notify the other party
       if (notifyUserId) {
-        await storage.createNotification({
+        const notification = await storage.createNotification({
           userId: notifyUserId,
           type: "order_cancelled",
           title: notificationTitle,
           message: notificationMessage,
           relatedId: transactionId,
           linkUrl: notificationLink,
+        });
+        
+        sendToUser(notifyUserId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
         });
       }
 
