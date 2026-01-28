@@ -759,7 +759,7 @@ export function registerTransactionsRoutes(app: Express): void {
   });
 
   // Seller respond to return request
-  app.put("/api/return-requests/:id/respond", async (req, res) => {
+  app.patch("/api/return-requests/:id/respond", async (req, res) => {
     try {
       const userId = await getUserIdFromRequest(req);
       if (!userId) {
