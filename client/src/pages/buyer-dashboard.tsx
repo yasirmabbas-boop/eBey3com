@@ -4,9 +4,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { RotateCcw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +51,7 @@ interface Purchase {
   amount: number;
   status: string;
   createdAt: string;
+  completedAt?: string;
   sellerRating?: number;
   sellerFeedback?: string;
   shippingAddress?: string;
@@ -56,6 +60,7 @@ interface Purchase {
     title: string;
     price: number;
     images: string[];
+    returnPolicy?: string;
   };
   seller?: {
     id: string;
@@ -63,6 +68,39 @@ interface Purchase {
     avatar?: string;
   };
 }
+
+interface ReturnRequest {
+  id: string;
+  transactionId: string;
+  reason: string;
+  details?: string;
+  status: string;
+  sellerResponse?: string;
+  createdAt: string;
+  listing?: {
+    id: string;
+    title: string;
+    images: string[];
+  };
+}
+
+const RETURN_REASONS = [
+  { value: "changed_mind", label: "غيرت رأيي" },
+  { value: "damaged", label: "المنتج تالف أو مكسور" },
+  { value: "different_from_description", label: "المنتج مختلف عن الوصف" },
+  { value: "missing_parts", label: "ناقص أجزاء أو ملحقات" },
+  { value: "wrong_item", label: "استلمت منتج خاطئ" },
+  { value: "not_as_expected", label: "لم يلبِ توقعاتي" },
+];
+
+const ISSUE_REASONS = [
+  { value: "damaged", label: "المنتج تالف" },
+  { value: "different_from_description", label: "مختلف عن الوصف" },
+  { value: "missing_parts", label: "ناقص ملحقات" },
+  { value: "wrong_item", label: "منتج خاطئ" },
+  { value: "seller_unresponsive", label: "البائع لا يرد" },
+  { value: "other", label: "مشكلة أخرى" },
+];
 
 interface BuyerOffer {
   id: string;
@@ -144,6 +182,16 @@ export default function BuyerDashboard() {
   const [orderDetailOpen, setOrderDetailOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Purchase | null>(null);
 
+  // Return request state
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [returnReason, setReturnReason] = useState("");
+  const [returnDetails, setReturnDetails] = useState("");
+
+  // Report issue state
+  const [issueDialogOpen, setIssueDialogOpen] = useState(false);
+  const [issueReason, setIssueReason] = useState("");
+  const [issueDetails, setIssueDetails] = useState("");
+
   const openOrderDetail = (order: Purchase) => {
     setSelectedOrder(order);
     setOrderDetailOpen(true);
@@ -223,6 +271,135 @@ export default function BuyerDashboard() {
       rating: ratingValue,
       feedback: ratingFeedback || undefined,
     });
+  };
+
+  // Return request mutation
+  const returnRequestMutation = useMutation({
+    mutationFn: async ({ transactionId, reason, details }: { transactionId: string; reason: string; details?: string }) => {
+      const res = await fetch("/api/return-requests", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        credentials: "include",
+        body: JSON.stringify({ transactionId, reason, details }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "فشل في إرسال طلب الإرجاع");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم", description: "تم إرسال طلب الإرجاع بنجاح" });
+      setReturnDialogOpen(false);
+      setOrderDetailOpen(false);
+      setReturnReason("");
+      setReturnDetails("");
+      queryClient.invalidateQueries({ queryKey: ["/api/account/purchases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/return-requests/my"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Report issue mutation
+  const reportIssueMutation = useMutation({
+    mutationFn: async ({ transactionId, reason, details }: { transactionId: string; reason: string; details?: string }) => {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        credentials: "include",
+        body: JSON.stringify({ 
+          reportType: "transaction_issue",
+          targetId: transactionId, 
+          targetType: "transaction",
+          reason, 
+          details 
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "فشل في إرسال البلاغ");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم", description: "تم إرسال البلاغ بنجاح وسنراجعه قريباً" });
+      setIssueDialogOpen(false);
+      setOrderDetailOpen(false);
+      setIssueReason("");
+      setIssueDetails("");
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const openReturnDialog = () => {
+    setReturnReason("");
+    setReturnDetails("");
+    setReturnDialogOpen(true);
+  };
+
+  const openIssueDialog = () => {
+    setIssueReason("");
+    setIssueDetails("");
+    setIssueDialogOpen(true);
+  };
+
+  const submitReturnRequest = () => {
+    if (!selectedOrder || !returnReason) return;
+    returnRequestMutation.mutate({
+      transactionId: selectedOrder.id,
+      reason: returnReason,
+      details: returnDetails || undefined,
+    });
+  };
+
+  const submitIssueReport = () => {
+    if (!selectedOrder || !issueReason) return;
+    reportIssueMutation.mutate({
+      transactionId: selectedOrder.id,
+      reason: issueReason,
+      details: issueDetails || undefined,
+    });
+  };
+
+  // Check if return is allowed based on return policy
+  const isReturnAllowed = (order: Purchase): { allowed: boolean; reason?: string; daysRemaining?: number } => {
+    if (!["delivered", "completed"].includes(order.status)) {
+      return { allowed: false, reason: "not_delivered" };
+    }
+
+    const returnPolicy = order.listing?.returnPolicy || "لا يوجد إرجاع";
+    let policyDays = 0;
+    
+    if (returnPolicy === "يوم واحد") policyDays = 1;
+    else if (returnPolicy === "3 أيام") policyDays = 3;
+    else if (returnPolicy === "7 أيام") policyDays = 7;
+    else if (returnPolicy === "14 يوم") policyDays = 14;
+    else if (returnPolicy === "30 يوم") policyDays = 30;
+    else if (returnPolicy === "استبدال فقط") policyDays = 7;
+
+    if (policyDays === 0) {
+      return { allowed: false, reason: "no_return_policy" };
+    }
+
+    const deliveredAt = order.completedAt ? new Date(order.completedAt) : new Date(order.createdAt);
+    const daysSinceDelivery = Math.floor((Date.now() - deliveredAt.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = policyDays - daysSinceDelivery;
+
+    if (daysRemaining <= 0) {
+      return { allowed: false, reason: "expired", daysRemaining: 0 };
+    }
+
+    return { allowed: true, daysRemaining };
   };
 
   const { data: summary, isLoading: summaryLoading } = useQuery<BuyerSummary>({
@@ -707,12 +884,33 @@ export default function BuyerDashboard() {
                     </Link>
                   </div>
 
-                  {(selectedOrder.status === "pending" || selectedOrder.status === "processing") && (
-                    <Button variant="outline" className="w-full text-rose-600 border-rose-200 hover:bg-rose-50">
-                      <AlertTriangle className="h-4 w-4 ml-2" />
-                      الإبلاغ عن مشكلة
-                    </Button>
-                  )}
+                  {/* Return Request Button - for delivered orders within return policy */}
+                  {(selectedOrder.status === "delivered" || selectedOrder.status === "completed") && (() => {
+                    const returnCheck = isReturnAllowed(selectedOrder);
+                    if (returnCheck.allowed) {
+                      return (
+                        <Button 
+                          variant="outline" 
+                          className="w-full text-blue-600 border-blue-200 hover:bg-blue-50"
+                          onClick={openReturnDialog}
+                        >
+                          <RotateCcw className="h-4 w-4 ml-2" />
+                          طلب إرجاع ({returnCheck.daysRemaining} أيام متبقية)
+                        </Button>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* Report Issue Button */}
+                  <Button 
+                    variant="outline" 
+                    className="w-full text-rose-600 border-rose-200 hover:bg-rose-50"
+                    onClick={openIssueDialog}
+                  >
+                    <AlertTriangle className="h-4 w-4 ml-2" />
+                    الإبلاغ عن مشكلة
+                  </Button>
                 </div>
               </div>
             )}
@@ -774,6 +972,127 @@ export default function BuyerDashboard() {
                   إرسال
                 </Button>
                 <Button variant="outline" onClick={() => setRatingDialogOpen(false)}>
+                  إلغاء
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Return Request Dialog */}
+        <Dialog open={returnDialogOpen} onOpenChange={setReturnDialogOpen}>
+          <DialogContent className="max-w-sm" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>طلب إرجاع</DialogTitle>
+              <DialogDescription>
+                اختر سبب الإرجاع وأضف تفاصيل إضافية إذا لزم الأمر
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>سبب الإرجاع *</Label>
+                <Select value={returnReason} onValueChange={setReturnReason}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر سبب الإرجاع" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RETURN_REASONS.map((reason) => (
+                      <SelectItem key={reason.value} value={reason.value}>
+                        {reason.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>تفاصيل إضافية (اختياري)</Label>
+                <Textarea
+                  placeholder="صف المشكلة بالتفصيل..."
+                  value={returnDetails}
+                  onChange={(e) => setReturnDetails(e.target.value)}
+                  className="resize-none"
+                  rows={3}
+                />
+              </div>
+
+              {selectedOrder?.listing?.returnPolicy && (
+                <div className="bg-blue-50 rounded-lg p-3 text-sm">
+                  <p className="font-medium text-blue-800">سياسة الإرجاع للمنتج</p>
+                  <p className="text-blue-600">{selectedOrder.listing.returnPolicy}</p>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1"
+                  onClick={submitReturnRequest}
+                  disabled={!returnReason || returnRequestMutation.isPending}
+                >
+                  {returnRequestMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                  إرسال الطلب
+                </Button>
+                <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>
+                  إلغاء
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Report Issue Dialog */}
+        <Dialog open={issueDialogOpen} onOpenChange={setIssueDialogOpen}>
+          <DialogContent className="max-w-sm" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>الإبلاغ عن مشكلة</DialogTitle>
+              <DialogDescription>
+                صف المشكلة التي تواجهها وسنقوم بمراجعتها
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>نوع المشكلة *</Label>
+                <Select value={issueReason} onValueChange={setIssueReason}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر نوع المشكلة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ISSUE_REASONS.map((reason) => (
+                      <SelectItem key={reason.value} value={reason.value}>
+                        {reason.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>وصف المشكلة *</Label>
+                <Textarea
+                  placeholder="صف المشكلة بالتفصيل..."
+                  value={issueDetails}
+                  onChange={(e) => setIssueDetails(e.target.value)}
+                  className="resize-none"
+                  rows={4}
+                />
+              </div>
+
+              <div className="bg-amber-50 rounded-lg p-3 text-sm">
+                <p className="text-amber-700">
+                  سيتم مراجعة بلاغك خلال 24-48 ساعة وسنتواصل معك
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1"
+                  onClick={submitIssueReport}
+                  disabled={!issueReason || !issueDetails || reportIssueMutation.isPending}
+                >
+                  {reportIssueMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                  إرسال البلاغ
+                </Button>
+                <Button variant="outline" onClick={() => setIssueDialogOpen(false)}>
                   إلغاء
                 </Button>
               </div>

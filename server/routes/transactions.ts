@@ -523,7 +523,7 @@ export function registerTransactionsRoutes(app: Express): void {
   // Create return request
   app.post("/api/return-requests", async (req, res) => {
     try {
-      const userId = getUserIdFromRequest(req);
+      const userId = await getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ error: "غير مسجل الدخول" });
       }
@@ -619,7 +619,7 @@ export function registerTransactionsRoutes(app: Express): void {
   // Get buyer's return requests
   app.get("/api/return-requests/my", async (req, res) => {
     try {
-      const userId = getUserIdFromRequest(req);
+      const userId = await getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ error: "غير مسجل الدخول" });
       }
@@ -656,7 +656,7 @@ export function registerTransactionsRoutes(app: Express): void {
   // Check if return is allowed for a transaction
   app.get("/api/transactions/:id/return-eligibility", async (req, res) => {
     try {
-      const userId = getUserIdFromRequest(req);
+      const userId = await getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ error: "غير مسجل الدخول" });
       }
