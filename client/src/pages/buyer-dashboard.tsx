@@ -5,6 +5,7 @@ import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
@@ -23,6 +24,12 @@ import {
   ArrowLeftRight,
   Wallet,
   ShoppingBag,
+  MessageCircle,
+  AlertTriangle,
+  MapPin,
+  User,
+  ChevronLeft,
+  ExternalLink,
 } from "lucide-react";
 
 interface BuyerSummary {
@@ -37,16 +44,23 @@ interface BuyerSummary {
 interface Purchase {
   id: string;
   listingId: string;
+  sellerId?: string;
   amount: number;
   status: string;
   createdAt: string;
   sellerRating?: number;
   sellerFeedback?: string;
+  shippingAddress?: string;
   listing?: {
     id: string;
     title: string;
     price: number;
     images: string[];
+  };
+  seller?: {
+    id: string;
+    displayName: string;
+    avatar?: string;
   };
 }
 
@@ -126,6 +140,14 @@ export default function BuyerDashboard() {
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [ratingValue, setRatingValue] = useState(0);
   const [ratingFeedback, setRatingFeedback] = useState("");
+  
+  const [orderDetailOpen, setOrderDetailOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Purchase | null>(null);
+
+  const openOrderDetail = (order: Purchase) => {
+    setSelectedOrder(order);
+    setOrderDetailOpen(true);
+  };
 
   const counterResponseMutation = useMutation({
     mutationFn: async ({ offerId, action }: { offerId: string; action: "accept" | "reject" }) => {
@@ -328,7 +350,8 @@ export default function BuyerDashboard() {
                 {purchases.map((purchase) => (
                   <div 
                     key={purchase.id} 
-                    className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border/50 hover:border-border transition-colors"
+                    className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border/50 hover:border-border transition-colors cursor-pointer active:bg-muted/50"
+                    onClick={() => openOrderDetail(purchase)}
                     data-testid={`order-${purchase.id}`}
                   >
                     {purchase.listing?.images?.[0] ? (
@@ -526,6 +549,177 @@ export default function BuyerDashboard() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Order Detail Sheet */}
+        <Sheet open={orderDetailOpen} onOpenChange={setOrderDetailOpen}>
+          <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl" dir="rtl">
+            {selectedOrder && (
+              <div className="flex flex-col h-full">
+                {/* Header */}
+                <SheetHeader className="pb-4 border-b">
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8" 
+                      onClick={() => setOrderDetailOpen(false)}
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <SheetTitle className="text-lg">تفاصيل الطلب</SheetTitle>
+                  </div>
+                </SheetHeader>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto py-4 space-y-6">
+                  {/* Product Info */}
+                  <div className="flex gap-4">
+                    {selectedOrder.listing?.images?.[0] ? (
+                      <img
+                        src={selectedOrder.listing.images[0]}
+                        alt=""
+                        className="w-24 h-24 rounded-xl object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                        <Package className="h-10 w-10 text-muted-foreground/40" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg">{selectedOrder.listing?.title || "منتج"}</h3>
+                      <p className="text-2xl font-bold mt-1">{selectedOrder.amount?.toLocaleString() || 0} <span className="text-sm font-normal text-muted-foreground">د.ع</span></p>
+                      <div className="mt-2">
+                        <StatusBadge status={selectedOrder.status} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Order Timeline */}
+                  <div className="bg-muted/50 rounded-xl p-4">
+                    <p className="text-sm font-medium mb-3">حالة الطلب</p>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                          <CheckCircle className="h-4 w-4 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">تم تأكيد الطلب</p>
+                          <p className="text-xs text-muted-foreground">{new Date(selectedOrder.createdAt).toLocaleDateString("ar-IQ")}</p>
+                        </div>
+                      </div>
+                      {(selectedOrder.status === "shipped" || selectedOrder.status === "in_transit" || selectedOrder.status === "delivered" || selectedOrder.status === "completed") && (
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <Truck className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">تم الشحن</p>
+                          </div>
+                        </div>
+                      )}
+                      {(selectedOrder.status === "delivered" || selectedOrder.status === "completed") && (
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                            <CheckCircle className="h-4 w-4 text-emerald-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">تم التسليم</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Order Details */}
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">تفاصيل</p>
+                    <div className="bg-card rounded-xl border border-border/50 divide-y divide-border/50">
+                      <div className="flex items-center justify-between p-3">
+                        <span className="text-sm text-muted-foreground">رقم الطلب</span>
+                        <span className="text-sm font-mono">{selectedOrder.id.slice(0, 8)}...</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3">
+                        <span className="text-sm text-muted-foreground">تاريخ الطلب</span>
+                        <span className="text-sm">{new Date(selectedOrder.createdAt).toLocaleDateString("ar-IQ")}</span>
+                      </div>
+                      {selectedOrder.seller && (
+                        <Link href={`/seller/${selectedOrder.sellerId}`}>
+                          <div className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
+                            <span className="text-sm text-muted-foreground">البائع</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-primary">{selectedOrder.seller.displayName}</span>
+                              <ExternalLink className="h-3 w-3 text-primary" />
+                            </div>
+                          </div>
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Rating Section - If already rated */}
+                  {selectedOrder.sellerRating && (
+                    <div className="bg-amber-50 rounded-xl p-4">
+                      <p className="text-sm font-medium mb-2">تقييمك للبائع</p>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: selectedOrder.sellerRating }).map((_, i) => (
+                          <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
+                        ))}
+                        {Array.from({ length: 5 - selectedOrder.sellerRating }).map((_, i) => (
+                          <Star key={i} className="h-5 w-5 text-amber-200" />
+                        ))}
+                      </div>
+                      {selectedOrder.sellerFeedback && (
+                        <p className="text-sm text-amber-700 mt-2">"{selectedOrder.sellerFeedback}"</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-4 border-t space-y-3">
+                  {/* Status-based actions */}
+                  {(selectedOrder.status === "delivered" || selectedOrder.status === "completed") && !selectedOrder.sellerRating && (
+                    <Button 
+                      className="w-full bg-amber-500 hover:bg-amber-600" 
+                      onClick={() => {
+                        setOrderDetailOpen(false);
+                        openRatingDialog(selectedOrder);
+                      }}
+                    >
+                      <Star className="h-4 w-4 ml-2" />
+                      قيّم البائع
+                    </Button>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {selectedOrder.sellerId && (
+                      <Link href={`/messages/${selectedOrder.sellerId}`} className="contents">
+                        <Button variant="outline" className="w-full" onClick={() => setOrderDetailOpen(false)}>
+                          <MessageCircle className="h-4 w-4 ml-2" />
+                          مراسلة البائع
+                        </Button>
+                      </Link>
+                    )}
+                    
+                    <Link href={`/product/${selectedOrder.listingId}`} className="contents">
+                      <Button variant="outline" className="w-full" onClick={() => setOrderDetailOpen(false)}>
+                        <ExternalLink className="h-4 w-4 ml-2" />
+                        عرض المنتج
+                      </Button>
+                    </Link>
+                  </div>
+
+                  {(selectedOrder.status === "pending" || selectedOrder.status === "processing") && (
+                    <Button variant="outline" className="w-full text-rose-600 border-rose-200 hover:bg-rose-50">
+                      <AlertTriangle className="h-4 w-4 ml-2" />
+                      الإبلاغ عن مشكلة
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
 
         {/* Rating Dialog */}
         <Dialog open={ratingDialogOpen} onOpenChange={setRatingDialogOpen}>
