@@ -69,7 +69,7 @@ export function registerCartRoutes(app: Express): void {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const { listingId, quantity = 1 } = req.body;
+      const { listingId, quantity = 1, forceAdd = false } = req.body;
 
       if (!listingId) {
         return res.status(400).json({ error: "Listing ID is required" });
@@ -89,8 +89,46 @@ export function registerCartRoutes(app: Express): void {
         return res.status(400).json({ error: "لا يمكنك إضافة منتجك الخاص للسلة" });
       }
 
-      if (listing.quantityAvailable < quantity) {
-        return res.status(400).json({ error: "الكمية المطلوبة غير متوفرة" });
+      // Check if item already exists in cart
+      const existingCartItem = await storage.getCartItemWithListing(userId, listingId);
+      
+      if (existingCartItem) {
+        const newTotalQuantity = existingCartItem.quantity + quantity;
+        
+        // Check if new total exceeds available quantity
+        if (newTotalQuantity > listing.quantityAvailable) {
+          // If only 1 available and already in cart
+          if (listing.quantityAvailable === 1) {
+            return res.status(400).json({ 
+              error: "هذا المنتج موجود بالفعل في سلتك",
+              code: "ALREADY_IN_CART",
+              existingQuantity: existingCartItem.quantity
+            });
+          }
+          // More than 1 available but would exceed limit
+          return res.status(400).json({ 
+            error: `لا يمكن إضافة أكثر من ${listing.quantityAvailable} قطعة. لديك ${existingCartItem.quantity} في السلة`,
+            code: "QUANTITY_EXCEEDED",
+            existingQuantity: existingCartItem.quantity,
+            maxAvailable: listing.quantityAvailable
+          });
+        }
+        
+        // If not forcing add, ask user to confirm
+        if (!forceAdd) {
+          return res.status(200).json({ 
+            confirmRequired: true,
+            message: `لديك ${existingCartItem.quantity} قطعة من هذا المنتج في سلتك. هل تريد إضافة ${quantity} أخرى؟`,
+            existingQuantity: existingCartItem.quantity,
+            requestedQuantity: quantity,
+            maxAvailable: listing.quantityAvailable
+          });
+        }
+      } else {
+        // New item - check quantity against available
+        if (listing.quantityAvailable < quantity) {
+          return res.status(400).json({ error: "الكمية المطلوبة غير متوفرة" });
+        }
       }
 
       const cartItem = await storage.addToCart({

@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ShoppingCart, MapPin, Phone, User, Loader2, CheckCircle, ArrowRight, Plus, Store, Truck, Package } from "lucide-react";
+import { ShoppingCart, MapPin, Phone, User, Loader2, CheckCircle, ArrowRight, Plus, Store, Truck, Package, Minus, Trash2 } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -52,7 +52,7 @@ const SHIPPING_PER_ITEM = 5000;
 export default function CheckoutPage() {
   const [, navigate] = useLocation();
   const { isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
-  const { cartItems, totalPrice, clearCart } = useCart();
+  const { cartItems, totalPrice, clearCart, updateQuantity, removeFromCart, isUpdating, isRemoving } = useCart();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -508,8 +508,8 @@ export default function CheckoutPage() {
                     
                     <div className="space-y-3">
                       {items.map((item) => (
-                        <div key={item.id} className="flex items-center gap-3" data-testid={`checkout-item-${item.id}`}>
-                          <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                        <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors" data-testid={`checkout-item-${item.id}`}>
+                          <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                             {item.listing?.images?.[0] ? (
                               <img 
                                 src={item.listing.images[0]} 
@@ -525,7 +525,54 @@ export default function CheckoutPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-sm truncate">{item.listing?.title || "منتج"}</h3>
-                            <p className="text-xs text-gray-500">الكمية: {item.quantity}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center border rounded-md">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => {
+                                    if (item.quantity > 1) {
+                                      updateQuantity({ id: item.id, quantity: item.quantity - 1 });
+                                    } else {
+                                      removeFromCart(item.id);
+                                    }
+                                  }}
+                                  disabled={isUpdating || isRemoving}
+                                  data-testid={`btn-decrease-${item.id}`}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="px-2 text-sm font-medium min-w-[24px] text-center">{item.quantity}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => {
+                                    const maxQty = item.listing?.quantityAvailable || 1;
+                                    if (item.quantity < maxQty) {
+                                      updateQuantity({ id: item.id, quantity: item.quantity + 1 });
+                                    } else {
+                                      toast({ title: "الكمية القصوى المتاحة", variant: "destructive" });
+                                    }
+                                  }}
+                                  disabled={isUpdating || isRemoving || item.quantity >= (item.listing?.quantityAvailable || 1)}
+                                  data-testid={`btn-increase-${item.id}`}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => removeFromCart(item.id)}
+                                disabled={isRemoving}
+                                data-testid={`btn-remove-${item.id}`}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           </div>
                           <div className="text-left">
                             <div className="font-bold text-primary text-sm">
