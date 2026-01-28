@@ -862,10 +862,10 @@ export default function ProductPage() {
         <div className="py-4 border-b">
           {product.saleType === "auction" ? (
             <>
-              <p className="text-3xl font-bold">{(product.currentBid || product.price).toLocaleString()} د.ع</p>
+              <p className="text-3xl font-bold">{(liveBidData?.currentBid || product.currentBid || product.price).toLocaleString()} د.ع</p>
               <p className="text-sm text-gray-500 mt-1">
-                {product.totalBids && product.totalBids > 0 
-                  ? `${product.totalBids} ${language === "ar" ? "مزايدة" : "مزایدە"}` 
+                {(liveBidData?.totalBids || product.totalBids) && (liveBidData?.totalBids || product.totalBids) > 0 
+                  ? `${liveBidData?.totalBids || product.totalBids} ${language === "ar" ? "مزايدة" : "مزایدە"}` 
                   : language === "ar" ? "سعر المزايدة الابتدائي" : "نرخی دەستپێکردنی مزایدە"}
               </p>
               {/* Auction Countdown Timer */}
@@ -1215,7 +1215,7 @@ export default function ProductPage() {
                         </div>
                         <h3 className="text-xl font-bold text-gray-700">{t("sold")}</h3>
                         <p className="text-gray-600">{language === "ar" ? "تم بيع هذا المنتج" : "ئەم بەرهەمە فرۆشرا"}</p>
-                        <p className="text-lg font-bold text-gray-700">{product.price.toLocaleString()} {t("iqd")}</p>
+                        <p className="text-lg font-bold text-gray-700">{(product.currentBid || product.price).toLocaleString()} {t("iqd")}</p>
                       </div>
                     </div>
                   )
