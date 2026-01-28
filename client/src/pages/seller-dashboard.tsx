@@ -709,7 +709,10 @@ export default function SellerDashboard() {
     },
     onSuccess: () => {
       toast({ title: "تم تأكيد الشحن! 📦", description: "تم إرسال إشعار للمشتري" });
+      // Invalidate all related queries to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ["/api/account/seller-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/listings", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/account/seller-summary"] });
     },
     onError: () => {
       toast({ title: "خطأ", description: "فشل في تحديث حالة الشحن", variant: "destructive" });
@@ -732,7 +735,9 @@ export default function SellerDashboard() {
     },
     onSuccess: () => {
       toast({ title: "تم التسليم! ✅", description: "تم إكمال الطلب بنجاح" });
+      // Invalidate all related queries to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ["/api/account/seller-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/listings", user?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/account/seller-summary"] });
     },
     onError: () => {
