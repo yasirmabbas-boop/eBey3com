@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Phone, Lock, User, UserPlus, Loader2, Eye, EyeOff } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,6 +24,7 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -84,6 +86,19 @@ export default function Register() {
           "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
           "وشەی نهێنی دەبێت لانیکەم ٦ پیت بێت",
           "Password must be at least 6 characters"
+        ),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!termsAccepted) {
+      toast({
+        title: t("error"),
+        description: tr(
+          "يجب الموافقة على شروط الاستخدام وسياسة الخصوصية",
+          "دەبێت ڕازیبیت بە مەرجەکانی بەکارهێنان و سیاسەتی تایبەتمەندی",
+          "You must agree to the Terms of Use and Privacy Policy"
         ),
         variant: "destructive",
       });
@@ -173,10 +188,49 @@ export default function Register() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border">
+              <Checkbox
+                id="terms-top"
+                checked={termsAccepted}
+                onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                data-testid="checkbox-terms"
+              />
+              <label
+                htmlFor="terms-top"
+                className="text-sm leading-relaxed cursor-pointer"
+              >
+                {tr(
+                  "أوافق على ",
+                  "ڕازیم بە ",
+                  "I agree to the "
+                )}
+                <Link href="/terms" className="text-primary hover:underline" target="_blank">
+                  {tr("شروط الاستخدام", "مەرجەکانی بەکارهێنان", "Terms of Use")}
+                </Link>
+                {tr(" و", " و ", " and ")}
+                <Link href="/privacy" className="text-primary hover:underline" target="_blank">
+                  {tr("سياسة الخصوصية", "سیاسەتی تایبەتمەندی", "Privacy Policy")}
+                </Link>
+              </label>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <button
                 type="button"
+                disabled={!termsAccepted}
                 onClick={() => {
+                  if (!termsAccepted) {
+                    toast({
+                      title: t("error"),
+                      description: tr(
+                        "يجب الموافقة على شروط الاستخدام وسياسة الخصوصية",
+                        "دەبێت ڕازیبیت بە مەرجەکانی بەکارهێنان و سیاسەتی تایبەتمەندی",
+                        "You must agree to the Terms of Use and Privacy Policy"
+                      ),
+                      variant: "destructive",
+                    });
+                    return;
+                  }
                   const width = 600, height = 700;
                   const left = window.screen.width / 2 - width / 2;
                   const top = window.screen.height / 2 - height / 2;
@@ -205,7 +259,7 @@ export default function Register() {
                   };
                   window.addEventListener("message", handleMessage);
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-white bg-[#1877F2] hover:bg-[#166FE5] transition-colors duration-200 shadow-sm hover:shadow-md"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-white bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm hover:shadow-md"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
@@ -314,7 +368,7 @@ export default function Register() {
               <Button 
                 type="submit" 
                 className="w-full elev-1" 
-                disabled={isLoading}
+                disabled={isLoading || !termsAccepted}
                 data-testid="button-register"
               >
                 {isLoading ? (

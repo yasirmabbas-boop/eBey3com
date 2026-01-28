@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Phone, Lock, LogIn, Loader2, Shield, Eye, EyeOff, MessageSquare } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,6 +32,7 @@ export default function SignIn() {
   const [otpPhone, setOtpPhone] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [fbTermsAccepted, setFbTermsAccepted] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -350,47 +352,87 @@ export default function SignIn() {
           <CardContent className="space-y-4">
             {step === "credentials" ? (
               <form onSubmit={handleSubmit} className="space-y-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const width = 600, height = 700;
-                    const left = window.screen.width / 2 - width / 2;
-                    const top = window.screen.height / 2 - height / 2;
-
-                    const popup = window.open(
-                      "/auth/facebook",
-                      "facebook_login",
-                      `width=${width},height=${height},left=${left},top=${top}`
-                    );
-
-                    const handleMessage = (event: MessageEvent) => {
-                      if (event.origin !== window.location.origin) return;
-                      if (event.data.type === "FACEBOOK_LOGIN_SUCCESS") {
-                        window.removeEventListener("message", handleMessage);
-                        popup?.close();
-                        
-                        // Store auth token
-                        if (event.data.authToken) {
-                          localStorage.setItem("authToken", event.data.authToken);
-                        }
-                        
-                        // Invalidate auth cache and redirect
-                        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-                        queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
-                        
-                        // Navigate to appropriate page
-                        navigate(event.data.needsOnboarding ? "/onboarding" : "/");
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border">
+                    <Checkbox
+                      id="fb-terms"
+                      checked={fbTermsAccepted}
+                      onCheckedChange={(checked) => setFbTermsAccepted(checked === true)}
+                      data-testid="checkbox-fb-terms"
+                    />
+                    <label
+                      htmlFor="fb-terms"
+                      className="text-sm leading-relaxed cursor-pointer"
+                    >
+                      {tr(
+                        "عند التسجيل عبر فيسبوك، أوافق على ",
+                        "کاتێک لە ڕێگەی فەیسبووکەوە تۆمار دەکەم، ڕازیم بە ",
+                        "By signing up via Facebook, I agree to the "
+                      )}
+                      <Link href="/terms" className="text-primary hover:underline" target="_blank">
+                        {tr("شروط الاستخدام", "مەرجەکانی بەکارهێنان", "Terms of Use")}
+                      </Link>
+                      {tr(" و", " و ", " and ")}
+                      <Link href="/privacy" className="text-primary hover:underline" target="_blank">
+                        {tr("سياسة الخصوصية", "سیاسەتی تایبەتمەندی", "Privacy Policy")}
+                      </Link>
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!fbTermsAccepted}
+                    onClick={() => {
+                      if (!fbTermsAccepted) {
+                        toast({
+                          title: t("error"),
+                          description: tr(
+                            "يجب الموافقة على شروط الاستخدام وسياسة الخصوصية",
+                            "دەبێت ڕازیبیت بە مەرجەکانی بەکارهێنان و سیاسەتی تایبەتمەندی",
+                            "You must agree to the Terms of Use and Privacy Policy"
+                          ),
+                          variant: "destructive",
+                        });
+                        return;
                       }
-                    };
-                    window.addEventListener("message", handleMessage);
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-white bg-[#1877F2] hover:bg-[#166FE5] transition-colors duration-200 shadow-sm hover:shadow-md"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
-                  </svg>
-                  {tr("تسجيل الدخول مع فيسبوك", "چوونە ژوورەوە لەگەڵ فەیسبووک", "Connect with Facebook")}
-                </button>
+                      const width = 600, height = 700;
+                      const left = window.screen.width / 2 - width / 2;
+                      const top = window.screen.height / 2 - height / 2;
+
+                      const popup = window.open(
+                        "/auth/facebook",
+                        "facebook_login",
+                        `width=${width},height=${height},left=${left},top=${top}`
+                      );
+
+                      const handleMessage = (event: MessageEvent) => {
+                        if (event.origin !== window.location.origin) return;
+                        if (event.data.type === "FACEBOOK_LOGIN_SUCCESS") {
+                          window.removeEventListener("message", handleMessage);
+                          popup?.close();
+                          
+                          // Store auth token
+                          if (event.data.authToken) {
+                            localStorage.setItem("authToken", event.data.authToken);
+                          }
+                          
+                          // Invalidate auth cache and redirect
+                          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+                          queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+                          
+                          // Navigate to appropriate page
+                          navigate(event.data.needsOnboarding ? "/onboarding" : "/");
+                        }
+                      };
+                      window.addEventListener("message", handleMessage);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-white bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm hover:shadow-md"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
+                    </svg>
+                    {tr("تسجيل الدخول مع فيسبوك", "چوونە ژوورەوە لەگەڵ فەیسبووک", "Connect with Facebook")}
+                  </button>
+                </div>
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
