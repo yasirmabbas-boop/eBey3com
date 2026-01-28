@@ -484,7 +484,8 @@ export default function SellerDashboard() {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error("Failed to fetch payouts");
-      return res.json();
+      const data = await res.json();
+      return data.payouts || [];
     },
     enabled: !!user?.id && (user as any)?.sellerApproved,
   });
