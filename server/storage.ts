@@ -640,6 +640,7 @@ export class DatabaseStorage implements IStorage {
       listingPrice: listings.price,
       listingImages: listings.images,
       listingCity: listings.city,
+      listingReturnPolicy: listings.returnPolicy,
       sellerName: users.displayName,
       sellerPhone: users.phone,
     })
@@ -673,6 +674,12 @@ export class DatabaseStorage implements IStorage {
         city: r.listingCity || "العراق",
         sellerId: r.sellerId,
         sellerName: r.sellerName || "بائع",
+        returnPolicy: r.listingReturnPolicy || "لا يوجد إرجاع",
+      },
+      seller: {
+        id: r.sellerId,
+        displayName: r.sellerName || "بائع",
+        phone: r.sellerPhone,
       },
     }));
   }
