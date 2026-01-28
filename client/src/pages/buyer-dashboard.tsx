@@ -981,7 +981,7 @@ export default function BuyerDashboard() {
 
         {/* Return Request Dialog */}
         <Dialog open={returnDialogOpen} onOpenChange={setReturnDialogOpen}>
-          <DialogContent className="max-w-sm" dir="rtl">
+          <DialogContent className="max-w-sm z-[100010]" dir="rtl">
             <DialogHeader>
               <DialogTitle>طلب إرجاع</DialogTitle>
               <DialogDescription>
@@ -1042,7 +1042,7 @@ export default function BuyerDashboard() {
 
         {/* Report Issue Dialog */}
         <Dialog open={issueDialogOpen} onOpenChange={setIssueDialogOpen}>
-          <DialogContent className="max-w-sm" dir="rtl">
+          <DialogContent className="max-w-sm z-[100010]" dir="rtl">
             <DialogHeader>
               <DialogTitle>الإبلاغ عن مشكلة</DialogTitle>
               <DialogDescription>
