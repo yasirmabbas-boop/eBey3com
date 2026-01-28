@@ -201,6 +201,23 @@ export function registerOffersRoutes(app: Express): void {
         parsed.counterMessage
       );
 
+      // If accepted, create a transaction
+      if (parsed.action === "accept" && offer.buyerId && offer.listingId && listing) {
+        try {
+          await storage.createTransaction({
+            listingId: offer.listingId,
+            buyerId: offer.buyerId,
+            sellerId: userId,
+            amount: offer.offerAmount || listing.price,
+            status: "pending",
+            paymentMethod: "cash_on_delivery",
+            deliveryStatus: "pending",
+          });
+        } catch (txError) {
+          console.error("Error creating transaction from accepted offer:", txError);
+        }
+      }
+
       // Send notification to buyer
       if (offer.buyerId) {
         await storage.createNotification({
@@ -220,6 +237,93 @@ export function registerOffersRoutes(app: Express): void {
       }
       console.error("Error responding to offer:", error);
       res.status(500).json({ error: "فشل في الرد على العرض" });
+    }
+  });
+
+  // Buyer responds to counter offer (accept or reject)
+  app.put("/api/offers/:id/buyer-respond", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const offerId = req.params.id;
+      const offer = await storage.getOffer(offerId);
+
+      if (!offer) {
+        return res.status(404).json({ error: "العرض غير موجود" });
+      }
+
+      // Only the buyer can respond to counter offers
+      if (offer.buyerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بالرد على هذا العرض" });
+      }
+
+      // Can only respond to countered offers
+      if (offer.status !== "countered") {
+        return res.status(400).json({ error: "لا يمكن الرد على هذا العرض" });
+      }
+
+      const { action } = req.body;
+      if (!action || !["accept", "reject"].includes(action)) {
+        return res.status(400).json({ error: "إجراء غير صالح" });
+      }
+
+      const listing = offer.listingId ? await storage.getListing(offer.listingId) : null;
+      const buyer = await storage.getUser(userId);
+      const buyerName = buyer?.displayName || buyer?.username || "المشتري";
+
+      let newStatus: string;
+      let notificationTitle: string;
+      let notificationMessage: string;
+
+      if (action === "accept") {
+        newStatus = "accepted";
+        notificationTitle = "تم قبول العرض المقابل";
+        notificationMessage = `${buyerName} قبل عرضك المقابل بقيمة ${formatPrice(offer.counterAmount || 0)} على "${listing?.title || "المنتج"}"`;
+      } else {
+        newStatus = "rejected";
+        notificationTitle = "تم رفض العرض المقابل";
+        notificationMessage = `${buyerName} رفض عرضك المقابل على "${listing?.title || "المنتج"}"`;
+      }
+
+      // Update the offer
+      const updatedOffer = await storage.updateOfferStatus(offerId, newStatus);
+
+      // If accepted, create a transaction with counter amount
+      if (action === "accept" && offer.sellerId && offer.listingId && listing) {
+        try {
+          await storage.createTransaction({
+            listingId: offer.listingId,
+            buyerId: userId,
+            sellerId: offer.sellerId,
+            amount: offer.counterAmount || listing.price,
+            status: "pending",
+            paymentMethod: "cash_on_delivery",
+            deliveryStatus: "pending",
+          });
+        } catch (txError) {
+          console.error("Error creating transaction from accepted counter offer:", txError);
+        }
+      }
+
+      // Send notification to seller
+      if (offer.sellerId) {
+        await storage.createNotification({
+          userId: offer.sellerId,
+          type: `counter_${newStatus}`,
+          title: notificationTitle,
+          message: notificationMessage,
+          relatedId: offerId,
+          linkUrl: `/product/${offer.listingId}`,
+        });
+      }
+
+      res.json(updatedOffer);
+    } catch (error) {
+      console.error("Error responding to counter offer:", error);
+      res.status(500).json({ error: "فشل في الرد على العرض المقابل" });
     }
   });
 

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -114,6 +114,38 @@ export default function BuyerDashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const counterResponseMutation = useMutation({
+    mutationFn: async ({ offerId, action }: { offerId: string; action: "accept" | "reject" }) => {
+      const authToken = localStorage.getItem("authToken");
+      const res = await fetch(`/api/offers/${offerId}/buyer-respond`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) throw new Error("Failed to respond to counter offer");
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      const message = variables.action === "accept" 
+        ? "تم قبول العرض المقابل - تم إنشاء طلب جديد" 
+        : "تم رفض العرض المقابل";
+      toast({ title: "تم", description: message });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-offers"] });
+      if (variables.action === "accept") {
+        queryClient.invalidateQueries({ queryKey: ["/api/account/purchases"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/account/buyer-summary"] });
+      }
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "فشل في الرد على العرض المقابل", variant: "destructive" });
+    },
+  });
 
   const { data: summary, isLoading: summaryLoading } = useQuery<BuyerSummary>({
     queryKey: ["/api/account/buyer-summary"],
@@ -470,9 +502,39 @@ export default function BuyerDashboard() {
                         )}
                       </p>
                       {offer.status === "countered" && offer.counterAmount && (
-                        <p className="text-sm text-purple-600 font-medium">
-                          عرض البائع المقابل: {offer.counterAmount.toLocaleString()} د.ع
-                        </p>
+                        <div className="mt-2 p-2 bg-purple-50 rounded-lg">
+                          <p className="text-sm text-purple-600 font-medium">
+                            عرض البائع المقابل: {offer.counterAmount.toLocaleString()} د.ع
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Button
+                              size="sm"
+                              onClick={() => counterResponseMutation.mutate({ 
+                                offerId: offer.id, 
+                                action: "accept" 
+                              })}
+                              disabled={counterResponseMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700"
+                              data-testid={`button-accept-counter-${offer.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 ml-1" />
+                              قبول
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => counterResponseMutation.mutate({ 
+                                offerId: offer.id, 
+                                action: "reject" 
+                              })}
+                              disabled={counterResponseMutation.isPending}
+                              data-testid={`button-reject-counter-${offer.id}`}
+                            >
+                              <XCircle className="h-4 w-4 ml-1" />
+                              رفض
+                            </Button>
+                          </div>
+                        </div>
                       )}
                       <p className="text-xs text-gray-400 mt-1">
                         {new Date(offer.createdAt).toLocaleDateString("ar-IQ")}
