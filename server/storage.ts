@@ -853,7 +853,8 @@ export class DatabaseStorage implements IStorage {
     await db.update(bids).set({ isWinning: true }).where(eq(bids.id, bid.id));
     await db.update(listings).set({ 
       currentBid: insertBid.amount,
-      totalBids: sql`${listings.totalBids} + 1`
+      totalBids: sql`${listings.totalBids} + 1`,
+      highestBidderId: insertBid.userId
     }).where(eq(listings.id, insertBid.listingId));
     return bid;
   }
