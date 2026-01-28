@@ -130,6 +130,7 @@ export interface IStorage {
   getPendingOffersForListing(listingId: string): Promise<Offer[]>;
   rejectAllPendingOffersForListing(listingId: string, reason?: string): Promise<number>;
   updateOfferStatus(id: string, status: string, counterAmount?: number, counterMessage?: string): Promise<Offer | undefined>;
+  expireOldOffers(): Promise<number>;
   
   getReviewsForSeller(sellerId: string): Promise<Review[]>;
   hasReviewForListing(reviewerId: string, listingId: string): Promise<boolean>;
@@ -1059,6 +1060,8 @@ export class DatabaseStorage implements IStorage {
     if (status === "countered") {
       updateData.counterAmount = counterAmount ?? null;
       updateData.counterMessage = counterMessage ?? null;
+      // Extend expiration to 48 hours for counter offers (eBay practice)
+      updateData.expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
     } else {
       updateData.counterAmount = null;
       updateData.counterMessage = null;
@@ -1069,6 +1072,24 @@ export class DatabaseStorage implements IStorage {
       .where(eq(offers.id, id))
       .returning();
     return updated;
+  }
+
+  async expireOldOffers(): Promise<number> {
+    // Expire offers past their expiration date that are still pending or countered
+    const now = new Date();
+    const result = await db.update(offers)
+      .set({ status: "expired" })
+      .where(
+        and(
+          or(
+            eq(offers.status, "pending"),
+            eq(offers.status, "countered")
+          ),
+          lt(offers.expiresAt, now)
+        )
+      )
+      .returning();
+    return result.length;
   }
 
   async getMessagesForSeller(sellerId: string): Promise<Message[]> {

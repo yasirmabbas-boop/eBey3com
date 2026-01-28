@@ -11,6 +11,7 @@ import { startAuctionProcessor } from "./auction-processor";
 import { socialMetaMiddleware } from "./social-meta";
 import { registerOtpRoutes } from "./otp-routes";
 import { startOtpCleanupCron } from "./otp-cron";
+import { startOfferExpirationCron } from "./offer-cron";
 
 // Environment checks
 if (!process.env.VERIFYWAY_TOKEN) {
@@ -96,6 +97,9 @@ app.use((req, res, next) => {
   
   // Start hourly cleanup cron job
   startOtpCleanupCron();
+  
+  // Start offer expiration cron job
+  startOfferExpirationCron();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

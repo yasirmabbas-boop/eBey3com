@@ -4,6 +4,39 @@ import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
 import { sendToUser } from "../websocket";
 
+// Async notification helper - fire and forget to avoid blocking API responses
+async function sendNotificationAsync(params: {
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  relatedId?: string;
+  linkUrl?: string;
+}) {
+  try {
+    const notification = await storage.createNotification({
+      userId: params.userId,
+      type: params.type,
+      title: params.title,
+      message: params.message,
+      relatedId: params.relatedId,
+      linkUrl: params.linkUrl,
+    });
+    
+    sendToUser(params.userId, "NOTIFICATION", {
+      notification: {
+        id: notification.id,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        linkUrl: notification.linkUrl,
+      },
+    });
+  } catch (error) {
+    console.error("Error sending notification:", error);
+  }
+}
+
 const guestCheckoutSchema = z.object({
   listingId: z.string().min(1),
   guestName: z.string().min(1),
@@ -146,29 +179,21 @@ export function registerTransactionsRoutes(app: Express): void {
       // Update transaction status
       const updated = await storage.updateTransactionStatus(transactionId, "shipped");
       
-      // Get listing for notification message
-      const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
-      
-      // Notify buyer with deep link to purchases tab
+      // Fire-and-forget notification (async, non-blocking)
       if (transaction.buyerId) {
-        const notification = await storage.createNotification({
-          userId: transaction.buyerId,
-          type: "order_shipped",
-          title: "تم شحن طلبك 📦",
-          message: `تم شحن طلبك "${listing?.title || "المنتج"}" وسيصلك قريباً`,
-          relatedId: transactionId,
-          linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
-        });
+        const listingTitle = transaction.listingId 
+          ? storage.getListing(transaction.listingId).then(l => l?.title || "المنتج").catch(() => "المنتج")
+          : Promise.resolve("المنتج");
         
-        // Broadcast notification via WebSocket
-        sendToUser(transaction.buyerId, "NOTIFICATION", {
-          notification: {
-            id: notification.id,
-            type: notification.type,
-            title: notification.title,
-            message: notification.message,
-            linkUrl: notification.linkUrl,
-          },
+        listingTitle.then(title => {
+          sendNotificationAsync({
+            userId: transaction.buyerId!,
+            type: "order_shipped",
+            title: "تم شحن طلبك 📦",
+            message: `تم شحن طلبك "${title}" وسيصلك قريباً`,
+            relatedId: transactionId,
+            linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
+          });
         });
       }
 
@@ -202,51 +227,34 @@ export function registerTransactionsRoutes(app: Express): void {
       // Update transaction status to completed
       const updated = await storage.updateTransactionStatus(transactionId, "completed");
       
-      // Get listing for notification message
-      const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
+      // Fire-and-forget notification (async, non-blocking)
+      const listingTitle = transaction.listingId 
+        ? storage.getListing(transaction.listingId).then(l => l?.title || "المنتج").catch(() => "المنتج")
+        : Promise.resolve("المنتج");
       
-      // Notify the other party with deep links
-      if (userId === transaction.sellerId && transaction.buyerId) {
-        // Seller confirmed, notify buyer
-        const notification = await storage.createNotification({
-          userId: transaction.buyerId,
-          type: "order_delivered",
-          title: "تم تسليم طلبك ✅",
-          message: `تم تسليم طلبك "${listing?.title || "المنتج"}" بنجاح`,
-          relatedId: transactionId,
-          linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
-        });
-        
-        sendToUser(transaction.buyerId, "NOTIFICATION", {
-          notification: {
-            id: notification.id,
-            type: notification.type,
-            title: notification.title,
-            message: notification.message,
-            linkUrl: notification.linkUrl,
-          },
-        });
-      } else if (userId === transaction.buyerId && transaction.sellerId) {
-        // Buyer confirmed, notify seller
-        const notification = await storage.createNotification({
-          userId: transaction.sellerId,
-          type: "order_delivered",
-          title: "تم تأكيد التسليم ✅",
-          message: `أكد المشتري استلام "${listing?.title || "المنتج"}"`,
-          relatedId: transactionId,
-          linkUrl: `/seller-dashboard?tab=sales&orderId=${transactionId}`,
-        });
-        
-        sendToUser(transaction.sellerId, "NOTIFICATION", {
-          notification: {
-            id: notification.id,
-            type: notification.type,
-            title: notification.title,
-            message: notification.message,
-            linkUrl: notification.linkUrl,
-          },
-        });
-      }
+      listingTitle.then(title => {
+        if (userId === transaction.sellerId && transaction.buyerId) {
+          // Seller confirmed, notify buyer
+          sendNotificationAsync({
+            userId: transaction.buyerId,
+            type: "order_delivered",
+            title: "تم تسليم طلبك ✅",
+            message: `تم تسليم طلبك "${title}" بنجاح`,
+            relatedId: transactionId,
+            linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
+          });
+        } else if (userId === transaction.buyerId && transaction.sellerId) {
+          // Buyer confirmed, notify seller
+          sendNotificationAsync({
+            userId: transaction.sellerId,
+            type: "order_delivered",
+            title: "تم تأكيد التسليم ✅",
+            message: `أكد المشتري استلام "${title}"`,
+            relatedId: transactionId,
+            linkUrl: `/seller-dashboard?tab=sales&orderId=${transactionId}`,
+          });
+        }
+      });
 
       return res.json(updated);
     } catch (error) {
