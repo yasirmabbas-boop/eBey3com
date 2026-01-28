@@ -3,7 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Despia Safe Area Variables - for notch, dynamic island, home indicator */
+/* Safe Area Variables - for notch, dynamic island, home indicator */
 :root {
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -11,45 +11,11 @@
   --safe-area-right: env(safe-area-inset-right, 0px);
 }
 
-/* When running as native Capacitor app, completely disable all CSS safe area padding */
-/* iOS native handles safe areas - we must not apply any CSS padding */
-body.capacitor-native {
-  --safe-area-top: 0px !important;
-  --safe-area-bottom: 0px !important;
-  --safe-area-left: 0px !important;
-  --safe-area-right: 0px !important;
-}
-
-/* Also disable env() values directly for native apps */
-body.capacitor-native .safe-area-padding,
-body.capacitor-native .safe-area-top,
-body.capacitor-native .safe-area-bottom {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
+/* Overflow control */
 html, body {
   overflow-x: hidden !important;
   max-width: 100vw !important;
   width: 100% !important;
-}
-
-/* Apply safe areas to main app container */
-.safe-area-padding {
-  padding-top: var(--safe-area-top);
-  padding-bottom: var(--safe-area-bottom);
-  padding-left: var(--safe-area-left);
-  padding-right: var(--safe-area-right);
-}
-
-.safe-area-top {
-  padding-top: var(--safe-area-top);
-}
-
-.safe-area-bottom {
-  padding-bottom: var(--safe-area-bottom);
 }
 
 #root {
@@ -71,6 +37,31 @@ img, video, iframe {
   max-width: 100%;
 }
 
+/* Safe Area Utility Classes */
+.safe-area-padding {
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
+}
+
+.safe-area-top {
+  padding-top: var(--safe-area-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: var(--safe-area-bottom);
+}
+
+.safe-area-left {
+  padding-left: var(--safe-area-left);
+}
+
+.safe-area-right {
+  padding-right: var(--safe-area-right);
+}
+
+/* Tailwind Theme Configuration */
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -247,7 +238,7 @@ img, video, iframe {
   }
 }
 
-/* Hide scrollbar for Despia native app */
+/* Scroll Container - Hide scrollbar for native app feel */
 .despia-scroll-container {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -261,7 +252,7 @@ img, video, iframe {
   height: 0;
 }
 
-/* Despia app container structure */
+/* App Container Structure */
 .despia-app {
   height: 100vh;
   height: 100dvh;
@@ -294,7 +285,7 @@ img, video, iframe {
   padding-bottom: var(--safe-area-bottom);
 }
 
-/* Premium utilities */
+/* Premium Elevation Utilities */
 .elev-1 {
   box-shadow: var(--shadow-1);
 }
