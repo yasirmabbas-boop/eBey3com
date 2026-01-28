@@ -240,6 +240,46 @@ const getTypeBadge = (type: string, language: "ar" | "ku" | "en") => {
   );
 };
 
+function OfferCountdown({ expiresAt }: { expiresAt: string | Date }) {
+  const [timeLeft, setTimeLeft] = useState("");
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const now = new Date().getTime();
+      const expiry = new Date(expiresAt).getTime();
+      const diff = expiry - now;
+
+      if (diff <= 0) {
+        setIsExpired(true);
+        setTimeLeft("منتهي");
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (hours > 0) {
+        setTimeLeft(`${hours} ساعة و ${minutes} دقيقة متبقية`);
+      } else {
+        setTimeLeft(`${minutes} دقيقة متبقية`);
+      }
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, [expiresAt]);
+
+  return (
+    <p className={`text-xs mt-1 flex items-center gap-1 ${isExpired ? "text-red-500" : "text-orange-500"}`}>
+      <Clock className="h-3 w-3" />
+      {timeLeft}
+    </p>
+  );
+}
+
 export default function SellerDashboard() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -1626,6 +1666,9 @@ export default function SellerDashboard() {
                                   <p className="text-sm text-gray-500">
                                     السعر الأصلي: {listing?.price?.toLocaleString()} د.ع
                                   </p>
+                                  {(offer.status === "pending" || offer.status === "countered") && (offer as any).expiresAt && (
+                                    <OfferCountdown expiresAt={(offer as any).expiresAt} />
+                                  )}
                                 </div>
                                 <Badge className={
                                   offer.status === "pending" ? "bg-yellow-100 text-yellow-800" :

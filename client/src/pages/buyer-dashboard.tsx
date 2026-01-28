@@ -167,6 +167,46 @@ const OfferStatusBadge = ({ status }: { status: string }) => {
   }
 };
 
+function OfferCountdown({ expiresAt }: { expiresAt: string | Date }) {
+  const [timeLeft, setTimeLeft] = useState("");
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const now = new Date().getTime();
+      const expiry = new Date(expiresAt).getTime();
+      const diff = expiry - now;
+
+      if (diff <= 0) {
+        setIsExpired(true);
+        setTimeLeft("منتهي");
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (hours > 0) {
+        setTimeLeft(`${hours} ساعة و ${minutes} دقيقة متبقية`);
+      } else {
+        setTimeLeft(`${minutes} دقيقة متبقية`);
+      }
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 60000);
+
+    return () => clearInterval(timer);
+  }, [expiresAt]);
+
+  return (
+    <p className={`text-xs flex items-center gap-1 ${isExpired ? "text-red-500" : "text-orange-500"}`}>
+      <Clock className="h-3 w-3" />
+      {timeLeft}
+    </p>
+  );
+}
+
 export default function BuyerDashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const [location, navigate] = useLocation();
@@ -664,6 +704,9 @@ export default function BuyerDashboard() {
                         <p className="text-xs text-muted-foreground mt-0.5">
                           عرضك: <span className="font-medium">{offer.offerAmount?.toLocaleString()} د.ع</span>
                         </p>
+                        {(offer.status === "pending" || offer.status === "countered") && (offer as any).expiresAt && (
+                          <OfferCountdown expiresAt={(offer as any).expiresAt} />
+                        )}
                       </div>
                       <OfferStatusBadge status={offer.status} />
                     </div>
