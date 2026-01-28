@@ -50,15 +50,19 @@ export function useSocketNotifications() {
           ws.onmessage = (event) => {
             try {
               const data = JSON.parse(event.data);
+              console.log("[WebSocket] Received message:", data.type, data);
 
               if (data.type === "NOTIFICATION") {
+                // Extract notification data (may be nested or at top level)
+                const notif = data.notification || data;
+                console.log("[WebSocket] Processing NOTIFICATION:", notif.title, notif.message);
                 // Show toast notification
-                const action = data.linkUrl ? (
+                const action = notif.linkUrl ? (
                   <ToastAction
                     altText="عرض"
                     onClick={() => {
                       try {
-                        setLocation(data.linkUrl);
+                        setLocation(notif.linkUrl);
                       } catch (e) {
                         console.error("[WebSocket] Error navigating:", e);
                       }
@@ -70,10 +74,11 @@ export function useSocketNotifications() {
 
                 try {
                   toast({
-                    title: data.title || "إشعار جديد",
-                    description: data.message,
+                    title: notif.title || "إشعار جديد",
+                    description: notif.message,
                     action,
                   });
+                  console.log("[WebSocket] Toast shown successfully");
                 } catch (e) {
                   console.error("[WebSocket] Error showing toast:", e);
                 }
@@ -86,12 +91,14 @@ export function useSocketNotifications() {
                   console.error("[WebSocket] Error invalidating queries:", e);
                 }
               } else if (data.type === "NEW_MESSAGE") {
+                console.log("[WebSocket] Processing NEW_MESSAGE:", data);
                 // Dispatch custom event for real-time message updates
                 try {
                   window.dispatchEvent(new CustomEvent("NEW_MESSAGE", { detail: data }));
                   // Also invalidate messages queries
                   queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
                   queryClient.invalidateQueries({ queryKey: ["/api/seller-messages"] });
+                  console.log("[WebSocket] NEW_MESSAGE event dispatched and queries invalidated");
                 } catch (e) {
                   console.error("[WebSocket] Error handling new message:", e);
                 }
