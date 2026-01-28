@@ -806,15 +806,11 @@ export function registerTransactionsRoutes(app: Express): void {
         message: status === "approved" 
           ? `تم قبول طلب إرجاع "${listingTitle}". سيتم التواصل معك لترتيب الإرجاع.`
           : `تم رفض طلب إرجاع "${listingTitle}". ${sellerResponse || ""}`,
-        data: {
-          returnRequestId: request.id,
-          listingId: request.listingId,
-          transactionId: request.transactionId,
-        },
+        relatedId: request.id,
       });
 
       // Send WebSocket notification to buyer
-      broadcastToUser(request.buyerId, {
+      sendToUser(request.buyerId, {
         type: status === "approved" ? "return_approved" : "return_rejected",
         returnRequestId: request.id,
         listingTitle,
