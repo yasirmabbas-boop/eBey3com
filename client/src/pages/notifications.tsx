@@ -30,13 +30,15 @@ type FilterCategory = "all" | "buy" | "sell" | "account";
 const BUY_TYPES = [
   "order_shipped", "order_delivered", "shipping",  // Order updates for buyer
   "offer_rejected", "offer_accepted", "outbid",    // Offer/bid updates
-  "auction_end", "bid", "bid_update"               // Auction updates
+  "auction_end", "bid", "bid_update",              // Auction updates
+  "auction_won", "auction_lost"                    // Auction results for buyer
 ];
 const SELL_TYPES = [
   "new_order", "sale",                              // New sales
   "offer_received", "offer", "new_bid",             // Incoming offers/bids
   "return_request", "return_approved", "return_rejected", // Returns
-  "new_rating", "order_cancelled", "order_issue"    // Other seller notifications
+  "new_rating", "order_cancelled", "order_issue",   // Other seller notifications
+  "auction_sold"                                    // Auction sale for seller
 ];
 const ACCOUNT_TYPES = [
   "new_message", "message",                         // Messages

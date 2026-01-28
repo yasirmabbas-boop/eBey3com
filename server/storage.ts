@@ -196,6 +196,7 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationAsRead(id: string): Promise<boolean>;
   markAllNotificationsAsRead(userId: string): Promise<boolean>;
+  cleanupOldNotifications(): Promise<{ readDeleted: number; unreadDeleted: number }>;
   
   // Reports
   createReport(report: InsertReport): Promise<Report>;
@@ -1508,6 +1509,31 @@ export class DatabaseStorage implements IStorage {
       .set({ isRead: true })
       .where(eq(notifications.userId, userId));
     return true;
+  }
+
+  async cleanupOldNotifications(): Promise<{ readDeleted: number; unreadDeleted: number }> {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+    // Delete read notifications older than 30 days
+    const readResult = await db.delete(notifications)
+      .where(and(
+        eq(notifications.isRead, true),
+        lt(notifications.createdAt, thirtyDaysAgo)
+      ));
+
+    // Delete unread notifications older than 90 days
+    const unreadResult = await db.delete(notifications)
+      .where(and(
+        eq(notifications.isRead, false),
+        lt(notifications.createdAt, ninetyDaysAgo)
+      ));
+
+    return {
+      readDeleted: readResult.rowCount || 0,
+      unreadDeleted: unreadResult.rowCount || 0,
+    };
   }
 
   async createReport(report: InsertReport): Promise<Report> {

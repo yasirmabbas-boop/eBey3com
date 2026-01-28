@@ -788,6 +788,11 @@ export function registerProductRoutes(app: Express): void {
         return res.status(400).json({ error: "لا يمكنك المزايدة على منتجاتك" });
       }
 
+      // Check if user is already the highest bidder
+      if ((listing as any).highestBidderId === userId) {
+        return res.status(400).json({ error: "أنت بالفعل صاحب أعلى مزايدة" });
+      }
+
       // Check if listing is an auction
       if (listing.saleType !== "auction") {
         return res.status(400).json({ error: "هذا المنتج ليس مزاداً" });
