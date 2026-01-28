@@ -849,7 +849,7 @@ export function registerProductRoutes(app: Express): void {
               newBidAmount: amount,
               yourBidAmount: highestBid.amount,
             }),
-            link: `/listing/${listingId}`,
+            link: `/product/${listingId}`,
           });
           console.log(`[bid] Outbid notification sent to user ${highestBid.userId}`);
         } catch (notifError) {
