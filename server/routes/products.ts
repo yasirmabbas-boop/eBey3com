@@ -761,8 +761,8 @@ export function registerProductRoutes(app: Express): void {
       const listingId = req.params.id;
       const { amount } = req.body;
 
-      // Get user from session or token
-      const userId = req.user?.id || (req.session as any)?.userId;
+      // Get user from session, passport, or Authorization token
+      const userId = await getUserIdFromRequest(req);
       if (!userId) {
         return res.status(401).json({ error: "يجب تسجيل الدخول للمزايدة" });
       }
