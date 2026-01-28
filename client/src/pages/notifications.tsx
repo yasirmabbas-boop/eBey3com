@@ -26,9 +26,23 @@ import {
 
 type FilterCategory = "all" | "buy" | "sell" | "account";
 
-const BUY_TYPES = ["outbid", "auction_end", "shipping", "bid"];
-const SELL_TYPES = ["sale", "new_bid", "offer", "return_request"];
-const ACCOUNT_TYPES = ["payment", "seller_approved", "message"];
+// Notification types from database mapped to filter categories
+const BUY_TYPES = [
+  "order_shipped", "order_delivered", "shipping",  // Order updates for buyer
+  "offer_rejected", "offer_accepted", "outbid",    // Offer/bid updates
+  "auction_end", "bid", "bid_update"               // Auction updates
+];
+const SELL_TYPES = [
+  "new_order", "sale",                              // New sales
+  "offer_received", "offer", "new_bid",             // Incoming offers/bids
+  "return_request", "return_approved", "return_rejected", // Returns
+  "new_rating", "order_cancelled", "order_issue"    // Other seller notifications
+];
+const ACCOUNT_TYPES = [
+  "new_message", "message",                         // Messages
+  "payment", "seller_approved",                     // Account-related
+  "counter_offer"                                   // Counter offers
+];
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
