@@ -569,7 +569,7 @@ export default function BuyerDashboard() {
                 </SheetHeader>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto py-4 space-y-6">
+                <div className="flex-1 overflow-y-auto py-4 pb-24 space-y-6">
                   {/* Product Info */}
                   <div className="flex gap-4">
                     {selectedOrder.listing?.images?.[0] ? (
