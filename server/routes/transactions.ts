@@ -710,4 +710,121 @@ export function registerTransactionsRoutes(app: Express): void {
       return res.status(500).json({ error: "فشل في التحقق" });
     }
   });
+
+  // Get seller's return requests
+  app.get("/api/return-requests/seller", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const requests = await storage.getReturnRequestsForSeller(userId);
+      
+      // Enrich with listing and buyer details
+      const enrichedRequests = await Promise.all(
+        requests.map(async (request) => {
+          const listing = await storage.getListing(request.listingId);
+          const transaction = await storage.getTransactionById(request.transactionId);
+          const buyer = transaction ? await storage.getUser(transaction.buyerId) : null;
+          return {
+            ...request,
+            listing: listing ? {
+              id: (listing as any).id,
+              title: (listing as any).title,
+              images: (listing as any).images,
+              price: (listing as any).price,
+            } : null,
+            transaction: transaction ? {
+              id: transaction.id,
+              amount: transaction.amount,
+              createdAt: transaction.createdAt,
+              deliveryAddress: transaction.deliveryAddress,
+              deliveryCity: transaction.deliveryCity,
+            } : null,
+            buyer: buyer ? {
+              id: buyer.id,
+              displayName: buyer.displayName,
+              phone: buyer.phone,
+            } : null,
+          };
+        })
+      );
+
+      return res.json(enrichedRequests);
+    } catch (error) {
+      console.error("Error fetching seller return requests:", error);
+      return res.status(500).json({ error: "فشل في جلب طلبات الإرجاع" });
+    }
+  });
+
+  // Seller respond to return request
+  app.put("/api/return-requests/:id/respond", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const { status, sellerResponse } = req.body;
+      
+      if (!status || !["approved", "rejected"].includes(status)) {
+        return res.status(400).json({ error: "حالة غير صالحة" });
+      }
+
+      // Get return request
+      const request = await storage.getReturnRequestById(req.params.id);
+      if (!request) {
+        return res.status(404).json({ error: "طلب الإرجاع غير موجود" });
+      }
+
+      // Check if user is the seller
+      if (request.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
+      }
+
+      // Check if request is still pending
+      if (request.status !== "pending") {
+        return res.status(400).json({ error: "تم الرد على هذا الطلب مسبقاً" });
+      }
+
+      // Update request status
+      const updatedRequest = await storage.updateReturnRequestStatus(
+        req.params.id,
+        status,
+        sellerResponse
+      );
+
+      // Notify buyer
+      const listing = await storage.getListing(request.listingId);
+      const listingTitle = (listing as any)?.title || "المنتج";
+      
+      await storage.createNotification({
+        userId: request.buyerId,
+        type: status === "approved" ? "return_approved" : "return_rejected",
+        title: status === "approved" ? "تم قبول طلب الإرجاع" : "تم رفض طلب الإرجاع",
+        message: status === "approved" 
+          ? `تم قبول طلب إرجاع "${listingTitle}". سيتم التواصل معك لترتيب الإرجاع.`
+          : `تم رفض طلب إرجاع "${listingTitle}". ${sellerResponse || ""}`,
+        data: {
+          returnRequestId: request.id,
+          listingId: request.listingId,
+          transactionId: request.transactionId,
+        },
+      });
+
+      // Send WebSocket notification to buyer
+      broadcastToUser(request.buyerId, {
+        type: status === "approved" ? "return_approved" : "return_rejected",
+        returnRequestId: request.id,
+        listingTitle,
+        sellerResponse,
+      });
+
+      return res.json(updatedRequest);
+    } catch (error) {
+      console.error("Error responding to return request:", error);
+      return res.status(500).json({ error: "فشل في الرد على طلب الإرجاع" });
+    }
+  });
 }
