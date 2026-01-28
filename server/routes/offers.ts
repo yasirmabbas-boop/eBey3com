@@ -83,7 +83,7 @@ export function registerOffersRoutes(app: Express): void {
         title: "عرض سعر جديد",
         message: `${buyerName} قدم عرض سعر ${formatPrice(parsed.offerAmount)} على "${listing.title}"`,
         relatedId: created.id,
-        linkUrl: `/product/${parsed.listingId}`,
+        linkUrl: `/seller-dashboard`,
       });
 
       return res.status(201).json(created);
@@ -226,7 +226,7 @@ export function registerOffersRoutes(app: Express): void {
           title: notificationTitle,
           message: notificationMessage,
           relatedId: offerId,
-          linkUrl: `/product/${offer.listingId}`,
+          linkUrl: `/buyer-dashboard`,
         });
       }
 
@@ -316,7 +316,7 @@ export function registerOffersRoutes(app: Express): void {
           title: notificationTitle,
           message: notificationMessage,
           relatedId: offerId,
-          linkUrl: `/product/${offer.listingId}`,
+          linkUrl: `/seller-dashboard`,
         });
       }
 

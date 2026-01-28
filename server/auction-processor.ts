@@ -88,6 +88,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
           title: "انتهى المزاد بدون مزايدات",
           message: `انتهى المزاد على "${listing.title}" بدون أي مزايدات. يمكنك إعادة عرض المنتج.`,
           relatedId: listing.id,
+          linkUrl: "/seller-dashboard",
         });
         sendPushNotification(listing.sellerId, {
           title: "انتهى المزاد بدون مزايدات",
@@ -132,6 +133,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
           title: "انتهى المزاد - لم يصل للسعر الاحتياطي",
           message: `انتهى المزاد على "${listing.title}" بأعلى مزايدة ${highestBid.amount.toLocaleString("ar-IQ")} د.ع، لكنها لم تصل للسعر الاحتياطي ${listing.reservePrice.toLocaleString("ar-IQ")} د.ع. يمكنك إعادة عرض المنتج.`,
           relatedId: listing.id,
+          linkUrl: "/seller-dashboard",
         });
         sendPushNotification(listing.sellerId, {
           title: "المزاد انتهى بدون بيع",
@@ -152,6 +154,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
             title: "انتهى المزاد بدون بيع",
             message: `انتهى المزاد على "${listing.title}" لكن لم يتم تحقيق السعر الاحتياطي. لن يتم البيع.`,
             relatedId: listing.id,
+            linkUrl: `/product/${listing.id}`,
           });
           sendPushNotification(bid.userId, {
             title: "انتهى المزاد بدون بيع",
@@ -229,6 +232,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
       title: "مبروك! فزت بالمزاد 🎉",
       message: `فزت بالمزاد على "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع. سيتم شحن طلبك قريباً.`,
       relatedId: listing.id,
+      linkUrl: "/buyer-dashboard",
     });
     sendPushNotification(winner.id, {
       title: "مبروك! فزت بالمزاد 🎉",
@@ -264,6 +268,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
           title: "انتهى المزاد",
           message: `انتهى المزاد على "${listing.title}" ولم تفز. المزايدة الفائزة كانت ${highestBid.amount.toLocaleString("ar-IQ")} د.ع.`,
           relatedId: listing.id,
+          linkUrl: `/product/${listing.id}`,
         });
         sendPushNotification(bid.userId, {
           title: "انتهى المزاد",
