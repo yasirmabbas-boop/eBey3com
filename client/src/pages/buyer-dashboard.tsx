@@ -550,7 +550,7 @@ export default function BuyerDashboard() {
 
         {/* Order Detail Sheet */}
         <Sheet open={orderDetailOpen} onOpenChange={setOrderDetailOpen}>
-          <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl" dir="rtl">
+          <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl" dir="rtl" style={{ zIndex: 100000 }}>
             {selectedOrder && (
               <div className="flex flex-col h-full">
                 {/* Header */}
