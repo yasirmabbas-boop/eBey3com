@@ -293,7 +293,7 @@ export default function BuyerDashboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full grid grid-cols-3 mb-4">
+          <TabsList className="w-full grid grid-cols-3 mb-4" dir="rtl">
             <TabsTrigger value="orders" className="text-sm">
               الطلبات
               {(summary?.pendingOrders || 0) > 0 && (
