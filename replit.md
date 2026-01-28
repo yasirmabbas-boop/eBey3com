@@ -157,6 +157,31 @@ Delivery integration with driver cancellation support (`server/services/delivery
 - **connect-pg-simple**: PostgreSQL session store
 - **multer**: File upload handling (for product images)
 
+### Image Upload System (eBay-style optimization)
+The platform uses an optimized image upload pipeline modeled after eBay's approach:
+
+**Specifications**:
+- **Max file size**: 7MB (server-side limit)
+- **Target resolution**: 1600×1600 pixels (enables zoom feature)
+- **Format**: WebP (~30% better compression than JPEG)
+- **Thumbnail**: 400×400 pixels, WebP format
+
+**Client-side Compression** (`browser-image-compression`):
+- Compresses images before upload to reduce transfer time
+- Target: 2MB max, 1600px max dimension
+- Converts to WebP format in browser
+- HEIC files bypass client compression (handled server-side)
+
+**Server-side Processing** (`server/image-processor.ts`):
+- Parallel processing for multiple images
+- HEIC to WebP conversion for iPhone photos
+- Generates both main image and thumbnail
+- Parallel upload of main + thumbnail to object storage
+
+**Upload Endpoints**:
+- `POST /api/uploads/optimized` - Optimized multi-image upload
+- Returns: `{ images: [{ main: string, thumbnail?: string }] }`
+
 ### Build Tools
 - **Vite**: Frontend bundling with React plugin
 - **esbuild**: Server bundling for production
