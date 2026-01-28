@@ -203,7 +203,22 @@ export function registerOtpRoutes(app: Express) {
       }
 
       await storage.markPhoneAsVerified(user.id);
-      return res.json({ success: true, message: "تم التحقق من رقم الهاتف بنجاح" });
+      
+      // Return updated user data so frontend can update its state
+      const updatedUser = await storage.getUser(user.id);
+      return res.json({ 
+        success: true, 
+        message: "تم التحقق من رقم الهاتف بنجاح",
+        user: updatedUser ? {
+          id: updatedUser.id,
+          displayName: updatedUser.displayName,
+          username: updatedUser.username,
+          phone: updatedUser.phone,
+          phoneVerified: true,
+          role: updatedUser.role,
+          avatar: updatedUser.avatar,
+        } : undefined
+      });
     } catch (error: any) {
       console.error("[OTP /api/auth/verify-phone-otp Error]:", error);
       return res.status(500).json({ error: "حدث خطأ أثناء التحقق من الرمز" });
