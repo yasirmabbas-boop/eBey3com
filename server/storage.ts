@@ -127,6 +127,8 @@ export interface IStorage {
   getOffersByBuyer(buyerId: string): Promise<Offer[]>;
   getOffersBySeller(sellerId: string): Promise<Offer[]>;
   getOffersForListing(listingId: string): Promise<Offer[]>;
+  getPendingOffersForListing(listingId: string): Promise<Offer[]>;
+  rejectAllPendingOffersForListing(listingId: string, reason?: string): Promise<number>;
   updateOfferStatus(id: string, status: string, counterAmount?: number, counterMessage?: string): Promise<Offer | undefined>;
   
   getReviewsForSeller(sellerId: string): Promise<Review[]>;
@@ -1008,6 +1010,36 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(offers)
       .where(eq(offers.listingId, listingId))
       .orderBy(desc(offers.createdAt));
+  }
+
+  async getPendingOffersForListing(listingId: string): Promise<Offer[]> {
+    return db.select().from(offers)
+      .where(and(
+        eq(offers.listingId, listingId),
+        or(eq(offers.status, "pending"), eq(offers.status, "countered"))
+      ))
+      .orderBy(desc(offers.createdAt));
+  }
+
+  async rejectAllPendingOffersForListing(listingId: string, reason?: string): Promise<number> {
+    const pendingOffers = await this.getPendingOffersForListing(listingId);
+    
+    if (pendingOffers.length === 0) {
+      return 0;
+    }
+
+    // Update all pending/countered offers to rejected
+    await db.update(offers)
+      .set({
+        status: "rejected",
+        respondedAt: new Date(),
+      })
+      .where(and(
+        eq(offers.listingId, listingId),
+        or(eq(offers.status, "pending"), eq(offers.status, "countered"))
+      ));
+
+    return pendingOffers.length;
   }
 
   async updateOfferStatus(id: string, status: string, counterAmount?: number, counterMessage?: string): Promise<Offer | undefined> {

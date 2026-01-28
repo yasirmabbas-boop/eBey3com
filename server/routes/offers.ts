@@ -201,9 +201,14 @@ export function registerOffersRoutes(app: Express): void {
         parsed.counterMessage
       );
 
-      // If accepted, create a transaction
+      // If accepted, create a transaction and reject other pending offers
       if (parsed.action === "accept" && offer.buyerId && offer.listingId && listing) {
         try {
+          // Check if listing is still available
+          if ((listing as any).isActive === false) {
+            return res.status(400).json({ error: "المنتج تم بيعه بالفعل" });
+          }
+
           await storage.createTransaction({
             listingId: offer.listingId,
             buyerId: offer.buyerId,
@@ -213,6 +218,31 @@ export function registerOffersRoutes(app: Express): void {
             paymentMethod: "cash_on_delivery",
             deliveryStatus: "pending",
           });
+
+          // Mark listing as sold/inactive
+          await storage.updateListing(offer.listingId, { isActive: false } as any);
+
+          // Auto-reject all OTHER pending offers on this listing
+          const otherPendingOffers = (await storage.getPendingOffersForListing(offer.listingId))
+            .filter(o => o.id !== offerId);
+          
+          if (otherPendingOffers.length > 0) {
+            await storage.rejectAllPendingOffersForListing(offer.listingId);
+            
+            // Notify each buyer whose offer was auto-rejected
+            for (const otherOffer of otherPendingOffers) {
+              if (otherOffer.buyerId) {
+                await storage.createNotification({
+                  userId: otherOffer.buyerId,
+                  type: "offer_rejected",
+                  title: "تم إلغاء عرضك",
+                  message: `تم بيع "${listing.title}" لمشتري آخر وتم إلغاء عرضك تلقائياً`,
+                  relatedId: otherOffer.id,
+                  linkUrl: "/buyer-dashboard",
+                });
+              }
+            }
+          }
         } catch (txError) {
           console.error("Error creating transaction from accepted offer:", txError);
         }
@@ -291,9 +321,14 @@ export function registerOffersRoutes(app: Express): void {
       // Update the offer
       const updatedOffer = await storage.updateOfferStatus(offerId, newStatus);
 
-      // If accepted, create a transaction with counter amount
+      // If accepted, create a transaction with counter amount and reject other offers
       if (action === "accept" && offer.sellerId && offer.listingId && listing) {
         try {
+          // Check if listing is still available
+          if ((listing as any).isActive === false) {
+            return res.status(400).json({ error: "المنتج تم بيعه بالفعل" });
+          }
+
           await storage.createTransaction({
             listingId: offer.listingId,
             buyerId: userId,
@@ -303,6 +338,31 @@ export function registerOffersRoutes(app: Express): void {
             paymentMethod: "cash_on_delivery",
             deliveryStatus: "pending",
           });
+
+          // Mark listing as sold/inactive
+          await storage.updateListing(offer.listingId, { isActive: false } as any);
+
+          // Auto-reject all OTHER pending offers on this listing
+          const otherPendingOffers = (await storage.getPendingOffersForListing(offer.listingId))
+            .filter(o => o.id !== offerId);
+          
+          if (otherPendingOffers.length > 0) {
+            await storage.rejectAllPendingOffersForListing(offer.listingId);
+            
+            // Notify each buyer whose offer was auto-rejected
+            for (const otherOffer of otherPendingOffers) {
+              if (otherOffer.buyerId) {
+                await storage.createNotification({
+                  userId: otherOffer.buyerId,
+                  type: "offer_rejected",
+                  title: "تم إلغاء عرضك",
+                  message: `تم بيع "${listing.title}" لمشتري آخر وتم إلغاء عرضك تلقائياً`,
+                  relatedId: otherOffer.id,
+                  linkUrl: "/buyer-dashboard",
+                });
+              }
+            }
+          }
         } catch (txError) {
           console.error("Error creating transaction from accepted counter offer:", txError);
         }

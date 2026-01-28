@@ -68,6 +68,26 @@ export function registerTransactionsRoutes(app: Express): void {
         await storage.updateListing(parsed.listingId, { isActive: false } as any);
       }
 
+      // Auto-reject all pending offers on this listing and notify buyers
+      const pendingOffers = await storage.getPendingOffersForListing(parsed.listingId);
+      if (pendingOffers.length > 0) {
+        await storage.rejectAllPendingOffersForListing(parsed.listingId);
+        
+        // Notify each buyer whose offer was auto-rejected
+        for (const offer of pendingOffers) {
+          if (offer.buyerId) {
+            await storage.createNotification({
+              userId: offer.buyerId,
+              type: "offer_rejected",
+              title: "تم إلغاء عرضك",
+              message: `تم بيع "${listing.title}" لمشتري آخر وتم إلغاء عرضك تلقائياً`,
+              relatedId: offer.id,
+              linkUrl: "/buyer-dashboard",
+            });
+          }
+        }
+      }
+
       // Create notification for seller
       await storage.createNotification({
         userId: (listing as any).sellerId,
