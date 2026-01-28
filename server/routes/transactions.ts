@@ -810,12 +810,15 @@ export function registerTransactionsRoutes(app: Express): void {
       });
 
       // Send WebSocket notification to buyer
-      sendToUser(request.buyerId, {
-        type: status === "approved" ? "return_approved" : "return_rejected",
-        returnRequestId: request.id,
-        listingTitle,
-        sellerResponse,
-      });
+      sendToUser(
+        request.buyerId,
+        status === "approved" ? "return_approved" : "return_rejected",
+        {
+          returnRequestId: request.id,
+          listingTitle,
+          sellerResponse,
+        }
+      );
 
       return res.json(updatedRequest);
     } catch (error) {
