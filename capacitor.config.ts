@@ -5,7 +5,10 @@ const config: CapacitorConfig = {
   appName: 'E-بيع',
   webDir: 'dist/public',
   ios: {
-    contentInset: 'never'
+    // Let iOS manage safe-area insets for the WebView.
+    // Combined with StatusBar.overlaysWebView=false, this prevents content
+    // from rendering under the notch / Dynamic Island area.
+    contentInset: 'automatic'
   },
   server: {
     androidScheme: 'https',
@@ -31,6 +34,9 @@ const config: CapacitorConfig = {
       resizeOnFullScreen: true,
     },
     StatusBar: {
+      // Critical for devices with notch / Dynamic Island:
+      // do NOT render the WebView under the status bar area.
+      overlaysWebView: false,
       style: 'LIGHT',
       backgroundColor: '#2563eb',
     }

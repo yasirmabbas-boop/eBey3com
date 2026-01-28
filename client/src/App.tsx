@@ -16,7 +16,7 @@ import { LanguageProvider } from "@/lib/i18n";
 import { BanBanner } from "@/components/ban-banner";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { isNative } from "@/lib/capacitor";
+import { isIOS, isNative } from "@/lib/capacitor";
 import { initAppLifecycle } from "@/lib/appLifecycle";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
@@ -129,6 +129,10 @@ function App() {
       document.body.classList.add("capacitor-native");
 
       // Configure status bar
+      // Ensure iOS does not overlay the WebView (prevents content under notch/Dynamic Island).
+      if (isIOS) {
+        StatusBar.setOverlaysWebView({ overlay: false }).catch(console.error);
+      }
       StatusBar.setStyle({ style: Style.Light }).catch(console.error);
       StatusBar.setBackgroundColor({ color: '#2563eb' }).catch(console.error);
       
