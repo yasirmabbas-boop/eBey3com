@@ -68,7 +68,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
 
       {/* Main Header - Search Only */}
       {!hideHeader && (
-      <header className="sticky top-0 z-50 glass-surface border-b border-border/60 shadow-[var(--shadow-1)]">
+      <header className="sticky top-0 z-50 glass-surface border-b border-border/60 shadow-[var(--shadow-1)]" style={{ paddingTop: 'var(--safe-area-top)' }}>
         <div className="container mx-auto px-3 py-2">
           {/* Full Width Search Bar */}
           <div className="flex items-center gap-2">
