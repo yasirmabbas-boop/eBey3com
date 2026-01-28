@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { getAuthHeaders } from "@/lib/queryClient";
 import { Loader2, MessageSquare, Send, ArrowRight, User, Package } from "lucide-react";
 import type { Message } from "@shared/schema";
 
@@ -38,7 +39,10 @@ export default function MessagesPage() {
     queryKey: ["/api/messages", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const res = await fetch(`/api/messages/${user.id}`);
+      const res = await fetch(`/api/messages/${user.id}`, {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Failed to fetch messages");
       return res.json();
     },
@@ -49,10 +53,16 @@ export default function MessagesPage() {
     queryKey: ["/api/conversation", user?.id, partnerId],
     queryFn: async () => {
       if (!user?.id || !partnerId) return [];
-      const res = await fetch(`/api/messages/${user.id}/${partnerId}`);
+      const res = await fetch(`/api/messages/${user.id}/${partnerId}`, {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Failed to fetch conversation");
       const messages = await res.json();
-      const partnerRes = await fetch(`/api/users/${partnerId}`);
+      const partnerRes = await fetch(`/api/users/${partnerId}`, {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
       const partnerData = partnerRes.ok ? await partnerRes.json() : null;
       return messages.map((msg: Message) => ({
         ...msg,
@@ -66,7 +76,10 @@ export default function MessagesPage() {
     queryKey: ["/api/users", partnerId],
     queryFn: async () => {
       if (!partnerId) return null;
-      const res = await fetch(`/api/users/${partnerId}`);
+      const res = await fetch(`/api/users/${partnerId}`, {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
       if (!res.ok) return null;
       return res.json();
     },
@@ -83,7 +96,10 @@ export default function MessagesPage() {
       const userMap: Record<string, { displayName?: string; phone?: string }> = {};
       await Promise.all(uniquePartnerIds.map(async (id) => {
         try {
-          const res = await fetch(`/api/users/${id}`);
+          const res = await fetch(`/api/users/${id}`, {
+            headers: getAuthHeaders(),
+            credentials: "include",
+          });
           if (res.ok) {
             userMap[id] = await res.json();
           }
@@ -125,7 +141,10 @@ export default function MessagesPage() {
     mutationFn: async (content: string) => {
       const res = await fetch("/api/messages", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
         credentials: "include",
         body: JSON.stringify({
           senderId: user?.id,
@@ -158,12 +177,34 @@ export default function MessagesPage() {
     if (partnerId && conversation.length > 0) {
       conversation.forEach(async (msg) => {
         if (msg.receiverId === user?.id && !msg.isRead) {
-          await fetch(`/api/messages/${msg.id}/read`, { method: "PATCH" });
+          await fetch(`/api/messages/${msg.id}/read`, { 
+            method: "PATCH",
+            headers: getAuthHeaders(),
+            credentials: "include",
+          });
         }
       });
       queryClient.invalidateQueries({ queryKey: ["/api/seller-messages"] });
     }
   }, [partnerId, conversation, user?.id]);
+
+  // Listen for real-time message updates via WebSocket
+  useEffect(() => {
+    const handleNewMessage = (event: CustomEvent) => {
+      const data = event.detail;
+      if (data?.message) {
+        // Refresh conversation if we're viewing a conversation with the sender
+        if (data.message.senderId === partnerId || data.message.receiverId === partnerId) {
+          queryClient.invalidateQueries({ queryKey: ["/api/conversation", user?.id, partnerId] });
+        }
+        // Always refresh the messages list
+        queryClient.invalidateQueries({ queryKey: ["/api/messages", user?.id] });
+      }
+    };
+
+    window.addEventListener("NEW_MESSAGE" as any, handleNewMessage);
+    return () => window.removeEventListener("NEW_MESSAGE" as any, handleNewMessage);
+  }, [partnerId, user?.id, queryClient]);
 
   const handleSend = () => {
     if (!newMessage.trim()) return;

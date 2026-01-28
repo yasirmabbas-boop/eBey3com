@@ -85,6 +85,16 @@ export function useSocketNotifications() {
                 } catch (e) {
                   console.error("[WebSocket] Error invalidating queries:", e);
                 }
+              } else if (data.type === "NEW_MESSAGE") {
+                // Dispatch custom event for real-time message updates
+                try {
+                  window.dispatchEvent(new CustomEvent("NEW_MESSAGE", { detail: data }));
+                  // Also invalidate messages queries
+                  queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/seller-messages"] });
+                } catch (e) {
+                  console.error("[WebSocket] Error handling new message:", e);
+                }
               }
             } catch (error) {
               console.error("[WebSocket] Error parsing message:", error);
