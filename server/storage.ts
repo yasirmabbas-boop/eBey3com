@@ -21,7 +21,7 @@ import {
   users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, sql, lt, inArray, ne } from "drizzle-orm";
+import { eq, desc, and, or, sql, lt, inArray, ne, isNotNull } from "drizzle-orm";
 
 // Extended report type with related entity details for admin view
 export interface ReportWithDetails {
@@ -139,6 +139,7 @@ export interface IStorage {
   getTransactionsForUser(userId: string): Promise<Transaction[]>;
   getPurchasesForBuyer(buyerId: string): Promise<Transaction[]>;
   getSalesForSeller(sellerId: string): Promise<Transaction[]>;
+  getRatedTransactionsForSeller(sellerId: string): Promise<Transaction[]>;
   getTransactionById(id: string): Promise<Transaction | undefined>;
   getUserTransactionForListing(userId: string, listingId: string): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
@@ -1112,6 +1113,15 @@ export class DatabaseStorage implements IStorage {
   async getSalesForSeller(sellerId: string): Promise<Transaction[]> {
     return db.select().from(transactions)
       .where(eq(transactions.sellerId, sellerId))
+      .orderBy(desc(transactions.createdAt));
+  }
+
+  async getRatedTransactionsForSeller(sellerId: string): Promise<Transaction[]> {
+    return db.select().from(transactions)
+      .where(and(
+        eq(transactions.sellerId, sellerId),
+        isNotNull(transactions.sellerRating)
+      ))
       .orderBy(desc(transactions.createdAt));
   }
 

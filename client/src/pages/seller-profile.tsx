@@ -5,9 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
-import { Star, MapPin, Calendar, Package, Share2, CheckCircle } from "lucide-react";
+import { Star, MapPin, Calendar, Package, Share2, MessageCircle } from "lucide-react";
 import { Link } from "wouter";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram } from "@/lib/share-utils";
 import { VerifiedBadge } from "@/components/verified-badge";
@@ -35,6 +36,31 @@ interface Listing {
   currentBid?: number;
 }
 
+interface SellerRating {
+  id: string;
+  rating: number;
+  feedback?: string;
+  createdAt: string;
+  buyer: {
+    displayName: string;
+    avatar?: string;
+  };
+  productTitle: string;
+}
+
+interface RatingsData {
+  totalRatings: number;
+  averageRating: number;
+  distribution: {
+    5: number;
+    4: number;
+    3: number;
+    2: number;
+    1: number;
+  };
+  ratings: SellerRating[];
+}
+
 export default function SellerProfile() {
   const { id } = useParams<{ id: string }>();
   const { language } = useLanguage();
@@ -56,6 +82,16 @@ export default function SellerProfile() {
   });
   
   const listings = listingsData?.listings || [];
+
+  const { data: ratingsData, isLoading: ratingsLoading } = useQuery<RatingsData>({
+    queryKey: ["/api/users", id, "ratings"],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${id}/ratings`);
+      if (!res.ok) throw new Error("Failed to fetch ratings");
+      return res.json();
+    },
+    enabled: !!id,
+  });
 
   const handleShare = (platform: string) => {
     const shareText = language === "ar" 
@@ -230,48 +266,166 @@ export default function SellerProfile() {
           </CardContent>
         </Card>
 
-        <h2 className="text-xl font-bold mb-4">
-          {language === "ar" ? "منتجات البائع" : "Seller's Products"}
-        </h2>
+        <Tabs defaultValue="products" className="mt-6" dir="rtl">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="products" className="gap-2">
+              <Package className="h-4 w-4" />
+              {language === "ar" ? "المنتجات" : "Products"} ({activeListings.length})
+            </TabsTrigger>
+            <TabsTrigger value="ratings" className="gap-2">
+              <Star className="h-4 w-4" />
+              {language === "ar" ? "التقييمات" : "Ratings"} ({ratingsData?.totalRatings || 0})
+            </TabsTrigger>
+          </TabsList>
 
-        {listingsLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-48 rounded-lg" />
-            ))}
-          </div>
-        ) : activeListings.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            {language === "ar" ? "لا توجد منتجات حالياً" : "No products available"}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {activeListings.map((listing) => (
-              <Link key={listing.id} href={`/product/${listing.id}`}>
-                <Card className="overflow-hidden soft-border hover-elevate transition-shadow cursor-pointer">
-                  <div className="aspect-square relative">
-                    <img
-                      src={listing.images?.[0] || "/placeholder.png"}
-                      alt={listing.title}
-                      className="w-full h-full object-cover"
-                    />
-                    {listing.saleType === "auction" && (
-                      <Badge className="absolute top-2 right-2 bg-primary">
-                        {language === "ar" ? "مزاد" : "Auction"}
-                      </Badge>
-                    )}
-                  </div>
-                  <CardContent className="p-3">
-                    <h3 className="font-medium text-sm line-clamp-2 mb-1">{listing.title}</h3>
-                    <p className="font-bold text-primary">
-                      {(listing.currentBid || listing.price).toLocaleString()} د.ع
-                    </p>
+          <TabsContent value="products">
+            {listingsLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-48 rounded-lg" />
+                ))}
+              </div>
+            ) : activeListings.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                {language === "ar" ? "لا توجد منتجات حالياً" : "No products available"}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {activeListings.map((listing) => (
+                  <Link key={listing.id} href={`/product/${listing.id}`}>
+                    <Card className="overflow-hidden soft-border hover-elevate transition-shadow cursor-pointer">
+                      <div className="aspect-square relative">
+                        <img
+                          src={listing.images?.[0] || "/placeholder.png"}
+                          alt={listing.title}
+                          className="w-full h-full object-cover"
+                        />
+                        {listing.saleType === "auction" && (
+                          <Badge className="absolute top-2 right-2 bg-primary">
+                            {language === "ar" ? "مزاد" : "Auction"}
+                          </Badge>
+                        )}
+                      </div>
+                      <CardContent className="p-3">
+                        <h3 className="font-medium text-sm line-clamp-2 mb-1">{listing.title}</h3>
+                        <p className="font-bold text-primary">
+                          {(listing.currentBid || listing.price).toLocaleString()} د.ع
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="ratings">
+            {ratingsLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-24 rounded-lg" />
+                ))}
+              </div>
+            ) : !ratingsData || ratingsData.totalRatings === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <Star className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p>{language === "ar" ? "لا توجد تقييمات بعد" : "No ratings yet"}</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Rating Summary */}
+                <Card className="soft-border">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-6">
+                      <div className="text-center">
+                        <p className="text-4xl font-bold text-primary">{ratingsData.averageRating}</p>
+                        <div className="flex items-center justify-center gap-0.5 mt-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${i < Math.round(ratingsData.averageRating) ? "fill-amber-400 text-amber-400" : "text-gray-200"}`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {ratingsData.totalRatings} {language === "ar" ? "تقييم" : "ratings"}
+                        </p>
+                      </div>
+                      
+                      {/* Rating Distribution */}
+                      <div className="flex-1 space-y-1">
+                        {[5, 4, 3, 2, 1].map((stars) => {
+                          const count = ratingsData.distribution[stars as keyof typeof ratingsData.distribution];
+                          const percentage = ratingsData.totalRatings > 0 ? (count / ratingsData.totalRatings) * 100 : 0;
+                          return (
+                            <div key={stars} className="flex items-center gap-2 text-sm">
+                              <span className="w-3">{stars}</span>
+                              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-amber-400 rounded-full"
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                              <span className="w-8 text-muted-foreground text-xs">{count}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              </Link>
-            ))}
-          </div>
-        )}
+
+                {/* Individual Ratings */}
+                <div className="space-y-3">
+                  {ratingsData.ratings.map((rating) => (
+                    <Card key={rating.id} className="soft-border">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          {rating.buyer.avatar ? (
+                            <img
+                              src={rating.buyer.avatar}
+                              alt=""
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                              {rating.buyer.displayName.charAt(0)}
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium">{rating.buyer.displayName}</p>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(rating.createdAt).toLocaleDateString("ar-IQ")}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 mt-1">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`h-3.5 w-3.5 ${i < rating.rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`}
+                                />
+                              ))}
+                            </div>
+                            {rating.feedback && (
+                              <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+                                "{rating.feedback}"
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {language === "ar" ? "المنتج:" : "Product:"} {rating.productTitle}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

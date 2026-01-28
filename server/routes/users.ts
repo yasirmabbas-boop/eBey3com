@@ -109,4 +109,58 @@ export function registerUsersRoutes(app: Express): void {
       res.status(500).json({ error: "Failed to remove from watchlist" });
     }
   });
+
+  // Get public ratings for a seller
+  app.get("/api/users/:userId/ratings", async (req, res) => {
+    try {
+      const sellerId = req.params.userId;
+      
+      // Get all completed transactions where this user is the seller and has been rated
+      const ratedTransactions = await storage.getRatedTransactionsForSeller(sellerId);
+      
+      // Calculate rating statistics
+      const ratings = ratedTransactions.map(t => t.sellerRating).filter(r => r !== null) as number[];
+      const totalRatings = ratings.length;
+      const averageRating = totalRatings > 0 ? ratings.reduce((a, b) => a + b, 0) / totalRatings : 0;
+      
+      // Rating distribution
+      const distribution = {
+        5: ratings.filter(r => r === 5).length,
+        4: ratings.filter(r => r === 4).length,
+        3: ratings.filter(r => r === 3).length,
+        2: ratings.filter(r => r === 2).length,
+        1: ratings.filter(r => r === 1).length,
+      };
+      
+      // Format ratings for display (with buyer info and listing title)
+      const formattedRatings = await Promise.all(
+        ratedTransactions.map(async (tx) => {
+          const buyer = tx.buyerId ? await storage.getUser(tx.buyerId) : null;
+          const listing = tx.listingId ? await storage.getListing(tx.listingId) : null;
+          
+          return {
+            id: tx.id,
+            rating: tx.sellerRating,
+            feedback: tx.sellerFeedback,
+            createdAt: tx.completedAt || tx.createdAt,
+            buyer: buyer ? {
+              displayName: buyer.displayName || "مشتري",
+              avatar: buyer.avatar,
+            } : { displayName: "مشتري", avatar: null },
+            productTitle: listing?.title || "منتج",
+          };
+        })
+      );
+      
+      res.json({
+        totalRatings,
+        averageRating: Math.round(averageRating * 10) / 10,
+        distribution,
+        ratings: formattedRatings,
+      });
+    } catch (error) {
+      console.error("Error fetching seller ratings:", error);
+      res.status(500).json({ error: "Failed to fetch ratings" });
+    }
+  });
 }

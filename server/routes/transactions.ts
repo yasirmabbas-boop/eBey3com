@@ -403,14 +403,14 @@ export function registerTransactionsRoutes(app: Express): void {
       // Update transaction with rating
       const updated = await storage.rateSeller(transactionId, rating, feedback);
 
-      // Notify seller about the rating
+      // Notify seller about the rating (without revealing stars to prevent retaliation)
       if (transaction.sellerId) {
         const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
         const notification = await storage.createNotification({
           userId: transaction.sellerId,
           type: "new_rating",
-          title: "تقييم جديد ⭐",
-          message: `حصلت على تقييم ${rating} نجوم على "${listing?.title || "المنتج"}"${feedback ? `: ${feedback}` : ""}`,
+          title: "تقييم جديد",
+          message: `لديك تقييم جديد على "${listing?.title || "المنتج"}"`,
           relatedId: transactionId,
           linkUrl: "/seller-dashboard",
         });
