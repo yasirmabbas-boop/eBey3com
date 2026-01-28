@@ -1,12 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { getAuthHeaders } from "@/lib/queryClient";
 import {
   Package,
   Heart,
@@ -20,6 +23,7 @@ import {
   HandCoins,
   XCircle,
   ArrowLeftRight,
+  StarIcon,
 } from "lucide-react";
 
 interface BuyerSummary {
@@ -37,6 +41,8 @@ interface Purchase {
   amount: number;
   status: string;
   createdAt: string;
+  sellerRating?: number;
+  sellerFeedback?: string;
   listing?: {
     id: string;
     title: string;
@@ -146,6 +152,57 @@ export default function BuyerDashboard() {
       toast({ title: "خطأ", description: "فشل في الرد على العرض المقابل", variant: "destructive" });
     },
   });
+
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [ratingFeedback, setRatingFeedback] = useState("");
+
+  const rateSellerMutation = useMutation({
+    mutationFn: async ({ transactionId, rating, feedback }: { transactionId: string; rating: number; feedback?: string }) => {
+      const res = await fetch(`/api/transactions/${transactionId}/rate-seller`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        credentials: "include",
+        body: JSON.stringify({ rating, feedback }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "فشل في تسجيل التقييم");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم", description: "شكراً لتقييمك للبائع" });
+      setRatingDialogOpen(false);
+      setSelectedPurchase(null);
+      setRatingValue(0);
+      setRatingFeedback("");
+      queryClient.invalidateQueries({ queryKey: ["/api/account/purchases"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const openRatingDialog = (purchase: Purchase) => {
+    setSelectedPurchase(purchase);
+    setRatingValue(0);
+    setRatingFeedback("");
+    setRatingDialogOpen(true);
+  };
+
+  const submitRating = () => {
+    if (!selectedPurchase || ratingValue < 1) return;
+    rateSellerMutation.mutate({
+      transactionId: selectedPurchase.id,
+      rating: ratingValue,
+      feedback: ratingFeedback || undefined,
+    });
+  };
 
   const { data: summary, isLoading: summaryLoading } = useQuery<BuyerSummary>({
     queryKey: ["/api/account/buyer-summary"],
@@ -440,9 +497,31 @@ export default function BuyerDashboard() {
                         {new Date(purchase.createdAt).toLocaleDateString("ar-IQ")}
                       </p>
                     </div>
-                    <div className="text-left">
+                    <div className="text-left flex flex-col items-end gap-1">
                       {getStatusBadge(purchase.status)}
-                      <p className="text-sm font-bold mt-1">{purchase.amount?.toLocaleString() || 0} د.ع</p>
+                      <p className="text-sm font-bold">{purchase.amount?.toLocaleString() || 0} د.ع</p>
+                      {(purchase.status === "delivered" || purchase.status === "completed") && !purchase.sellerRating && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7 mt-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openRatingDialog(purchase);
+                          }}
+                          data-testid={`button-rate-seller-${purchase.id}`}
+                        >
+                          <Star className="h-3 w-3 ml-1" />
+                          قيّم البائع
+                        </Button>
+                      )}
+                      {purchase.sellerRating && (
+                        <div className="flex items-center gap-1 text-amber-500">
+                          {Array.from({ length: purchase.sellerRating }).map((_, i) => (
+                            <Star key={i} className="h-3 w-3 fill-current" />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -549,6 +628,75 @@ export default function BuyerDashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Rating Dialog */}
+        <Dialog open={ratingDialogOpen} onOpenChange={setRatingDialogOpen}>
+          <DialogContent className="max-w-sm" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>تقييم البائع</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-3">كيف كانت تجربتك مع البائع؟</p>
+                <div className="flex justify-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRatingValue(star)}
+                      className="p-1 transition-transform hover:scale-110"
+                      data-testid={`star-${star}`}
+                    >
+                      <Star
+                        className={`h-8 w-8 ${
+                          star <= ratingValue
+                            ? "fill-amber-400 text-amber-400"
+                            : "text-gray-300"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                {ratingValue > 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {ratingValue === 5 && "ممتاز! 🌟"}
+                    {ratingValue === 4 && "جيد جداً 😊"}
+                    {ratingValue === 3 && "جيد 👍"}
+                    {ratingValue === 2 && "مقبول 😐"}
+                    {ratingValue === 1 && "ضعيف 😔"}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Textarea
+                  placeholder="أضف تعليقاً (اختياري)"
+                  value={ratingFeedback}
+                  onChange={(e) => setRatingFeedback(e.target.value)}
+                  className="resize-none"
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1"
+                  onClick={submitRating}
+                  disabled={ratingValue < 1 || rateSellerMutation.isPending}
+                >
+                  {rateSellerMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  ) : null}
+                  إرسال التقييم
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setRatingDialogOpen(false)}
+                >
+                  إلغاء
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
