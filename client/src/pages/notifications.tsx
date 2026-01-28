@@ -19,8 +19,16 @@ import {
   Store,
   Check,
   CheckCheck,
-  Loader2
+  Loader2,
+  Package,
+  User
 } from "lucide-react";
+
+type FilterCategory = "all" | "buy" | "sell" | "account";
+
+const BUY_TYPES = ["outbid", "auction_end", "shipping", "bid"];
+const SELL_TYPES = ["sale", "new_bid", "offer", "return_request"];
+const ACCOUNT_TYPES = ["payment", "seller_approved", "message"];
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -118,6 +126,7 @@ export default function NotificationsPage() {
   const { language, t } = useLanguage();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const [filterCategory, setFilterCategory] = useState<FilterCategory>("all");
 
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages", user?.id],
@@ -213,7 +222,22 @@ export default function NotificationsPage() {
   const allNotifications = [...messageNotifications, ...sysNotifications]
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
+  const filteredNotifications = allNotifications.filter(n => {
+    if (filterCategory === "all") return true;
+    if (filterCategory === "buy") return BUY_TYPES.includes(n.type);
+    if (filterCategory === "sell") return SELL_TYPES.includes(n.type);
+    if (filterCategory === "account") return ACCOUNT_TYPES.includes(n.type);
+    return true;
+  });
+
   const unreadCount = allNotifications.filter(n => !n.read).length;
+
+  const filterTabs: { key: FilterCategory; label: { ar: string; ku: string }; icon: React.ReactNode }[] = [
+    { key: "all", label: { ar: "الكل", ku: "هەموو" }, icon: <Bell className="h-4 w-4" /> },
+    { key: "buy", label: { ar: "الشراء", ku: "کڕین" }, icon: <Package className="h-4 w-4" /> },
+    { key: "sell", label: { ar: "البيع", ku: "فرۆشتن" }, icon: <Store className="h-4 w-4" /> },
+    { key: "account", label: { ar: "الحساب", ku: "هەژمار" }, icon: <User className="h-4 w-4" /> },
+  ];
 
   const handleNotificationClick = (notification: Notification) => {
     if (notification.isSystemNotification && !notification.read) {
@@ -287,20 +311,42 @@ export default function NotificationsPage() {
           )}
         </div>
 
+        {/* Sliding Filter Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide -mx-4 px-4">
+          {filterTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilterCategory(tab.key)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all",
+                filterCategory === tab.key
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted/60 text-muted-foreground hover:bg-muted"
+              )}
+              data-testid={`filter-tab-${tab.key}`}
+            >
+              {tab.icon}
+              {tab.label[language === "ku" ? "ku" : "ar"]}
+            </button>
+          ))}
+        </div>
+
         {(messagesLoading || notificationsLoading) ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
-        ) : allNotifications.length === 0 ? (
+        ) : filteredNotifications.length === 0 ? (
           <Card className="p-8 text-center">
             <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              {language === "ar" ? "لا توجد إشعارات" : "هیچ ئاگادارییەک نییە"}
+              {filterCategory === "all" 
+                ? (language === "ar" ? "لا توجد إشعارات" : "هیچ ئاگادارییەک نییە")
+                : (language === "ar" ? "لا توجد إشعارات في هذه الفئة" : "هیچ ئاگادارییەک لەم بەشەدا نییە")}
             </p>
           </Card>
         ) : (
           <div className="space-y-2">
-            {allNotifications.map((notification) => (
+            {filteredNotifications.map((notification) => (
               <Card
                 key={`${notification.isSystemNotification ? 'sys' : 'msg'}-${notification.id}`}
                 className={cn(
