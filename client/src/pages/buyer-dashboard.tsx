@@ -550,7 +550,7 @@ export default function BuyerDashboard() {
 
         {/* Order Detail Sheet */}
         <Sheet open={orderDetailOpen} onOpenChange={setOrderDetailOpen}>
-          <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl pb-20 safe-area-bottom" dir="rtl">
+          <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl" dir="rtl">
             {selectedOrder && (
               <div className="flex flex-col h-full">
                 {/* Header */}
@@ -674,7 +674,7 @@ export default function BuyerDashboard() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="pt-4 border-t space-y-3">
+                <div className="pt-4 border-t space-y-3 pb-24 safe-area-bottom">
                   {/* Status-based actions */}
                   {(selectedOrder.status === "delivered" || selectedOrder.status === "completed") && !selectedOrder.sellerRating && (
                     <Button 
