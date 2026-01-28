@@ -102,6 +102,16 @@ export function useSocketNotifications() {
                 } catch (e) {
                   console.error("[WebSocket] Error handling new message:", e);
                 }
+              } else if (data.type === "listing_update") {
+                console.log("[WebSocket] Processing listing_update:", data.listingId);
+                // Invalidate listings queries to update prices on home/search pages
+                try {
+                  queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/listings", data.listingId] });
+                  console.log("[WebSocket] Listings cache invalidated for consistent prices");
+                } catch (e) {
+                  console.error("[WebSocket] Error invalidating listings:", e);
+                }
               }
             } catch (error) {
               console.error("[WebSocket] Error parsing message:", error);
