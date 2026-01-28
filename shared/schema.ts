@@ -216,6 +216,8 @@ export const transactions = pgTable("transactions", {
   completedAt: timestamp("completed_at"),
   buyerRating: integer("buyer_rating"),
   buyerFeedback: text("buyer_feedback"),
+  sellerRating: integer("seller_rating"),
+  sellerFeedback: text("seller_feedback"),
   issueType: text("issue_type"),
   issueNote: text("issue_note"),
   cancelledBySeller: boolean("cancelled_by_seller").default(false),

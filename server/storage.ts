@@ -1161,6 +1161,32 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  async rateSeller(transactionId: string, rating: number, feedback?: string): Promise<Transaction | undefined> {
+    const transaction = await this.getTransactionById(transactionId);
+    if (!transaction) return undefined;
+    
+    const [updated] = await db.update(transactions).set({ 
+      sellerRating: rating,
+      sellerFeedback: feedback,
+    }).where(eq(transactions.id, transactionId)).returning();
+    
+    if (transaction.sellerId) {
+      const seller = await this.getUser(transaction.sellerId);
+      if (seller) {
+        const newCount = (seller.ratingCount || 0) + 1;
+        const currentTotal = (seller.rating || 0) * (seller.ratingCount || 0);
+        const newRating = (currentTotal + rating) / newCount;
+        
+        await db.update(users).set({
+          rating: newRating,
+          ratingCount: newCount,
+        }).where(eq(users.id, transaction.sellerId));
+      }
+    }
+    
+    return updated;
+  }
+
   async cancelTransactionBySeller(id: string, reason: string): Promise<Transaction | undefined> {
     const [txn] = await db.update(transactions).set({ 
       status: "cancelled",

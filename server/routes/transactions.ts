@@ -349,6 +349,70 @@ export function registerTransactionsRoutes(app: Express): void {
     }
   });
 
+  // Rate seller after delivery (buyer action)
+  app.patch("/api/transactions/:id/rate-seller", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const transactionId = req.params.id;
+      const { rating, feedback } = req.body;
+      
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "التقييم يجب أن يكون بين 1 و 5" });
+      }
+
+      const transaction = await storage.getTransactionById(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+
+      // Only buyer can rate seller
+      if (transaction.buyerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
+      }
+
+      // Check if already rated
+      if (transaction.sellerRating) {
+        return res.status(400).json({ error: "تم تقييم البائع مسبقاً" });
+      }
+
+      // Update transaction with rating
+      const updated = await storage.rateSeller(transactionId, rating, feedback);
+
+      // Notify seller about the rating
+      if (transaction.sellerId) {
+        const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
+        const notification = await storage.createNotification({
+          userId: transaction.sellerId,
+          type: "new_rating",
+          title: "تقييم جديد ⭐",
+          message: `حصلت على تقييم ${rating} نجوم على "${listing?.title || "المنتج"}"${feedback ? `: ${feedback}` : ""}`,
+          relatedId: transactionId,
+          linkUrl: "/seller-dashboard",
+        });
+        
+        sendToUser(transaction.sellerId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
+        });
+      }
+
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error rating seller:", error);
+      return res.status(500).json({ error: "فشل في تسجيل التقييم" });
+    }
+  });
+
   // Cancel order (seller action)
   app.patch("/api/transactions/:id/cancel", async (req, res) => {
     try {
