@@ -272,9 +272,18 @@ export function registerProductRoutes(app: Express): void {
         return res.json({ hasBid: false, isHighest: false });
       }
       
-      const userBids = await storage.getUserBids(userId);
-      const hasBid = userBids.some(bid => bid.listingId === req.params.id);
-      const isHighest = (listing as any).highestBidderId === userId;
+      // Get all bids for this listing to check user's bid status
+      const listingBids = await storage.getBidsForListing(req.params.id);
+      const hasBid = listingBids.some(bid => bid.userId === userId);
+      
+      // Find the highest bid to determine if user is the highest bidder
+      let isHighest = false;
+      if (listingBids.length > 0) {
+        const highestBid = listingBids.reduce((max, bid) => 
+          bid.amount > max.amount ? bid : max, listingBids[0]
+        );
+        isHighest = highestBid.userId === userId;
+      }
       
       res.json({ hasBid, isHighest });
     } catch (error) {
