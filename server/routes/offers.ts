@@ -10,6 +10,16 @@ const createOfferBodySchema = z.object({
   message: z.string().optional(),
 });
 
+const respondOfferBodySchema = z.object({
+  action: z.enum(["accept", "reject", "counter"]),
+  counterAmount: z.number().int().positive().optional(),
+  counterMessage: z.string().optional(),
+});
+
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat("ar-IQ").format(price) + " د.ع";
+};
+
 export function registerOffersRoutes(app: Express): void {
   // Create offer (buyer -> seller)
   app.post("/api/offers", async (req, res) => {
@@ -64,6 +74,18 @@ export function registerOffersRoutes(app: Express): void {
       });
 
       const created = await storage.createOffer(offerToCreate);
+
+      // Send notification to seller
+      const buyerName = user.displayName || user.username || "مشتري";
+      await storage.createNotification({
+        userId: (listing as any).sellerId,
+        type: "offer_received",
+        title: "عرض سعر جديد",
+        message: `${buyerName} قدم عرض سعر ${formatPrice(parsed.offerAmount)} على "${listing.title}"`,
+        relatedId: created.id,
+        linkUrl: `/product/${parsed.listingId}`,
+      });
+
       return res.status(201).json(created);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -71,6 +93,180 @@ export function registerOffersRoutes(app: Express): void {
       }
       console.error("Error creating offer:", error);
       return res.status(500).json({ error: "Failed to create offer" });
+    }
+  });
+
+  // Get received offers for seller (with listing details)
+  app.get("/api/received-offers", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const offers = await storage.getOffersBySeller(userId);
+
+      // Enrich offers with listing and buyer details
+      const enrichedOffers = await Promise.all(
+        offers.map(async (offer) => {
+          const listing = offer.listingId ? await storage.getListing(offer.listingId) : null;
+          const buyer = offer.buyerId ? await storage.getUser(offer.buyerId) : null;
+
+          return {
+            ...offer,
+            listing: listing ? {
+              id: listing.id,
+              title: listing.title,
+              price: listing.price,
+              images: listing.images || [],
+            } : null,
+            buyer: buyer ? {
+              id: buyer.id,
+              displayName: buyer.displayName || buyer.username || "مشتري",
+              avatar: buyer.avatar,
+            } : null,
+          };
+        })
+      );
+
+      res.json(enrichedOffers);
+    } catch (error) {
+      console.error("Error fetching received offers:", error);
+      res.status(500).json({ error: "فشل في جلب العروض" });
+    }
+  });
+
+  // Respond to an offer (accept/reject/counter)
+  app.put("/api/offers/:id/respond", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const offerId = req.params.id;
+      const offer = await storage.getOffer(offerId);
+
+      if (!offer) {
+        return res.status(404).json({ error: "العرض غير موجود" });
+      }
+
+      // Only the seller can respond
+      if (offer.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بالرد على هذا العرض" });
+      }
+
+      // Can only respond to pending offers
+      if (offer.status !== "pending") {
+        return res.status(400).json({ error: "لا يمكن الرد على هذا العرض" });
+      }
+
+      const parsed = respondOfferBodySchema.parse(req.body);
+      const listing = offer.listingId ? await storage.getListing(offer.listingId) : null;
+      const seller = await storage.getUser(userId);
+      const sellerName = seller?.displayName || seller?.username || "البائع";
+
+      let newStatus: string;
+      let notificationTitle: string;
+      let notificationMessage: string;
+
+      switch (parsed.action) {
+        case "accept":
+          newStatus = "accepted";
+          notificationTitle = "تم قبول عرضك";
+          notificationMessage = `${sellerName} قبل عرضك بقيمة ${formatPrice(offer.offerAmount || 0)} على "${listing?.title || "المنتج"}"`;
+          break;
+        case "reject":
+          newStatus = "rejected";
+          notificationTitle = "تم رفض عرضك";
+          notificationMessage = `${sellerName} رفض عرضك على "${listing?.title || "المنتج"}"`;
+          break;
+        case "counter":
+          if (!parsed.counterAmount) {
+            return res.status(400).json({ error: "يجب تحديد السعر المقترح" });
+          }
+          newStatus = "countered";
+          notificationTitle = "عرض مضاد";
+          notificationMessage = `${sellerName} قدم عرض مضاد بقيمة ${formatPrice(parsed.counterAmount)} على "${listing?.title || "المنتج"}"`;
+          break;
+        default:
+          return res.status(400).json({ error: "إجراء غير صالح" });
+      }
+
+      // Update the offer
+      const updatedOffer = await storage.updateOfferStatus(
+        offerId,
+        newStatus,
+        parsed.counterAmount,
+        parsed.counterMessage
+      );
+
+      // Send notification to buyer
+      if (offer.buyerId) {
+        await storage.createNotification({
+          userId: offer.buyerId,
+          type: `offer_${newStatus}`,
+          title: notificationTitle,
+          message: notificationMessage,
+          relatedId: offerId,
+          linkUrl: `/product/${offer.listingId}`,
+        });
+      }
+
+      res.json(updatedOffer);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "بيانات غير صالحة", details: error.errors });
+      }
+      console.error("Error responding to offer:", error);
+      res.status(500).json({ error: "فشل في الرد على العرض" });
+    }
+  });
+
+  // Get single offer by ID
+  app.get("/api/offers/:id", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const offer = await storage.getOffer(req.params.id);
+      if (!offer) {
+        return res.status(404).json({ error: "العرض غير موجود" });
+      }
+
+      // Only buyer or seller can view
+      if (offer.buyerId !== userId && offer.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بعرض هذا العرض" });
+      }
+
+      const listing = offer.listingId ? await storage.getListing(offer.listingId) : null;
+      const buyer = offer.buyerId ? await storage.getUser(offer.buyerId) : null;
+      const seller = offer.sellerId ? await storage.getUser(offer.sellerId) : null;
+
+      res.json({
+        ...offer,
+        listing: listing ? {
+          id: listing.id,
+          title: listing.title,
+          price: listing.price,
+          images: listing.images || [],
+        } : null,
+        buyer: buyer ? {
+          id: buyer.id,
+          displayName: buyer.displayName || buyer.username || "مشتري",
+          avatar: buyer.avatar,
+        } : null,
+        seller: seller ? {
+          id: seller.id,
+          displayName: seller.displayName || seller.username || "بائع",
+          avatar: seller.avatar,
+        } : null,
+      });
+    } catch (error) {
+      console.error("Error fetching offer:", error);
+      res.status(500).json({ error: "فشل في جلب العرض" });
     }
   });
 }
