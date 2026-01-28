@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import imageCompression from "browser-image-compression";
 import { Layout } from "@/components/layout";
 import { useAuth, AUTH_QUERY_KEY } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -171,8 +172,22 @@ export default function MyAccount() {
 
     setIsUploadingAvatar(true);
     try {
+      let fileToUpload = file;
+      if (!(file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic"))) {
+        try {
+          fileToUpload = await imageCompression(file, {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 800,
+            useWebWorker: true,
+            fileType: "image/webp" as const,
+          });
+        } catch {
+          fileToUpload = file;
+        }
+      }
+
       const uploadFormData = new FormData();
-      uploadFormData.append("images", file);
+      uploadFormData.append("images", fileToUpload);
 
       console.log("[Avatar] Uploading to /api/uploads/optimized...");
       const response = await fetch("/api/uploads/optimized", {

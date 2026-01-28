@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, Link, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import imageCompression from "browser-image-compression";
 import type { Listing } from "@shared/schema";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -246,8 +247,28 @@ export default function SellWizardPage() {
     setIsUploadingImages(true);
     
     try {
+      const compressionOptions = {
+        maxSizeMB: 2,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+        fileType: "image/webp" as const,
+      };
+
+      const compressedFiles = await Promise.all(
+        filesToUpload.map(async (file) => {
+          if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
+            return file;
+          }
+          try {
+            return await imageCompression(file, compressionOptions);
+          } catch {
+            return file;
+          }
+        })
+      );
+
       const formData = new FormData();
-      filesToUpload.forEach((file) => {
+      compressedFiles.forEach((file) => {
         formData.append("images", file);
       });
 
@@ -308,8 +329,22 @@ export default function SellWizardPage() {
         return;
       }
 
+      let fileToUpload = file;
+      if (!(file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic"))) {
+        try {
+          fileToUpload = await imageCompression(file, {
+            maxSizeMB: 2,
+            maxWidthOrHeight: 1600,
+            useWebWorker: true,
+            fileType: "image/webp" as const,
+          });
+        } catch {
+          fileToUpload = file;
+        }
+      }
+
       const uploadFormData = new FormData();
-      uploadFormData.append("images", file);
+      uploadFormData.append("images", fileToUpload);
 
       const response = await fetch("/api/uploads/optimized", {
         method: "POST",
