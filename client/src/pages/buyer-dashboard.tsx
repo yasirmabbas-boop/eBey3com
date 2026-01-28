@@ -169,10 +169,38 @@ const OfferStatusBadge = ({ status }: { status: string }) => {
 
 export default function BuyerDashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("orders");
+  const [deepLinkOrderId, setDeepLinkOrderId] = useState<string | null>(null);
+  const [deepLinkOfferId, setDeepLinkOfferId] = useState<string | null>(null);
+  const [deepLinkReturnId, setDeepLinkReturnId] = useState<string | null>(null);
+
+  // Handle deep linking from notifications
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    const orderId = params.get("orderId");
+    const offerId = params.get("offerId");
+    const returnId = params.get("returnId");
+    
+    if (tab) {
+      if (tab === "purchases") setActiveTab("orders");
+      else if (tab === "offers") setActiveTab("offers");
+      else if (tab === "returns") setActiveTab("returns");
+      else setActiveTab(tab);
+    }
+    
+    if (orderId) setDeepLinkOrderId(orderId);
+    if (offerId) setDeepLinkOfferId(offerId);
+    if (returnId) setDeepLinkReturnId(returnId);
+    
+    // Clear query params from URL without reloading
+    if (tab || orderId || offerId || returnId) {
+      window.history.replaceState({}, "", "/buyer-dashboard");
+    }
+  }, [location]);
 
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
@@ -426,6 +454,17 @@ export default function BuyerDashboard() {
     queryKey: ["/api/buyer/wallet/transactions"],
     enabled: !!user?.id,
   });
+
+  // Auto-open order detail when deep linked from notification
+  useEffect(() => {
+    if (deepLinkOrderId && purchases.length > 0) {
+      const order = purchases.find(p => p.id === deepLinkOrderId);
+      if (order) {
+        openOrderDetail(order);
+        setDeepLinkOrderId(null);
+      }
+    }
+  }, [deepLinkOrderId, purchases]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

@@ -244,7 +244,7 @@ export default function SellerDashboard() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const { language, t } = useLanguage();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("products");
   const [searchQuery, setSearchQuery] = useState("");
@@ -260,6 +260,34 @@ export default function SellerDashboard() {
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<{ success: number; failed: number; errors: string[] } | null>(null);
+  const [deepLinkOrderId, setDeepLinkOrderId] = useState<string | null>(null);
+  const [deepLinkOfferId, setDeepLinkOfferId] = useState<string | null>(null);
+  const [deepLinkReturnId, setDeepLinkReturnId] = useState<string | null>(null);
+  const [deepLinkListingId, setDeepLinkListingId] = useState<string | null>(null);
+
+  // Handle deep linking from notifications
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    const orderId = params.get("orderId");
+    const offerId = params.get("offerId");
+    const returnId = params.get("returnId");
+    const listingId = params.get("listingId");
+    
+    if (tab) {
+      setActiveTab(tab);
+    }
+    
+    if (orderId) setDeepLinkOrderId(orderId);
+    if (offerId) setDeepLinkOfferId(offerId);
+    if (returnId) setDeepLinkReturnId(returnId);
+    if (listingId) setDeepLinkListingId(listingId);
+    
+    // Clear query params from URL without reloading
+    if (tab || orderId || offerId || returnId || listingId) {
+      window.history.replaceState({}, "", "/seller-dashboard");
+    }
+  }, [location]);
 
   const { data: listingsData, isLoading: listingsLoading } = useQuery({
     queryKey: ["/api/listings", user?.id],
@@ -464,6 +492,40 @@ export default function SellerDashboard() {
       });
     },
   });
+
+  // Auto-open order detail when deep linked from notification
+  useEffect(() => {
+    if (deepLinkOrderId && sellerOrders.length > 0) {
+      const order = sellerOrders.find(o => o.id === deepLinkOrderId);
+      if (order) {
+        setSelectedOrderForAction(order);
+        setDeepLinkOrderId(null);
+      }
+    }
+  }, [deepLinkOrderId, sellerOrders]);
+
+  // Auto-open return request when deep linked
+  useEffect(() => {
+    if (deepLinkReturnId && returnRequests.length > 0) {
+      const returnRequest = returnRequests.find(r => r.id === deepLinkReturnId);
+      if (returnRequest) {
+        setSelectedReturnRequest(returnRequest);
+        setReturnResponseOpen(true);
+        setDeepLinkReturnId(null);
+      }
+    }
+  }, [deepLinkReturnId, returnRequests]);
+
+  // Auto-select offer when deep linked
+  useEffect(() => {
+    if (deepLinkOfferId && receivedOffers.length > 0) {
+      const offer = receivedOffers.find(o => o.id === deepLinkOfferId);
+      if (offer) {
+        setSelectedOfferForCounter(offer);
+        setDeepLinkOfferId(null);
+      }
+    }
+  }, [deepLinkOfferId, receivedOffers]);
 
   const getReturnReasonLabel = (reason: string) => {
     const labels: Record<string, { ar: string; ku: string }> = {
