@@ -21,7 +21,6 @@ import { useCart } from "@/hooks/use-cart";
 import { useLanguage } from "@/lib/i18n";
 import { BiddingWindow } from "@/components/bidding-window";
 import { SellerTrustBadge } from "@/components/seller-trust-badge";
-import { ContactSeller } from "@/components/contact-seller";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { InstagramShareCard } from "@/components/instagram-share-card";
 import { VerifiedBadge } from "@/components/verified-badge";
@@ -1221,14 +1220,6 @@ export default function ProductPage() {
                   )
                 )}
 
-                {/* Contact Seller */}
-                <ContactSeller 
-                  sellerName={product.seller.name}
-                  sellerId={listing?.sellerId || ""}
-                  listingId={listing?.id || ""}
-                  productTitle={product.title}
-                  productCode={product.productCode}
-                />
 
                 {/* Report Button */}
                 {isAuthenticated && user?.id !== listing?.sellerId && (

@@ -39,31 +39,31 @@ interface ProductCardProps {
 function ProductCard({ product }: ProductCardProps) {
   return (
     <Link href={`/product/${product.id}`}>
-      <Card className="overflow-hidden cursor-pointer group soft-border hover-elevate active:scale-[0.98] flex-shrink-0 w-[calc(40vw-8px)] sm:w-[170px]" data-testid={`card-product-${product.id}`}>
-        <div className="relative aspect-square overflow-hidden bg-gray-100">
+      <div className="overflow-hidden cursor-pointer group flex-shrink-0 w-[calc(40vw-8px)] sm:w-[170px] rounded-lg bg-white shadow-sm hover:shadow-md active:scale-[0.98] transition-all" data-testid={`card-product-${product.id}`}>
+        <div className="relative aspect-square overflow-hidden">
           <OptimizedImage 
             src={product.image} 
             alt={product.title} 
-            className="w-full h-full group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
           {product.currentBid && (
-            <Badge className="absolute top-1 right-1 bg-primary text-white text-[9px] px-1 py-0.5 z-10">
+            <Badge className="absolute top-1.5 right-1.5 bg-primary text-white text-[10px] px-1.5 py-0.5 z-10 shadow-sm">
               مزاد
             </Badge>
           )}
-          <div className="absolute top-0.5 left-0.5">
+          <div className="absolute top-1 left-1">
             <FavoriteButton listingId={product.id} size="sm" />
           </div>
         </div>
-        <CardContent className="p-1.5">
-          <h3 className="font-bold text-[11px] mb-0.5 line-clamp-1 group-hover:text-primary transition-colors leading-tight">
+        <div className="p-2">
+          <h3 className="font-medium text-[11px] mb-1 line-clamp-2 text-gray-800 group-hover:text-primary transition-colors leading-snug">
             {product.title}
           </h3>
-          <p className="font-bold text-xs text-primary">
-            {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} <span className="text-[9px]">د.ع</span>
+          <p className="font-bold text-sm text-primary">
+            {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} <span className="text-[10px] font-medium">د.ع</span>
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </Link>
   );
 }
