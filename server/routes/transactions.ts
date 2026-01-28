@@ -3,6 +3,7 @@ import { z } from "zod";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
 import { sendToUser } from "../websocket";
+import { financialService } from "../services/financial-service";
 
 // Async notification helper - fire and forget to avoid blocking API responses
 async function sendNotificationAsync(params: {
@@ -226,6 +227,29 @@ export function registerTransactionsRoutes(app: Express): void {
 
       // Update transaction status to completed
       const updated = await storage.updateTransactionStatus(transactionId, "completed");
+      
+      // Create wallet settlement for the seller (free 15 sales or 8% commission)
+      if (updated && transaction.sellerId) {
+        try {
+          const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
+          const shippingCost = listing?.shippingCost || 0;
+          
+          const settlement = await financialService.createSaleSettlement(
+            transaction.sellerId,
+            transactionId,
+            transaction.amount,
+            shippingCost
+          );
+          
+          console.log(`[Settlement] Created for transaction ${transactionId}:`, {
+            isCommissionFree: settlement.isCommissionFree,
+            freeSalesRemaining: settlement.freeSalesRemaining,
+            netEarnings: settlement.netEarnings
+          });
+        } catch (err) {
+          console.error("[Settlement] Error creating settlement:", err);
+        }
+      }
       
       // Fire-and-forget notification (async, non-blocking)
       const listingTitle = transaction.listingId 
