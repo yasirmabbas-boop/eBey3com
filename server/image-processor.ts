@@ -109,7 +109,7 @@ export async function processImage(
         fit: "cover",
         position: "center",
       })
-      .jpeg({ quality: 70, mozjpeg: true })
+      .webp({ quality: 70 })
       .toBuffer();
 
     const thumbMetadata = await sharp(thumbBuffer).metadata();
@@ -117,7 +117,7 @@ export async function processImage(
       buffer: thumbBuffer,
       width: thumbMetadata.width || opts.thumbnailWidth || 400,
       height: thumbMetadata.height || opts.thumbnailWidth || 400,
-      format: "jpeg",
+      format: "webp",
       size: thumbBuffer.length,
     };
 

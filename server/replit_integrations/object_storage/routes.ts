@@ -115,7 +115,7 @@ export function registerObjectStorageRoutes(app: Express): void {
         return res.status(400).json({ error: "No images provided" });
       }
 
-      console.log(`[optimized-upload] Processing ${files.length} image(s)`);
+      console.log(`[optimized-upload] Processing ${files.length} image(s) in parallel`);
 
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR || "";
       if (!privateObjectDir) {
@@ -125,61 +125,60 @@ export function registerObjectStorageRoutes(app: Express): void {
       const { bucketName } = parseObjectPath(privateObjectDir);
       const bucket = objectStorageClient.bucket(bucketName);
 
-      const results: Array<{ main: string; thumbnail?: string }> = [];
+      const processAndUpload = async (file: Express.Multer.File): Promise<{ main: string; thumbnail?: string }> => {
+        console.log(`[optimized-upload] Processing: ${file.originalname} (${(file.size / 1024).toFixed(1)}KB)`);
+        
+        const { main, thumbnail } = await processImage(file.buffer, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          quality: 80,
+          format: "webp",
+          generateThumbnail: true,
+          thumbnailWidth: 400,
+        });
 
-      for (const file of files) {
-        try {
-          console.log(`[optimized-upload] Processing: ${file.originalname} (${(file.size / 1024).toFixed(1)}KB)`);
-          
-          const { main, thumbnail } = await processImage(file.buffer, {
-            maxWidth: 1200,
-            maxHeight: 1200,
-            quality: 80,
-            format: "jpeg",
-            generateThumbnail: true,
-            thumbnailWidth: 400,
-          });
+        const mainId = randomUUID();
+        const mainPath = `${privateObjectDir}/uploads/${mainId}.webp`.replace(/^\//, "");
+        const mainObjectName = mainPath.split("/").slice(1).join("/");
+        const mainUrl = `/objects/uploads/${mainId}.webp`;
 
-          const mainId = randomUUID();
-          const mainPath = `${privateObjectDir}/uploads/${mainId}.jpg`.replace(/^\//, "");
-          const mainObjectName = mainPath.split("/").slice(1).join("/");
-          
-          const mainFile = bucket.file(mainObjectName);
-          await mainFile.save(main.buffer, {
-            contentType: "image/jpeg",
+        const uploadPromises: Promise<void>[] = [];
+
+        uploadPromises.push(
+          bucket.file(mainObjectName).save(main.buffer, {
+            contentType: "image/webp",
             metadata: {
               originalName: file.originalname,
               processedAt: new Date().toISOString(),
             },
-          });
+          })
+        );
 
-          const mainUrl = `/objects/uploads/${mainId}.jpg`;
+        let thumbnailUrl: string | undefined;
+        if (thumbnail) {
+          const thumbId = `${mainId}_thumb`;
+          const thumbPath = `${privateObjectDir}/uploads/${thumbId}.webp`.replace(/^\//, "");
+          const thumbObjectName = thumbPath.split("/").slice(1).join("/");
+          thumbnailUrl = `/objects/uploads/${thumbId}.webp`;
 
-          let thumbnailUrl: string | undefined;
-          if (thumbnail) {
-            const thumbId = `${mainId}_thumb`;
-            const thumbPath = `${privateObjectDir}/uploads/${thumbId}.jpg`.replace(/^\//, "");
-            const thumbObjectName = thumbPath.split("/").slice(1).join("/");
-            
-            const thumbFile = bucket.file(thumbObjectName);
-            await thumbFile.save(thumbnail.buffer, {
-              contentType: "image/jpeg",
+          uploadPromises.push(
+            bucket.file(thumbObjectName).save(thumbnail.buffer, {
+              contentType: "image/webp",
               metadata: {
                 originalName: `${file.originalname}_thumb`,
                 processedAt: new Date().toISOString(),
               },
-            });
-
-            thumbnailUrl = `/objects/uploads/${thumbId}.jpg`;
-          }
-
-          results.push({ main: mainUrl, thumbnail: thumbnailUrl });
-          console.log(`[optimized-upload] Uploaded: ${mainUrl}`);
-        } catch (err) {
-          console.error(`[optimized-upload] Failed to process ${file.originalname}:`, err);
-          return res.status(500).json({ error: `Failed to process image: ${file.originalname}` });
+            })
+          );
         }
-      }
+
+        await Promise.all(uploadPromises);
+        console.log(`[optimized-upload] Uploaded: ${mainUrl}`);
+        
+        return { main: mainUrl, thumbnail: thumbnailUrl };
+      };
+
+      const results = await Promise.all(files.map(processAndUpload));
 
       res.json({
         success: true,
