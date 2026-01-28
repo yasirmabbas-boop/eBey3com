@@ -101,4 +101,272 @@ export function registerTransactionsRoutes(app: Express): void {
     const userTransactions = await storage.getTransactionsForUser(userId);
     return res.json(userTransactions);
   });
+
+  // Mark order as shipped (seller action)
+  app.patch("/api/transactions/:id/ship", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const transactionId = req.params.id;
+      const transaction = await storage.getTransactionById(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+
+      // Only seller can mark as shipped
+      if (transaction.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
+      }
+
+      // Update transaction status
+      const updated = await storage.updateTransactionStatus(transactionId, "shipped");
+      
+      // Get listing for notification message
+      const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
+      
+      // Notify buyer
+      if (transaction.buyerId) {
+        await storage.createNotification({
+          userId: transaction.buyerId,
+          type: "order_shipped",
+          title: "تم شحن طلبك 📦",
+          message: `تم شحن طلبك "${listing?.title || "المنتج"}" وسيصلك قريباً`,
+          relatedId: transactionId,
+          linkUrl: "/buyer-dashboard",
+        });
+      }
+
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error marking order as shipped:", error);
+      return res.status(500).json({ error: "فشل في تحديث حالة الشحن" });
+    }
+  });
+
+  // Mark order as delivered (seller or buyer action)
+  app.patch("/api/transactions/:id/deliver", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const transactionId = req.params.id;
+      const transaction = await storage.getTransactionById(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+
+      // Seller or buyer can confirm delivery
+      if (transaction.sellerId !== userId && transaction.buyerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
+      }
+
+      // Update transaction status to completed
+      const updated = await storage.updateTransactionStatus(transactionId, "completed");
+      
+      // Get listing for notification message
+      const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
+      
+      // Notify the other party
+      if (userId === transaction.sellerId && transaction.buyerId) {
+        // Seller confirmed, notify buyer
+        await storage.createNotification({
+          userId: transaction.buyerId,
+          type: "order_delivered",
+          title: "تم تسليم طلبك ✅",
+          message: `تم تسليم طلبك "${listing?.title || "المنتج"}" بنجاح`,
+          relatedId: transactionId,
+          linkUrl: "/buyer-dashboard",
+        });
+      } else if (userId === transaction.buyerId && transaction.sellerId) {
+        // Buyer confirmed, notify seller
+        await storage.createNotification({
+          userId: transaction.sellerId,
+          type: "order_delivered",
+          title: "تم تأكيد التسليم ✅",
+          message: `أكد المشتري استلام "${listing?.title || "المنتج"}"`,
+          relatedId: transactionId,
+          linkUrl: "/seller-dashboard",
+        });
+      }
+
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error marking order as delivered:", error);
+      return res.status(500).json({ error: "فشل في تحديث حالة التسليم" });
+    }
+  });
+
+  // Report issue with order (seller action)
+  app.patch("/api/transactions/:id/issue", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const transactionId = req.params.id;
+      const { issueType, issueNote, status } = req.body;
+      
+      if (!issueType) {
+        return res.status(400).json({ error: "نوع المشكلة مطلوب" });
+      }
+
+      const transaction = await storage.getTransactionById(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+
+      // Only seller can report issues
+      if (transaction.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
+      }
+
+      // Update transaction with issue
+      const updated = await storage.updateTransactionWithIssue(transactionId, {
+        status: status || "issue",
+        issueType,
+        issueNote,
+      });
+      
+      // Get listing for notification message
+      const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
+      
+      // Get issue type label
+      const issueLabels: Record<string, string> = {
+        no_response: "عدم الرد",
+        wrong_address: "عنوان خاطئ",
+        customer_refused: "رفض الاستلام",
+        other: "مشكلة أخرى",
+      };
+      
+      // Notify buyer about the issue
+      if (transaction.buyerId) {
+        await storage.createNotification({
+          userId: transaction.buyerId,
+          type: "order_issue",
+          title: "مشكلة في طلبك ⚠️",
+          message: `واجه البائع مشكلة في توصيل "${listing?.title || "المنتج"}": ${issueLabels[issueType] || issueType}`,
+          relatedId: transactionId,
+          linkUrl: "/buyer-dashboard",
+        });
+      }
+
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error reporting issue:", error);
+      return res.status(500).json({ error: "فشل في تسجيل المشكلة" });
+    }
+  });
+
+  // Rate buyer after delivery (seller action)
+  app.patch("/api/transactions/:id/rate-buyer", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const transactionId = req.params.id;
+      const { rating, feedback } = req.body;
+      
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "التقييم يجب أن يكون بين 1 و 5" });
+      }
+
+      const transaction = await storage.getTransactionById(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+
+      // Only seller can rate buyer
+      if (transaction.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
+      }
+
+      // Check if already rated
+      if (transaction.buyerRating) {
+        return res.status(400).json({ error: "تم تقييم المشتري مسبقاً" });
+      }
+
+      // Update transaction with rating
+      const updated = await storage.rateBuyer(transactionId, rating, feedback);
+
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error rating buyer:", error);
+      return res.status(500).json({ error: "فشل في تسجيل التقييم" });
+    }
+  });
+
+  // Cancel order (seller action)
+  app.patch("/api/transactions/:id/cancel", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const transactionId = req.params.id;
+      const { reason } = req.body;
+      
+      const transaction = await storage.getTransactionById(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+
+      // Get listing for notification
+      const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
+
+      let updated;
+      let notifyUserId: string | null = null;
+      let notificationTitle: string;
+      let notificationMessage: string;
+      let notificationLink: string;
+
+      if (transaction.sellerId === userId) {
+        // Seller cancelling
+        updated = await storage.cancelTransactionBySeller(transactionId, reason || "تم الإلغاء من قبل البائع");
+        notifyUserId = transaction.buyerId;
+        notificationTitle = "تم إلغاء طلبك ❌";
+        notificationMessage = `قام البائع بإلغاء طلبك على "${listing?.title || "المنتج"}"${reason ? `: ${reason}` : ""}`;
+        notificationLink = "/buyer-dashboard";
+      } else if (transaction.buyerId === userId) {
+        // Buyer cancelling
+        updated = await storage.cancelTransactionByBuyer(transactionId, reason || "تم الإلغاء من قبل المشتري");
+        notifyUserId = transaction.sellerId;
+        notificationTitle = "تم إلغاء الطلب ❌";
+        notificationMessage = `قام المشتري بإلغاء طلبه على "${listing?.title || "المنتج"}"${reason ? `: ${reason}` : ""}`;
+        notificationLink = "/seller-dashboard";
+      } else {
+        return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
+      }
+      
+      // Notify the other party
+      if (notifyUserId) {
+        await storage.createNotification({
+          userId: notifyUserId,
+          type: "order_cancelled",
+          title: notificationTitle,
+          message: notificationMessage,
+          relatedId: transactionId,
+          linkUrl: notificationLink,
+        });
+      }
+
+      return res.json(updated);
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      return res.status(500).json({ error: "فشل في إلغاء الطلب" });
+    }
+  });
 }
