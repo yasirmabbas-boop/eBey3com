@@ -31,7 +31,14 @@ export default function Settings() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Profile editing state
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [displayName, setDisplayName] = useState(user?.displayName || "");
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
+  // Address dialog state
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [editingAddress, setEditingAddress] = useState<BuyerAddress | null>(null);
   
@@ -110,6 +117,93 @@ export default function Settings() {
       toast({ title: "تم تعيين العنوان الافتراضي" });
     },
   });
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "الملف كبير جداً", description: "الحد الأقصى 5 ميغابايت", variant: "destructive" });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      let fileToUpload = file;
+      if (!(file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic"))) {
+        try {
+          fileToUpload = await imageCompression(file, {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 800,
+            useWebWorker: true,
+            fileType: "image/webp" as const,
+          });
+        } catch {
+          fileToUpload = file;
+        }
+      }
+
+      const uploadFormData = new FormData();
+      uploadFormData.append("images", fileToUpload);
+
+      const response = await fetch("/api/uploads/optimized", {
+        method: "POST",
+        body: uploadFormData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload image");
+      }
+
+      const result = await response.json();
+      const avatarUrl = result.images[0].main;
+
+      const res = await authFetch("/api/account/profile", {
+        method: "PUT",
+        body: JSON.stringify({ avatar: avatarUrl }),
+      });
+
+      if (res.ok) {
+        toast({ title: "تم تحديث الصورة بنجاح" });
+        queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: ["/api/account/profile"] });
+      } else {
+        toast({ title: "خطأ", description: "فشل في حفظ الصورة", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "خطأ", description: "فشل في رفع أو حفظ الصورة", variant: "destructive" });
+    } finally {
+      setIsUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleUpdateDisplayName = async () => {
+    if (!displayName.trim()) {
+      toast({ title: "الاسم مطلوب", variant: "destructive" });
+      return;
+    }
+
+    setIsUpdatingProfile(true);
+    try {
+      const res = await authFetch("/api/account/profile", {
+        method: "PUT",
+        body: JSON.stringify({ displayName: displayName.trim() }),
+      });
+
+      if (res.ok) {
+        toast({ title: "تم تحديث الاسم بنجاح" });
+        queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: ["/api/account/profile"] });
+      } else {
+        toast({ title: "خطأ", description: "فشل في تحديث الاسم", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "خطأ", description: "فشل في تحديث الاسم", variant: "destructive" });
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
 
   const resetForm = () => {
     setLabel("");
@@ -219,29 +313,122 @@ export default function Settings() {
     <div className="container mx-auto px-4 py-6 pb-24 max-w-2xl" dir="rtl">
       <div className="space-y-6">
         
-        <Card>
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Phone className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">{profile?.phone}</p>
-                  <p className="text-sm text-muted-foreground">رقم الهاتف</p>
+        {/* Profile Section */}
+        <div>
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <User className="h-5 w-5" />
+            ملفي الشخصي
+          </h2>
+          <Card>
+            <CardContent className="py-6">
+              <div className="space-y-6">
+                {/* Avatar Upload */}
+                <div className="flex items-center gap-4">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                    data-testid="input-avatar-upload"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative group"
+                    disabled={isUploadingAvatar}
+                    data-testid="button-change-avatar"
+                  >
+                    {getUserAvatarSrc(user) ? (
+                      <img 
+                        src={getUserAvatarSrc(user) || ''} 
+                        alt={user?.displayName || "صورة الملف الشخصي"} 
+                        className="w-20 h-20 rounded-full object-cover border-2 border-primary/20"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white font-bold text-2xl">
+                        {user?.displayName?.charAt(0) || "م"}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      {isUploadingAvatar ? (
+                        <Loader2 className="h-6 w-6 text-white animate-spin" />
+                      ) : (
+                        <Camera className="h-6 w-6 text-white" />
+                      )}
+                    </div>
+                    <div className="absolute bottom-0 left-0 bg-primary rounded-full p-1.5">
+                      <Camera className="h-3.5 w-3.5 text-white" />
+                    </div>
+                  </button>
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">اضغط على الصورة لتغييرها</p>
+                    <p className="text-xs text-muted-foreground mt-1">الحد الأقصى: 5 ميغابايت</p>
+                  </div>
+                </div>
+
+                {/* Display Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="displayName">اسم العرض</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="displayName"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="أدخل اسم العرض"
+                      className="flex-1"
+                      data-testid="input-display-name"
+                    />
+                    <Button
+                      onClick={handleUpdateDisplayName}
+                      disabled={isUpdatingProfile || !displayName.trim() || displayName === user?.displayName}
+                      data-testid="button-save-display-name"
+                    >
+                      {isUpdatingProfile ? (
+                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                      ) : null}
+                      حفظ
+                    </Button>
+                  </div>
                 </div>
               </div>
-              {profile?.phoneVerified && (
-                <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                  <CheckCircle className="h-3 w-3" />
-                  موثق
-                </span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
+        {/* Phone Section */}
+        <div>
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Phone className="h-5 w-5" />
+            رقم الهاتف
+          </h2>
+          <Card>
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Phone className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{profile?.phone}</p>
+                    <p className="text-sm text-muted-foreground">رقم الهاتف</p>
+                  </div>
+                </div>
+                {profile?.phoneVerified && (
+                  <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                    <CheckCircle className="h-3 w-3" />
+                    موثق
+                  </span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Addresses Section */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold">العناوين</h2>
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              العناوين
+            </h2>
             <Button size="sm" onClick={openAddDialog} data-testid="button-add-address">
               <Plus className="h-4 w-4 ml-1" />
               إضافة عنوان
