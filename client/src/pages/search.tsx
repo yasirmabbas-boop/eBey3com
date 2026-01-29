@@ -859,7 +859,7 @@ export default function SearchPage() {
                   
                   return (
                     <Link key={product.id} href={`/product/${product.id}`}>
-                      <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 bg-white active:scale-[0.98] h-full flex flex-col" data-testid={`search-result-${product.id}`}>
+                      <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 bg-white active:scale-[0.98]" data-testid={`search-result-${product.id}`}>
                         <div className="relative aspect-square overflow-hidden bg-gray-100">
                           <img 
                             src={product.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"} 
@@ -886,8 +886,8 @@ export default function SearchPage() {
                           )}
                         </div>
                         
-                        <div className="p-2 sm:p-3 flex-1 flex flex-col">
-                          <h3 className="font-normal text-sm sm:text-base text-gray-700 line-clamp-2 group-hover:text-primary transition-colors leading-tight mb-1.5 flex-1">
+                        <div className="p-2 sm:p-3">
+                          <h3 className="font-normal text-sm sm:text-base text-gray-700 line-clamp-2 group-hover:text-primary transition-colors leading-tight mb-1.5">
                             {product.title}
                           </h3>
                           {/* Urgency Tags - In card body */}

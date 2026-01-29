@@ -276,9 +276,7 @@ async function main() {
   }
 }
 
-// Run if called directly
-if (require.main === module) {
-  main().then(() => process.exit(0));
-}
+// Auto-run
+main().then(() => process.exit(0));
 
 export { analyzeDuplicates, mergeDuplicateAccounts };

@@ -69,6 +69,14 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  // Handle 401 for mutations
+  if (res.status === 401) {
+    console.log("[apiRequest] Session expired (401), clearing auth and redirecting to home");
+    localStorage.removeItem("authToken");
+    window.location.href = "/";
+    throw new Error("Session expired");
+  }
+
   await throwIfResNotOk(res);
   return res;
 }
@@ -84,7 +92,15 @@ export const getQueryFn: <T>(options: {
       headers: getAuthHeaders(),
     });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+    // Global 401 handler - redirect to home on session expiration
+    if (res.status === 401) {
+      console.log("[queryClient] Session expired (401), clearing auth and redirecting to home");
+      localStorage.removeItem("authToken");
+      
+      // Prevent redirect loops
+      if (!window.location.pathname.includes('/login') && window.location.pathname !== '/') {
+        window.location.href = "/";
+      }
       return null;
     }
 

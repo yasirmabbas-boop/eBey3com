@@ -37,7 +37,33 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       const errorMessage = this.state.error?.message || "Unknown error";
       const errorStack = this.state.error?.stack || "";
+      const is401Error = errorMessage.startsWith("401:");
       
+      // Special handling for session expiration
+      if (is401Error) {
+        localStorage.removeItem("authToken");
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-background p-4">
+            <div className="text-center max-w-md">
+              <div className="mx-auto mb-6 h-16 w-16 rounded-full bg-yellow-100 flex items-center justify-center">
+                <AlertTriangle className="h-8 w-8 text-yellow-600" />
+              </div>
+              <h1 className="text-2xl font-bold mb-2">انتهت صلاحية الجلسة</h1>
+              <p className="text-muted-foreground mb-4">
+                انتهت صلاحية جلستك. يرجى تسجيل الدخول مرة أخرى.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button onClick={this.handleGoHome}>
+                  <Home className="h-4 w-4 ml-2" />
+                  العودة للصفحة الرئيسية
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
+      // Generic error UI for non-401 errors
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <div className="text-center max-w-md">
