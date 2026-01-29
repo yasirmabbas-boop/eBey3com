@@ -105,8 +105,14 @@ export function setupFacebookAuth(app: Express): void {
           // Return user object compatible with Express.User
           // Passport will serialize this via passport.serializeUser
           return done(null, user as Express.User);
-        } catch (error) {
-          console.error("Facebook OAuth error:", error);
+        } catch (error: any) {
+          console.error("[Facebook OAuth] DETAILED ERROR:", {
+            message: error?.message,
+            stack: error?.stack,
+            code: error?.code,
+            name: error?.name,
+            fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+          });
           // Don't expose sensitive error details
           return done(new Error("Failed to authenticate with Facebook"), undefined);
         }
