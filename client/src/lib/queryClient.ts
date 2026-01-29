@@ -69,11 +69,14 @@ export async function apiRequest(
     credentials: "include",
   });
 
-  // Handle 401 for mutations
+  // Handle 401 for mutations - redirect to signin with return URL
   if (res.status === 401) {
-    console.log("[apiRequest] Session expired (401), clearing auth and redirecting to home");
+    console.log("[apiRequest] Session expired (401), clearing auth and redirecting to signin");
     localStorage.removeItem("authToken");
-    window.location.href = "/";
+    const currentPath = window.location.pathname;
+    if (currentPath !== '/' && currentPath !== '/signin') {
+      window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
+    }
     throw new Error("Session expired");
   }
 
@@ -92,15 +95,11 @@ export const getQueryFn: <T>(options: {
       headers: getAuthHeaders(),
     });
 
-    // Global 401 handler - redirect to home on session expiration
+    // Global 401 handler - don't redirect, just clear auth and return null
+    // Let individual pages handle their own auth redirect logic
     if (res.status === 401) {
-      console.log("[queryClient] Session expired (401), clearing auth and redirecting to home");
+      console.log("[queryClient] Received 401, clearing auth token");
       localStorage.removeItem("authToken");
-      
-      // Prevent redirect loops
-      if (!window.location.pathname.includes('/login') && window.location.pathname !== '/') {
-        window.location.href = "/";
-      }
       return null;
     }
 
