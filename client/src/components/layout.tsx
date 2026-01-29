@@ -10,7 +10,7 @@ import { ImageSearchModal } from "@/components/image-search-modal";
 import { SmartSearch } from "@/components/smart-search";
 import { BackButton } from "@/components/back-button";
 import { useLanguage } from "@/lib/i18n";
-import { isNative } from "@/lib/capacitor";
+import { isNative, isAndroid } from "@/lib/capacitor";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -35,7 +35,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       {!hideHeader && (
       <div 
         className="despia-topbar bg-primary text-white py-2 px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]"
-        style={{ paddingTop: 'var(--safe-area-top)' }}
+        style={{ paddingTop: isAndroid ? '32px' : 'var(--safe-area-top)' }}
       >
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="flex-shrink-0 flex items-center">
@@ -71,7 +71,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
 
       {/* Main Header - Search Only */}
       {!hideHeader && (
-      <header className="sticky top-0 z-50 glass-surface border-b border-border/60 shadow-[var(--shadow-1)]" style={{ paddingTop: 'var(--safe-area-top)' }}>
+      <header className="sticky top-0 z-50 glass-surface border-b border-border/60 shadow-[var(--shadow-1)]" style={{ paddingTop: isAndroid ? '32px' : 'var(--safe-area-top)' }}>
         <div className="container mx-auto px-3 py-2">
           {/* Full Width Search Bar */}
           <div className="flex items-center gap-2">
