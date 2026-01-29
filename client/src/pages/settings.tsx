@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useState, useRef } from "react";
+import { useAuth, AUTH_QUERY_KEY } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,8 +9,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, Phone, Plus, Pencil, Trash2, CheckCircle, Star } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { Loader2, MapPin, Phone, Plus, Pencil, Trash2, CheckCircle, Star, Camera, User } from "lucide-react";
+import { apiRequest, authFetch } from "@/lib/queryClient";
+import { getUserAvatarSrc } from "@/lib/avatar";
 import { Layout } from "@/components/layout";
 import type { BuyerAddress } from "@shared/schema";
 

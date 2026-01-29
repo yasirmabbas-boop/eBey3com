@@ -72,13 +72,6 @@ export default function ProductPage() {
   const [offerMessage, setOfferMessage] = useState("");
   const [pendingOfferAfterVerify, setPendingOfferAfterVerify] = useState(false);
 
-  // Guest checkout dialog state
-  const [guestCheckoutOpen, setGuestCheckoutOpen] = useState(false);
-  const [guestName, setGuestName] = useState("");
-  const [guestPhone, setGuestPhone] = useState("");
-  const [guestAddress, setGuestAddress] = useState("");
-  const [guestCity, setGuestCity] = useState("");
-
   // Phone verification modal state
   const [phoneVerificationOpen, setPhoneVerificationOpen] = useState(false);
 
@@ -155,48 +148,6 @@ export default function ProductPage() {
       setOfferDialogOpen(false);
       setOfferAmount("");
       setOfferMessage("");
-    },
-    onError: (error: Error) => {
-      toast({
-        title: t("error"),
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Guest checkout mutation
-  const guestCheckoutMutation = useMutation({
-    mutationFn: async (data: { 
-      listingId: string; 
-      guestName: string; 
-      guestPhone: string; 
-      guestAddress: string;
-      guestCity: string;
-      amount: number;
-    }) => {
-      const res = await fetch("/api/transactions/guest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || (language === "ar" ? "فشل في إتمام الطلب" : "داواکاری تەواو نەبوو"));
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: language === "ar" ? "تم الطلب بنجاح! 🎉" : "داواکاری سەرکەوتوو بوو! 🎉",
-        description: language === "ar" ? "سيتواصل معك البائع قريباً لتأكيد التوصيل" : "فرۆشیار بەم زووانە پەیوەندیت پێوە دەکات بۆ دڵنیاکردنەوەی گەیاندن",
-      });
-      setGuestCheckoutOpen(false);
-      setGuestName("");
-      setGuestPhone("");
-      setGuestAddress("");
-      setGuestCity("");
-      queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
     },
     onError: (error: Error) => {
       toast({
@@ -594,29 +545,27 @@ export default function ProductPage() {
 
   const handleBuyNowDirect = async () => {
     hapticLight();
-    if (isAuthenticated) {
-      // Logged in user - add to cart and redirect to checkout
-      if (!listing) return;
-      
-      try {
-        await addToCart({ listingId: listing.id, quantity: 1 });
-        hapticSuccess();
-        toast({
-          title: language === "ar" ? "تم إضافة المنتج للسلة" : "بەرهەم زیادکرا بۆ سەبەتە",
-          description: language === "ar" ? "سيتم توجيهك لإتمام الشراء..." : "دەگوازرێیتەوە بۆ تەواوکردنی کڕین...",
-        });
-        navigate("/checkout");
-      } catch (error: any) {
-        hapticError();
-        toast({
-          title: t("error"),
-          description: error.message || (language === "ar" ? "فشل في إضافة المنتج للسلة" : "زیادکردنی بەرهەم بۆ سەبەتە شکستی هێنا"),
-          variant: "destructive",
-        });
-      }
-    } else {
-      // Guest user - open checkout dialog
-      setGuestCheckoutOpen(true);
+    
+    // Require authentication and phone verification
+    if (!requireAuth("buy")) return;
+    
+    if (!listing) return;
+    
+    try {
+      await addToCart({ listingId: listing.id, quantity: 1 });
+      hapticSuccess();
+      toast({
+        title: language === "ar" ? "تم إضافة المنتج للسلة" : "بەرهەم زیادکرا بۆ سەبەتە",
+        description: language === "ar" ? "سيتم توجيهك لإتمام الشراء..." : "دەگوازرێیتەوە بۆ تەواوکردنی کڕین...",
+      });
+      navigate("/checkout");
+    } catch (error: any) {
+      hapticError();
+      toast({
+        title: t("error"),
+        description: error.message || (language === "ar" ? "فشل في إضافة المنتج للسلة" : "زیادکردنی بەرهەم بۆ سەبەتە شکستی هێنا"),
+        variant: "destructive",
+      });
     }
   };
 
@@ -631,27 +580,6 @@ export default function ProductPage() {
         });
       }
     }
-  };
-
-  const handleGuestCheckout = () => {
-    if (!guestName.trim() || !guestPhone.trim() || !guestAddress.trim()) {
-      toast({
-        title: language === "ar" ? "بيانات ناقصة" : "زانیاری کەم",
-        description: language === "ar" ? "يرجى ملء جميع الحقول المطلوبة" : "تکایە هەموو خانە پێویستەکان پڕ بکەوە",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!listing) return;
-    
-    guestCheckoutMutation.mutate({
-      listingId: listing.id,
-      guestName: guestName.trim(),
-      guestPhone: guestPhone.trim(),
-      guestAddress: guestAddress.trim(),
-      guestCity: guestCity.trim(),
-      amount: listing.price,
-    });
   };
 
   if (isLoading) {
@@ -1584,95 +1512,6 @@ export default function ProductPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Guest Checkout Dialog */}
-      <Dialog open={guestCheckoutOpen} onOpenChange={setGuestCheckoutOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right">{language === "ar" ? "إتمام الشراء كضيف" : "تەواوکردنی کڕین وەک میوان"}</DialogTitle>
-            <DialogDescription className="text-right">
-              {language === "ar" 
-                ? "أدخل بياناتك لإتمام عملية الشراء. سيتواصل معك البائع لتأكيد الطلب."
-                : "زانیارییەکانت بنووسە بۆ تەواوکردنی کڕین. فرۆشیار پەیوەندیت پێوە دەکات بۆ دڵنیاکردنەوەی داواکاری."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="guest-name">{t("fullName")} *</Label>
-              <Input
-                id="guest-name"
-                placeholder={language === "ar" ? "أدخل اسمك الكامل" : "ناوی تەواوت بنووسە"}
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                data-testid="input-guest-name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="guest-phone">{t("phone")} *</Label>
-              <Input
-                id="guest-phone"
-                type="tel"
-                placeholder="07xxxxxxxxx"
-                value={guestPhone}
-                onChange={(e) => setGuestPhone(e.target.value)}
-                className="text-left"
-                dir="ltr"
-                data-testid="input-guest-phone"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="guest-city">{language === "ar" ? "المدينة / المحافظة" : "شار / پارێزگا"}</Label>
-              <Input
-                id="guest-city"
-                placeholder={language === "ar" ? "مثال: بغداد" : "نموونە: هەولێر"}
-                value={guestCity}
-                onChange={(e) => setGuestCity(e.target.value)}
-                data-testid="input-guest-city"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="guest-address">{language === "ar" ? "العنوان الكامل" : "ناونیشانی تەواو"} *</Label>
-              <Textarea
-                id="guest-address"
-                placeholder={language === "ar" ? "أدخل عنوانك بالتفصيل للتوصيل" : "ناونیشانەکەت بە وردی بنووسە بۆ گەیاندن"}
-                value={guestAddress}
-                onChange={(e) => setGuestAddress(e.target.value)}
-                rows={3}
-                data-testid="input-guest-address"
-              />
-            </div>
-            <div className="bg-muted p-3 rounded-lg">
-              <p className="text-sm font-semibold">{language === "ar" ? "ملخص الطلب:" : "پوختەی داواکاری:"}</p>
-              <p className="text-sm text-muted-foreground">{product?.title}</p>
-              <p className="text-lg font-bold text-primary">{product?.price.toLocaleString()} {t("iqd")}</p>
-              <p className="text-xs text-muted-foreground mt-1">{language === "ar" ? "الدفع عند الاستلام" : "پارەدان لە کاتی وەرگرتن"}</p>
-            </div>
-          </div>
-          <DialogFooter className="flex gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setGuestCheckoutOpen(false)}
-              data-testid="button-cancel-guest-checkout"
-            >
-              {t("cancel")}
-            </Button>
-            <Button
-              onClick={handleGuestCheckout}
-              disabled={!guestName || !guestPhone || !guestAddress || guestCheckoutMutation.isPending}
-              className="bg-green-600 hover:bg-green-700"
-              data-testid="button-confirm-guest-checkout"
-            >
-              {guestCheckoutMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  {t("loading")}
-                </>
-              ) : (
-                t("confirm")
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Fullscreen Image Viewer with Pinch-to-Zoom */}
       <FullscreenImageViewer

@@ -228,6 +228,15 @@ export function registerCartRoutes(app: Express): void {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
+      // Check if user has verified their phone (consistent with cart requirement)
+      const user = await storage.getUser(userId);
+      if (!user?.phoneVerified) {
+        return res.status(403).json({ 
+          error: "يجب التحقق من رقم هاتفك قبل إتمام الطلب",
+          requiresPhoneVerification: true
+        });
+      }
+
       const parsed = checkoutSchema.parse(req.body);
 
       // Get user's cart items
