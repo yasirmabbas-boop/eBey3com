@@ -96,7 +96,7 @@ export function AccountDropdown() {
           </DropdownMenuItem>
         </Link>
 
-        {(user as any).isVerified && (
+        {(user as any).phoneVerified && (
           <Link href="/seller-dashboard">
             <DropdownMenuItem className="cursor-pointer" data-testid="menu-my-shop">
               <Store className="h-4 w-4 ml-2" />

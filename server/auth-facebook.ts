@@ -64,7 +64,7 @@ export function setupFacebookAuth(app: Express): void {
         clientSecret: FB_APP_SECRET,
         callbackURL: FB_CALLBACK_URL,
         scope: ["public_profile", "email"],
-        profileFields: ["id", "displayName", "photos", "email"],
+        profileFields: ["id", "name", "first_name", "last_name", "displayName", "photos", "email"],
       },
       async (accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: Express.User) => void) => {
         try {
@@ -74,8 +74,20 @@ export function setupFacebookAuth(app: Express): void {
           // Extract profile information
           const facebookId = profile.id;
           const email = profile.emails?.[0]?.value || null;
-          const displayName = profile.displayName || email || "مستخدم";
+          // Try multiple fields for display name: name > displayName > first_name + last_name > email
+          const firstName = profile.name?.givenName || profile._json?.first_name || "";
+          const lastName = profile.name?.familyName || profile._json?.last_name || "";
+          const fullName = profile._json?.name || "";
+          const displayName = fullName || profile.displayName || (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName) || email || "مستخدم";
           const photoUrl = profile.photos && profile.photos[0] ? profile.photos[0].value : null;
+          
+          console.log("[Facebook OAuth] Profile name fields:", { 
+            displayName: profile.displayName, 
+            name: profile._json?.name,
+            firstName: profile._json?.first_name, 
+            lastName: profile._json?.last_name,
+            finalDisplayName: displayName 
+          });
 
           // Generate a unique user ID (use Facebook ID as base, but ensure uniqueness)
           const userId = `fb_${facebookId}`;
