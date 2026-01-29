@@ -129,10 +129,8 @@ function App() {
       document.body.classList.add("capacitor-native");
 
       // Configure status bar
-      // Ensure iOS does not overlay the WebView (prevents content under notch/Dynamic Island).
-      if (isIOS) {
-        StatusBar.setOverlaysWebView({ overlay: false }).catch(console.error);
-      }
+      // Prevent WebView from rendering under status bar on both iOS and Android
+      StatusBar.setOverlaysWebView({ overlay: false }).catch(console.error);
       StatusBar.setStyle({ style: Style.Light }).catch(console.error);
       StatusBar.setBackgroundColor({ color: '#2563eb' }).catch(console.error);
       
