@@ -197,6 +197,14 @@ export function registerOtpRoutes(app: Express) {
         return res.status(400).json({ error: "رقم الهاتف غير موجود في الحساب" });
       }
 
+      // Check if another account already has this phone verified
+      const existingUser = await storage.getUserByPhone(user.phone);
+      if (existingUser && existingUser.id !== userId && existingUser.phoneVerified) {
+        return res.status(409).json({ 
+          error: "هذا الرقم مسجل مسبقاً على حساب آخر. الرجاء استخدام رقم آخر أو تسجيل الدخول بالحساب المرتبط بهذا الرقم" 
+        });
+      }
+
       const isValid = verifyOTP(user.phone, code);
       if (!isValid) {
         return res.status(400).json({ error: "رمز التحقق غير صحيح أو منتهي الصلاحية" });

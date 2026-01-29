@@ -48,8 +48,14 @@ const guestCheckoutSchema = z.object({
 });
 
 export function registerTransactionsRoutes(app: Express): void {
-  // Guest checkout - for verified users making a purchase
+  // Guest checkout - DISABLED (all users must sign up and verify phone)
   app.post("/api/transactions/guest", async (req, res) => {
+    return res.status(410).json({ 
+      error: "يجب التسجيل والتحقق من رقم الهاتف للشراء",
+      requiresAuthentication: true 
+    });
+    
+    /* LEGACY CODE - DISABLED
     try {
       const parsed = guestCheckoutSchema.parse(req.body);
 
@@ -144,6 +150,7 @@ export function registerTransactionsRoutes(app: Express): void {
       console.error("Error in guest checkout:", error);
       return res.status(500).json({ error: "فشل في إتمام الطلب" });
     }
+    */ // END LEGACY CODE
   });
 
   // Get transactions for current user
