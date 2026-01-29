@@ -132,7 +132,7 @@ function App() {
       // Prevent WebView from rendering under status bar on both iOS and Android
       StatusBar.setOverlaysWebView({ overlay: false }).catch(console.error);
       StatusBar.setStyle({ style: Style.Light }).catch(console.error);
-      StatusBar.setBackgroundColor({ color: '#2563eb' }).catch(console.error);
+      StatusBar.setBackgroundColor({ color: '#000000' }).catch(console.error);
       
       // Hide splash screen after app loads
       setTimeout(() => {

@@ -38,7 +38,7 @@ const config: CapacitorConfig = {
       // do NOT render the WebView under the status bar area.
       overlaysWebView: false,
       style: 'LIGHT',
-      backgroundColor: '#2563eb',
+      backgroundColor: '#000000',
     }
   }
 };
