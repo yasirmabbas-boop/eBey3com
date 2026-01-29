@@ -261,12 +261,6 @@ img, video, iframe {
   overflow: hidden;
 }
 
-.despia-topbar {
-  position: relative;
-  flex-shrink: 0;
-  padding-top: var(--safe-area-top);
-}
-
 .despia-content {
   flex: 1 1 0%;
   overflow-y: auto;

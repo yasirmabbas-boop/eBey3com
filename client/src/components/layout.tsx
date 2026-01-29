@@ -33,7 +33,10 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
 
       {/* Top Bar with Logo, Language, Cart */}
       {!hideHeader && (
-      <div className="despia-topbar bg-primary text-white py-2 px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]">
+      <div 
+        className="despia-topbar bg-primary text-white py-2 px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]"
+        style={{ paddingTop: 'var(--safe-area-top)' }}
+      >
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="flex-shrink-0 flex items-center">
             <Logo className="h-8 md:h-10 brightness-0 invert" />
