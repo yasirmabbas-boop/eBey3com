@@ -120,6 +120,17 @@ export function setupFacebookAuth(app: Express): void {
     )
   );
 
+  // Debug endpoint to check Facebook OAuth configuration
+  app.get("/api/debug/facebook-status", (req, res) => {
+    res.json({
+      configured: !!(FB_APP_ID && FB_APP_SECRET),
+      appIdConfigured: !!FB_APP_ID,
+      appSecretConfigured: !!FB_APP_SECRET,
+      callbackUrl: FB_CALLBACK_URL,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // Route: Initiate Facebook OAuth flow
   app.get("/auth/facebook", passport.authenticate("facebook"));
 
