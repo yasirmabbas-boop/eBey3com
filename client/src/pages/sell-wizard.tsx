@@ -598,7 +598,7 @@ export default function SellWizardPage() {
     );
   }
 
-  if (!user.isVerified) {
+  if (!user.phoneVerified) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-12 max-w-md">

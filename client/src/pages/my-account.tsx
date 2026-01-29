@@ -261,7 +261,7 @@ export default function MyAccount() {
 
   const { data: sellerSummary } = useQuery<SellerSummary>({
     queryKey: ["/api/account/seller-summary"],
-    enabled: !!user?.id && user?.isVerified,
+    enabled: !!user?.id && user?.phoneVerified,
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
@@ -423,7 +423,7 @@ export default function MyAccount() {
             <div className="flex-1">
               <h1 className="font-bold text-lg text-gray-900">{user.displayName || user.phone}</h1>
               <p className="text-sm text-gray-500">عضو منذ {memberSince}</p>
-              {user.isVerified && (
+              {user.phoneVerified && (
                 <div className="flex items-center gap-1 mt-1">
                   <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                   <span className="text-sm text-gray-600">
@@ -434,7 +434,7 @@ export default function MyAccount() {
               )}
             </div>
             <div className="flex items-center gap-3">
-              {user.isVerified && (
+              {user.phoneVerified && (
                 <button 
                   onClick={handleShareProfile}
                   className="p-2 hover:bg-gray-100 rounded-full"
@@ -513,7 +513,7 @@ export default function MyAccount() {
           </div>
 
           {/* Selling Section - Only show for verified sellers */}
-          {user.isVerified && (
+          {user.phoneVerified && (
             <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
               <h2 className="text-lg font-bold text-gray-900 mb-2">البيع</h2>
               <div className="divide-y">
