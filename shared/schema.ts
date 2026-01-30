@@ -49,6 +49,7 @@ export const users = pgTable("users", {
   gender: text("gender"),
   interests: text("interests").array(),
   surveyCompleted: boolean("survey_completed").notNull().default(false),
+  language: varchar("language").default("ar"), // User's preferred language: 'ar' | 'ku' | 'en'
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   lastLoginAt: timestamp("last_login_at"),
   authToken: text("auth_token"),
@@ -430,7 +431,11 @@ export const notifications = pgTable("notifications", {
   message: text("message").notNull(),
   linkUrl: text("link_url"),
   relatedId: varchar("related_id"),
+  data: text("data"), // JSON data for notification
   isRead: boolean("is_read").notNull().default(false),
+  deliveredAt: timestamp("delivered_at"), // When push notification was sent
+  openedAt: timestamp("opened_at"), // When user opened notification
+  deliveryStatus: varchar("delivery_status").default("pending"), // 'pending' | 'sent' | 'failed'
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -507,9 +512,14 @@ export type ProductComment = typeof productComments.$inferSelect;
 export const pushSubscriptions = pgTable("push_subscriptions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
-  endpoint: text("endpoint").notNull().unique(),
-  p256dh: text("p256dh").notNull(),
-  auth: text("auth").notNull(),
+  platform: varchar("platform").notNull().default("web"), // 'web' | 'ios' | 'android'
+  endpoint: text("endpoint"), // For web push (nullable)
+  p256dh: text("p256dh"), // For web push (nullable)
+  auth: text("auth"), // For web push (nullable)
+  fcmToken: text("fcm_token"), // For native push (nullable)
+  deviceId: varchar("device_id"), // For multi-device support
+  deviceName: varchar("device_name"), // User-friendly device name
+  lastUsed: timestamp("last_used").default(sql`now()`),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 

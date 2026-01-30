@@ -77,11 +77,23 @@ export function registerOffersRoutes(app: Express): void {
 
       // Send notification to seller with deep link to offers tab
       const buyerName = user.displayName || user.username || "مشتري";
+      
+      // Get seller's language preference
+      const seller = await storage.getUser((listing as any).sellerId);
+      const sellerLang = seller?.language || 'ar';
+      
+      const { getNotificationMessage } = await import("@shared/notification-messages");
+      const msg = getNotificationMessage('offer_received', sellerLang, {
+        buyerName,
+        amount: parsed.offerAmount,
+        title: listing.title
+      });
+      
       await storage.createNotification({
         userId: (listing as any).sellerId,
         type: "offer_received",
-        title: "عرض سعر جديد",
-        message: `${buyerName} قدم عرض سعر ${formatPrice(parsed.offerAmount)} على "${listing.title}"`,
+        title: msg.title,
+        message: msg.body,
         relatedId: created.id,
         linkUrl: `/seller-dashboard?tab=offers&offerId=${created.id}`,
       });
@@ -350,13 +362,21 @@ export function registerOffersRoutes(app: Express): void {
             await storage.rejectAllPendingOffersForListing(offer.listingId);
             
             // Notify each buyer whose offer was auto-rejected
+            const { getNotificationMessage } = await import("@shared/notification-messages");
+            
             for (const otherOffer of otherPendingOffers) {
               if (otherOffer.buyerId) {
+                const buyer = await storage.getUser(otherOffer.buyerId);
+                const buyerLang = buyer?.language || 'ar';
+                const msg = getNotificationMessage('offer_rejected', buyerLang, {
+                  title: listing.title
+                });
+                
                 await storage.createNotification({
                   userId: otherOffer.buyerId,
                   type: "offer_rejected",
-                  title: "تم إلغاء عرضك",
-                  message: `تم بيع "${listing.title}" لمشتري آخر وتم إلغاء عرضك تلقائياً`,
+                  title: msg.title,
+                  message: msg.body,
                   relatedId: otherOffer.id,
                   linkUrl: `/buyer-dashboard?tab=offers&offerId=${otherOffer.id}`,
                 });

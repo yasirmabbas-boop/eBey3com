@@ -76,6 +76,73 @@ export default function Privacy() {
                   </p>
                 </div>
 
+                <div>
+                  <h3 className="text-xl font-bold text-primary mb-3">Push Notifications</h3>
+                  <p className="text-gray-700 mb-3">
+                    We use push notifications to keep you informed about important updates to your auctions, 
+                    orders, and messages. When you enable notifications, we collect:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+                    <li><strong>Device Tokens:</strong> Unique identifiers to send notifications to your device</li>
+                    <li><strong>Device Information:</strong> Device type (iOS/Android), device name</li>
+                    <li><strong>Notification Preferences:</strong> Your notification settings</li>
+                    <li><strong>Delivery Status:</strong> Whether notifications were successfully delivered</li>
+                  </ul>
+                  
+                  <p className="text-gray-700 mt-4 mb-3">
+                    <strong>Notification Language:</strong> Notifications are sent in your selected app language 
+                    (Arabic or Kurdish). You can change your language preference in app settings at any time.
+                  </p>
+                  
+                  <p className="text-gray-700 mt-4 mb-3">
+                    <strong>Notification Types:</strong>
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+                    <li>Auction updates (bids, wins, auction endings)</li>
+                    <li>New messages from buyers/sellers</li>
+                    <li>Order status updates (payment, shipping, delivery)</li>
+                    <li>Offer notifications (received, accepted, rejected)</li>
+                  </ul>
+                  
+                  <p className="text-gray-700 mt-4 mb-3">
+                    <strong>Your Control:</strong>
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+                    <li>Enable/disable notifications anytime in your device settings</li>
+                    <li><strong>iOS:</strong> Settings → E-بيع → Notifications</li>
+                    <li><strong>Android:</strong> Settings → Apps → E-بيع → Notifications</li>
+                    <li><strong>Web:</strong> Browser settings → Site settings → Notifications</li>
+                  </ul>
+                  
+                  <p className="text-gray-700 mt-4 mb-3">
+                    <strong>Data Retention:</strong>
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+                    <li>Device tokens are kept while your account is active</li>
+                    <li>Tokens for inactive users (90+ days) are automatically deleted</li>
+                    <li>Notification history is kept for 120 days</li>
+                    <li>You can request immediate deletion by contacting support</li>
+                  </ul>
+                  
+                  <p className="text-gray-700 mt-4">
+                    <strong className="text-red-600">We do NOT:</strong>
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+                    <li>Share device tokens with third parties</li>
+                    <li>Send marketing notifications without explicit consent</li>
+                    <li>Track your location through notifications</li>
+                    <li>Sell notification data</li>
+                  </ul>
+                  
+                  <p className="text-gray-700 mt-4">
+                    <strong>Third-Party Services:</strong> We use Firebase Cloud Messaging (Google) to deliver 
+                    push notifications. Firebase's privacy policy applies: 
+                    <a href="https://firebase.google.com/support/privacy" className="text-primary hover:underline" target="_blank" rel="noopener"> 
+                      firebase.google.com/support/privacy
+                    </a>
+                  </p>
+                </div>
+
               </CardContent>
             </Card>
           </section>
@@ -267,6 +334,73 @@ export default function Privacy() {
                   <p className="text-gray-700">
                     نستخدم تشفير SSL/TLS لنقل البيانات وتشفير AES-256 للتخزين. يتم استضافة البيانات على خوادم Replit الآمنة 
                     (Google Cloud Platform، منطقة US-Central) مع ضوابط وصول محدودة.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold text-primary mb-3">الإشعارات الفورية</h3>
+                  <p className="text-gray-700 mb-3">
+                    نستخدم الإشعارات الفورية لإبقائك على اطلاع بالتحديثات المهمة حول المزادات والطلبات والرسائل. 
+                    عند تفعيل الإشعارات، نقوم بجمع:
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700 mr-4">
+                    <li><strong>رموز الجهاز:</strong> معرفات فريدة لإرسال الإشعارات إلى جهازك</li>
+                    <li><strong>معلومات الجهاز:</strong> نوع الجهاز (iOS/Android)، اسم الجهاز</li>
+                    <li><strong>تفضيلات الإشعارات:</strong> إعدادات الإشعارات الخاصة بك</li>
+                    <li><strong>حالة التسليم:</strong> ما إذا تم تسليم الإشعارات بنجاح</li>
+                  </ul>
+                  
+                  <p className="text-gray-700 mt-4 mb-3">
+                    <strong>لغة الإشعارات:</strong> يتم إرسال الإشعارات باللغة المحددة في التطبيق 
+                    (العربية أو الكردية). يمكنك تغيير تفضيلات اللغة في إعدادات التطبيق في أي وقت.
+                  </p>
+                  
+                  <p className="text-gray-700 mt-4 mb-3">
+                    <strong>أنواع الإشعارات:</strong>
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700 mr-4">
+                    <li>تحديثات المزادات (مزايدات، فوز، انتهاء المزاد)</li>
+                    <li>رسائل جديدة من المشترين/البائعين</li>
+                    <li>تحديثات حالة الطلب (دفع، شحن، تسليم)</li>
+                    <li>إشعارات العروض (مستلمة، مقبولة، مرفوضة)</li>
+                  </ul>
+                  
+                  <p className="text-gray-700 mt-4 mb-3">
+                    <strong>التحكم الخاص بك:</strong>
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700 mr-4">
+                    <li>تفعيل/تعطيل الإشعارات في أي وقت من إعدادات الجهاز</li>
+                    <li><strong>iOS:</strong> الإعدادات → E-بيع → الإشعارات</li>
+                    <li><strong>Android:</strong> الإعدادات → التطبيقات → E-بيع → الإشعارات</li>
+                    <li><strong>الويب:</strong> إعدادات المتصفح → إعدادات الموقع → الإشعارات</li>
+                  </ul>
+                  
+                  <p className="text-gray-700 mt-4 mb-3">
+                    <strong>الاحتفاظ بالبيانات:</strong>
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700 mr-4">
+                    <li>يتم الاحتفاظ برموز الجهاز طالما حسابك نشط</li>
+                    <li>يتم حذف رموز المستخدمين غير النشطين (90+ يوم) تلقائياً</li>
+                    <li>يتم الاحتفاظ بسجل الإشعارات لمدة 120 يوماً</li>
+                    <li>يمكنك طلب الحذف الفوري بالاتصال بالدعم</li>
+                  </ul>
+                  
+                  <p className="text-gray-700 mt-4">
+                    <strong className="text-red-600">نحن لا نقوم بـ:</strong>
+                  </p>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700 mr-4">
+                    <li>مشاركة رموز الجهاز مع أطراف ثالثة</li>
+                    <li>إرسال إشعارات تسويقية دون موافقة صريحة</li>
+                    <li>تتبع موقعك من خلال الإشعارات</li>
+                    <li>بيع بيانات الإشعارات</li>
+                  </ul>
+                  
+                  <p className="text-gray-700 mt-4">
+                    <strong>خدمات الطرف الثالث:</strong> نستخدم Firebase Cloud Messaging (Google) لتوصيل 
+                    الإشعارات الفورية. تطبق سياسة خصوصية Firebase: 
+                    <a href="https://firebase.google.com/support/privacy" className="text-primary hover:underline" target="_blank" rel="noopener"> 
+                      firebase.google.com/support/privacy
+                    </a>
                   </p>
                 </div>
 

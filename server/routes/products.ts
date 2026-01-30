@@ -855,11 +855,21 @@ export function registerProductRoutes(app: Express): void {
       // Send outbid notification to previous highest bidder
       if (highestBid && highestBid.userId !== userId) {
         try {
-          await storage.createNotification({
+          const { getNotificationMessage } = await import("@shared/notification-messages");
+          const { sendToUser } = await import("../websocket");
+          
+          const bidder = await storage.getUser(highestBid.userId);
+          const lang = bidder?.language || 'ar';
+          const msg = getNotificationMessage('outbid', lang, {
+            title: listing.title,
+            amount: amount
+          });
+          
+          const notification = await storage.createNotification({
             userId: highestBid.userId,
             type: "outbid",
-            title: "تمت مزايدة أعلى منك",
-            message: `شخص ما زايد بمبلغ ${amount.toLocaleString()} د.ع على "${listing.title}"`,
+            title: msg.title,
+            message: msg.body,
             data: JSON.stringify({
               listingId,
               listingTitle: listing.title,
@@ -867,8 +877,20 @@ export function registerProductRoutes(app: Express): void {
               yourBidAmount: highestBid.amount,
             }),
             linkUrl: `/product/${listingId}`,
-            productId: listingId,
+            relatedId: listingId,
           });
+          
+          // Send real-time WebSocket notification
+          sendToUser(highestBid.userId, "NOTIFICATION", {
+            notification: {
+              id: notification.id,
+              type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              linkUrl: notification.linkUrl,
+            },
+          });
+          
           console.log(`[bid] Outbid notification sent to user ${highestBid.userId}`);
         } catch (notifError) {
           console.error("[bid] Failed to send outbid notification:", notifError);

@@ -104,7 +104,7 @@ export function registerAccountRoutes(app: Express): void {
     }
 
     try {
-      const allowedFields = ["displayName", "city", "district", "addressLine1", "addressLine2", "phone", "mapUrl", "locationLat", "locationLng", "ageBracket", "interests", "surveyCompleted", "avatar"];
+      const allowedFields = ["displayName", "city", "district", "addressLine1", "addressLine2", "phone", "mapUrl", "locationLat", "locationLng", "ageBracket", "interests", "surveyCompleted", "avatar", "language"];
       const updates: Record<string, any> = {};
       
       for (const field of allowedFields) {
@@ -177,7 +177,7 @@ export function registerAccountRoutes(app: Express): void {
     }
 
     try {
-      const allowedFields = ["displayName", "city", "district", "addressLine1", "addressLine2", "phone", "mapUrl", "locationLat", "locationLng", "ageBracket", "interests", "surveyCompleted", "avatar"];
+      const allowedFields = ["displayName", "city", "district", "addressLine1", "addressLine2", "phone", "mapUrl", "locationLat", "locationLng", "ageBracket", "interests", "surveyCompleted", "avatar", "language"];
       const updates: Record<string, any> = {};
       
       for (const field of allowedFields) {

@@ -10,8 +10,11 @@ export function registerNotificationRoutes(app: Express): void {
         return res.status(401).json({ error: "غير مسجل الدخول" });
       }
 
-      const notifications = await storage.getNotifications(userId);
-      res.json(notifications);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      const { notifications, total } = await storage.getNotifications(userId, page, limit);
+      res.json({ notifications, total, page, limit });
     } catch (error) {
       console.error("Error fetching notifications:", error);
       res.status(500).json({ error: "خطأ في جلب الإشعارات" });
@@ -25,7 +28,7 @@ export function registerNotificationRoutes(app: Express): void {
         return res.json({ count: 0 });
       }
 
-      const notifications = await storage.getNotifications(userId);
+      const { notifications } = await storage.getNotifications(userId, 1, 1000);
       const unreadCount = notifications.filter(n => !n.isRead).length;
       res.json({ count: unreadCount });
     } catch (error) {

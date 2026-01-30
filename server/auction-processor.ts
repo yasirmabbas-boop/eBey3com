@@ -1,9 +1,10 @@
 import { storage } from "./storage";
-import { broadcastAuctionEnd } from "./websocket";
+import { broadcastAuctionEnd, sendToUser } from "./websocket";
 import { db } from "./db";
 import { listings, bids, transactions, notifications } from "@shared/schema";
 import { eq, and, lt, isNotNull, sql, desc } from "drizzle-orm";
 import { sendPushNotification } from "./push-notifications";
+import { getNotificationMessage } from "@shared/notification-messages";
 
 const PROCESS_INTERVAL_MS = 30000;
 const GRACE_PERIOD_MS = 5000;
@@ -82,17 +83,34 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
         .where(eq(listings.id, listing.id));
 
       if (listing.sellerId) {
-        await storage.createNotification({
+        const seller = await storage.getUser(listing.sellerId);
+        const lang = seller?.language || 'ar';
+        const msg = getNotificationMessage('auction_ended_no_bids', lang, { title: listing.title });
+        
+        const notification = await storage.createNotification({
           userId: listing.sellerId,
           type: "auction_ended_no_bids",
-          title: "انتهى المزاد بدون مزايدات",
-          message: `انتهى المزاد على "${listing.title}" بدون أي مزايدات. يمكنك إعادة عرض المنتج.`,
+          title: msg.title,
+          message: msg.body,
           relatedId: listing.id,
           linkUrl: `/seller-dashboard?tab=products&listingId=${listing.id}`,
         });
+        
+        // Send real-time WebSocket notification
+        sendToUser(listing.sellerId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
+        });
+        
+        // Send push notification
         sendPushNotification(listing.sellerId, {
-          title: "انتهى المزاد بدون مزايدات",
-          body: `انتهى المزاد على "${listing.title}" بدون أي مزايدات`,
+          title: msg.title,
+          body: msg.body,
           url: `/product/${listing.id}`,
           tag: `auction-${listing.id}`,
         });
@@ -127,17 +145,38 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
 
       // Notify seller that reserve price wasn't met
       if (listing.sellerId) {
-        await storage.createNotification({
+        const seller = await storage.getUser(listing.sellerId);
+        const lang = seller?.language || 'ar';
+        const msg = getNotificationMessage('auction_ended_no_reserve', lang, {
+          title: listing.title,
+          highestBid: highestBid.amount,
+          reservePrice: listing.reservePrice
+        });
+        
+        const notification = await storage.createNotification({
           userId: listing.sellerId,
           type: "auction_ended_no_reserve",
-          title: "انتهى المزاد - لم يصل للسعر الاحتياطي",
-          message: `انتهى المزاد على "${listing.title}" بأعلى مزايدة ${highestBid.amount.toLocaleString("ar-IQ")} د.ع، لكنها لم تصل للسعر الاحتياطي ${listing.reservePrice.toLocaleString("ar-IQ")} د.ع. يمكنك إعادة عرض المنتج.`,
+          title: msg.title,
+          message: msg.body,
           relatedId: listing.id,
           linkUrl: `/seller-dashboard?tab=products&listingId=${listing.id}`,
         });
+        
+        // Send real-time WebSocket notification
+        sendToUser(listing.sellerId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
+        });
+        
+        // Send push notification
         sendPushNotification(listing.sellerId, {
-          title: "المزاد انتهى بدون بيع",
-          body: `لم يصل المزاد على "${listing.title}" للسعر الاحتياطي`,
+          title: msg.title,
+          body: msg.body,
           url: `/product/${listing.id}`,
           tag: `auction-${listing.id}`,
         });
@@ -148,17 +187,39 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
       for (const bid of allBids) {
         if (!notifiedBidders.has(bid.userId)) {
           notifiedBidders.add(bid.userId);
-          await storage.createNotification({
+          
+          const bidder = await storage.getUser(bid.userId);
+          const lang = bidder?.language || 'ar';
+          const msg = getNotificationMessage('auction_ended_no_reserve', lang, {
+            title: listing.title,
+            highestBid: highestBid.amount,
+            reservePrice: listing.reservePrice
+          });
+          
+          const notification = await storage.createNotification({
             userId: bid.userId,
             type: "auction_ended_no_reserve",
-            title: "انتهى المزاد بدون بيع",
-            message: `انتهى المزاد على "${listing.title}" لكن لم يتم تحقيق السعر الاحتياطي. لن يتم البيع.`,
+            title: msg.title,
+            message: msg.body,
             relatedId: listing.id,
             linkUrl: `/product/${listing.id}`,
           });
+          
+          // Send real-time WebSocket notification
+          sendToUser(bid.userId, "NOTIFICATION", {
+            notification: {
+              id: notification.id,
+              type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              linkUrl: notification.linkUrl,
+            },
+          });
+          
+          // Send push notification
           sendPushNotification(bid.userId, {
-            title: "انتهى المزاد بدون بيع",
-            body: `لم يتم تحقيق السعر الاحتياطي لـ "${listing.title}"`,
+            title: msg.title,
+            body: msg.body,
             url: `/product/${listing.id}`,
             tag: `auction-${listing.id}`,
           });
@@ -226,33 +287,73 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
       })
       .returning();
 
-    await storage.createNotification({
+    const winnerLang = winner.language || 'ar';
+    const winnerMsg = getNotificationMessage('auction_won', winnerLang, {
+      title: listing.title,
+      amount: highestBid.amount
+    });
+    
+    const winnerNotification = await storage.createNotification({
       userId: winner.id,
       type: "auction_won",
-      title: "مبروك! فزت بالمزاد 🎉",
-      message: `فزت بالمزاد على "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع. سيتم شحن طلبك قريباً.`,
+      title: winnerMsg.title,
+      message: winnerMsg.body,
       relatedId: listing.id,
       linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transaction.id}`,
     });
+    
+    // Send real-time WebSocket notification
+    sendToUser(winner.id, "NOTIFICATION", {
+      notification: {
+        id: winnerNotification.id,
+        type: winnerNotification.type,
+        title: winnerNotification.title,
+        message: winnerNotification.message,
+        linkUrl: winnerNotification.linkUrl,
+      },
+    });
+    
+    // Send push notification
     sendPushNotification(winner.id, {
-      title: "مبروك! فزت بالمزاد 🎉",
-      body: `فزت بالمزاد على "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع`,
+      title: winnerMsg.title,
+      body: winnerMsg.body,
       url: `/product/${listing.id}`,
       tag: `auction-won-${listing.id}`,
     });
 
     if (listing.sellerId) {
-      await storage.createNotification({
+      const seller = await storage.getUser(listing.sellerId);
+      const sellerLang = seller?.language || 'ar';
+      const sellerMsg = getNotificationMessage('auction_sold', sellerLang, {
+        title: listing.title,
+        amount: highestBid.amount,
+        buyerName: winner.displayName || winner.phone
+      });
+      
+      const sellerNotification = await storage.createNotification({
         userId: listing.sellerId,
         type: "auction_sold",
-        title: "تم بيع منتجك في المزاد! 🎉",
-        message: `تهانينا! تم بيع "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع للمشتري ${winner.displayName || winner.phone}. يرجى شحن المنتج.`,
+        title: sellerMsg.title,
+        message: sellerMsg.body,
         relatedId: listing.id,
         linkUrl: `/seller-dashboard?tab=sales&orderId=${transaction.id}`,
       });
+      
+      // Send real-time WebSocket notification
+      sendToUser(listing.sellerId, "NOTIFICATION", {
+        notification: {
+          id: sellerNotification.id,
+          type: sellerNotification.type,
+          title: sellerNotification.title,
+          message: sellerNotification.message,
+          linkUrl: sellerNotification.linkUrl,
+        },
+      });
+      
+      // Send push notification
       sendPushNotification(listing.sellerId, {
-        title: "تم بيع منتجك في المزاد! 🎉",
-        body: `تم بيع "${listing.title}" بمبلغ ${highestBid.amount.toLocaleString("ar-IQ")} د.ع`,
+        title: sellerMsg.title,
+        body: sellerMsg.body,
         url: "/seller-dashboard",
         tag: `auction-sold-${listing.id}`,
       });
@@ -262,17 +363,38 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
     for (const bid of allBids.slice(1)) {
       if (bid.userId !== winner.id && !outbidUsers.has(bid.userId)) {
         outbidUsers.add(bid.userId);
-        await storage.createNotification({
+        
+        const bidder = await storage.getUser(bid.userId);
+        const lang = bidder?.language || 'ar';
+        const msg = getNotificationMessage('auction_lost', lang, {
+          title: listing.title,
+          amount: highestBid.amount
+        });
+        
+        const notification = await storage.createNotification({
           userId: bid.userId,
           type: "auction_lost",
-          title: "انتهى المزاد",
-          message: `انتهى المزاد على "${listing.title}" ولم تفز. المزايدة الفائزة كانت ${highestBid.amount.toLocaleString("ar-IQ")} د.ع.`,
+          title: msg.title,
+          message: msg.body,
           relatedId: listing.id,
           linkUrl: `/product/${listing.id}`,
         });
+        
+        // Send real-time WebSocket notification
+        sendToUser(bid.userId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
+        });
+        
+        // Send push notification
         sendPushNotification(bid.userId, {
-          title: "انتهى المزاد",
-          body: `انتهى المزاد على "${listing.title}" ولم تفز`,
+          title: msg.title,
+          body: msg.body,
           url: `/product/${listing.id}`,
           tag: `auction-lost-${listing.id}`,
         });

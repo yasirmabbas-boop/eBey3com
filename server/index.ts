@@ -13,6 +13,23 @@ import { registerOtpRoutes } from "./otp-routes";
 import { startOtpCleanupCron } from "./otp-cron";
 import { startOfferExpirationCron } from "./offer-cron";
 import { startNotificationCleanupCron } from "./notification-cron";
+import * as Sentry from "@sentry/node";
+
+// Initialize Sentry for error tracking
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
+    integrations: [
+      Sentry.httpIntegration(),
+      Sentry.expressIntegration(),
+    ],
+  });
+  console.log('✅ Sentry error tracking initialized');
+} else {
+  console.warn('⚠️ SENTRY_DSN not configured - error tracking disabled');
+}
 
 // Environment checks
 if (!process.env.VERIFYWAY_TOKEN) {

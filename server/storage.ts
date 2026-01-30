@@ -191,7 +191,7 @@ export interface IStorage {
   getUserBidsWithListings(userId: string): Promise<Array<Bid & { listing?: Listing }>>;
   
   // Notifications
-  getNotifications(userId: string): Promise<Notification[]>;
+  getNotifications(userId: string, page?: number, limit?: number): Promise<{ notifications: Notification[], total: number }>;
   getUnreadNotificationCount(userId: string): Promise<number>;
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationAsRead(id: string): Promise<boolean>;
@@ -241,10 +241,21 @@ export interface IStorage {
   deleteComment(id: string, userId: string): Promise<boolean>;
   
   // Push subscriptions
-  createPushSubscription(userId: string, endpoint: string, p256dh: string, auth: string): Promise<any>;
+  createPushSubscription(
+    userId: string, 
+    endpoint: string | null, 
+    p256dh: string | null, 
+    auth: string | null,
+    platform: string,
+    fcmToken: string | null,
+    deviceId?: string | null,
+    deviceName?: string | null
+  ): Promise<any>;
   getPushSubscription(userId: string): Promise<any | undefined>;
   getPushSubscriptionsByUserId(userId: string): Promise<any[]>;
   deletePushSubscription(endpoint: string): Promise<boolean>;
+  deletePushSubscriptionByToken(token: string): Promise<boolean>;
+  updatePushSubscription(id: string, data: { lastUsed?: Date }): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1490,10 +1501,29 @@ export class DatabaseStorage implements IStorage {
     return this.getUserBidsWithDetails(userId);
   }
 
-  async getNotifications(userId: string): Promise<Notification[]> {
-    return db.select().from(notifications)
-      .where(eq(notifications.userId, userId))
-      .orderBy(desc(notifications.createdAt));
+  async getNotifications(
+    userId: string, 
+    page: number = 1, 
+    limit: number = 50
+  ): Promise<{ notifications: Notification[], total: number }> {
+    const offset = (page - 1) * limit;
+    
+    const [items, countResult] = await Promise.all([
+      db.select().from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt))
+        .limit(limit)
+        .offset(offset),
+      
+      db.select({ count: sql<number>`count(*)::int` })
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+    ]);
+    
+    return {
+      notifications: items,
+      total: countResult[0]?.count || 0
+    };
   }
 
   async getUnreadNotificationCount(userId: string): Promise<number> {
@@ -1891,16 +1921,64 @@ export class DatabaseStorage implements IStorage {
     return !!result;
   }
 
-  async createPushSubscription(userId: string, endpoint: string, p256dh: string, auth: string): Promise<any> {
-    const [existing] = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
-    if (existing) {
+  async createPushSubscription(
+    userId: string, 
+    endpoint: string | null, 
+    p256dh: string | null, 
+    auth: string | null,
+    platform: string,
+    fcmToken: string | null,
+    deviceId?: string | null,
+    deviceName?: string | null
+  ): Promise<any> {
+    // Check if subscription already exists
+    let existing: any[] = [];
+    
+    if (deviceId) {
+      // For native: check by user + deviceId
+      existing = await db.select().from(pushSubscriptions)
+        .where(and(
+          eq(pushSubscriptions.userId, userId),
+          eq(pushSubscriptions.deviceId, deviceId)
+        ));
+    } else if (endpoint) {
+      // For web: check by endpoint
+      existing = await db.select().from(pushSubscriptions)
+        .where(eq(pushSubscriptions.endpoint, endpoint));
+    } else if (fcmToken) {
+      // For native without deviceId: check by token
+      existing = await db.select().from(pushSubscriptions)
+        .where(eq(pushSubscriptions.fcmToken, fcmToken));
+    }
+    
+    if (existing.length > 0) {
+      // Update existing subscription
       const [result] = await db.update(pushSubscriptions)
-        .set({ userId, p256dh, auth })
-        .where(eq(pushSubscriptions.endpoint, endpoint))
+        .set({ 
+          endpoint,
+          p256dh,
+          auth,
+          fcmToken,
+          platform,
+          deviceName,
+          lastUsed: sql`now()`
+        })
+        .where(eq(pushSubscriptions.id, existing[0].id))
         .returning();
       return result;
     }
-    const [result] = await db.insert(pushSubscriptions).values({ userId, endpoint, p256dh, auth }).returning();
+    
+    // Create new subscription
+    const [result] = await db.insert(pushSubscriptions).values({ 
+      userId, 
+      endpoint,
+      p256dh,
+      auth,
+      platform,
+      fcmToken,
+      deviceId: deviceId || null,
+      deviceName: deviceName || null,
+    }).returning();
     return result;
   }
 
@@ -1916,6 +1994,19 @@ export class DatabaseStorage implements IStorage {
   async deletePushSubscription(endpoint: string): Promise<boolean> {
     const [result] = await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint)).returning();
     return !!result;
+  }
+
+  async deletePushSubscriptionByToken(token: string): Promise<boolean> {
+    const [result] = await db.delete(pushSubscriptions)
+      .where(eq(pushSubscriptions.fcmToken, token))
+      .returning();
+    return !!result;
+  }
+
+  async updatePushSubscription(id: string, data: { lastUsed?: Date }): Promise<void> {
+    await db.update(pushSubscriptions)
+      .set(data)
+      .where(eq(pushSubscriptions.id, id));
   }
 }
 

@@ -1,0 +1,193 @@
+/**
+ * Firebase Cloud Messaging Integration
+ * Handles push notifications for iOS and Android via FCM
+ */
+
+import admin from 'firebase-admin';
+
+// Initialize Firebase Admin SDK
+const serviceAccount = {
+  projectId: process.env.FCM_PROJECT_ID,
+  clientEmail: process.env.FCM_CLIENT_EMAIL,
+  privateKey: process.env.FCM_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+};
+
+let isInitialized = false;
+
+if (serviceAccount.projectId && serviceAccount.clientEmail && serviceAccount.privateKey) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+    });
+    isInitialized = true;
+    console.log('✅ Firebase Admin SDK initialized successfully');
+  } catch (error) {
+    console.error('❌ Firebase Admin SDK initialization failed:', error);
+  }
+} else {
+  console.warn('⚠️ FCM credentials not configured - native push notifications will not work');
+  console.warn('   Required: FCM_PROJECT_ID, FCM_CLIENT_EMAIL, FCM_PRIVATE_KEY');
+}
+
+export interface FCMPayload {
+  title: string;
+  body: string;
+  url?: string;
+  tag?: string;
+  data?: Record<string, string>;
+  badge?: number;
+}
+
+/**
+ * Send push notification via Firebase Cloud Messaging
+ * Works for both iOS and Android
+ */
+export async function sendFCMNotification(
+  token: string,
+  payload: FCMPayload
+): Promise<void> {
+  if (!isInitialized) {
+    throw new Error('Firebase Admin SDK not initialized - check FCM credentials');
+  }
+
+  const message: admin.messaging.Message = {
+    token,
+    notification: {
+      title: payload.title,
+      body: payload.body,
+    },
+    data: {
+      url: payload.url || '/',
+      notificationId: payload.data?.id || '',
+      ...(payload.data || {}),
+    },
+    // Android-specific configuration
+    android: {
+      priority: 'high',
+      notification: {
+        tag: payload.tag,
+        sound: 'default',
+        channelId: 'default',
+        priority: 'high' as const,
+        defaultSound: true,
+        defaultVibrateTimings: true,
+      },
+    },
+    // iOS-specific configuration (APNS)
+    apns: {
+      headers: {
+        'apns-priority': '10', // High priority
+      },
+      payload: {
+        aps: {
+          alert: {
+            title: payload.title,
+            body: payload.body,
+          },
+          sound: 'default',
+          badge: payload.badge || 1,
+          'thread-id': payload.tag, // Groups notifications by tag
+          'content-available': 1, // Wake app in background
+        },
+        // Custom data
+        url: payload.url || '/',
+        ...(payload.data || {}),
+      },
+    },
+  };
+
+  try {
+    const response = await admin.messaging().send(message);
+    console.log(`[FCM] Notification sent successfully: ${response}`);
+  } catch (error: any) {
+    console.error(`[FCM] Failed to send notification:`, error);
+    
+    // Re-throw with error code for caller to handle
+    if (error.code === 'messaging/invalid-registration-token' ||
+        error.code === 'messaging/registration-token-not-registered') {
+      const err = new Error('Invalid FCM token');
+      (err as any).code = error.code;
+      throw err;
+    }
+    
+    throw error;
+  }
+}
+
+/**
+ * Send notifications to multiple devices
+ */
+export async function sendFCMMulticast(
+  tokens: string[],
+  payload: FCMPayload
+): Promise<{ successCount: number; failureCount: number; failedTokens: string[] }> {
+  if (!isInitialized) {
+    throw new Error('Firebase Admin SDK not initialized');
+  }
+
+  if (tokens.length === 0) {
+    return { successCount: 0, failureCount: 0, failedTokens: [] };
+  }
+
+  const message: admin.messaging.MulticastMessage = {
+    tokens,
+    notification: {
+      title: payload.title,
+      body: payload.body,
+    },
+    data: {
+      url: payload.url || '/',
+      ...(payload.data || {}),
+    },
+    android: {
+      priority: 'high',
+      notification: {
+        tag: payload.tag,
+        sound: 'default',
+        channelId: 'default',
+      },
+    },
+    apns: {
+      payload: {
+        aps: {
+          alert: {
+            title: payload.title,
+            body: payload.body,
+          },
+          sound: 'default',
+          badge: payload.badge || 1,
+          'thread-id': payload.tag,
+        },
+      },
+    },
+  };
+
+  try {
+    const response = await admin.messaging().sendEachForMulticast(message);
+    
+    const failedTokens: string[] = [];
+    response.responses.forEach((resp: any, idx: number) => {
+      if (!resp.success) {
+        failedTokens.push(tokens[idx]);
+      }
+    });
+
+    console.log(`[FCM] Multicast sent: ${response.successCount} success, ${response.failureCount} failed`);
+    
+    return {
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+      failedTokens,
+    };
+  } catch (error) {
+    console.error('[FCM] Multicast send failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check if Firebase is initialized and ready
+ */
+export function isFCMReady(): boolean {
+  return isInitialized;
+}

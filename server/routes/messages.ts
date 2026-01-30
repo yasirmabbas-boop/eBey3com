@@ -103,12 +103,23 @@ export function registerMessageRoutes(app: Express): void {
       const sender = await storage.getUser(senderId);
       const senderName = sender?.displayName || sender?.username || "مستخدم";
 
+      // Get receiver's language preference
+      const receiver = await storage.getUser(receiverId);
+      const receiverLang = receiver?.language || 'ar';
+      
+      // Import notification messages
+      const { getNotificationMessage } = await import("@shared/notification-messages");
+      const msg = getNotificationMessage('new_message', receiverLang, {
+        senderName,
+        preview: `${content.substring(0, 50)}${content.length > 50 ? "..." : ""}`
+      });
+
       // Create notification for receiver
       const notification = await storage.createNotification({
         userId: receiverId,
         type: "new_message",
-        title: "رسالة جديدة 💬",
-        message: `${senderName}: ${content.substring(0, 50)}${content.length > 50 ? "..." : ""}`,
+        title: msg.title,
+        message: msg.body,
         relatedId: message.id,
         linkUrl: `/messages/${senderId}`,
       });

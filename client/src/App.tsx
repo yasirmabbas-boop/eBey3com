@@ -24,6 +24,26 @@ import { useSocketNotifications } from "@/hooks/use-socket-notifications";
 import HomePage from "@/pages/home";
 import AuthPage from "@/pages/signin";
 import NotFound from "@/pages/not-found";
+import * as Sentry from "@sentry/react";
+
+// Initialize Sentry for client-side error tracking
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.MODE || 'development',
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration({
+        maskAllText: false,
+        blockAllMedia: false,
+      }),
+    ],
+    tracesSampleRate: 0.1,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+  });
+  console.log('✅ Sentry client tracking initialized');
+}
 
 // Lazy load pages for better performance
 const ProductPage = lazy(() => import("@/pages/product"));
