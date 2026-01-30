@@ -3,6 +3,7 @@ import { storage } from "../storage";
 import { insertReportSchema } from "@shared/schema";
 import { getUserIdFromRequest } from "./shared";
 import { z } from "zod";
+import nodemailer from "nodemailer";
 
 function generateCaseNumber(): string {
   const prefix = "RPT";
@@ -21,86 +22,87 @@ async function sendReportEmail(report: {
   reporterPhone?: string;
   status: string;
 }) {
-  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  const ZOHO_EMAIL = process.env.ZOHO_EMAIL;
+  const ZOHO_PASSWORD = process.env.ZOHO_PASSWORD;
   
-  if (!RESEND_API_KEY) {
-    console.log("[Reports] RESEND_API_KEY not configured, skipping email notification");
+  if (!ZOHO_EMAIL || !ZOHO_PASSWORD) {
+    console.log("[Reports] Zoho credentials not configured, skipping email notification");
     return;
   }
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
+    const transporter = nodemailer.createTransport({
+      host: "smtp.zoho.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: ZOHO_EMAIL,
+        pass: ZOHO_PASSWORD,
       },
-      body: JSON.stringify({
-        from: "E-بيع Security <noreply@ebey3.com>",
-        to: ["security@ebey3.com"],
-        subject: `[${report.caseNumber}] بلاغ جديد - ${report.reportType}`,
-        html: `
-          <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #e11d48;">🚨 بلاغ جديد</h2>
-            
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-              <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 10px; font-weight: bold; width: 150px;">رقم القضية:</td>
-                <td style="padding: 10px; color: #2563eb; font-weight: bold;">${report.caseNumber}</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 10px; font-weight: bold;">الحالة:</td>
-                <td style="padding: 10px;">
-                  <span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px;">
-                    قيد المراجعة
-                  </span>
-                </td>
-              </tr>
-              <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 10px; font-weight: bold;">نوع البلاغ:</td>
-                <td style="padding: 10px;">${report.reportType}</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 10px; font-weight: bold;">الهدف:</td>
-                <td style="padding: 10px;">${report.targetType} (${report.targetId})</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 10px; font-weight: bold;">السبب:</td>
-                <td style="padding: 10px;">${report.reason}</td>
-              </tr>
-              ${report.details ? `
-              <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 10px; font-weight: bold;">التفاصيل:</td>
-                <td style="padding: 10px;">${report.details}</td>
-              </tr>
-              ` : ""}
-              ${report.reporterPhone ? `
-              <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 10px; font-weight: bold;">هاتف المُبلّغ:</td>
-                <td style="padding: 10px;">${report.reporterPhone}</td>
-              </tr>
-              ` : ""}
-            </table>
-            
-            <p style="color: #6b7280; font-size: 14px;">
-              يرجى مراجعة هذا البلاغ واتخاذ الإجراء المناسب.
-            </p>
-            
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-            <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-              E-بيع Security Team
-            </p>
-          </div>
-        `,
-      }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error("[Reports] Failed to send email:", errorData);
-    } else {
-      console.log("[Reports] Email sent successfully for case:", report.caseNumber);
-    }
+    const htmlContent = `
+      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #e11d48;">🚨 بلاغ جديد</h2>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 10px; font-weight: bold; width: 150px;">رقم القضية:</td>
+            <td style="padding: 10px; color: #2563eb; font-weight: bold;">${report.caseNumber}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 10px; font-weight: bold;">الحالة:</td>
+            <td style="padding: 10px;">
+              <span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px;">
+                قيد المراجعة
+              </span>
+            </td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 10px; font-weight: bold;">نوع البلاغ:</td>
+            <td style="padding: 10px;">${report.reportType}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 10px; font-weight: bold;">الهدف:</td>
+            <td style="padding: 10px;">${report.targetType} (${report.targetId})</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 10px; font-weight: bold;">السبب:</td>
+            <td style="padding: 10px;">${report.reason}</td>
+          </tr>
+          ${report.details ? `
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 10px; font-weight: bold;">التفاصيل:</td>
+            <td style="padding: 10px;">${report.details}</td>
+          </tr>
+          ` : ""}
+          ${report.reporterPhone ? `
+          <tr style="border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 10px; font-weight: bold;">هاتف المُبلّغ:</td>
+            <td style="padding: 10px;">${report.reporterPhone}</td>
+          </tr>
+          ` : ""}
+        </table>
+        
+        <p style="color: #6b7280; font-size: 14px;">
+          يرجى مراجعة هذا البلاغ واتخاذ الإجراء المناسب.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+        <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+          E-بيع Security Team
+        </p>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"E-بيع Security" <${ZOHO_EMAIL}>`,
+      to: "security@ebey3.com",
+      subject: `[${report.caseNumber}] بلاغ جديد - ${report.reportType}`,
+      html: htmlContent,
+    });
+
+    console.log("[Reports] Email sent successfully for case:", report.caseNumber);
   } catch (error) {
     console.error("[Reports] Error sending email:", error);
   }
