@@ -59,6 +59,7 @@ const MyAuctions = lazy(() => import("@/pages/my-auctions"));
 const SellerProfile = lazy(() => import("@/pages/seller-profile"));
 const NotificationsPage = lazy(() => import("@/pages/notifications"));
 const Onboarding = lazy(() => import("@/pages/onboarding"));
+const BrowseRecentlyViewed = lazy(() => import("@/pages/browse-recently-viewed"));
 
 // Define SocketNotificationsWrapper BEFORE Router - must be inside QueryClientProvider and Switch
 function SocketNotificationsWrapper() {
@@ -109,6 +110,7 @@ function Router() {
       <Route path="/my-account" component={MyAccount} />
       <Route path="/my-bids" component={MyBids} />
       <Route path="/favorites" component={FavoritesPage} />
+      <Route path="/browse/recently-viewed" component={BrowseRecentlyViewed} />
       <Route path="/swipe" component={SwipePage} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/auctions" component={AuctionsDashboard} />

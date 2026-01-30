@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Clock, Search as SearchIcon, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel, Star, TrendingUp, Timer, DollarSign } from "lucide-react";
+import { Eye, Clock, Search as SearchIcon, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel, TrendingUp, Timer } from "lucide-react";
 import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
 import type { Listing } from "@shared/schema";
@@ -236,39 +236,6 @@ export default function Home() {
     return filtered.sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 10);
   }, [displayProducts, userPreferredCategories]);
 
-  const bestPrices = useMemo(() => {
-    let filtered = [...displayProducts];
-    if (userPriceRange.max < Infinity) {
-      filtered = filtered.filter(p => {
-        const price = p.currentBid || p.price;
-        return price >= userPriceRange.min && price <= userPriceRange.max * 1.5;
-      });
-    }
-    return filtered.sort((a, b) => (a.currentBid || a.price) - (b.currentBid || b.price)).slice(0, 10);
-  }, [displayProducts, userPriceRange]);
-
-  const categoryProducts = useMemo(() => {
-    const categoriesToShow = userPreferredCategories.length > 0 
-      ? userPreferredCategories.slice(0, 3)
-      : CATEGORIES.slice(0, 3).map(c => c.id);
-    
-    return categoriesToShow.map(catId => {
-      const cat = CATEGORIES.find(c => c.id === catId);
-      const products = displayProducts.filter(p => p.category === catId).slice(0, 10);
-      return { category: cat || { id: catId, name: catId, nameEn: "other", icon: Tag, color: "gray" }, products };
-    }).filter(c => c.products.length > 0);
-  }, [displayProducts, userPreferredCategories]);
-
-  const relevantProducts = useMemo(() => {
-    let filtered = [...displayProducts];
-    if (userPreferredCategories.length > 0) {
-      const inPreferred = filtered.filter(p => userPreferredCategories.includes(p.category || ""));
-      const others = filtered.filter(p => !userPreferredCategories.includes(p.category || ""));
-      filtered = [...inPreferred, ...others];
-    }
-    return filtered.slice(0, 10);
-  }, [displayProducts, userPreferredCategories]);
-
   return (
     <Layout>
       {/* Categories - Horizontal Sliding Strip */}
@@ -301,7 +268,7 @@ export default function Home() {
           <Section 
             title={language === "ar" ? "شوهد مؤخراً" : "تازە بینراوەکان"}
             icon={<Eye className="h-4 w-4 text-blue-600" />}
-            seeAllLink="/favorites"
+            seeAllLink="/browse/recently-viewed"
             seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
           >
             {recentlyViewedProducts.map((product) => (
@@ -383,64 +350,15 @@ export default function Home() {
           </Section>
         )}
 
-        {/* Most Viewed */}
+        {/* Trending */}
         <Section 
-          title={language === "ar" ? "الأكثر مشاهدة" : "زۆرترین بینراو"}
+          title={language === "ar" ? "الأكثر رواجاً" : "ترێند"}
           icon={<TrendingUp className="h-4 w-4 text-indigo-600" />}
           seeAllLink="/search?sort=views"
           seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
         >
           {isLoading ? <LoadingSkeleton /> : (
             mostViewed.map((product) => (
-              <div key={product.id} className="snap-start">
-                <ProductCard product={product} />
-              </div>
-            ))
-          )}
-        </Section>
-
-        {/* Best Prices */}
-        <Section 
-          title={language === "ar" ? "أفضل الأسعار" : "باشترین نرخەکان"}
-          icon={<DollarSign className="h-4 w-4 text-green-600" />}
-          seeAllLink="/search?sort=price_low"
-          seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
-        >
-          {isLoading ? <LoadingSkeleton /> : (
-            bestPrices.map((product) => (
-              <div key={product.id} className="snap-start">
-                <ProductCard product={product} />
-              </div>
-            ))
-          )}
-        </Section>
-
-        {/* Category Sections */}
-        {categoryProducts.map(({ category, products }) => (
-          <Section 
-            key={category.id}
-            title={category.name}
-            icon={<category.icon className={`h-4 w-4 text-${category.color}-600`} />}
-            seeAllLink={`/search?category=${encodeURIComponent(category.id)}`}
-            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
-          >
-            {products.map((product) => (
-              <div key={product.id} className="snap-start">
-                <ProductCard product={product} />
-              </div>
-            ))}
-          </Section>
-        ))}
-
-        {/* Suggested Products */}
-        <Section 
-          title={language === "ar" ? "منتجات مقترحة" : "بەرهەمە پێشنیارکراوەکان"}
-          icon={<Star className="h-4 w-4 text-amber-500" />}
-          seeAllLink="/search"
-          seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
-        >
-          {isLoading ? <LoadingSkeleton /> : (
-            relevantProducts.map((product) => (
               <div key={product.id} className="snap-start">
                 <ProductCard product={product} />
               </div>
