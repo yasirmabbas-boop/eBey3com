@@ -321,12 +321,6 @@ export default function CheckoutPage() {
     
     return true;
   };
-    if (!addressLine1.trim()) {
-      toast({ title: "العنوان مطلوب", variant: "destructive" });
-      return false;
-    }
-    return true;
-  };
 
   const handleSubmit = () => {
     if (!validateForm()) return;
