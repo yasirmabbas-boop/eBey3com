@@ -1,0 +1,51 @@
+Checking the database schema for the data column and other potential issues:
+Checking the notifications schema definition:
+Checking migration files to see if the data column exists:
+cd /home/runner/workspace && psql $DATABASE_URL -c "\d notifications" 2>&1 | head -30
+    "idx_notifications_status" btree (delivery_status)
+    "idx_notifications_user_created" btree (user_id, created_at DESC)
+    "idx_notifications_user_unread" btree (user_id, is_read) WHERE is_read = false
+
+The analysis is correct. Checking if the code uses the data column:
+Checking if the insert schema includes data:
+cd /home/runner/workspace && psql $DATABASE_URL -c "SELECT column_name FROM information_schema.columns WHERE table_name = 'notifications' ORDER BY ordinal_position;" 2>&1
+ opened_at
+ delivery_status
+(12 rows)
+
+Confirmed: the schema defines data: text("data") (line 434), but the database table doesn't have a data column. This mismatch can cause query failures. Creating a migration to add the missing column:
+0024_add_notification_data_column.sql(new)
++10
+-- Migration: Add missing 'data' column to notifications table-- The schema defines this column but it was never added to the database-- This column is optional and can store JSON data for notifications
+cd /home/runner/workspace && psql $DATABASE_URL -f migrations/0024_add_notification_data_column.sql 2>&1
+ALTER TABLE
+COMMENT
+cd /home/runner/workspace && psql $DATABASE_URL -c "\d notifications" 2>&1 | grep -A 15 "Column"
+ opened_at       | timestamp without time zone |           |          | 
+ delivery_status | character varying           |           |          | 'pending'::character varying
+ data            | text                        |           |          | 
+Indexes:
+The data column has been added. Checking the Buy Now validation issue:
+Improving error messages to be more specific:
+Creating a summary report:
+DATABASE_SCHEMA_ANALYSIS.md(new)
++71
+# Database Schema Analysis Report## ✅ Issue 1: Missing `data` Column - **CONFIRMED & FIXED**
+Analysis summary
+Issue 1: Missing data column — confirmed and fixed
+Problem: Schema defines data: text("data") but the database didn't have this column
+Impact: Could cause SQL errors when querying notifications
+Fix: Created and applied migration 0024_add_notification_data_column.sql
+Status: Fixed — column now exists
+Issue 2: Buy Now validation — partially valid
+Problem: Validation works, but error messages are generic
+Current: Returns "بيانات غير صالحة" (Invalid data) with details array
+Issue: Client only shows the generic message, doesn't parse details
+Status: Needs improvement — validation works, but UX is poor
+What I did
+Verified the database schema — confirmed missing data column
+Created migration to add the column
+Applied migration — column now exists
+Verified Buy Now validation — works but error messages need improvement
+The database schema issue is fixed. Notification queries should work without SQL errors.
+See DATABASE_SCHEMA_ANALYSIS.md for full details.

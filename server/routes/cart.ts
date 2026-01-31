@@ -2,13 +2,15 @@ import type { Express } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
+import { sendPushNotification } from "../push-notifications";
+import { sendToUser } from "../websocket";
 
 const checkoutSchema = z.object({
-  fullName: z.string().min(1),
-  phone: z.string().min(1),
-  city: z.string().min(1),
-  addressLine1: z.string().min(1),
-  addressLine2: z.string().optional(),
+  fullName: z.string().trim().min(3).max(100),
+  phone: z.string().regex(/^07[3-9][0-9]{8}$/),
+  city: z.string().trim().min(3).max(50),
+  addressLine1: z.string().trim().min(10).max(200),
+  addressLine2: z.string().trim().max(200).optional(),
   shippingCost: z.number().int().min(0),
   saveAddress: z.boolean().optional(),
 });
@@ -317,14 +319,25 @@ export function registerCartRoutes(app: Express): void {
             
             for (const bidderId of uniqueBidderIds) {
               if (bidderId !== userId) { // Don't notify the buyer themselves
-                await storage.createNotification({
-                  userId: bidderId,
-                  type: "auction_ended",
-                  title: "انتهى المزاد",
-                  message: `تم بيع "${listing.title}" عبر خيار الشراء الفوري`,
-                  linkUrl: `/product/${cartItem.listingId}`,
-                  relatedId: cartItem.listingId,
-                });
+                try {
+                  await storage.createNotification({
+                    userId: bidderId,
+                    type: "auction_ended",
+                    title: "انتهى المزاد",
+                    message: `تم بيع "${listing.title}" عبر خيار الشراء الفوري`,
+                    linkUrl: `/product/${cartItem.listingId}`,
+                    relatedId: cartItem.listingId,
+                  });
+
+                  await sendPushNotification(bidderId, {
+                    title: "انتهى المزاد",
+                    body: `تم بيع "${listing.title}" عبر خيار الشراء الفوري`,
+                    url: `/product/${cartItem.listingId}`,
+                    tag: `auction-ended-${cartItem.listingId}`,
+                  });
+                } catch (notifError) {
+                  console.error(`Failed to notify bidder ${bidderId}:`, notifError);
+                }
               }
             }
           }
@@ -337,14 +350,35 @@ export function registerCartRoutes(app: Express): void {
 
         // Notify seller with deep link to sales tab
         if (listing.sellerId) {
-          await storage.createNotification({
-            userId: listing.sellerId,
-            type: "new_order",
-            title: "طلب جديد",
-            message: `لديك طلب جديد على "${listing.title}"`,
-            linkUrl: `/seller-dashboard?tab=sales&orderId=${transaction.id}`,
-            relatedId: transaction.id,
-          });
+          try {
+            const notification = await storage.createNotification({
+              userId: listing.sellerId,
+              type: "new_order",
+              title: "طلب جديد",
+              message: `لديك طلب جديد على "${listing.title}"`,
+              linkUrl: `/seller-dashboard?tab=sales&orderId=${transaction.id}`,
+              relatedId: transaction.id,
+            });
+
+            sendToUser(listing.sellerId, "NOTIFICATION", {
+              notification: {
+                id: notification.id,
+                type: notification.type,
+                title: notification.title,
+                message: notification.message,
+                linkUrl: notification.linkUrl,
+              },
+            });
+
+            await sendPushNotification(listing.sellerId, {
+              title: "طلب جديد",
+              body: `لديك طلب جديد على "${listing.title}"`,
+              url: `/seller-dashboard?tab=sales&orderId=${transaction.id}`,
+              tag: `new-order-${transaction.id}`,
+            });
+          } catch (notifError) {
+            console.error(`Failed to notify seller ${listing.sellerId}:`, notifError);
+          }
         }
       }
 

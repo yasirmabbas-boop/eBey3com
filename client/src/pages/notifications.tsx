@@ -158,18 +158,22 @@ export default function NotificationsPage() {
     enabled: !!user?.id,
   });
 
-  const { data: systemNotifications = [], isLoading: notificationsLoading } = useQuery<DBNotification[]>({
+  const { data: systemNotificationsData, isLoading: notificationsLoading } = useQuery<{ notifications: DBNotification[], total: number, page: number, limit: number }>({
     queryKey: ["/api/notifications"],
     queryFn: async () => {
       const res = await fetch("/api/notifications", { 
         credentials: "include",
         headers: getAuthHeaders(),
       });
-      if (!res.ok) return [];
+      if (!res.ok) return { notifications: [], total: 0, page: 1, limit: 50 };
       return res.json();
     },
     enabled: !!user?.id,
   });
+
+  const systemNotifications = Array.isArray(systemNotificationsData?.notifications) 
+    ? systemNotificationsData.notifications 
+    : [];
 
   const markNotificationAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
@@ -203,7 +207,8 @@ export default function NotificationsPage() {
     },
   });
 
-  const messageNotifications: Notification[] = messages
+  const safeMessages = Array.isArray(messages) ? messages : [];
+  const messageNotifications: Notification[] = safeMessages
     .filter(msg => msg.receiverId === user?.id)
     .slice(0, 20)
     .map(msg => {

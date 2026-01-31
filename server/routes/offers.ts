@@ -3,6 +3,9 @@ import { z } from "zod";
 import { insertOfferSchema } from "@shared/schema";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
+import { getNotificationMessage } from "@shared/notification-messages";
+import { sendPushNotification } from "../push-notifications";
+import { sendToUser } from "../websocket";
 
 const createOfferBodySchema = z.object({
   listingId: z.string().min(1),
@@ -75,28 +78,44 @@ export function registerOffersRoutes(app: Express): void {
 
       const created = await storage.createOffer(offerToCreate);
 
-      // Send notification to seller with deep link to offers tab
-      const buyerName = user.displayName || user.username || "مشتري";
-      
-      // Get seller's language preference
-      const seller = await storage.getUser((listing as any).sellerId);
-      const sellerLang = seller?.language || 'ar';
-      
-      const { getNotificationMessage } = await import("@shared/notification-messages");
-      const msg = getNotificationMessage('offer_received', sellerLang, {
-        buyerName,
-        amount: parsed.offerAmount,
-        title: listing.title
-      });
-      
-      await storage.createNotification({
-        userId: (listing as any).sellerId,
-        type: "offer_received",
-        title: msg.title,
-        message: msg.body,
-        relatedId: created.id,
-        linkUrl: `/seller-dashboard?tab=offers&offerId=${created.id}`,
-      });
+      try {
+        const buyerName = user.displayName || user.username || "مشتري";
+        const seller = await storage.getUser((listing as any).sellerId);
+        const sellerLang = seller?.language || 'ar';
+        const msg = getNotificationMessage('offer_received', sellerLang, {
+          buyerName,
+          amount: parsed.offerAmount,
+          title: listing.title
+        });
+        
+        const notification = await storage.createNotification({
+          userId: (listing as any).sellerId,
+          type: "offer_received",
+          title: msg.title,
+          message: msg.body,
+          relatedId: created.id,
+          linkUrl: `/seller-dashboard?tab=offers&offerId=${created.id}`,
+        });
+
+        sendToUser((listing as any).sellerId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
+        });
+
+        await sendPushNotification((listing as any).sellerId, {
+          title: msg.title,
+          body: msg.body,
+          url: `/seller-dashboard?tab=offers&offerId=${created.id}`,
+          tag: `offer-${created.id}`,
+        });
+      } catch (notifError) {
+        console.error("Failed to send notification for offer:", notifError);
+      }
 
       return res.status(201).json(created);
     } catch (error) {
@@ -244,14 +263,25 @@ export function registerOffersRoutes(app: Express): void {
             // Notify each buyer whose offer was auto-rejected
             for (const otherOffer of otherPendingOffers) {
               if (otherOffer.buyerId) {
-                await storage.createNotification({
-                  userId: otherOffer.buyerId,
-                  type: "offer_rejected",
-                  title: "تم إلغاء عرضك",
-                  message: `تم بيع "${listing.title}" لمشتري آخر وتم إلغاء عرضك تلقائياً`,
-                  relatedId: otherOffer.id,
-                  linkUrl: `/buyer-dashboard?tab=offers&offerId=${otherOffer.id}`,
-                });
+                try {
+                  await storage.createNotification({
+                    userId: otherOffer.buyerId,
+                    type: "offer_rejected",
+                    title: "تم إلغاء عرضك",
+                    message: `تم بيع "${listing.title}" لمشتري آخر وتم إلغاء عرضك تلقائياً`,
+                    relatedId: otherOffer.id,
+                    linkUrl: `/buyer-dashboard?tab=offers&offerId=${otherOffer.id}`,
+                  });
+
+                  await sendPushNotification(otherOffer.buyerId, {
+                    title: "تم إلغاء عرضك",
+                    body: `تم بيع "${listing.title}" لمشتري آخر`,
+                    url: `/buyer-dashboard?tab=offers&offerId=${otherOffer.id}`,
+                    tag: `offer-rejected-${otherOffer.id}`,
+                  });
+                } catch (notifError) {
+                  console.error(`Failed to notify buyer ${otherOffer.buyerId}:`, notifError);
+                }
               }
             }
           }
@@ -261,15 +291,36 @@ export function registerOffersRoutes(app: Express): void {
       }
 
       // Send notification to buyer with deep link to offers tab
-      if (offer.buyerId) {
-        await storage.createNotification({
-          userId: offer.buyerId,
-          type: `offer_${newStatus}`,
-          title: notificationTitle,
-          message: notificationMessage,
-          relatedId: offerId,
-          linkUrl: `/buyer-dashboard?tab=offers&offerId=${offerId}`,
-        });
+      try {
+        if (offer.buyerId) {
+          const notification = await storage.createNotification({
+            userId: offer.buyerId,
+            type: `offer_${newStatus}`,
+            title: notificationTitle,
+            message: notificationMessage,
+            relatedId: offerId,
+            linkUrl: `/buyer-dashboard?tab=offers&offerId=${offerId}`,
+          });
+
+          sendToUser(offer.buyerId, "NOTIFICATION", {
+            notification: {
+              id: notification.id,
+              type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              linkUrl: notification.linkUrl,
+            },
+          });
+
+          await sendPushNotification(offer.buyerId, {
+            title: notificationTitle,
+            body: notificationMessage,
+            url: `/buyer-dashboard?tab=offers&offerId=${offerId}`,
+            tag: `offer-response-${offerId}`,
+          });
+        }
+      } catch (notifError) {
+        console.error("Failed to send notification for offer response:", notifError);
       }
 
       res.json(updatedOffer);
@@ -362,24 +413,33 @@ export function registerOffersRoutes(app: Express): void {
             await storage.rejectAllPendingOffersForListing(offer.listingId);
             
             // Notify each buyer whose offer was auto-rejected
-            const { getNotificationMessage } = await import("@shared/notification-messages");
-            
             for (const otherOffer of otherPendingOffers) {
               if (otherOffer.buyerId) {
-                const buyer = await storage.getUser(otherOffer.buyerId);
-                const buyerLang = buyer?.language || 'ar';
-                const msg = getNotificationMessage('offer_rejected', buyerLang, {
-                  title: listing.title
-                });
-                
-                await storage.createNotification({
-                  userId: otherOffer.buyerId,
-                  type: "offer_rejected",
-                  title: msg.title,
-                  message: msg.body,
-                  relatedId: otherOffer.id,
-                  linkUrl: `/buyer-dashboard?tab=offers&offerId=${otherOffer.id}`,
-                });
+                try {
+                  const buyerUser = await storage.getUser(otherOffer.buyerId);
+                  const buyerLang = buyerUser?.language || 'ar';
+                  const msg = getNotificationMessage('offer_rejected', buyerLang, {
+                    title: listing.title
+                  });
+                  
+                  await storage.createNotification({
+                    userId: otherOffer.buyerId,
+                    type: "offer_rejected",
+                    title: msg.title,
+                    message: msg.body,
+                    relatedId: otherOffer.id,
+                    linkUrl: `/buyer-dashboard?tab=offers&offerId=${otherOffer.id}`,
+                  });
+
+                  await sendPushNotification(otherOffer.buyerId, {
+                    title: msg.title,
+                    body: msg.body,
+                    url: `/buyer-dashboard?tab=offers&offerId=${otherOffer.id}`,
+                    tag: `offer-rejected-${otherOffer.id}`,
+                  });
+                } catch (notifError) {
+                  console.error(`Failed to notify buyer ${otherOffer.buyerId}:`, notifError);
+                }
               }
             }
           }
@@ -389,15 +449,36 @@ export function registerOffersRoutes(app: Express): void {
       }
 
       // Send notification to seller with deep link to offers tab
-      if (offer.sellerId) {
-        await storage.createNotification({
-          userId: offer.sellerId,
-          type: `counter_${newStatus}`,
-          title: notificationTitle,
-          message: notificationMessage,
-          relatedId: offerId,
-          linkUrl: `/seller-dashboard?tab=offers&offerId=${offerId}`,
-        });
+      try {
+        if (offer.sellerId) {
+          const notification = await storage.createNotification({
+            userId: offer.sellerId,
+            type: `counter_${newStatus}`,
+            title: notificationTitle,
+            message: notificationMessage,
+            relatedId: offerId,
+            linkUrl: `/seller-dashboard?tab=offers&offerId=${offerId}`,
+          });
+
+          sendToUser(offer.sellerId, "NOTIFICATION", {
+            notification: {
+              id: notification.id,
+              type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              linkUrl: notification.linkUrl,
+            },
+          });
+
+          await sendPushNotification(offer.sellerId, {
+            title: notificationTitle,
+            body: notificationMessage,
+            url: `/seller-dashboard?tab=offers&offerId=${offerId}`,
+            tag: `counter-response-${offerId}`,
+          });
+        }
+      } catch (notifError) {
+        console.error("Failed to send notification for counter-offer response:", notifError);
       }
 
       res.json(updatedOffer);

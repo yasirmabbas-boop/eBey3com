@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
 import { sendToUser } from "../websocket";
+import { getNotificationMessage } from "@shared/notification-messages";
+import { sendPushNotification } from "../push-notifications";
 
 export function registerMessageRoutes(app: Express): void {
   // Get all messages for the authenticated user
@@ -99,49 +101,53 @@ export function registerMessageRoutes(app: Express): void {
         content,
       });
 
-      // Get sender info for notification
-      const sender = await storage.getUser(senderId);
-      const senderName = sender?.displayName || sender?.username || "مستخدم";
-
-      // Get receiver's language preference
-      const receiver = await storage.getUser(receiverId);
-      const receiverLang = receiver?.language || 'ar';
-      
-      // Import notification messages
-      const { getNotificationMessage } = await import("@shared/notification-messages");
-      const msg = getNotificationMessage('new_message', receiverLang, {
-        senderName,
-        preview: `${content.substring(0, 50)}${content.length > 50 ? "..." : ""}`
-      });
-
-      // Create notification for receiver
-      const notification = await storage.createNotification({
-        userId: receiverId,
-        type: "new_message",
-        title: msg.title,
-        message: msg.body,
-        relatedId: message.id,
-        linkUrl: `/messages/${senderId}`,
-      });
-
-      // Send real-time notification to receiver
-      sendToUser(receiverId, "NOTIFICATION", {
-        notification: {
-          id: notification.id,
-          type: notification.type,
-          title: notification.title,
-          message: notification.message,
-          linkUrl: notification.linkUrl,
-        },
-      });
-
-      // Also send the new message in real-time
-      sendToUser(receiverId, "NEW_MESSAGE", {
-        message: {
-          ...message,
+      // Send notification (wrapped to not break message sending)
+      try {
+        const sender = await storage.getUser(senderId);
+        const senderName = sender?.displayName || sender?.username || "مستخدم";
+        const receiver = await storage.getUser(receiverId);
+        const receiverLang = receiver?.language || 'ar';
+        
+        const msg = getNotificationMessage('new_message', receiverLang, {
           senderName,
-        },
-      });
+          preview: `${content.substring(0, 50)}${content.length > 50 ? "..." : ""}`
+        });
+
+        const notification = await storage.createNotification({
+          userId: receiverId,
+          type: "new_message",
+          title: msg.title,
+          message: msg.body,
+          relatedId: message.id,
+          linkUrl: `/messages/${senderId}`,
+        });
+
+        sendToUser(receiverId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
+        });
+
+        await sendPushNotification(receiverId, {
+          title: msg.title,
+          body: msg.body,
+          url: `/messages/${senderId}`,
+          tag: `message-${message.id}`,
+        });
+
+        sendToUser(receiverId, "NEW_MESSAGE", {
+          message: {
+            ...message,
+            senderName,
+          },
+        });
+      } catch (notifError) {
+        console.error("Failed to send notification for message:", notifError);
+      }
 
       res.json(message);
     } catch (error) {

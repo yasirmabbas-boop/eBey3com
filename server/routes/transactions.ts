@@ -4,8 +4,8 @@ import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
 import { sendToUser } from "../websocket";
 import { financialService } from "../services/financial-service";
+import { sendPushNotification } from "../push-notifications";
 
-// Async notification helper - fire and forget to avoid blocking API responses
 async function sendNotificationAsync(params: {
   userId: string;
   type: string;
@@ -32,6 +32,13 @@ async function sendNotificationAsync(params: {
         message: notification.message,
         linkUrl: notification.linkUrl,
       },
+    });
+
+    await sendPushNotification(params.userId, {
+      title: params.title,
+      body: params.message,
+      url: params.linkUrl || "/",
+      tag: `${params.type}-${params.relatedId || Date.now()}`,
     });
   } catch (error) {
     console.error("Error sending notification:", error);
@@ -339,25 +346,36 @@ export function registerTransactionsRoutes(app: Express): void {
       };
       
       // Notify buyer about the issue with deep link
-      if (transaction.buyerId) {
-        const notification = await storage.createNotification({
-          userId: transaction.buyerId,
-          type: "order_issue",
-          title: "مشكلة في طلبك ⚠️",
-          message: `واجه البائع مشكلة في توصيل "${listing?.title || "المنتج"}": ${issueLabels[issueType] || issueType}`,
-          relatedId: transactionId,
-          linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
-        });
-        
-        sendToUser(transaction.buyerId, "NOTIFICATION", {
-          notification: {
-            id: notification.id,
-            type: notification.type,
-            title: notification.title,
-            message: notification.message,
-            linkUrl: notification.linkUrl,
-          },
-        });
+      try {
+        if (transaction.buyerId) {
+          const notification = await storage.createNotification({
+            userId: transaction.buyerId,
+            type: "order_issue",
+            title: "مشكلة في طلبك ⚠️",
+            message: `واجه البائع مشكلة في توصيل "${listing?.title || "المنتج"}": ${issueLabels[issueType] || issueType}`,
+            relatedId: transactionId,
+            linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
+          });
+          
+          sendToUser(transaction.buyerId, "NOTIFICATION", {
+            notification: {
+              id: notification.id,
+              type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              linkUrl: notification.linkUrl,
+            },
+          });
+
+          await sendPushNotification(transaction.buyerId, {
+            title: "مشكلة في طلبك ⚠️",
+            body: `واجه البائع مشكلة في توصيل "${listing?.title || "المنتج"}": ${issueLabels[issueType] || issueType}`,
+            url: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
+            tag: `order-issue-${transactionId}`,
+          });
+        }
+      } catch (notifError) {
+        console.error("Failed to send notification for order issue:", notifError);
       }
 
       return res.json(updated);
@@ -517,25 +535,36 @@ export function registerTransactionsRoutes(app: Express): void {
       }
       
       // Notify the other party
-      if (notifyUserId) {
-        const notification = await storage.createNotification({
-          userId: notifyUserId,
-          type: "order_cancelled",
-          title: notificationTitle,
-          message: notificationMessage,
-          relatedId: transactionId,
-          linkUrl: notificationLink,
-        });
-        
-        sendToUser(notifyUserId, "NOTIFICATION", {
-          notification: {
-            id: notification.id,
-            type: notification.type,
-            title: notification.title,
-            message: notification.message,
-            linkUrl: notification.linkUrl,
-          },
-        });
+      try {
+        if (notifyUserId) {
+          const notification = await storage.createNotification({
+            userId: notifyUserId,
+            type: "order_cancelled",
+            title: notificationTitle,
+            message: notificationMessage,
+            relatedId: transactionId,
+            linkUrl: notificationLink,
+          });
+          
+          sendToUser(notifyUserId, "NOTIFICATION", {
+            notification: {
+              id: notification.id,
+              type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              linkUrl: notification.linkUrl,
+            },
+          });
+
+          await sendPushNotification(notifyUserId, {
+            title: notificationTitle,
+            body: notificationMessage,
+            url: notificationLink,
+            tag: `order-cancelled-${transactionId}`,
+          });
+        }
+      } catch (notifError) {
+        console.error("Failed to send notification for cancellation:", notifError);
       }
 
       return res.json(updated);
@@ -630,24 +659,35 @@ export function registerTransactionsRoutes(app: Express): void {
       });
 
       // Send notification to seller with deep link to returns tab
-      const notification = await storage.createNotification({
-        userId: transaction.sellerId,
-        type: "return_request",
-        title: "طلب إرجاع جديد",
-        message: `لديك طلب إرجاع جديد للمنتج "${(listing as any).title}"`,
-        linkUrl: `/seller-dashboard?tab=returns&returnId=${returnRequest.id}`,
-        relatedId: returnRequest.id,
-      });
+      try {
+        const notification = await storage.createNotification({
+          userId: transaction.sellerId,
+          type: "return_request",
+          title: "طلب إرجاع جديد",
+          message: `لديك طلب إرجاع جديد للمنتج "${(listing as any).title}"`,
+          linkUrl: `/seller-dashboard?tab=returns&returnId=${returnRequest.id}`,
+          relatedId: returnRequest.id,
+        });
 
-      sendToUser(transaction.sellerId, "NOTIFICATION", {
-        notification: {
-          id: notification.id,
-          type: notification.type,
-          title: notification.title,
-          message: notification.message,
-          linkUrl: notification.linkUrl,
-        },
-      });
+        sendToUser(transaction.sellerId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
+        });
+
+        await sendPushNotification(transaction.sellerId, {
+          title: "طلب إرجاع جديد",
+          body: `لديك طلب إرجاع جديد للمنتج "${(listing as any).title}"`,
+          url: `/seller-dashboard?tab=returns&returnId=${returnRequest.id}`,
+          tag: `return-request-${returnRequest.id}`,
+        });
+      } catch (notifError) {
+        console.error("Failed to send notification for return request:", notifError);
+      }
 
       return res.status(201).json(returnRequest);
     } catch (error) {
@@ -836,30 +876,44 @@ export function registerTransactionsRoutes(app: Express): void {
       );
 
       // Notify buyer
-      const listing = await storage.getListing(request.listingId);
-      const listingTitle = (listing as any)?.title || "المنتج";
-      
-      await storage.createNotification({
-        userId: request.buyerId,
-        type: status === "approved" ? "return_approved" : "return_rejected",
-        title: status === "approved" ? "تم قبول طلب الإرجاع" : "تم رفض طلب الإرجاع",
-        message: status === "approved" 
+      try {
+        const listing = await storage.getListing(request.listingId);
+        const listingTitle = (listing as any)?.title || "المنتج";
+        
+        const notificationTitle = status === "approved" ? "تم قبول طلب الإرجاع" : "تم رفض طلب الإرجاع";
+        const notificationMessage = status === "approved" 
           ? `تم قبول طلب إرجاع "${listingTitle}". سيتم التواصل معك لترتيب الإرجاع.`
-          : `تم رفض طلب إرجاع "${listingTitle}". ${sellerResponse || ""}`,
-        linkUrl: `/buyer-dashboard?tab=purchases&orderId=${request.transactionId}`,
-        relatedId: request.id,
-      });
+          : `تم رفض طلب إرجاع "${listingTitle}". ${sellerResponse || ""}`;
+        
+        const notification = await storage.createNotification({
+          userId: request.buyerId,
+          type: status === "approved" ? "return_approved" : "return_rejected",
+          title: notificationTitle,
+          message: notificationMessage,
+          linkUrl: `/buyer-dashboard?tab=purchases&orderId=${request.transactionId}`,
+          relatedId: request.id,
+        });
 
-      // Send WebSocket notification to buyer
-      sendToUser(
-        request.buyerId,
-        status === "approved" ? "return_approved" : "return_rejected",
-        {
-          returnRequestId: request.id,
-          listingTitle,
-          sellerResponse,
-        }
-      );
+        // Send WebSocket notification to buyer
+        sendToUser(
+          request.buyerId,
+          status === "approved" ? "return_approved" : "return_rejected",
+          {
+            returnRequestId: request.id,
+            listingTitle,
+            sellerResponse,
+          }
+        );
+
+        await sendPushNotification(request.buyerId, {
+          title: notificationTitle,
+          body: notificationMessage,
+          url: `/buyer-dashboard?tab=purchases&orderId=${request.transactionId}`,
+          tag: `return-response-${request.id}`,
+        });
+      } catch (notifError) {
+        console.error("Failed to send notification for return response:", notifError);
+      }
 
       return res.json(updatedRequest);
     } catch (error) {
