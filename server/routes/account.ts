@@ -608,7 +608,7 @@ export function registerAccountRoutes(app: Express): void {
       const enrichedOffers = await Promise.all(
         offers.map(async (offer) => {
           const listing = offer.listingId ? await storage.getListing(offer.listingId) : null;
-          const seller = listing ? await storage.getUser(listing.sellerId) : null;
+          const seller = listing?.sellerId ? await storage.getUser(listing.sellerId) : null;
           
           // Use listing.sellerName as fallback if seller doesn't exist
           const sellerName = seller?.displayName || 

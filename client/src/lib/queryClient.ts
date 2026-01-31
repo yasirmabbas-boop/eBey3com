@@ -80,15 +80,30 @@ export async function authFetch(
   url: string,
   options?: RequestInit
 ): Promise<Response> {
-  // Fetch CSRF token for non-GET requests
+  // Fetch CSRF token for non-GET requests and wait for it
   const method = options?.method?.toUpperCase() || "GET";
+  let token: string | null = null;
   if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
-    await fetchCsrfToken();
+    token = await fetchCsrfToken();
   }
   
-  const authHeaders = getAuthHeaders();
+  // Build headers with auth token and CSRF token
+  const headers: HeadersInit = {};
+  const authToken = localStorage.getItem("authToken");
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+  
+  // Use the token we just fetched (not the cached global)
+  if (token) {
+    headers["X-CSRF-Token"] = token;
+  } else if (csrfToken) {
+    // Fallback to cached token for GET requests
+    headers["X-CSRF-Token"] = csrfToken;
+  }
+  
   const mergedHeaders = {
-    ...authHeaders,
+    ...headers,
     ...(options?.headers || {}),
   };
 
