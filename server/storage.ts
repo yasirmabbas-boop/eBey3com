@@ -209,8 +209,10 @@ export interface IStorage {
   // Admin functions
   getAllReports(): Promise<Report[]>;
   getAllReportsWithDetails(): Promise<ReportWithDetails[]>;
+  getReportsPaginatedWithDetails(options: { limit: number; offset: number }): Promise<{ reports: ReportWithDetails[]; total: number }>;
   updateReportStatus(id: string, status: string, adminNotes?: string, resolvedBy?: string): Promise<Report | undefined>;
   getAllUsers(): Promise<User[]>;
+  getUsersPaginated(options: { limit: number; offset: number }): Promise<{ users: User[]; total: number }>;
   updateUserStatus(id: string, updates: { sellerApproved?: boolean; isVerified?: boolean; isBanned?: boolean; sellerRequestStatus?: string; isAuthenticated?: boolean; authenticityGuaranteed?: boolean }): Promise<User | undefined>;
   getAdminStats(): Promise<{ totalUsers: number; totalListings: number; activeListings: number; totalTransactions: number; pendingReports: number; totalRevenue: number }>;
   
@@ -1629,7 +1631,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllReportsWithDetails(): Promise<ReportWithDetails[]> {
-    // Get all reports with reporter info, listing info, and seller info
+    return this.getReportsPaginatedWithDetails({ limit: 10000, offset: 0 }).then(r => r.reports);
+  }
+
+  async getReportsPaginatedWithDetails(options: { limit: number; offset: number }): Promise<{ reports: ReportWithDetails[]; total: number }> {
+    const { limit, offset } = options;
+    
+    // Get total count
+    const [totalResult] = await db.select({ count: sql<number>`count(*)::int` }).from(reports);
+    const total = totalResult?.count || 0;
+    
+    // Get paginated reports with reporter info, listing info, and seller info
     const results = await db.select({
       // Report fields
       id: reports.id,
@@ -1707,6 +1719,26 @@ export class DatabaseStorage implements IStorage {
   async getAllUsers(): Promise<User[]> {
     const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
     return allUsers.map(u => this.normalizeUser(u)!);
+  }
+
+  async getUsersPaginated(options: { limit: number; offset: number }): Promise<{ users: User[]; total: number }> {
+    const { limit, offset } = options;
+    
+    // Get total count
+    const [totalResult] = await db.select({ count: sql<number>`count(*)::int` }).from(users);
+    const total = totalResult?.count || 0;
+    
+    // Get paginated users
+    const paginatedUsers = await db.select()
+      .from(users)
+      .orderBy(desc(users.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return {
+      users: paginatedUsers.map(u => this.normalizeUser(u)!).filter(Boolean) as User[],
+      total,
+    };
   }
 
   async updateUserStatus(id: string, updates: { sellerApproved?: boolean; isVerified?: boolean; isBanned?: boolean; sellerRequestStatus?: string; isAuthenticated?: boolean; authenticityGuaranteed?: boolean }): Promise<User | undefined> {

@@ -69,6 +69,21 @@ export function BiddingWindow({
       return;
     }
 
+    // Validate auction hasn't ended
+    if (auctionEndTime) {
+      const endTime = typeof auctionEndTime === "string" ? new Date(auctionEndTime) : auctionEndTime;
+      if (!isNaN(endTime.getTime()) && endTime.getTime() <= new Date().getTime()) {
+        toast({
+          title: language === "ar" ? "انتهى المزاد" : "مزایدە تەواو بوو",
+          description: language === "ar" 
+            ? "انتهى المزاد ولا يمكن تقديم مزايدات جديدة"
+            : "مزایدە کۆتایی هات و ناتوانیت مزایدەی نوێ بکەیت",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     if (bidAmount < minBidAmount) {
       toast({
         title: language === "ar" ? "مبلغ غير كافٍ" : "بڕی پارە بەس نییە",

@@ -1,5 +1,36 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// CSRF token cache
+let csrfToken: string | null = null;
+let csrfTokenPromise: Promise<string | null> | null = null;
+
+/**
+ * Fetch CSRF token from server (non-blocking, caches result)
+ */
+function fetchCsrfToken(): void {
+  if (csrfToken || csrfTokenPromise) {
+    return; // Already have token or fetch in progress
+  }
+
+  csrfTokenPromise = fetch("/api/csrf-token", {
+    credentials: "include",
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        csrfTokenPromise = null;
+        return null;
+      }
+      const data = await res.json();
+      csrfToken = data.token;
+      csrfTokenPromise = null;
+      return csrfToken;
+    })
+    .catch(() => {
+      csrfTokenPromise = null;
+      return null;
+    });
+}
+
 /**
  * Get authentication headers from localStorage
  * @returns HeadersInit with Authorization Bearer token if available
@@ -10,6 +41,12 @@ export function getAuthHeaders(): HeadersInit {
   if (authToken) {
     headers["Authorization"] = `Bearer ${authToken}`;
   }
+  
+  // Include CSRF token if available
+  if (csrfToken) {
+    headers["X-CSRF-Token"] = csrfToken;
+  }
+  
   return headers;
 }
 
@@ -30,7 +67,7 @@ export async function authFetch(
   url: string,
   options?: RequestInit
 ): Promise<Response> {
-  const authHeaders = getAuthHeaders();
+  const authHeaders = await getAuthHeaders();
   const mergedHeaders = {
     ...authHeaders,
     ...(options?.headers || {}),
@@ -57,8 +94,18 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // Fetch CSRF token for non-GET requests
+  if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+    fetchCsrfToken();
+    // Wait for token if fetch is in progress
+    if (csrfTokenPromise && !csrfToken) {
+      await csrfTokenPromise;
+    }
+  }
+
+  const authHeaders = getAuthHeaders();
   const headers: HeadersInit = {
-    ...getAuthHeaders(),
+    ...authHeaders,
     ...(data ? { "Content-Type": "application/json" } : {}),
   };
   
@@ -73,9 +120,14 @@ export async function apiRequest(
   if (res.status === 401) {
     try {
       // Attempt token refresh
+      fetchCsrfToken();
+      if (csrfTokenPromise && !csrfToken) {
+        await csrfTokenPromise;
+      }
+      const refreshHeaders = getAuthHeaders();
       const refreshRes = await fetch("/api/auth/refresh-token", {
         method: "POST",
-        headers: getAuthHeaders(),
+        headers: refreshHeaders,
         credentials: "include",
       });
       
@@ -124,10 +176,11 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
-      headers: getAuthHeaders(),
-    });
+  const queryHeaders = getAuthHeaders();
+  const res = await fetch(queryKey.join("/") as string, {
+    credentials: "include",
+    headers: queryHeaders,
+  });
 
     // Global 401 handler - don't redirect, just clear auth and return null
     // Let individual pages handle their own auth redirect logic

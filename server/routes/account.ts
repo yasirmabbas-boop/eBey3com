@@ -6,8 +6,21 @@ import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
 import { ObjectStorageService } from "../replit_integrations/object_storage/objectStorage";
 import { normalizePhone } from "@shared/digit-normalization";
+import { generateCsrfToken, validateCsrfToken } from "../middleware/csrf";
 
 export function registerAccountRoutes(app: Express): void {
+  // CSRF token endpoint - must be before CSRF validation middleware
+  app.get("/api/csrf-token", (req, res) => {
+    try {
+      const token = generateCsrfToken(req, res);
+      res.json({ token });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to generate CSRF token" });
+    }
+  });
+
+  // Apply CSRF validation to all account routes except GET requests
+  app.use("/api/account", validateCsrfToken);
   // Get full profile (for account settings)
   app.get("/api/account/profile", async (req, res) => {
     const userId = await getUserIdFromRequest(req);

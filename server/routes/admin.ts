@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "../storage";
 import { getUserIdFromRequest, isEligibleForBlueCheck } from "./shared";
+import { validateCsrfToken } from "../middleware/csrf";
 
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const userId = await getUserIdFromRequest(req);
@@ -18,6 +19,9 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 export function registerAdminRoutes(app: Express): void {
+  // Apply CSRF validation to all admin routes except GET requests
+  app.use("/api/admin", validateCsrfToken);
+
   app.get("/api/admin/stats", requireAdmin, async (req, res) => {
     try {
       const [users, listings, transactions, reports] = await Promise.all([
@@ -77,8 +81,17 @@ export function registerAdminRoutes(app: Express): void {
 
   app.get("/api/admin/listings", requireAdmin, async (req, res) => {
     try {
-      const listings = await storage.getListings();
-      const activeListings = listings
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const offset = (page - 1) * limit;
+      
+      const { listings: paginatedListings, total } = await storage.getListingsPaginated({
+        limit,
+        offset,
+        includeSold: true, // Include all listings for admin
+      });
+      
+      const activeListings = paginatedListings
         .filter((l: any) => !l.isDeleted)
         .map((listing: any) => ({
           id: listing.id,
@@ -99,7 +112,17 @@ export function registerAdminRoutes(app: Express): void {
           image: listing.images?.[0] || null,
           views: listing.views || 0,
         }));
-      res.json(activeListings);
+      
+      res.json({ 
+        listings: activeListings, 
+        pagination: { 
+          page, 
+          limit, 
+          total, 
+          hasMore: offset + limit < total,
+          totalPages: Math.ceil(total / limit)
+        } 
+      });
     } catch (error) {
       console.error("Error fetching listings:", error);
       res.status(500).json({ error: "Failed to fetch listings" });
@@ -131,6 +154,31 @@ export function registerAdminRoutes(app: Express): void {
   });
 
   app.get("/api/admin/reports", requireAdmin, async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const offset = (page - 1) * limit;
+      
+      const { reports: paginatedReports, total } = await storage.getReportsPaginatedWithDetails({ limit, offset });
+      
+      res.json({ 
+        reports: paginatedReports, 
+        pagination: { 
+          page, 
+          limit, 
+          total, 
+          hasMore: offset + limit < total,
+          totalPages: Math.ceil(total / limit)
+        } 
+      });
+    } catch (error) {
+      console.error("Error fetching reports:", error);
+      res.status(500).json({ error: "Failed to fetch reports" });
+    }
+  });
+
+  // Legacy endpoint for backward compatibility (if needed)
+  app.get("/api/admin/reports/legacy", requireAdmin, async (req, res) => {
     try {
       const reports = await storage.getAllReports();
       const enrichedReports = await Promise.all(

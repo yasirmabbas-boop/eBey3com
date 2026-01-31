@@ -490,6 +490,11 @@ export default function SellPage() {
     if (!formData.returnPolicy) errors.returnPolicy = "سياسة الإرجاع مطلوبة";
     if (images.length === 0) errors.images = "يجب إضافة صورة واحدة على الأقل";
     
+    // Quantity validation
+    if (!formData.quantityAvailable || parseInt(formData.quantityAvailable) < 1) {
+      errors.quantityAvailable = "الكمية مطلوبة (حد أدنى: 1)";
+    }
+    
     // Serial number required for watches and items over 1,000,000 IQD
     if ((formData.category === "ساعات" || parseInt(formData.price) >= 1000000) && !formData.serialNumber.trim()) {
       errors.serialNumber = "الرقم التسلسلي مطلوب للساعات والمنتجات الثمينة";
@@ -1496,13 +1501,29 @@ export default function SellPage() {
                     placeholder="1"
                     min="1"
                     value={formData.quantityAvailable}
-                    onChange={(e) => handleInputChange("quantityAvailable", e.target.value)}
+                    onChange={(e) => {
+                      handleInputChange("quantityAvailable", e.target.value);
+                      // Clear error when user starts typing
+                      if (validationErrors.quantityAvailable) {
+                        setValidationErrors(prev => {
+                          const next = { ...prev };
+                          delete next.quantityAvailable;
+                          return next;
+                        });
+                      }
+                    }}
                     required
+                    className={validationErrors.quantityAvailable ? "border-destructive focus-visible:ring-destructive" : ""}
                     data-testid="input-quantity"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    إذا كان لديك أكثر من قطعة متشابهة
-                  </p>
+                  {validationErrors.quantityAvailable && (
+                    <p className="text-xs text-destructive">{validationErrors.quantityAvailable}</p>
+                  )}
+                  {!validationErrors.quantityAvailable && (
+                    <p className="text-xs text-muted-foreground">
+                      إذا كان لديك أكثر من قطعة متشابهة
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -1531,7 +1552,7 @@ export default function SellPage() {
                     data-testid="input-serial-number"
                   />
                   <p className="text-xs text-amber-700">
-                    مطلوب للساعات والمنتجات التي تزيد قيمتها عن 1,000,000 دينار لضمان الأصالة
+                    مطلوب للساعات والمنتجات التي تزيد قيمتها عن 1,000,000 دينار. البائع مسؤول عن التأكد من الأصالة.
                   </p>
                 </div>
               )}

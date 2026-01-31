@@ -80,6 +80,10 @@ export default function ProductPage() {
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
 
+  // Buy Now confirmation dialog state
+  const [buyNowDialogOpen, setBuyNowDialogOpen] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
+
   // Image gallery state with carousel API for swipe support
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
@@ -123,6 +127,8 @@ export default function ProductPage() {
     winningBid: number | null;
   } | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const viewTracked = useRef(false);
 
   // Create offer mutation
@@ -238,6 +244,35 @@ export default function ProductPage() {
     },
     enabled: !!params?.id && !!user?.id && listing?.saleType === "auction",
   });
+
+  // Check if user has purchased this listing
+  const { data: purchaseStatus } = useQuery<{ hasPurchased: boolean }>({
+    queryKey: ["/api/listings", params?.id, "purchase-status", user?.id],
+    queryFn: async () => {
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:purchase-status-query',message:'purchase-status-query-start',data:{listingId:params?.id,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
+      const res = await fetch(`/api/listings/${params?.id}/purchase-status`, {
+        credentials: "include",
+      });
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:purchase-status-query',message:'purchase-status-response',data:{status:res.status,ok:res.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
+      if (!res.ok) return { hasPurchased: false };
+      const result = await res.json();
+      // #region agent log
+      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:purchase-status-query',message:'purchase-status-result',data:result,timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
+      return result;
+    },
+    enabled: !!params?.id && !!user?.id,
+  });
+
+  // #region agent log
+  useEffect(() => {
+    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:purchase-status-effect',message:'purchase-status-value-check',data:{purchaseStatusDefined:typeof purchaseStatus !== 'undefined',purchaseStatusValue:purchaseStatus,hasPurchased:purchaseStatus?.hasPurchased,paramsId:params?.id,userId:user?.id,enabled:!!params?.id && !!user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+  }, [purchaseStatus, params?.id, user?.id]);
+  // #endregion
 
   // Set outbid status on page load if user has bid but is not highest
   useEffect(() => {
@@ -367,6 +402,7 @@ export default function ProductPage() {
       try {
         const data = JSON.parse(event.data);
         if (data.type === "bid_update" && data.listingId === listing.id) {
+          setLastUpdateTime(new Date());
           setLiveBidData({
             currentBid: data.currentBid,
             totalBids: data.totalBids,
@@ -440,11 +476,20 @@ export default function ProductPage() {
       }
     };
 
+    ws.onerror = () => {
+      setWsConnected(false);
+    };
+
+    ws.onclose = () => {
+      setWsConnected(false);
+    };
+
     return () => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "unsubscribe", listingId: listing.id }));
       }
       ws.close();
+      setWsConnected(false);
     };
   }, [listing?.id, listing?.saleType, user?.id, toast, queryClient]);
 
@@ -802,6 +847,16 @@ export default function ProductPage() {
                   <AuctionCountdown 
                     endTime={liveBidData?.auctionEndTime || product.auctionEndTime} 
                   />
+                  {wsConnected && lastUpdateTime && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      {language === "ar" ? "آخر تحديث:" : "دوایین نوێکردنەوە:"} {lastUpdateTime.toLocaleTimeString('ar-IQ')}
+                    </p>
+                  )}
+                  {!wsConnected && (
+                    <p className="text-xs text-orange-600 mt-2 font-medium">
+                      ⚠️ {language === "ar" ? "قد يكون المؤقت قديماً. حدّث الصفحة." : "دەکرێت کاتژمێر کۆن بێت. پەڕەکە نوێ بکەوە."}
+                    </p>
+                  )}
                 </div>
               )}
             </>
@@ -904,14 +959,58 @@ export default function ProductPage() {
         {/* Action Buttons */}
         <div className="py-4 space-y-3">
           {(() => {
+            // #region agent log
+            fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:action-buttons-iife',message:'iife-entry-purchase-status-check',data:{purchaseStatusDefined:typeof purchaseStatus !== 'undefined',purchaseStatusType:typeof purchaseStatus,purchaseStatusValue:purchaseStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+            // #endregion
             const remainingQuantity = product.quantityAvailable - product.quantitySold;
             const isSoldOut = remainingQuantity <= 0;
+            const hasPurchased = purchaseStatus?.hasPurchased === true;
+            // #region agent log
+            fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:action-buttons-iife',message:'iife-after-purchase-status-access',data:{hasPurchased,remainingQuantity,isSoldOut},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+            // #endregion
             
+            // Show "out of stock" immediately if sold out
             if (isSoldOut) {
               return (
                 <div className="bg-red-50 border border-red-200 p-4 rounded-xl text-center">
                   <p className="text-red-700 font-semibold">{t("outOfStock")}</p>
                   <p className="text-red-600 text-sm">{language === "ar" ? "تم بيع جميع الكميات" : "هەموو بڕەکە فرۆشرا"}</p>
+                </div>
+              );
+            }
+
+            // Show action tabs but disabled if user has purchased
+            if (hasPurchased) {
+              return (
+                <div className="space-y-3">
+                  <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl text-center">
+                    <p className="text-blue-700 font-semibold">
+                      {language === "ar" ? "لقد قمت بشراء هذا المنتج" : "تۆ ئەم بەرهەمەت کڕیوە"}
+                    </p>
+                    <p className="text-blue-600 text-sm">
+                      {language === "ar" ? "لا يمكنك الشراء مرة أخرى" : "ناتوانیت دووبارە بیکڕیت"}
+                    </p>
+                  </div>
+                  {/* Show disabled action buttons */}
+                  <Button 
+                    disabled 
+                    size="lg" 
+                    className="w-full h-14 text-lg font-bold bg-primary/50"
+                    data-testid="button-buy-now-disabled"
+                  >
+                    {language === "ar" ? "اشتر الآن" : "ئێستا بیکڕە"}
+                  </Button>
+                  {product.isNegotiable && (
+                    <Button 
+                      disabled 
+                      variant="outline" 
+                      size="lg" 
+                      className="w-full h-14 text-lg"
+                      data-testid="button-make-offer-disabled"
+                    >
+                      {t("makeOffer")}
+                    </Button>
+                  )}
                 </div>
               );
             }
@@ -1051,11 +1150,20 @@ export default function ProductPage() {
                     <Button 
                       className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12"
                       onClick={handleBuyNowDirect}
-                      disabled={!!isPurchaseDisabled}
+                      disabled={!!isPurchaseDisabled || isBuyingNow}
                       data-testid="button-auction-buy-now"
                     >
-                      <Zap className="w-5 h-5 ml-2" />
-                      {language === "ar" ? `اشتر الآن بـ ${product.buyNowPrice.toLocaleString()} د.ع` : `ئێستا بکڕە بە ${product.buyNowPrice.toLocaleString()} د.ع`}
+                      {isBuyingNow ? (
+                        <>
+                          <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                          {language === "ar" ? "جاري المعالجة..." : "چاوەڕێ بکە..."}
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-5 h-5 ml-2" />
+                          {language === "ar" ? `إتمام الطلب بـ ${product.buyNowPrice.toLocaleString()} د.ع` : `تەواوکردنی داواکاری بە ${product.buyNowPrice.toLocaleString()} د.ع`}
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}
@@ -1092,10 +1200,17 @@ export default function ProductPage() {
                           size="lg" 
                           className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90"
                           onClick={handleBuyNowDirect}
-                          disabled={!!isPurchaseDisabled}
+                          disabled={!!isPurchaseDisabled || isBuyingNow}
                           data-testid="button-buy-now"
                         >
-                          {isPurchaseDisabled ? t("loading") : t("buyNowButton")}
+                          {isPurchaseDisabled || isBuyingNow ? (
+                            <>
+                              <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                              {language === "ar" ? "جاري المعالجة..." : "چاوەڕێ بکە..."}
+                            </>
+                          ) : (
+                            language === "ar" ? "إتمام الطلب" : "تەواوکردنی داواکاری"
+                          )}
                         </Button>
                       )}
 
@@ -1522,6 +1637,47 @@ export default function ProductPage() {
         onIndexChange={setSelectedImageIndex}
         title={product.title}
       />
+
+      {/* Buy Now Confirmation Dialog */}
+      <AlertDialog open={buyNowDialogOpen} onOpenChange={setBuyNowDialogOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{language === "ar" ? "تأكيد الطلب" : "دڵنیاکردنەوەی داواکاری"}</AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              {language === "ar" 
+                ? "سيتم إنشاء الطلب. الدفع عند الاستلام. سيتم مراجعة الطلب من قبل البائع. سيتم إشعارك عند قبول الطلب."
+                : "داواکاری دروست دەکرێت. پارەدان لە کاتی وەرگرتندا. داواکاری لەلایەن فرۆشیارەوە پشکنین دەکرێت. کاتێک داواکاری قبوڵ کرا ئاگاداری دەکرێیتەوە."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm font-medium text-blue-900">
+              {language === "ar" ? "الدفع: نقداً عند الاستلام" : "پارەدان: بە پارەی نەقد لە کاتی وەرگرتندا"}
+            </p>
+            <p className="text-xs text-blue-700 mt-1">
+              {language === "ar" ? "المراجعة: 1-2 يوم | الشحن: 3-5 أيام" : "پشکنین: 1-2 ڕۆژ | ناردن: 3-5 ڕۆژ"}
+            </p>
+          </div>
+          <AlertDialogFooter className="flex gap-2 sm:gap-0">
+            <AlertDialogCancel disabled={isBuyingNow}>
+              {language === "ar" ? "إلغاء" : "هەڵوەشاندنەوە"}
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmBuyNow}
+              disabled={isBuyingNow}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {isBuyingNow ? (
+                <>
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  {language === "ar" ? "جاري المعالجة..." : "چاوەڕێ بکە..."}
+                </>
+              ) : (
+                language === "ar" ? "تأكيد الطلب" : "دڵنیاکردنەوە"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Mandatory Phone Verification Modal */}
       <MandatoryPhoneVerificationModal

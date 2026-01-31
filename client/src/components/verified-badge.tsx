@@ -80,7 +80,10 @@ export function TrustedBuyerBadge({ size = "md", className }: VerifiedBadgeProps
 
 export function AuthenticityBadge({ size = "md", className }: VerifiedBadgeProps) {
   const { language } = useLanguage();
-  const label = language === "ar" ? "أصالة مضمونة" : "ڕەسەنی دڵنیاکراوە";
+  const label = language === "ar" ? "مصادق عليه" : "پشتڕاستکراوە";
+  const tooltip = language === "ar" 
+    ? "البائع أكد الأصالة. المنصة لا تضمن صحة المنتج. راجع المنتج قبل الشراء."
+    : "فرۆشیار پشتڕاستی کردووە. پلاتفۆرم دڵنیایی نادات. پێش کڕین پشکنین بکە.";
 
   return (
     <Tooltip>
@@ -97,7 +100,7 @@ export function AuthenticityBadge({ size = "md", className }: VerifiedBadgeProps
         </div>
       </TooltipTrigger>
       <TooltipContent>
-        <p>{label}</p>
+        <p className="max-w-xs">{tooltip}</p>
       </TooltipContent>
     </Tooltip>
   );

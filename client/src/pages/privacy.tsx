@@ -194,7 +194,7 @@ export default function Privacy() {
                 
                 <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
                   <h3 className="text-xl font-bold text-red-900 mb-3 flex items-center gap-2">
-                    <Clock className="h-6 w-6" /> 30-Day Deletion Guarantee
+                    <Clock className="h-6 w-6" /> 30-Day Deletion Policy
                   </h3>
                   <p className="text-red-900 text-lg">
                     Once verified, we <strong>permanently delete all personal data from our production database and backups within 30 days</strong>. 
@@ -455,7 +455,7 @@ export default function Privacy() {
                 
                 <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
                   <h3 className="text-xl font-bold text-red-900 mb-3 flex items-center gap-2">
-                    <Clock className="h-6 w-6" /> ضمان الحذف خلال 30 يومًا
+                    <Clock className="h-6 w-6" /> سياسة الحذف خلال 30 يومًا
                   </h3>
                   <p className="text-red-900 text-lg">
                     بمجرد التحقق، <strong>نحذف نهائيًا جميع البيانات الشخصية من قاعدة البيانات والنسخ الاحتياطية خلال 30 يومًا</strong>. 

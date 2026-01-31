@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { validateCsrfToken, generateCsrfToken } from "../middleware/csrf";
 import { z } from "zod";
 import multer from "multer";
 import sharp from "sharp";
@@ -26,6 +27,9 @@ const OG_IMAGE_WIDTH = 1200;
 const OG_IMAGE_HEIGHT = 630;
 
 export function registerProductRoutes(app: Express): void {
+  // Apply CSRF validation to product mutation routes (middleware already skips GET requests)
+  app.use("/api/listings", validateCsrfToken);
+
   // OG Image generation for product sharing
   app.get("/api/og/product/:id", async (req, res) => {
     try {
@@ -208,6 +212,22 @@ export function registerProductRoutes(app: Express): void {
     } catch (error) {
       console.error("Error fetching listings:", error);
       res.status(500).json({ error: "Failed to fetch listings" });
+    }
+  });
+
+  // Get purchase status for a listing (check if current user has purchased)
+  app.get("/api/listings/:id/purchase-status", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.json({ hasPurchased: false });
+      }
+      
+      const purchase = await storage.getUserTransactionForListing(userId, req.params.id);
+      res.json({ hasPurchased: !!purchase });
+    } catch (error) {
+      console.error("Error checking purchase status:", error);
+      res.json({ hasPurchased: false });
     }
   });
 

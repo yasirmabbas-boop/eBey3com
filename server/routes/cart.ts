@@ -4,6 +4,7 @@ import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
 import { sendPushNotification } from "../push-notifications";
 import { sendToUser } from "../websocket";
+import { validateCsrfToken } from "../middleware/csrf";
 
 // Convert Arabic-Indic numerals (٠-٩) to Western numerals (0-9)
 function normalizePhone(phone: string): string {
@@ -22,6 +23,8 @@ const checkoutSchema = z.object({
 });
 
 export function registerCartRoutes(app: Express): void {
+  // Apply CSRF validation to all cart routes except GET requests
+  app.use("/api/cart", validateCsrfToken);
   // Get cart items for current user
   app.get("/api/cart", async (req, res) => {
     try {

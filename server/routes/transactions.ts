@@ -5,6 +5,7 @@ import { getUserIdFromRequest } from "./shared";
 import { sendToUser } from "../websocket";
 import { financialService } from "../services/financial-service";
 import { sendPushNotification } from "../push-notifications";
+import { validateCsrfToken } from "../middleware/csrf";
 
 async function sendNotificationAsync(params: {
   userId: string;
@@ -55,6 +56,8 @@ const guestCheckoutSchema = z.object({
 });
 
 export function registerTransactionsRoutes(app: Express): void {
+  // Apply CSRF validation to all transaction routes except GET requests
+  app.use("/api/transactions", validateCsrfToken);
   // Guest checkout - DISABLED (all users must sign up and verify phone)
   app.post("/api/transactions/guest", async (req, res) => {
     return res.status(410).json({ 

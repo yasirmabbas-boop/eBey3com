@@ -164,35 +164,41 @@ export default function AdminPage() {
     enabled: !authLoading && (user as any)?.isAdmin,
   });
 
-  const { data: reports, isLoading: reportsLoading } = useQuery<Report[]>({
-    queryKey: ["/api/admin/reports"],
+  const { data: reportsData, isLoading: reportsLoading } = useQuery<{ reports: Report[]; pagination: { page: number; limit: number; total: number; hasMore: boolean; totalPages: number } }>({
+    queryKey: ["/api/admin/reports", reportsPage],
     queryFn: async () => {
-      const res = await fetchWithAuth("/api/admin/reports");
+      const res = await fetchWithAuth(`/api/admin/reports?page=${reportsPage}&limit=${pageSize}`);
       if (!res.ok) throw new Error("Failed to fetch reports");
       return res.json();
     },
     enabled: !authLoading && (user as any)?.isAdmin && activeTab === "reports",
   });
+  const reports = reportsData?.reports || [];
+  const reportsPagination = reportsData?.pagination;
 
-  const { data: users, isLoading: usersLoading } = useQuery<User[]>({
-    queryKey: ["/api/admin/users"],
+  const { data: usersData, isLoading: usersLoading } = useQuery<{ users: User[]; pagination: { page: number; limit: number; total: number; hasMore: boolean; totalPages: number } }>({
+    queryKey: ["/api/admin/users", usersPage],
     queryFn: async () => {
-      const res = await fetchWithAuth("/api/admin/users");
+      const res = await fetchWithAuth(`/api/admin/users?page=${usersPage}&limit=${pageSize}`);
       if (!res.ok) throw new Error("Failed to fetch users");
       return res.json();
     },
     enabled: !authLoading && (user as any)?.isAdmin && (activeTab === "users" || activeTab === "seller-requests"),
   });
+  const users = usersData?.users || [];
+  const usersPagination = usersData?.pagination;
 
-  const { data: listings, isLoading: listingsLoading } = useQuery<AdminListing[]>({
-    queryKey: ["/api/admin/listings"],
+  const { data: listingsData, isLoading: listingsLoading } = useQuery<{ listings: AdminListing[]; pagination: { page: number; limit: number; total: number; hasMore: boolean; totalPages: number } }>({
+    queryKey: ["/api/admin/listings", listingsPage],
     queryFn: async () => {
-      const res = await fetchWithAuth("/api/admin/listings");
+      const res = await fetchWithAuth(`/api/admin/listings?page=${listingsPage}&limit=${pageSize}`);
       if (!res.ok) throw new Error("Failed to fetch listings");
       return res.json();
     },
     enabled: !authLoading && (user as any)?.isAdmin && activeTab === "listings",
   });
+  const listings = listingsData?.listings || [];
+  const listingsPagination = listingsData?.pagination;
 
   interface DeletedListing {
     id: string;
@@ -388,6 +394,7 @@ export default function AdminPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/reports", reportsPage] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({ title: "تم تحديث البلاغ بنجاح" });
       setReportAction(null);
@@ -472,6 +479,7 @@ export default function AdminPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/listings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/listings", listingsPage] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({ title: "تم حذف المنتج بنجاح" });
     },
@@ -492,6 +500,7 @@ export default function AdminPage() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/listings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/listings", listingsPage] });
       queryClient.invalidateQueries({ queryKey: ["/api/hero-listings"] });
       toast({ title: variables.isFeatured ? "تم ترقية المنتج للصفحة الرئيسية" : "تم إزالة المنتج من الصفحة الرئيسية" });
     },
@@ -881,6 +890,34 @@ export default function AdminPage() {
                         </TableBody>
                       </Table>
                     </div>
+                    {reportsPagination && reportsPagination.totalPages > 1 && (
+                      <div className="flex items-center justify-between p-4 border-t">
+                        <div className="text-sm text-muted-foreground">
+                          عرض {((reportsPage - 1) * pageSize) + 1} - {Math.min(reportsPage * pageSize, reportsPagination.total)} من {reportsPagination.total}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setReportsPage(p => Math.max(1, p - 1))}
+                            disabled={reportsPage === 1}
+                          >
+                            السابق
+                          </Button>
+                          <span className="flex items-center px-3 text-sm">
+                            صفحة {reportsPage} من {reportsPagination.totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setReportsPage(p => Math.min(reportsPagination.totalPages, p + 1))}
+                            disabled={reportsPage >= reportsPagination.totalPages}
+                          >
+                            التالي
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </Card>
                 ) : (
                   <Card>
@@ -896,6 +933,11 @@ export default function AdminPage() {
             {activeTab === "users" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">إدارة المستخدمين</h2>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm text-amber-800">
+                    <strong>ملاحظة:</strong> التحقق من الأصالة هو مسؤولية البائع والمشتري. المنصة لا تضمن صحة المنتجات. شارة "مصادق عليه" تعني أن البائع أكد الأصالة فقط.
+                  </p>
+                </div>
                 <div className="flex gap-2">
                   <Input
                     placeholder="بحث بالاسم أو رقم الحساب..."
@@ -964,7 +1006,7 @@ export default function AdminPage() {
                                   {u.authenticityGuaranteed && (
                                     <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">
                                       <Award className="h-3 w-3 ml-1" />
-                                      ضمان الأصالة
+                                      مصادق عليه
                                     </Badge>
                                   )}
                                   {(u as any).eligibleForBlueCheck && !u.isAuthenticated && (
@@ -1090,6 +1132,34 @@ export default function AdminPage() {
                         </TableBody>
                       </Table>
                     </div>
+                    {usersPagination && usersPagination.totalPages > 1 && (
+                      <div className="flex items-center justify-between p-4 border-t">
+                        <div className="text-sm text-muted-foreground">
+                          عرض {((usersPage - 1) * pageSize) + 1} - {Math.min(usersPage * pageSize, usersPagination.total)} من {usersPagination.total}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setUsersPage(p => Math.max(1, p - 1))}
+                            disabled={usersPage === 1}
+                          >
+                            السابق
+                          </Button>
+                          <span className="flex items-center px-3 text-sm">
+                            صفحة {usersPage} من {usersPagination.totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setUsersPage(p => Math.min(usersPagination.totalPages, p + 1))}
+                            disabled={usersPage >= usersPagination.totalPages}
+                          >
+                            التالي
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </Card>
                 ) : (
                   <Card>
