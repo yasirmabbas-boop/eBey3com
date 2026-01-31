@@ -3,6 +3,7 @@ import { useLocation, Link, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import imageCompression from "browser-image-compression";
 import type { Listing } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -529,14 +530,7 @@ export default function SellWizardPage() {
       const url = isEditMode ? `/api/listings/${editListingId}` : "/api/listings";
       const method = isEditMode ? "PATCH" : "POST";
       
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        },
-        body: JSON.stringify(listingData),
-      });
+      const res = await apiRequest(method, url, listingData);
       
       if (!res.ok) {
         const error = await res.json();
