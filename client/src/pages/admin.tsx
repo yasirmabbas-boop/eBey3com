@@ -133,6 +133,10 @@ export default function AdminPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "deleted-listings" | "messages" | "cancellations" | "payouts">("stats");
+  const [reportsPage, setReportsPage] = useState(1);
+  const [usersPage, setUsersPage] = useState(1);
+  const [listingsPage, setListingsPage] = useState(1);
+  const pageSize = 20;
   const [listingSearch, setListingSearch] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [walletAdjustment, setWalletAdjustment] = useState({

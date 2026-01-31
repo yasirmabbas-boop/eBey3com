@@ -9,17 +9,15 @@ let csrfTokenPromise: Promise<string | null> | null = null;
  * Returns null if session doesn't exist or fetch fails
  */
 async function fetchCsrfToken(): Promise<string | null> {
-  // Return cached token if available
-  if (csrfToken) {
-    return csrfToken;
-  }
-
+  // Always fetch a fresh token for mutations to avoid stale token issues
+  // The cached token may be from a previous session
+  
   // If a fetch is already in progress, wait for it
   if (csrfTokenPromise) {
     return csrfTokenPromise;
   }
 
-  // Start new fetch
+  // Start new fetch (always fetch fresh, don't use cached)
   csrfTokenPromise = fetch("/api/csrf-token", {
     credentials: "include",
   })
