@@ -267,7 +267,6 @@ export default function ProductPage() {
       return result;
     },
     enabled: !!params?.id && !!user?.id,
-    initialData: { hasPurchased: false },
   });
 
   // #region agent log
