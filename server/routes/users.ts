@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { storage } from "../storage";
+import { validateCsrfToken } from "../middleware/csrf";
 
 export function registerUsersRoutes(app: Express): void {
   // Get public user profile (for seller info on product page)

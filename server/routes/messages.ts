@@ -4,6 +4,7 @@ import { getUserIdFromRequest } from "./shared";
 import { sendToUser } from "../websocket";
 import { getNotificationMessage } from "@shared/notification-messages";
 import { sendPushNotification } from "../push-notifications";
+import { validateCsrfToken } from "../middleware/csrf";
 
 export function registerMessageRoutes(app: Express): void {
   // Apply CSRF validation to all message routes except GET requests

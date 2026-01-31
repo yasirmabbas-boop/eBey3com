@@ -6,6 +6,7 @@ import { getUserIdFromRequest } from "./shared";
 import { getNotificationMessage } from "@shared/notification-messages";
 import { sendPushNotification } from "../push-notifications";
 import { sendToUser } from "../websocket";
+import { validateCsrfToken } from "../middleware/csrf";
 
 const createOfferBodySchema = z.object({
   listingId: z.string().min(1),
