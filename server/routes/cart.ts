@@ -5,6 +5,12 @@ import { getUserIdFromRequest } from "./shared";
 import { sendPushNotification } from "../push-notifications";
 import { sendToUser } from "../websocket";
 
+// Convert Arabic-Indic numerals (٠-٩) to Western numerals (0-9)
+function normalizePhone(phone: string): string {
+  const arabicNumerals = '٠١٢٣٤٥٦٧٨٩';
+  return phone.replace(/[٠-٩]/g, (d) => String(arabicNumerals.indexOf(d)));
+}
+
 const checkoutSchema = z.object({
   fullName: z.string().trim().min(3).max(100),
   phone: z.string().regex(/^07[3-9][0-9]{8}$/),
@@ -320,7 +326,7 @@ export function registerCartRoutes(app: Express): void {
           // For auction Buy Now, notify all bidders that auction ended
           if (isAuctionBuyNow) {
             const allBids = await storage.getBidsForListing(cartItem.listingId);
-            const uniqueBidderIds = [...new Set(allBids.map(b => b.userId))];
+            const uniqueBidderIds = Array.from(new Set(allBids.map(b => b.userId)));
             
             for (const bidderId of uniqueBidderIds) {
               if (bidderId !== userId) { // Don't notify the buyer themselves
