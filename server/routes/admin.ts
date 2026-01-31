@@ -100,7 +100,7 @@ export function registerAdminRoutes(app: Express): void {
           price: listing.price,
           category: listing.category,
           saleType: listing.saleType,
-          sellerName: listing.sellerName,
+          sellerName: listing.sellerName || "بائع غير معروف",
           sellerId: listing.sellerId,
           city: listing.city,
           isActive: listing.isActive,
@@ -139,7 +139,7 @@ export function registerAdminRoutes(app: Express): void {
         price: listing.price,
         category: listing.category,
         saleType: listing.saleType,
-        sellerName: listing.sellerName,
+        sellerName: listing.sellerName || "بائع غير معروف",
         sellerId: listing.sellerId,
         city: listing.city,
         deletedAt: listing.deletedAt,
@@ -464,7 +464,18 @@ export function registerAdminRoutes(app: Express): void {
     try {
       if ((storage as any).getPendingPayouts) {
         const payouts = await (storage as any).getPendingPayouts();
-        res.json(payouts);
+        // Enrich payouts with seller information
+        const enrichedPayouts = await Promise.all(
+          payouts.map(async (payout: any) => {
+            const seller = payout.sellerId ? await storage.getUser(payout.sellerId) : null;
+            return {
+              ...payout,
+              sellerName: seller?.displayName || seller?.username || (seller?.phone ? `مستخدم ${seller.phone.slice(-4)}` : null) || "بائع غير معروف",
+              sellerPhone: seller?.phone || null,
+            };
+          })
+        );
+        res.json(enrichedPayouts);
       } else {
         res.json([]);
       }

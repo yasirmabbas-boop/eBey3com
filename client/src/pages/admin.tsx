@@ -82,7 +82,7 @@ interface AdminListing {
   price: number;
   category: string;
   saleType: string;
-  sellerName: string;
+  sellerName?: string; // Made optional to handle cases where seller doesn't exist
   sellerId?: string;
   city: string;
   isActive: boolean;
@@ -243,9 +243,9 @@ export default function AdminPage() {
     amount: number;
     cancellationReason: string;
     cancelledAt: string;
-    sellerName: string;
-    buyerName: string;
-    listingTitle: string;
+    sellerName: string; // Always present, defaults to "بائع غير معروف" if missing
+    buyerName?: string;
+    listingTitle?: string;
   }
 
   const { data: cancellations, isLoading: cancellationsLoading } = useQuery<CancelledTransaction[]>({
@@ -1278,7 +1278,7 @@ export default function AdminPage() {
                             .filter(l => 
                               !listingSearch || 
                               l.title.toLowerCase().includes(listingSearch.toLowerCase()) ||
-                              l.sellerName.toLowerCase().includes(listingSearch.toLowerCase())
+                              (l.sellerName || "").toLowerCase().includes(listingSearch.toLowerCase())
                             )
                             .map((listing) => (
                             <TableRow key={listing.id} data-testid={`row-listing-${listing.id}`} className="hover:bg-muted/50">
@@ -1313,7 +1313,7 @@ export default function AdminPage() {
                                   rel="noopener noreferrer"
                                   className="hover:text-primary hover:underline transition-colors"
                                 >
-                                  {listing.sellerName}
+                                  {listing.sellerName || "بائع غير معروف"}
                                 </a>
                               </TableCell>
                               <TableCell>{(listing.currentBid || listing.price).toLocaleString()} د.ع</TableCell>
@@ -1508,7 +1508,7 @@ export default function AdminPage() {
                                   rel="noopener noreferrer"
                                   className="hover:text-primary hover:underline transition-colors"
                                 >
-                                  {listing.sellerName}
+                                  {listing.sellerName || "بائع غير معروف"}
                                 </a>
                               </TableCell>
                               <TableCell>{listing.price.toLocaleString()} د.ع</TableCell>
@@ -1805,7 +1805,7 @@ export default function AdminPage() {
                             <div className="flex-1 space-y-3">
                               <div className="flex items-center gap-3">
                                 <Wallet className="h-5 w-5 text-green-600" />
-                                <span className="font-bold text-lg">{payout.sellerName}</span>
+                                <span className="font-bold text-lg">{payout.sellerName || "بائع غير معروف"}</span>
                                 <Badge className={payout.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"}>
                                   {payout.status === "pending" ? "قيد الانتظار" : "مدفوع"}
                                 </Badge>
