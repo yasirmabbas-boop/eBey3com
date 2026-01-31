@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, Link, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import imageCompression from "browser-image-compression";
+import { authFetch } from "@/lib/queryClient";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -613,17 +614,10 @@ export default function SellPage() {
       const url = isEditMode ? `/api/listings/${editListingId}` : "/api/listings";
       const method = isEditMode ? "PATCH" : "POST";
       
-      // Include auth token for Safari compatibility
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      const authToken = localStorage.getItem("authToken");
-      if (authToken) {
-        headers["Authorization"] = `Bearer ${authToken}`;
-      }
-      
-      const response = await fetch(url, {
+      // Use authFetch which includes CSRF token and auth headers automatically
+      const response = await authFetch(url, {
         method,
-        headers,
-        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(listingData),
       });
 
