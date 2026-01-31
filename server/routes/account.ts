@@ -448,10 +448,10 @@ export function registerAccountRoutes(app: Express): void {
             buyer: buyer ? {
               id: buyer.id,
               name: buyer.displayName,
-              phone: buyer.phone,
-              city: buyer.city,
+              phone: order.deliveryPhone || buyer.phone,
+              city: order.deliveryCity || buyer.city,
               district: buyer.district,
-              address: buyer.addressLine1,
+              address: order.deliveryAddress || buyer.addressLine1,
             } : undefined,
           };
         })
