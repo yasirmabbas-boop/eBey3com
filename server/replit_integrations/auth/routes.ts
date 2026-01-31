@@ -346,7 +346,7 @@ export function registerAuthRoutes(app: Express): void {
     // CSRF validation for authenticated requests
     const sessionId = (req.session as any)?.id || req.sessionID;
     if (sessionId) {
-      const { validateCsrfToken } = await import("../middleware/csrf");
+      const { validateCsrfToken } = await import("../../middleware/csrf");
       return validateCsrfToken(req, res, async () => {
         // Continue with handler logic
         await handleVerifyRegistrationOtp(req, res);
@@ -399,5 +399,5 @@ export function registerAuthRoutes(app: Express): void {
       console.error("[api/auth/verify-registration-otp] Error:", error);
       res.status(500).json({ error: "حدث خطأ أثناء التحقق من الرمز" });
     }
-  });
+  }
 }

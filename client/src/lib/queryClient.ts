@@ -70,8 +70,8 @@ export function getAuthHeaders(): HeadersInit {
  * @param isMutation - Whether this is a mutation request (POST/PUT/PATCH/DELETE)
  * @returns Promise<HeadersInit> with auth and CSRF tokens
  */
-export async function getSecureHeaders(isMutation: boolean = false): Promise<HeadersInit> {
-  const headers: HeadersInit = {};
+export async function getSecureHeaders(isMutation: boolean = false): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {};
   
   // Always include auth token if available
   const authToken = localStorage.getItem("authToken");
@@ -111,9 +111,9 @@ export async function secureRequest(
   
   const headers = await getSecureHeaders(isMutation);
   
-  const mergedHeaders = {
+  const mergedHeaders: Record<string, string> = {
     ...headers,
-    ...(options.headers || {}),
+    ...(options.headers as Record<string, string> || {}),
   };
   
   // Add Content-Type for mutations with body (if not already set and not FormData)
