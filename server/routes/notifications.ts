@@ -1,8 +1,12 @@
 import type { Express } from "express";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
+import { validateCsrfToken } from "../middleware/csrf";
 
 export function registerNotificationRoutes(app: Express): void {
+  // Apply CSRF validation to all notification routes except GET requests
+  app.use("/api/notifications", validateCsrfToken);
+  
   app.get("/api/notifications", async (req, res) => {
     try {
       const userId = await getUserIdFromRequest(req);

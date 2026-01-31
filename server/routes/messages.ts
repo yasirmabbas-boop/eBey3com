@@ -6,6 +6,9 @@ import { getNotificationMessage } from "@shared/notification-messages";
 import { sendPushNotification } from "../push-notifications";
 
 export function registerMessageRoutes(app: Express): void {
+  // Apply CSRF validation to all message routes except GET requests
+  app.use("/api/messages", validateCsrfToken);
+  
   // Get all messages for the authenticated user
   app.get("/api/messages", async (req, res) => {
     try {

@@ -4,6 +4,7 @@ import { insertReportSchema } from "@shared/schema";
 import { getUserIdFromRequest } from "./shared";
 import { z } from "zod";
 import nodemailer from "nodemailer";
+import { validateCsrfToken } from "../middleware/csrf";
 
 function generateCaseNumber(): string {
   const prefix = "RPT";
@@ -109,6 +110,9 @@ async function sendReportEmail(report: {
 }
 
 export function registerReportsRoutes(app: Express): void {
+  // Apply CSRF validation to all report routes except GET requests
+  app.use("/api/reports", validateCsrfToken);
+  
   app.post("/api/reports", async (req, res) => {
     try {
       const userId = await getUserIdFromRequest(req);

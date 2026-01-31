@@ -71,10 +71,7 @@ export default function CheckoutPage() {
   const { data: savedAddresses = [], isLoading: isAddressesLoading } = useQuery<BuyerAddress[]>({
     queryKey: ["/api/account/addresses"],
     queryFn: async () => {
-      const res = await fetch("/api/account/addresses", { 
-        credentials: "include",
-        headers: getAuthHeaders(),
-      });
+      const res = await secureRequest("/api/account/addresses", { method: "GET" });
       if (!res.ok) return [];
       return res.json();
     },
@@ -84,10 +81,7 @@ export default function CheckoutPage() {
   const { data: userData, isLoading: isUserLoading } = useQuery({
     queryKey: ["/api/account/profile"],
     queryFn: async () => {
-      const res = await fetch("/api/account/profile", { 
-        credentials: "include",
-        headers: getAuthHeaders(),
-      });
+      const res = await secureRequest("/api/account/profile", { method: "GET" });
       if (!res.ok) return null;
       return res.json();
     },
@@ -181,10 +175,8 @@ export default function CheckoutPage() {
       shippingCost: number;
       saveAddress?: boolean;
     }) => {
-      const res = await fetch("/api/checkout", {
+      const res = await secureRequest("/api/checkout", {
         method: "POST",
-        headers: getAuthHeaders(),
-        credentials: "include",
         body: JSON.stringify(data),
       });
       if (!res.ok) {

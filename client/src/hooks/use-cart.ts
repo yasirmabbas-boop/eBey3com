@@ -2,15 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./use-auth";
 import type { CartItem, Listing } from "@shared/schema";
 import { hapticSuccess } from "@/lib/despia";
-
-function getAuthHeaders(): HeadersInit {
-  const headers: HeadersInit = {};
-  const authToken = localStorage.getItem("authToken");
-  if (authToken) {
-    headers["Authorization"] = `Bearer ${authToken}`;
-  }
-  return headers;
-}
+import { secureRequest } from "@/lib/queryClient";
 
 export interface CartItemWithListing extends CartItem {
   listing: {
@@ -33,10 +25,7 @@ export function useCart() {
   const { data: cartItems = [], isLoading, error } = useQuery<CartItemWithListing[]>({
     queryKey: ["/api/cart"],
     queryFn: async () => {
-      const res = await fetch("/api/cart", { 
-        credentials: "include",
-        headers: getAuthHeaders(),
-      });
+      const res = await secureRequest("/api/cart", { method: "GET" });
       if (!res.ok) {
         if (res.status === 401) return [];
         throw new Error("Failed to fetch cart");
@@ -68,10 +57,8 @@ export function useCart() {
 
   const updateQuantityMutation = useMutation({
     mutationFn: async ({ id, quantity }: { id: string; quantity: number }) => {
-      const res = await fetch(`/api/cart/${id}`, {
+      const res = await secureRequest(`/api/cart/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        credentials: "include",
         body: JSON.stringify({ quantity }),
       });
       if (!res.ok) {
@@ -105,10 +92,8 @@ export function useCart() {
 
   const clearCartMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/cart", {
+      const res = await secureRequest("/api/cart", {
         method: "DELETE",
-        credentials: "include",
-        headers: getAuthHeaders(),
       });
       if (!res.ok) {
         const error = await res.json();

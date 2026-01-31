@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/lib/i18n";
+import { secureRequest } from "@/lib/queryClient";
 import { Loader2, Lock } from "lucide-react";
 import type { Listing, Offer, Message } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
@@ -637,7 +638,7 @@ export default function SellerDashboard() {
 
   const deleteMutation = useMutation({
     mutationFn: async (productId: string) => {
-      const res = await fetch(`/api/listings/${productId}`, { method: "DELETE" });
+      const res = await secureRequest(`/api/listings/${productId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete listing");
       return res.json();
     },
@@ -652,11 +653,8 @@ export default function SellerDashboard() {
 
   const offerResponseMutation = useMutation({
     mutationFn: async ({ offerId, action, counterAmount, counterMessage }: { offerId: string; action: "accept" | "reject" | "counter"; counterAmount?: number; counterMessage?: string }) => {
-      const authToken = localStorage.getItem("authToken");
-      const res = await fetch(`/api/offers/${offerId}/respond`, {
+      const res = await secureRequest(`/api/offers/${offerId}/respond`, {
         method: "PUT",
-        headers: { 
-          "Content-Type": "application/json",
           ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
         },
         credentials: "include",
@@ -688,9 +686,8 @@ export default function SellerDashboard() {
 
   const stockUpdateMutation = useMutation({
     mutationFn: async ({ productId, quantityAvailable }: { productId: string; quantityAvailable: number }) => {
-      const res = await fetch(`/api/listings/${productId}`, {
+      const res = await secureRequest(`/api/listings/${productId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quantityAvailable }),
       });
       if (!res.ok) {
@@ -714,13 +711,8 @@ export default function SellerDashboard() {
   const confirmPaymentMutation = useMutation({
     mutationFn: async (orderId: string) => {
       const authToken = localStorage.getItem("authToken");
-      const res = await fetch(`/api/transactions/${orderId}/confirm-payment`, {
+      const res = await secureRequest(`/api/transactions/${orderId}/confirm-payment`, {
         method: "PATCH",
-        headers: { 
-          "Content-Type": "application/json",
-          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
-        },
-        credentials: "include",
       });
       if (!res.ok) throw new Error("فشل في تأكيد استلام الدفع");
       return res.json();
@@ -737,13 +729,8 @@ export default function SellerDashboard() {
   const markAsShippedMutation = useMutation({
     mutationFn: async (orderId: string) => {
       const authToken = localStorage.getItem("authToken");
-      const res = await fetch(`/api/transactions/${orderId}/ship`, {
+      const res = await secureRequest(`/api/transactions/${orderId}/ship`, {
         method: "PATCH",
-        headers: { 
-          "Content-Type": "application/json",
-          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
-        },
-        credentials: "include",
       });
       if (!res.ok) throw new Error("فشل في تحديث حالة الشحن");
       return res.json();
@@ -763,13 +750,8 @@ export default function SellerDashboard() {
   const markAsDeliveredMutation = useMutation({
     mutationFn: async (orderId: string) => {
       const authToken = localStorage.getItem("authToken");
-      const res = await fetch(`/api/transactions/${orderId}/deliver`, {
+      const res = await secureRequest(`/api/transactions/${orderId}/deliver`, {
         method: "PATCH",
-        headers: { 
-          "Content-Type": "application/json",
-          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
-        },
-        credentials: "include",
       });
       if (!res.ok) throw new Error("فشل في تحديث حالة التسليم");
       return res.json();
@@ -825,13 +807,8 @@ export default function SellerDashboard() {
   const rateBuyerMutation = useMutation({
     mutationFn: async ({ orderId, rating, feedback }: { orderId: string; rating: number; feedback?: string }) => {
       const authToken = localStorage.getItem("authToken");
-      const res = await fetch(`/api/transactions/${orderId}/rate-buyer`, {
+      const res = await secureRequest(`/api/transactions/${orderId}/rate-buyer`, {
         method: "PATCH",
-        headers: { 
-          "Content-Type": "application/json",
-          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
-        },
-        credentials: "include",
         body: JSON.stringify({ rating, feedback }),
       });
       if (!res.ok) throw new Error("فشل في تقييم المشتري");
@@ -920,12 +897,10 @@ export default function SellerDashboard() {
       const formData = new FormData();
       formData.append("file", file);
       
-      const token = localStorage.getItem("authToken");
-      const res = await fetch("/api/listings/bulk-upload", {
+      const res = await secureRequest("/api/listings/bulk-upload", {
         method: "POST",
-        credentials: "include",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
+        // Don't set Content-Type header - browser will set it with boundary for FormData
       });
       
       const data = await res.json();
@@ -1601,7 +1576,7 @@ export default function SellerDashboard() {
                                   size="sm"
                                   variant="ghost"
                                   onClick={async () => {
-                                    await fetch(`/api/messages/${message.id}/read`, { method: "PATCH" });
+                                    await secureRequest(`/api/messages/${message.id}/read`, { method: "PATCH" });
                                     queryClient.invalidateQueries({ queryKey: ["/api/seller-messages"] });
                                   }}
                                   className="gap-1"

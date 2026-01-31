@@ -24,6 +24,9 @@ const formatPrice = (price: number) => {
 };
 
 export function registerOffersRoutes(app: Express): void {
+  // Apply CSRF validation to all offer routes except GET requests
+  app.use("/api/offers", validateCsrfToken);
+  
   // Create offer (buyer -> seller)
   app.post("/api/offers", async (req, res) => {
     const userId = await getUserIdFromRequest(req);

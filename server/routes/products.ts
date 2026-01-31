@@ -1037,7 +1037,8 @@ export function registerProductRoutes(app: Express): void {
   });
 
   // AI-powered image search - analyze image and find matching products
-  app.post("/api/image-search", async (req, res) => {
+  // Note: This route is separate from /api/listings, so we apply CSRF protection here
+  app.post("/api/image-search", validateCsrfToken, async (req, res) => {
     try {
       const { imageBase64 } = req.body;
       

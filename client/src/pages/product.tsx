@@ -135,10 +135,8 @@ export default function ProductPage() {
   // Create offer mutation
   const createOfferMutation = useMutation({
     mutationFn: async (data: { listingId: string; offerAmount: number; message?: string }) => {
-      const res = await fetch("/api/offers", {
+      const res = await secureRequest("/api/offers", {
         method: "POST",
-        headers: getAuthHeaders(),
-        credentials: "include",
         body: JSON.stringify(data),
       });
       if (!res.ok) {
@@ -168,10 +166,8 @@ export default function ProductPage() {
   // Report listing mutation
   const reportMutation = useMutation({
     mutationFn: async (data: { reportType: string; targetId: string; targetType: string; reason: string; details?: string }) => {
-      const res = await fetch("/api/reports", {
+      const res = await secureRequest("/api/reports", {
         method: "POST",
-        headers: getAuthHeaders(),
-        credentials: "include",
         body: JSON.stringify(data),
       });
       if (!res.ok) {
@@ -205,7 +201,7 @@ export default function ProductPage() {
       // #region agent log
       fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:listing-query',message:'listing-detail-request',data:{listingId:params?.id,url},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H12'})}).catch(()=>{});
       // #endregion
-      const res = await fetch(url);
+      const res = await secureRequest(url, { method: "GET" });
       if (!res.ok) {
         // #region agent log
         fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:listing-query',message:'listing-detail-error',data:{listingId:params?.id,status:res.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H13'})}).catch(()=>{});
@@ -237,8 +233,8 @@ export default function ProductPage() {
   const { data: userBidsOnListing } = useQuery<{ hasBid: boolean; isHighest: boolean }>({
     queryKey: ["/api/listings", params?.id, "user-bid-status", user?.id],
     queryFn: async () => {
-      const res = await fetch(`/api/listings/${params?.id}/user-bid-status`, {
-        credentials: "include",
+      const res = await secureRequest(`/api/listings/${params?.id}/user-bid-status`, {
+        method: "GET",
       });
       if (!res.ok) return { hasBid: false, isHighest: false };
       return res.json();
@@ -337,9 +333,8 @@ export default function ProductPage() {
       viewTracked.current = true;
       // Only track view if viewer is not the seller
       if (!user?.id || user.id !== listing.sellerId) {
-        fetch(`/api/listings/${listing.id}/view`, { 
+        secureRequest(`/api/listings/${listing.id}/view`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ viewerId: user?.id || null })
         }).catch(() => {});
       }

@@ -1,0 +1,52 @@
+Summary
+Analysis
+Root cause: getAuthHeaders() only used cached CSRF tokens, so mutations failed when tokens weren't cached.
+Missing backend protection: 10+ routes lacked CSRF validation.
+Frontend gaps: Many components used direct fetch() calls without CSRF tokens.
+Solution implemented
+1. Enhanced secure request functions (client/src/lib/queryClient.ts)
+Added getSecureHeaders(): automatically fetches CSRF tokens for mutations.
+Added secureRequest(): drop-in replacement for fetch() with automatic CSRF handling.
+Updated apiRequest() and authFetch() to use the new secure headers.
+Fixed FormData handling (doesn't set Content-Type for FormData).
+2. Backend CSRF protection added
+/api/offers
+/api/messages
+/api/reports
+/api/watchlist
+/api/push
+/api/notifications
+/api/image-search
+/api/seller-request (already protected under /api/account)
+3. Frontend components updated
+Admin page — replaced custom fetchWithAuth with secureRequest
+Cart hooks — all mutations use secureRequest
+Checkout page — uses secureRequest for all requests
+Product page — uses secureRequest for offers, reports, and view tracking
+Seller dashboard — all mutations updated to use secureRequest
+Remaining work
+The following components still need updates (same pattern):
+Buyer dashboard, Purchases page, Sell page
+Upload hooks, Phone verification modals, Two-factor settings
+Image search modal, Push notification settings
+Contact seller, Favorites/watchlist components
+Approach
+Use secureRequest() for all mutations (replaces direct fetch() calls).
+Pattern:
+   // Before   const res = await fetch("/api/endpoint", {     method: "POST",     headers: { "Content-Type": "application/json", ...getAuthHeaders() },     credentials: "include",     body: JSON.stringify(data),   });      // After   const res = await secureRequest("/api/endpoint", {     method: "POST",     body: JSON.stringify(data),   });
+Files modified
+client/src/lib/queryClient.ts — enhanced secure functions
+server/routes/offers.ts — added CSRF protection
+server/routes/messages.ts — added CSRF protection
+server/routes/reports.ts — added CSRF protection
+server/routes/users.ts — added CSRF protection for watchlist
+server/routes/push.ts — added CSRF protection
+server/routes/notifications.ts — added CSRF protection
+server/routes/products.ts — added CSRF protection for image-search
+client/src/pages/admin.tsx — updated to use secureRequest
+client/src/hooks/use-cart.ts — updated all mutations
+client/src/pages/checkout.tsx — updated all requests
+client/src/pages/product.tsx — updated mutations
+client/src/pages/seller-dashboard.tsx — updated all mutations
+Created CSRF_FIX_PLAN.md and CSRF_IMPLEMENTATION_SUMMARY.md with details.
+The core infrastructure is in place. Remaining components can follow the same pattern: replace direct fetch() calls with secureRequest() for mutations. Should I continue updating the remaining components?

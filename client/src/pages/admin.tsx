@@ -118,13 +118,12 @@ function getAuthToken(): string | null {
   return localStorage.getItem("authToken");
 }
 
+// Use secureRequest from queryClient instead of custom fetchWithAuth
+import { secureRequest } from "@/lib/queryClient";
+
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  const authToken = getAuthToken();
-  const headers: HeadersInit = { ...options.headers };
-  if (authToken) {
-    (headers as Record<string, string>)["Authorization"] = `Bearer ${authToken}`;
-  }
-  return fetch(url, { ...options, credentials: "include", headers });
+  // Use secureRequest which automatically includes CSRF tokens
+  return secureRequest(url, options);
 }
 
 export default function AdminPage() {

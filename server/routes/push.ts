@@ -1,12 +1,15 @@
 import type { Express } from "express";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
+import { validateCsrfToken } from "../middleware/csrf";
 
 /**
  * Push Notification Registration Routes
  * Handles web push subscriptions and native device token registration
  */
 export function registerPushRoutes(app: Express): void {
+  // Apply CSRF validation to all push routes except GET requests
+  app.use("/api/push", validateCsrfToken);
   
   /**
    * GET /api/push/vapid-public-key

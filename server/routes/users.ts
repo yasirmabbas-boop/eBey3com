@@ -76,6 +76,9 @@ export function registerUsersRoutes(app: Express): void {
     }
   });
 
+  // Apply CSRF validation to watchlist mutation routes
+  app.use("/api/watchlist", validateCsrfToken);
+  
   // Add to watchlist
   app.post("/api/watchlist", async (req, res) => {
     try {

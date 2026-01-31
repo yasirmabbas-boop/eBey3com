@@ -45,6 +45,8 @@ async function fetchCsrfToken(): Promise<string | null> {
 /**
  * Get authentication headers from localStorage
  * @returns HeadersInit with Authorization Bearer token if available
+ * NOTE: This is synchronous and only uses cached CSRF token.
+ * For mutations, use getSecureHeaders() instead.
  */
 export function getAuthHeaders(): HeadersInit {
   const headers: HeadersInit = {};
@@ -53,12 +55,77 @@ export function getAuthHeaders(): HeadersInit {
     headers["Authorization"] = `Bearer ${authToken}`;
   }
   
-  // Include CSRF token if available
+  // Include CSRF token if available (cached)
   if (csrfToken) {
     headers["X-CSRF-Token"] = csrfToken;
   }
   
   return headers;
+}
+
+/**
+ * Get secure headers with auth token and CSRF token
+ * For mutations, always fetches fresh CSRF token
+ * For queries, uses cached token if available
+ * @param isMutation - Whether this is a mutation request (POST/PUT/PATCH/DELETE)
+ * @returns Promise<HeadersInit> with auth and CSRF tokens
+ */
+export async function getSecureHeaders(isMutation: boolean = false): Promise<HeadersInit> {
+  const headers: HeadersInit = {};
+  
+  // Always include auth token if available
+  const authToken = localStorage.getItem("authToken");
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+  
+  // For mutations, always fetch fresh CSRF token
+  if (isMutation) {
+    const token = await fetchCsrfToken();
+    if (token) {
+      headers["X-CSRF-Token"] = token;
+    }
+  } else {
+    // For queries, use cached token if available
+    if (csrfToken) {
+      headers["X-CSRF-Token"] = csrfToken;
+    }
+  }
+  
+  return headers;
+}
+
+/**
+ * Secure request function - drop-in replacement for fetch()
+ * Automatically includes auth and CSRF tokens
+ * @param url - The URL to fetch
+ * @param options - Standard fetch options
+ * @returns Promise<Response>
+ */
+export async function secureRequest(
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const method = options.method?.toUpperCase() || "GET";
+  const isMutation = method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
+  
+  const headers = await getSecureHeaders(isMutation);
+  
+  const mergedHeaders = {
+    ...headers,
+    ...(options.headers || {}),
+  };
+  
+  // Add Content-Type for mutations with body (if not already set and not FormData)
+  if (isMutation && options.body && !mergedHeaders["Content-Type"] && !(options.body instanceof FormData)) {
+    mergedHeaders["Content-Type"] = "application/json";
+  }
+  
+  return fetch(url, {
+    ...options,
+    headers: mergedHeaders,
+    credentials: "include",
+  });
 }
 
 async function throwIfResNotOk(res: Response) {
@@ -78,27 +145,10 @@ export async function authFetch(
   url: string,
   options?: RequestInit
 ): Promise<Response> {
-  // Fetch CSRF token for non-GET requests and wait for it
   const method = options?.method?.toUpperCase() || "GET";
-  let token: string | null = null;
-  if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
-    token = await fetchCsrfToken();
-  }
+  const isMutation = method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
   
-  // Build headers with auth token and CSRF token
-  const headers: HeadersInit = {};
-  const authToken = localStorage.getItem("authToken");
-  if (authToken) {
-    headers["Authorization"] = `Bearer ${authToken}`;
-  }
-  
-  // Use the token we just fetched (not the cached global)
-  if (token) {
-    headers["X-CSRF-Token"] = token;
-  } else if (csrfToken) {
-    // Fallback to cached token for GET requests
-    headers["X-CSRF-Token"] = csrfToken;
-  }
+  const headers = await getSecureHeaders(isMutation);
   
   const mergedHeaders = {
     ...headers,
@@ -126,26 +176,8 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Fetch CSRF token for non-GET requests and use returned value directly
-  let token: string | null = null;
-  if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
-    token = await fetchCsrfToken();
-  }
-
-  // Build headers with auth token
-  const headers: HeadersInit = {};
-  const authToken = localStorage.getItem("authToken");
-  if (authToken) {
-    headers["Authorization"] = `Bearer ${authToken}`;
-  }
-  
-  // Use the token we just fetched (not the cached global)
-  if (token) {
-    headers["X-CSRF-Token"] = token;
-  } else if (csrfToken) {
-    // Fallback to cached token for GET requests
-    headers["X-CSRF-Token"] = csrfToken;
-  }
+  const isMutation = method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
+  const headers = await getSecureHeaders(isMutation);
   
   // Add Content-Type if we have data
   if (data) {
@@ -216,6 +248,7 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+  // For queries, use cached CSRF token (synchronous)
   const queryHeaders = getAuthHeaders();
   const res = await fetch(queryKey.join("/") as string, {
     credentials: "include",

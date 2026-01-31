@@ -341,8 +341,22 @@ export function registerAuthRoutes(app: Express): void {
     }
   });
 
-  // Verify registration OTP
+  // Verify registration OTP - requires CSRF protection
   app.post("/api/auth/verify-registration-otp", async (req: any, res) => {
+    // CSRF validation for authenticated requests
+    const sessionId = (req.session as any)?.id || req.sessionID;
+    if (sessionId) {
+      const { validateCsrfToken } = await import("../middleware/csrf");
+      return validateCsrfToken(req, res, async () => {
+        // Continue with handler logic
+        await handleVerifyRegistrationOtp(req, res);
+      });
+    }
+    // No session, proceed without CSRF (new registration)
+    await handleVerifyRegistrationOtp(req, res);
+  });
+  
+  async function handleVerifyRegistrationOtp(req: any, res: any) {
     try {
       const { phone, code } = req.body;
       
