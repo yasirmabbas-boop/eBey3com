@@ -5,18 +5,27 @@ let csrfToken: string | null = null;
 let csrfTokenPromise: Promise<string | null> | null = null;
 
 /**
- * Fetch CSRF token from server (non-blocking, caches result)
+ * Fetch CSRF token from server (async, caches result)
+ * Returns null if session doesn't exist or fetch fails
  */
-function fetchCsrfToken(): void {
-  if (csrfToken || csrfTokenPromise) {
-    return; // Already have token or fetch in progress
+async function fetchCsrfToken(): Promise<string | null> {
+  // Return cached token if available
+  if (csrfToken) {
+    return csrfToken;
   }
 
+  // If a fetch is already in progress, wait for it
+  if (csrfTokenPromise) {
+    return csrfTokenPromise;
+  }
+
+  // Start new fetch
   csrfTokenPromise = fetch("/api/csrf-token", {
     credentials: "include",
   })
     .then(async (res) => {
       if (!res.ok) {
+        // Session might not exist - this is OK for unauthenticated requests
         csrfTokenPromise = null;
         return null;
       }
@@ -25,10 +34,14 @@ function fetchCsrfToken(): void {
       csrfTokenPromise = null;
       return csrfToken;
     })
-    .catch(() => {
+    .catch((error) => {
+      // Silently fail - CSRF might not be needed if session doesn't exist
+      console.log("[CSRF] Token fetch failed (this is OK if not logged in):", error);
       csrfTokenPromise = null;
       return null;
     });
+
+  return csrfTokenPromise;
 }
 
 /**
@@ -67,7 +80,13 @@ export async function authFetch(
   url: string,
   options?: RequestInit
 ): Promise<Response> {
-  const authHeaders = await getAuthHeaders();
+  // Fetch CSRF token for non-GET requests
+  const method = options?.method?.toUpperCase() || "GET";
+  if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+    await fetchCsrfToken();
+  }
+  
+  const authHeaders = getAuthHeaders();
   const mergedHeaders = {
     ...authHeaders,
     ...(options?.headers || {}),
@@ -94,13 +113,9 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Fetch CSRF token for non-GET requests
+  // Fetch CSRF token for non-GET requests (await to ensure token is ready)
   if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
-    fetchCsrfToken();
-    // Wait for token if fetch is in progress
-    if (csrfTokenPromise && !csrfToken) {
-      await csrfTokenPromise;
-    }
+    await fetchCsrfToken();
   }
 
   const authHeaders = getAuthHeaders();
@@ -120,10 +135,7 @@ export async function apiRequest(
   if (res.status === 401) {
     try {
       // Attempt token refresh
-      fetchCsrfToken();
-      if (csrfTokenPromise && !csrfToken) {
-        await csrfTokenPromise;
-      }
+      await fetchCsrfToken();
       const refreshHeaders = getAuthHeaders();
       const refreshRes = await fetch("/api/auth/refresh-token", {
         method: "POST",
