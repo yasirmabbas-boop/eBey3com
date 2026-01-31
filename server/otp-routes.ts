@@ -8,6 +8,7 @@ import { sendOTP, verifyOTP } from "./services/otp-service";
 import { storage } from "./storage";
 import jwt from "jsonwebtoken";
 import { isAuthenticatedUnified } from "./replit_integrations/auth";
+import { normalizePhone, normalizeOTPCode } from "@shared/digit-normalization";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
 
@@ -56,16 +57,19 @@ export function registerOtpRoutes(app: Express) {
     // Same behavior as /api/request-otp, but body is typically { phone }
     try {
       const { phone, phoneNumber } = req.body ?? {};
-      const normalizedInput = phoneNumber || phone;
+      const rawInput = phoneNumber || phone;
 
       console.log("[OTP] /api/auth/send-otp body:", {
         hasPhoneNumber: !!phoneNumber,
         hasPhone: !!phone,
       });
 
-      if (!normalizedInput) {
+      if (!rawInput) {
         return res.status(400).json({ error: "رقم الهاتف مطلوب" });
       }
+
+      // Normalize Arabic digits to Western digits
+      const normalizedInput = normalizePhone(rawInput);
 
       const success = await sendOTP(normalizedInput);
       if (!success) {
@@ -205,7 +209,9 @@ export function registerOtpRoutes(app: Express) {
         });
       }
 
-      const isValid = verifyOTP(user.phone, code);
+      // Normalize OTP code (phone is already normalized in database)
+      const normalizedCode = normalizeOTPCode(code);
+      const isValid = verifyOTP(user.phone, normalizedCode);
       if (!isValid) {
         return res.status(400).json({ error: "رمز التحقق غير صحيح أو منتهي الصلاحية" });
       }

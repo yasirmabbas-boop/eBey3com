@@ -5,6 +5,7 @@ import { insertBuyerAddressSchema } from "@shared/schema";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
 import { ObjectStorageService } from "../replit_integrations/object_storage/objectStorage";
+import { normalizePhone } from "@shared/digit-normalization";
 
 export function registerAccountRoutes(app: Express): void {
   // Get full profile (for account settings)
@@ -117,8 +118,9 @@ export function registerAccountRoutes(app: Express): void {
         return res.status(400).json({ error: "لم يتم تقديم أي حقول للتحديث" });
       }
 
-      // If phone is being updated, check for uniqueness
+      // If phone is being updated, normalize and check for uniqueness
       if (updates.phone) {
+        updates.phone = normalizePhone(updates.phone);
         const existingUserWithPhone = await storage.getUserByPhone(updates.phone);
 
         if (existingUserWithPhone && existingUserWithPhone.id !== userId) {

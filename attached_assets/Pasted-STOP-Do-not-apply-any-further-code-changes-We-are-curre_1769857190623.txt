@@ -1,0 +1,41 @@
+STOP. Do not apply any further code changes. We are currently stuck in a loop because we are guessing at the data structure rather than verifying it.
+
+I need you to perform a ReadOnly Diagnostic Investigation and generate a Status Report. Use the following questions to guide your investigation."
+Diagnostic Questions & Tasks
+
+1. Network Response Validation (The Source of Truth)
+
+    "Execute a raw fetch('/api/notifications') in the environment or browser console. Capture the exact JSON output."
+
+    "Critical Question: Does the JSON response have a top-level notifications property? Is that property an Array, or is it an object (e.g., { items: [], count: 0 })?"
+
+2. Component Data Flow Analysis
+
+    "Review src/pages/notifications.tsx. How exactly is systemNotificationsData populated?"
+
+    "Critical Question: Is systemNotificationsData the entire HTTP response body, or is it already unwrapped? (e.g., if the API returns { data: { notifications: [] } }, are we accessing .data correctly before trying to read .notifications?)"
+
+3. Type & Value Inspection
+
+    "Trace the value of systemNotifications right before the crash at line 281."
+
+    "Critical Question: What is the specific data type of systemNotificationsData?.notifications when the crash occurs? Is it undefined, null, an Object, or a String?"
+
+4. Source Map & Build Verification
+
+    "Compare the stack trace line number (281) with the current code in notifications.tsx."
+
+    "Critical Question: Does line 281 actually contain the .slice() call in the current file version? If not, are we looking at a stale build or cached source map?
+Once you have investigated the above, please provide a report in the following format so I can approve the fix:"
+
+    Diagnostic Report
+
+        Actual API Response Structure: [Paste JSON here]
+
+        Current Variable Value: systemNotifications appears to be: [Type/Value]
+
+        The Discrepancy: The code expects [Array] but is receiving [Actual Type].
+
+        Source Consistency: [Yes/No - Line numbers match]
+
+        Proposed Fix: [Briefly describe the one-line change required to align the data types]

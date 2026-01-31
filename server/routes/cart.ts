@@ -239,6 +239,11 @@ export function registerCartRoutes(app: Express): void {
         });
       }
 
+      // Normalize Arabic digits to Western digits before validation
+      if (req.body.phone) {
+        req.body.phone = normalizePhone(req.body.phone);
+      }
+
       const parsed = checkoutSchema.parse(req.body);
 
       // Get user's cart items
