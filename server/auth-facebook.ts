@@ -197,7 +197,12 @@ export function setupFacebookAuth(app: Express): void {
         // Generate an authToken for the frontend (same pattern as regular login)
         // This token is used as a fallback for Safari ITP and PWA where cookies may be blocked
         const authToken = crypto.randomBytes(32).toString("hex");
-        await authStorage.updateUser(user.id, { authToken } as any);
+        const tokenExpiresAt = new Date();
+        tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 30); // 30 days
+        await authStorage.updateUser(user.id, { 
+          authToken,
+          tokenExpiresAt 
+        } as any);
         console.log("[Facebook Auth] Generated authToken for user:", user.id);
 
         // Check if user has phone and address

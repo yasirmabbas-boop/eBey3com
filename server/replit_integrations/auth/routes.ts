@@ -103,11 +103,14 @@ export function registerAuthRoutes(app: Express): void {
         return res.status(401).json({ error: "رمز التحقق غير صحيح" });
       }
       
-      // Clear pending token and generate auth token
+      // Clear pending token and generate auth token with expiration
       pending2FATokens.delete(pendingToken);
       const authToken = crypto.randomBytes(32).toString("hex");
+      const tokenExpiresAt = new Date();
+      tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 30); // 30 days
       await storage.updateUser(user.id, { 
         authToken,
+        tokenExpiresAt,
         lastLoginAt: new Date()
       } as any);
       
@@ -178,7 +181,7 @@ export function registerAuthRoutes(app: Express): void {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
       
-      // Create user
+      // Create user with phoneVerified set to false
       const user = await storage.createUser({
         phone,
         password: hashedPassword,
@@ -186,11 +189,26 @@ export function registerAuthRoutes(app: Express): void {
         username: `user_${phone.slice(-6)}`,
         email: null,
         role: "buyer",
+        phoneVerified: false, // Explicitly set to false
       });
+      
+      // Send OTP via WhatsApp
+      try {
+        const { sendOTP } = await import("../../services/otp-service");
+        await sendOTP(phone);
+      } catch (otpError) {
+        console.error("[api/auth/register] Failed to send OTP:", otpError);
+        // Continue with registration even if OTP fails - user can verify later
+      }
       
       // Generate auth token
       const authToken = crypto.randomBytes(32).toString("hex");
-      await storage.updateUser(user.id, { authToken } as any);
+      const tokenExpiresAt = new Date();
+      tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 30); // 30 days
+      await storage.updateUser(user.id, { 
+        authToken,
+        tokenExpiresAt 
+      } as any);
       
       // Set session
       (req.session as any).userId = user.id;
@@ -202,6 +220,7 @@ export function registerAuthRoutes(app: Express): void {
         displayName: user.displayName,
         phone: user.phone,
         authToken,
+        requiresPhoneVerification: true, // New flag
       });
     } catch (error) {
       console.error("[api/auth/register] Error:", error);
@@ -225,6 +244,12 @@ export function registerAuthRoutes(app: Express): void {
         // Look up user by authToken in database
         const user = await authStorage.getUserByAuthToken(token);
         if (user) {
+          // Check token expiration
+          if (user.tokenExpiresAt && new Date() > new Date(user.tokenExpiresAt)) {
+            console.log("[api/auth/me] Token expired");
+            return res.status(401).json({ message: "Token expired" });
+          }
+          
           console.log("[api/auth/me] Found user by token:", user.id, "phoneVerified:", user.phoneVerified);
           return res.json(user);
         }
@@ -272,6 +297,93 @@ export function registerAuthRoutes(app: Express): void {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Token refresh endpoint
+  app.post("/api/auth/refresh-token", async (req: any, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const oldToken = authHeader.substring(7);
+      const user = await authStorage.getUserByAuthToken(oldToken);
+      
+      if (!user) {
+        return res.status(401).json({ error: "Invalid token" });
+      }
+      
+      // Check if token is expired or expiring soon (within 7 days)
+      const expiresAt = user.tokenExpiresAt ? new Date(user.tokenExpiresAt) : null;
+      const shouldRefresh = !expiresAt || 
+        (expiresAt.getTime() - Date.now()) < (7 * 24 * 60 * 60 * 1000);
+      
+      if (shouldRefresh) {
+        const newToken = crypto.randomBytes(32).toString("hex");
+        const newExpiresAt = new Date();
+        newExpiresAt.setDate(newExpiresAt.getDate() + 30);
+        
+        await storage.updateUser(user.id, { 
+          authToken: newToken,
+          tokenExpiresAt: newExpiresAt 
+        } as any);
+        
+        return res.json({ authToken: newToken });
+      }
+      
+      // Token still valid, return existing
+      return res.json({ authToken: oldToken });
+    } catch (error) {
+      console.error("[api/auth/refresh-token] Error:", error);
+      res.status(500).json({ error: "Failed to refresh token" });
+    }
+  });
+
+  // Verify registration OTP
+  app.post("/api/auth/verify-registration-otp", async (req: any, res) => {
+    try {
+      const { phone, code } = req.body;
+      
+      if (!phone || !code) {
+        return res.status(400).json({ error: "رقم الهاتف ورمز التحقق مطلوبان" });
+      }
+      
+      // Verify OTP
+      const { verifyOTP } = await import("../../services/otp-service");
+      if (!verifyOTP(phone, code)) {
+        return res.status(400).json({ error: "رمز التحقق غير صحيح أو منتهي الصلاحية" });
+      }
+      
+      // Mark phone as verified
+      const user = await storage.getUserByPhone(phone);
+      if (!user) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+      
+      await storage.markPhoneAsVerified(user.id);
+      
+      // Generate new token with verified status
+      const authToken = crypto.randomBytes(32).toString("hex");
+      const tokenExpiresAt = new Date();
+      tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 30); // 30 days
+      await storage.updateUser(user.id, { 
+        authToken,
+        tokenExpiresAt 
+      } as any);
+      
+      // Update session
+      (req.session as any).userId = user.id;
+      
+      return res.json({ 
+        success: true, 
+        authToken,
+        message: "تم التحقق من رقم الهاتف بنجاح"
+      });
+    } catch (error) {
+      console.error("[api/auth/verify-registration-otp] Error:", error);
+      res.status(500).json({ error: "حدث خطأ أثناء التحقق من الرمز" });
     }
   });
 }

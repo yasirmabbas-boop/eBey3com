@@ -89,7 +89,8 @@ export async function socialMetaMiddleware(
       }
       
       const sellerUrl = `${baseUrl}/seller/${seller.id}`;
-      const sellerName = escapeHtml(seller.displayName || "بائع");
+      // Use seller displayName with fallbacks
+      const sellerName = escapeHtml(seller?.displayName || seller?.username || "بائع");
       const rating = seller.rating || 0;
       const ratingStars = "⭐".repeat(Math.round(rating));
       const description = escapeHtml(
@@ -153,7 +154,8 @@ export async function socialMetaMiddleware(
 
     // Get seller info for better description
     const seller = await storage.getUser(listing.sellerId);
-    const sellerName = seller?.displayName || "بائع";
+    // Use listing.sellerName as fallback if seller doesn't exist
+    const sellerName = seller?.displayName || listing?.sellerName || seller?.username || "بائع";
 
     const productUrl = `${baseUrl}/product/${listing.id}`;
     const images = listing.images || [];

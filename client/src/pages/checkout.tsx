@@ -12,9 +12,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ShoppingCart, MapPin, Phone, User, Loader2, CheckCircle, ArrowRight, Plus, Store, Truck, Package, Minus, Trash2 } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, AUTH_QUERY_KEY } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { MapPicker } from "@/components/map-picker";
+import { PhoneVerificationModal } from "@/components/phone-verification-modal";
 import type { BuyerAddress } from "@shared/schema";
 
 function getAuthHeaders(): HeadersInit {
@@ -65,6 +66,7 @@ export default function CheckoutPage() {
   const [mapLocation, setMapLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isOrderComplete, setIsOrderComplete] = useState(false);
   const [saveAddress, setSaveAddress] = useState(true);
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
 
   const { data: savedAddresses = [], isLoading: isAddressesLoading } = useQuery<BuyerAddress[]>({
     queryKey: ["/api/account/addresses"],
@@ -91,6 +93,19 @@ export default function CheckoutPage() {
     },
     enabled: isAuthenticated,
   });
+
+  // Show phone verification prompt when user is not verified
+  useEffect(() => {
+    if (isAuthenticated && user && !user.phoneVerified && !showPhoneVerification) {
+      // Show verification prompt
+      toast({
+        title: "تحقق من رقم الهاتف مطلوب",
+        description: "يجب التحقق من رقم هاتفك قبل إتمام الطلب",
+        variant: "default",
+        duration: 10000,
+      });
+    }
+  }, [isAuthenticated, user, showPhoneVerification]);
 
   useEffect(() => {
     if (savedAddresses.length > 0) {
@@ -174,7 +189,14 @@ export default function CheckoutPage() {
       });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || "فشل في إتمام الطلب");
+        // Create error object with details for proper handling
+        const errorObj: any = new Error(error.error || "فشل في إتمام الطلب");
+        errorObj.details = error.details;
+        errorObj.summary = error.summary;
+        errorObj.requiresPhoneVerification = error.requiresPhoneVerification;
+        errorObj.phone = error.phone;
+        errorObj.message = error.message || error.error;
+        throw errorObj;
       }
       return res.json();
     },
@@ -210,12 +232,41 @@ export default function CheckoutPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/account/addresses"] });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "خطأ في إتمام الطلب",
-        description: error.message,
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      // Check for phone verification requirement
+      if (error.requiresPhoneVerification) {
+        setShowPhoneVerification(true);
+        toast({
+          title: "تحقق من رقم الهاتف مطلوب",
+          description: error.message || "يجب التحقق من رقم هاتفك قبل إتمام الطلب",
+          variant: "default",
+          duration: 10000,
+        });
+        return;
+      }
+      
+      // Check if error has details (Zod validation errors)
+      if (error.details && Array.isArray(error.details)) {
+        // Show field-specific errors
+        const errorMessages = error.details.map((err: any) => {
+          const fieldName = getFieldLabel(err.field);
+          return `${fieldName}: ${err.message}`;
+        }).join('\n');
+        
+        toast({
+          title: "خطأ في البيانات",
+          description: errorMessages,
+          variant: "destructive",
+          duration: 5000, // Longer duration for multiple errors
+        });
+      } else {
+        // Generic error
+        toast({
+          title: "خطأ في إتمام الطلب",
+          description: error.message || error.summary || "حدث خطأ غير متوقع",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -223,19 +274,53 @@ export default function CheckoutPage() {
     return price.toLocaleString("ar-IQ") + " د.ع";
   };
 
+  function getFieldLabel(field: string): string {
+    const labels: Record<string, string> = {
+      'fullName': 'الاسم الكامل',
+      'phone': 'رقم الهاتف',
+      'city': 'المدينة',
+      'addressLine1': 'العنوان',
+      'addressLine2': 'تفاصيل العنوان',
+      'shippingCost': 'تكلفة الشحن',
+    };
+    return labels[field] || field;
+  }
+
   const validateForm = () => {
+    const errors: string[] = [];
+    
     if (!fullName.trim()) {
-      toast({ title: "الاسم الكامل مطلوب", variant: "destructive" });
-      return false;
+      errors.push("الاسم الكامل مطلوب");
     }
+    
     if (!phone.trim()) {
-      toast({ title: "رقم الهاتف مطلوب", variant: "destructive" });
-      return false;
+      errors.push("رقم الهاتف مطلوب");
+    } else if (!/^07[3-9][0-9]{8}$/.test(phone)) {
+      errors.push("رقم الهاتف غير صحيح (يجب أن يبدأ بـ 07 ويحتوي على 11 رقماً)");
     }
+    
     if (!city) {
-      toast({ title: "المدينة مطلوبة", variant: "destructive" });
+      errors.push("المدينة مطلوبة");
+    }
+    
+    if (!addressLine1.trim()) {
+      errors.push("العنوان مطلوب");
+    } else if (addressLine1.trim().length < 10) {
+      errors.push("العنوان يجب أن يكون 10 أحرف على الأقل");
+    }
+    
+    if (errors.length > 0) {
+      toast({
+        title: "يرجى تصحيح الأخطاء التالية",
+        description: errors.join('\n'),
+        variant: "destructive",
+        duration: 5000,
+      });
       return false;
     }
+    
+    return true;
+  };
     if (!addressLine1.trim()) {
       toast({ title: "العنوان مطلوب", variant: "destructive" });
       return false;
@@ -645,6 +730,24 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {/* Phone Verification Modal */}
+      {!user?.phoneVerified && user?.phone && (
+        <PhoneVerificationModal
+          open={showPhoneVerification}
+          onOpenChange={setShowPhoneVerification}
+          phone={user.phone}
+          phoneVerified={false}
+          onVerified={() => {
+            queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+            setShowPhoneVerification(false);
+            toast({
+              title: "تم التحقق بنجاح",
+              description: "يمكنك الآن إتمام الطلب",
+            });
+          }}
+        />
+      )}
     </Layout>
   );
 }

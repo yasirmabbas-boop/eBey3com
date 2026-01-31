@@ -13,6 +13,7 @@ import { useAuth, AUTH_QUERY_KEY } from "@/hooks/use-auth";
 import { useLanguage } from "@/lib/i18n";
 import { FormError } from "@/components/form-error";
 import { validatePhone, validatePassword } from "@/lib/form-validation";
+import { PhoneVerificationModal } from "@/components/phone-verification-modal";
 
 export default function Register() {
   const [, navigate] = useLocation();
@@ -25,6 +26,8 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [registeredPhone, setRegisteredPhone] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -129,14 +132,23 @@ export default function Register() {
         localStorage.setItem("authToken", data.authToken);
       }
       
-      toast({
-        title: tr("تم إنشاء الحساب بنجاح", "هەژمار بە سەرکەوتوویی دروستکرا", "Account created successfully"),
-        description: tr("مرحباً بك في E-بيع!", "بەخێربێیت بۆ E-بیع!", "Welcome to E-Bay Iraq!"),
-      });
-
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
-
-      navigate("/");
+      // Check if phone verification is required
+      if (data.requiresPhoneVerification) {
+        setRegisteredPhone(formData.phone);
+        setShowVerificationModal(true);
+        toast({
+          title: tr("تم إنشاء الحساب", "هەژمار دروستکرا", "Account created"),
+          description: tr("يرجى التحقق من رقم هاتفك لإكمال التسجيل", "تکایە ژمارەی مۆبایلەکەت پشتڕاست بکەوە", "Please verify your phone number to complete registration"),
+        });
+        // Don't navigate yet - wait for verification
+      } else {
+        toast({
+          title: tr("تم إنشاء الحساب بنجاح", "هەژمار بە سەرکەوتوویی دروستکرا", "Account created successfully"),
+          description: tr("مرحباً بك في E-بيع!", "بەخێربێیت بۆ E-بیع!", "Welcome to E-Bay Iraq!"),
+        });
+        queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+        navigate("/");
+      }
     } catch (error: any) {
       toast({
         title: tr("خطأ في إنشاء الحساب", "هەڵە لە دروستکردنی هەژمار", "Account creation error"),
@@ -390,6 +402,25 @@ export default function Register() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Phone Verification Modal */}
+        {registeredPhone && (
+          <PhoneVerificationModal
+            open={showVerificationModal}
+            onOpenChange={setShowVerificationModal}
+            phone={registeredPhone}
+            phoneVerified={false}
+            onVerified={() => {
+              setShowVerificationModal(false);
+              queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+              toast({
+                title: tr("تم التحقق بنجاح", "پشتڕاستکرایەوە", "Verified successfully"),
+                description: tr("مرحباً بك في E-بيع!", "بەخێربێیت بۆ E-بیع!", "Welcome to E-Bay Iraq!"),
+              });
+              navigate("/");
+            }}
+          />
+        )}
       </div>
     </Layout>
   );

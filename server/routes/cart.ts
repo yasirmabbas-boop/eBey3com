@@ -45,6 +45,13 @@ export function registerCartRoutes(app: Express): void {
           
           const seller = listing.sellerId ? await storage.getUser(listing.sellerId) : null;
           
+          // Use listing.sellerName as fallback if seller doesn't exist or has no displayName
+          const sellerName = seller?.displayName || 
+                            (listing as any).sellerName || 
+                            seller?.username || 
+                            (seller?.phone ? `مستخدم ${seller.phone.slice(-4)}` : null) ||
+                            "بائع مجهول";
+          
           return {
             ...item,
             listing: {
@@ -56,7 +63,7 @@ export function registerCartRoutes(app: Express): void {
               quantityAvailable: listing.quantityAvailable,
               isActive: listing.isActive,
               sellerId: listing.sellerId,
-              sellerName: seller?.displayName || "بائع مجهول",
+              sellerName,
             },
           };
         })
@@ -241,7 +248,9 @@ export function registerCartRoutes(app: Express): void {
       if (!user?.phoneVerified) {
         return res.status(403).json({ 
           error: "يجب التحقق من رقم هاتفك قبل إتمام الطلب",
-          requiresPhoneVerification: true
+          requiresPhoneVerification: true,
+          phone: user?.phone, // Include phone for frontend
+          message: `يرجى التحقق من رقم هاتفك ${user?.phone} عبر واتساب لإتمام الطلب`
         });
       }
 
@@ -430,7 +439,19 @@ export function registerCartRoutes(app: Express): void {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "بيانات غير صالحة", details: error.errors });
+        // Format errors for better frontend consumption
+        const formattedErrors = error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+          code: err.code,
+        }));
+        
+        return res.status(400).json({ 
+          error: "بيانات غير صالحة",
+          details: formattedErrors,
+          // Also include a user-friendly summary
+          summary: formattedErrors.map(e => `${e.field}: ${e.message}`).join(', ')
+        });
       }
       console.error("Error in checkout:", error);
       res.status(500).json({ error: "فشل في إتمام الطلب" });

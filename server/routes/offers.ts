@@ -195,7 +195,12 @@ export function registerOffersRoutes(app: Express): void {
       const parsed = respondOfferBodySchema.parse(req.body);
       const listing = offer.listingId ? await storage.getListing(offer.listingId) : null;
       const seller = await storage.getUser(userId);
-      const sellerName = seller?.displayName || seller?.username || "البائع";
+      // Use listing.sellerName as fallback if seller doesn't exist
+      const sellerName = seller?.displayName || 
+                        listing?.sellerName || 
+                        seller?.username || 
+                        (seller?.phone ? `مستخدم ${seller.phone.slice(-4)}` : null) ||
+                        "البائع";
 
       let newStatus: string;
       let notificationTitle: string;

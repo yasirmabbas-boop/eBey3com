@@ -157,7 +157,7 @@ export function registerAdminRoutes(app: Express): void {
             listingImage: listing?.images?.[0],
             listingPrice: listing?.price,
             sellerId: listing?.sellerId,
-            sellerName: seller?.displayName || listing?.sellerName,
+            sellerName: seller?.displayName || listing?.sellerName || seller?.username || "بائع غير معروف",
             totalReportsOnTarget: listingReports.length,
             pendingReportsOnTarget: listingReports.filter((r: any) => r.status === "pending").length,
           };
@@ -398,7 +398,7 @@ export function registerAdminRoutes(app: Express): void {
             ...t,
             buyerName: buyer?.displayName,
             buyerPhone: buyer?.phone,
-            sellerName: seller?.displayName,
+            sellerName: seller?.displayName || listing?.sellerName || seller?.username || "بائع غير معروف",
             sellerPhone: seller?.phone,
             listingTitle: listing?.title,
             listingImage: listing?.images?.[0],

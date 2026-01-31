@@ -1,0 +1,147 @@
+2026-01-31 23:18:19.32
+3c2e4c1d
+User
+searchQuery: undefined,
+2026-01-31 23:18:19.32
+3c2e4c1d
+User
+[STORAGE] Adding availableListingCondition (filtering out sold items)
+2026-01-31 23:18:19.32
+3c2e4c1d
+User
+conditionsCount: undefined,
+2026-01-31 23:18:19.32
+3c2e4c1d
+User
+}
+2026-01-31 23:18:19.36
+3c2e4c1d
+User
+[api/auth/me] No user found for token
+2026-01-31 23:18:19.37
+3c2e4c1d
+User
+8:18:19 PM [express] GET /api/search-suggestions 200 in 258ms
+2026-01-31 23:18:19.38
+3c2e4c1d
+User
+8:18:19 PM [express] GET /api/account/profile 200 in 267ms :: [Response: 761 bytes]
+2026-01-31 23:18:19.40
+3c2e4c1d
+User
+[api/auth/me] Found user by session: fb_25872581299020147
+2026-01-31 23:18:19.43
+3c2e4c1d
+User
+8:18:19 PM [express] GET /api/auth/me 200 in 320ms :: [Response: 1758 bytes]
+2026-01-31 23:18:19.49
+3c2e4c1d
+User
+[api/auth/me] Checking Bearer token: 0ab95a1f...
+2026-01-31 23:18:19.52
+3c2e4c1d
+User
+[api/auth/me] No user found for token
+2026-01-31 23:18:19.55
+3c2e4c1d
+User
+[api/auth/me] Found user by session: fb_25872581299020147
+2026-01-31 23:18:19.56
+3c2e4c1d
+User
+resultsCount: 4,
+2026-01-31 23:18:19.56
+3c2e4c1d
+User
+firstResultIsActive: true,
+2026-01-31 23:18:19.56
+3c2e4c1d
+User
+total: 4,
+2026-01-31 23:18:19.56
+3c2e4c1d
+User
+firstResultId: '1d64cf25-0399-4d04-b7cd-9b8324684e0c',
+2026-01-31 23:18:19.56
+3c2e4c1d
+User
+[STORAGE] Query results: {
+2026-01-31 23:18:19.56
+3c2e4c1d
+User
+firstResultQuantityAvailable: 1
+2026-01-31 23:18:19.56
+3c2e4c1d
+User
+firstResultQuantitySold: 0,
+2026-01-31 23:18:19.56
+3c2e4c1d
+User
+}
+2026-01-31 23:18:19.62
+3c2e4c1d
+User
+8:18:19 PM [express] GET /api/listings 200 in 508ms :: [Response: 3802 bytes]
+2026-01-31 23:18:19.76
+3c2e4c1d
+User
+[api/auth/me] No user found for token
+2026-01-31 23:18:19.79
+3c2e4c1d
+User
+[api/auth/me] Found user by session: fb_25872581299020147
+2026-01-31 23:18:19.83
+3c2e4c1d
+User
+8:18:19 PM [express] GET /api/auth/me 200 in 127ms :: [Response: 1758 bytes]
+2026-01-31 23:18:20.02
+3c2e4c1d
+User
+8:18:20 PM [express] GET /api/users/fb_25872581299020147/watchlist 200 in 92ms :: [Response: 505 bytes]
+2026-01-31 23:18:20.03
+3c2e4c1d
+User
+8:18:20 PM [express] GET /api/cart 200 in 293ms :: []
+2026-01-31 23:18:20.15
+3c2e4c1d
+User
+8:18:20 PM [ws] WebSocket client connected
+2026-01-31 23:18:20.15
+3c2e4c1d
+User
+8:18:20 PM [ws] User fb_25872581299020147 connected via WebSocket
+2026-01-31 23:18:20.60
+3c2e4c1d
+User
+[api/auth/me] Checking Bearer token: 0ab95a1f...
+2026-01-31 23:18:20.62
+3c2e4c1d
+User
+[api/auth/me] No user found for token
+2026-01-31 23:18:20.69
+3c2e4c1d
+User
+8:18:20 PM [express] GET /api/auth/me 200 in 123ms :: [Response: 1758 bytes]
+2026-01-31 23:18:21.05
+3c2e4c1d
+User
+8:18:21 PM [express] GET /api/account/profile 401 in 1ms :: {"error":"غير مسجل الدخول"}
+2026-01-31 23:18:21.05
+3c2e4c1d
+User
+8:18:21 PM [express] GET /api/search-suggestions 304 in 3ms
+2026-01-31 23:18:21.27
+3c2e4c1d
+User
+8:18:21 PM [express] GET /api/auth/me 401 in 2ms :: {"message":"Unauthorized"}
+2026-01-31 23:18:22.08
+3c2e4c1d
+User
+8:18:22 PM [express] GET /api/auth/me 401 in 1ms :: {"message":"Unauthorized"}
+2026-01-31 23:18:22.08
+3c2e4c1d
+User
+8:18:22 PM [express] GET /api/account/profile 401 in 1ms :: {"error":"غير مسجل الدخول"}
+2026-01-31 23:18:22.30
+3c2e4c1d
+User

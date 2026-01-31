@@ -53,6 +53,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   lastLoginAt: timestamp("last_login_at"),
   authToken: text("auth_token"),
+  tokenExpiresAt: timestamp("token_expires_at"), // Token expiration tracking
   facebookId: text("facebook_id").unique(),
   facebookLongLivedToken: text("facebook_long_lived_token"),
   phoneVerified: boolean("phone_verified").notNull().default(false),

@@ -597,6 +597,13 @@ export function registerAccountRoutes(app: Express): void {
           const listing = offer.listingId ? await storage.getListing(offer.listingId) : null;
           const seller = listing ? await storage.getUser(listing.sellerId) : null;
           
+          // Use listing.sellerName as fallback if seller doesn't exist
+          const sellerName = seller?.displayName || 
+                            (listing as any).sellerName || 
+                            seller?.username || 
+                            (seller?.phone ? `مستخدم ${seller.phone.slice(-4)}` : null) ||
+                            "بائع";
+          
           return {
             ...offer,
             listing: listing ? {
@@ -604,7 +611,7 @@ export function registerAccountRoutes(app: Express): void {
               title: listing.title,
               price: listing.price,
               images: listing.images || [],
-              sellerName: seller?.displayName || seller?.username || "بائع",
+              sellerName,
             } : null,
           };
         })

@@ -69,9 +69,43 @@ export async function apiRequest(
     credentials: "include",
   });
 
-  // Handle 401 for mutations - redirect to signin with return URL
+  // Handle 401 for mutations - try refresh first
   if (res.status === 401) {
-    console.log("[apiRequest] Session expired (401), clearing auth and redirecting to signin");
+    try {
+      // Attempt token refresh
+      const refreshRes = await fetch("/api/auth/refresh-token", {
+        method: "POST",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+      
+      if (refreshRes.ok) {
+        const { authToken } = await refreshRes.json();
+        localStorage.setItem("authToken", authToken);
+        
+        // Retry original request with new token
+        const retryHeaders = {
+          ...headers,
+          Authorization: `Bearer ${authToken}`,
+        };
+        
+        const retryRes = await fetch(url, {
+          method,
+          headers: retryHeaders,
+          body: data ? JSON.stringify(data) : undefined,
+          credentials: "include",
+        });
+        
+        if (retryRes.ok) {
+          await throwIfResNotOk(retryRes);
+          return retryRes;
+        }
+      }
+    } catch (refreshError) {
+      console.log("[apiRequest] Token refresh failed, redirecting to signin");
+    }
+    
+    // Refresh failed or not possible - redirect to signin
     localStorage.removeItem("authToken");
     const currentPath = window.location.pathname;
     if (currentPath !== '/' && currentPath !== '/signin') {
