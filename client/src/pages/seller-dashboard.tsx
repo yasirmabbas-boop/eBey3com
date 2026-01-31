@@ -653,8 +653,10 @@ export default function SellerDashboard() {
 
   const offerResponseMutation = useMutation({
     mutationFn: async ({ offerId, action, counterAmount, counterMessage }: { offerId: string; action: "accept" | "reject" | "counter"; counterAmount?: number; counterMessage?: string }) => {
+      const authToken = localStorage.getItem("authToken");
       const res = await secureRequest(`/api/offers/${offerId}/respond`, {
         method: "PUT",
+        headers: {
           ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
         },
         credentials: "include",
