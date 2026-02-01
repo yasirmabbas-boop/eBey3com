@@ -167,7 +167,7 @@ export default function AdminPage() {
     enabled: !authLoading && (user as any)?.isAdmin,
   });
 
-  const { data: reportsData, isLoading: reportsLoading } = useQuery<{ reports: Report[]; pagination: { page: number; limit: number; total: number; hasMore: boolean; totalPages: number } }>({
+  const reportsQuery = useQuery<{ reports: Report[]; pagination: { page: number; limit: number; total: number; hasMore: boolean; totalPages: number } }>({
     queryKey: ["/api/admin/reports", reportsPage],
     queryFn: async () => {
       const res = await fetchWithAuth(`/api/admin/reports?page=${reportsPage}&limit=${pageSize}`);
@@ -176,10 +176,13 @@ export default function AdminPage() {
     },
     enabled: !authLoading && (user as any)?.isAdmin && activeTab === "reports",
   });
-  const reports = reportsData?.reports || [];
-  const reportsPagination = reportsData?.pagination;
+  const reports = reportsQuery.data?.reports || [];
+  const reportsPagination = reportsQuery.data?.pagination;
+  const reportsLoading = reportsQuery.isLoading;
+  const reportsError = reportsQuery.error;
+  const reportsRefetch = reportsQuery.refetch;
 
-  const { data: usersData, isLoading: usersLoading } = useQuery<{ users: User[]; pagination: { page: number; limit: number; total: number; hasMore: boolean; totalPages: number } }>({
+  const usersQuery = useQuery<{ users: User[]; pagination: { page: number; limit: number; total: number; hasMore: boolean; totalPages: number } }>({
     queryKey: ["/api/admin/users", usersPage],
     queryFn: async () => {
       const res = await fetchWithAuth(`/api/admin/users?page=${usersPage}&limit=${pageSize}`);
@@ -188,8 +191,32 @@ export default function AdminPage() {
     },
     enabled: !authLoading && (user as any)?.isAdmin && (activeTab === "users" || activeTab === "seller-requests"),
   });
-  const users = usersData?.users || [];
-  const usersPagination = usersData?.pagination;
+  const users = usersQuery.data?.users || [];
+  const usersPagination = usersQuery.data?.pagination;
+  const usersLoading = usersQuery.isLoading;
+  const usersError = usersQuery.error;
+  const usersRefetch = usersQuery.refetch;
+  const normalizedUserSearchQuery = userSearchQuery.trim().toLowerCase();
+  const matchesUserSearchField = (value?: string) => {
+    if (!normalizedUserSearchQuery) return false;
+    return value?.toLowerCase().includes(normalizedUserSearchQuery) ?? false;
+  };
+  const filteredUsers = users.filter((u) => {
+    if (!normalizedUserSearchQuery) return true;
+    return (
+      matchesUserSearchField(u.displayName) ||
+      matchesUserSearchField(u.accountCode) ||
+      matchesUserSearchField(u.phone) ||
+      matchesUserSearchField(u.email)
+    );
+  });
+  const totalReportsCount = reportsPagination?.total ?? reports.length;
+  const pendingReportsCount = reports.filter((report) => report.status === "pending").length;
+  const resolvedReportsCount = reports.length - pendingReportsCount;
+  const flaggedTargetsCount = reports.filter((report) => report.pendingReportsOnTarget >= 3).length;
+  const totalBannedUsers = users.filter((u) => u.isBanned).length;
+  const totalVerifiedUsers = users.filter((u) => u.isAuthenticated || u.authenticityGuaranteed).length;
+  const totalSellerRequests = users.filter((u) => u.sellerRequestStatus === "pending").length;
 
   const { data: listingsData, isLoading: listingsLoading } = useQuery<{ listings: AdminListing[]; pagination: { page: number; limit: number; total: number; hasMore: boolean; totalPages: number } }>({
     queryKey: ["/api/admin/listings", listingsPage],
@@ -747,7 +774,49 @@ export default function AdminPage() {
             {activeTab === "reports" && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold">إدارة البلاغات</h2>
-                {reportsLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+                  <Card>
+                    <CardContent className="pt-4 pb-6">
+                      <p className="text-sm text-muted-foreground">إجمالي البلاغات</p>
+                      <p className="text-3xl font-bold">{totalReportsCount.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">({reports.length} معروضة)</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4 pb-6">
+                      <p className="text-sm text-muted-foreground">بلاغات معلقة</p>
+                      <p className="text-3xl font-bold">{pendingReportsCount.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">تحتاج لإجراءات</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4 pb-6">
+                      <p className="text-sm text-muted-foreground">بلاغات محلولة</p>
+                      <p className="text-3xl font-bold">{resolvedReportsCount.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">تم التعامل معها</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4 pb-6">
+                      <p className="text-sm text-muted-foreground">أهداف مميزة</p>
+                      <p className="text-3xl font-bold">{flaggedTargetsCount.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">بلاغات متكررة على هدف واحد</p>
+                    </CardContent>
+                  </Card>
+                </div>
+                {reportsError ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <FileWarning className="h-12 w-12 mx-auto mb-4 text-destructive" />
+                      <p className="text-sm text-destructive">
+                        {reportsError instanceof Error ? reportsError.message : "حدث خطأ أثناء تحميل البلاغات"}
+                      </p>
+                      <Button variant="outline" className="mt-4" onClick={reportsRefetch}>
+                        إعادة المحاولة
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : reportsLoading ? (
                   <div className="flex justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
@@ -953,11 +1022,60 @@ export default function AdminPage() {
                     مسح
                   </Button>
                 </div>
-                {usersLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <Card>
+                    <CardContent className="pt-4 pb-6">
+                      <p className="text-sm text-muted-foreground">إجمالي المستخدمين</p>
+                      <p className="text-3xl font-bold">{users.length.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">مبني على بيانات الخادم</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4 pb-6">
+                      <p className="text-sm text-muted-foreground">نتائج البحث</p>
+                      <p className="text-3xl font-bold">{filteredUsers.length.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">بعد تطبيق المرشح</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4 pb-6">
+                      <p className="text-sm text-muted-foreground">المستخدمون المحظورون</p>
+                      <p className="text-3xl font-bold">{totalBannedUsers.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">يحتاجون مراجعة</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4 pb-6">
+                      <p className="text-sm text-muted-foreground">التحقق والبصمات</p>
+                      <p className="text-3xl font-bold">{totalVerifiedUsers.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">مع العلامات الزرقاء أو الأصالة</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4 pb-6">
+                      <p className="text-sm text-muted-foreground">طلبات البائعين</p>
+                      <p className="text-3xl font-bold">{totalSellerRequests.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">بانتظار الموافقة</p>
+                    </CardContent>
+                  </Card>
+                </div>
+                {usersError ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <Users className="h-12 w-12 mx-auto mb-4 text-destructive" />
+                      <p className="text-sm text-destructive">
+                        {usersError instanceof Error ? usersError.message : "حدث خطأ أثناء تحميل المستخدمين"}
+                      </p>
+                      <Button variant="outline" className="mt-4" onClick={usersRefetch}>
+                        إعادة المحاولة
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : usersLoading ? (
                   <div className="flex justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
-                ) : users && users.length > 0 ? (
+                ) : filteredUsers.length > 0 ? (
                   <Card>
                     <div className="overflow-x-auto">
                       <Table>
@@ -972,16 +1090,7 @@ export default function AdminPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {users.filter(u => {
-                            if (!userSearchQuery.trim()) return true;
-                            const query = userSearchQuery.toLowerCase();
-                            return (
-                              u.displayName?.toLowerCase().includes(query) ||
-                              u.accountCode?.toLowerCase().includes(query) ||
-                              u.phone?.toLowerCase().includes(query) ||
-                              u.email?.toLowerCase().includes(query)
-                            );
-                          }).map((u) => (
+                          {filteredUsers.map((u) => (
                             <TableRow key={u.id} data-testid={`row-user-${u.id}`}>
                               <TableCell className="font-medium">{u.displayName}</TableCell>
                               <TableCell className="font-mono text-sm">{u.accountCode || "-"}</TableCell>
@@ -1168,7 +1277,7 @@ export default function AdminPage() {
                   <Card>
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>لا يوجد مستخدمين</p>
+                      <p>{users.length === 0 ? "لا يوجد مستخدمين" : "لا توجد نتائج تطابق المرشح"}</p>
                     </CardContent>
                   </Card>
                 )}
