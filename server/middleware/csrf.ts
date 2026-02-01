@@ -20,6 +20,14 @@ export function validateCsrfToken(req: Request, res: Response, next: NextFunctio
     return next();
   }
 
+  // Skip CSRF validation for Bearer token authenticated requests
+  // Bearer tokens stored in localStorage are not sent automatically by browsers,
+  // so they already provide CSRF protection (attacker can't access the token)
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
   const sessionId = (req.session as any)?.id || req.sessionID;
   
   // If no session exists, skip CSRF validation (might be unauthenticated request)
