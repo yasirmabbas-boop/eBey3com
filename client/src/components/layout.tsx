@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { ShoppingCart, Loader2 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { AccountDropdown } from "@/components/account-dropdown";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
 import { ImageSearchModal } from "@/components/image-search-modal";
@@ -21,7 +20,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
   const { isLoading } = useAuth();
   const { totalItems } = useCart();
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
-  const { language, setLanguage } = useLanguage();
+  const { language } = useLanguage();
 
   const isRtl = language === "ar" || language === "ku";
 
@@ -33,35 +32,34 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
 
       {/* Top Bar with Logo, Language, Cart */}
       {!hideHeader && (
-      <div 
+      <div
         className="despia-topbar bg-primary text-white py-2 px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]"
-        style={{ paddingTop: isAndroid ? '24px' : 'var(--safe-area-top)' }}
+        style={{ paddingTop: isAndroid ? "24px" : "var(--safe-area-top)" }}
       >
-        <div className="container mx-auto flex justify-between items-center">
+        <div className="container mx-auto flex justify-between items-center relative">
           <Link href="/" className="flex-shrink-0 flex items-center">
-            <Logo className="h-8 md:h-10 brightness-0 invert" />
+            <Logo className="h-8 md:h-10" />
           </Link>
-          
+
+          <Link
+            href="/sell"
+            className="absolute left-1/2 -translate-x-1/2 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-[11px] uppercase tracking-wide transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white flex items-center gap-2"
+            data-testid="link-add-product"
+          >
+            <span className="text-[11px] font-bold leading-tight md:text-xs md:font-semibold">أضف منتج</span>
+          </Link>
+
           <div className="flex items-center gap-2 sm:gap-3">
-            <Select
-              value={language}
-              onValueChange={(value) => setLanguage(value as typeof language)}
+            <Link
+              href="/cart"
+              className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-colors"
+              data-testid="link-cart"
             >
-              <SelectTrigger
-                className="h-6 w-14 bg-white/20 text-white border-0 text-[10px] font-bold px-2"
-                data-testid="select-language"
-              >
-                <SelectValue placeholder={language === "ar" ? "AR" : "کو"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ar">AR</SelectItem>
-                <SelectItem value="ku">کو</SelectItem>
-              </SelectContent>
-            </Select>
-            <Link href="/cart" className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-colors" data-testid="link-cart">
-              <ShoppingCart className="h-4 w-4" />
+              <ShoppingCart className="h-5 w-5" />
               {totalItems > 0 && (
-                <span className="bg-red-500 text-white text-[10px] rounded-full px-1.5 h-4 flex items-center justify-center font-bold">{totalItems > 99 ? '99+' : totalItems}</span>
+                <span className="bg-red-500 text-white text-[10px] rounded-full px-1.5 h-4 flex items-center justify-center font-bold">
+                  {totalItems > 99 ? "99+" : totalItems}
+                </span>
               )}
             </Link>
           </div>

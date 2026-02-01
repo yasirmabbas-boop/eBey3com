@@ -5,14 +5,15 @@ import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, Phone, Plus, Pencil, Trash2, CheckCircle, Star, Camera, User } from "lucide-react";
+import { Loader2, MapPin, Phone, Plus, Pencil, Trash2, CheckCircle, Star, Camera, User, Globe } from "lucide-react";
 import { apiRequest, authFetch } from "@/lib/queryClient";
 import { getUserAvatarSrc } from "@/lib/avatar";
 import { Layout } from "@/components/layout";
+import { useLanguage, Language } from "@/lib/i18n";
 import type { BuyerAddress } from "@shared/schema";
 
 const IRAQI_PROVINCES = [
@@ -32,6 +33,7 @@ export default function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { language, setLanguage } = useLanguage();
 
   // Profile editing state
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -224,6 +226,12 @@ export default function Settings() {
       setAddressPhone(profile.phone);
     }
     setShowAddressDialog(true);
+  };
+
+  const languageLabelMap: Record<Language, string> = {
+    ar: "العربية",
+    ku: "کوردی",
+    en: "English",
   };
 
   const openEditDialog = (address: BuyerAddress) => {
@@ -504,6 +512,42 @@ export default function Settings() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Language Section */}
+        <div>
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            اللغة
+          </h2>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">لغة الواجهة</CardTitle>
+              <CardDescription>اختر اللغة التي تريد أن يظهر بها التطبيق.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 py-4">
+              <p className="text-sm text-muted-foreground">
+                اللغة الحالية: {languageLabelMap[language]}
+              </p>
+              <Select
+                value={language}
+                onValueChange={(value) => setLanguage(value as Language)}
+              >
+                <SelectTrigger id="select-language-settings">
+                  <SelectValue placeholder="اختر اللغة" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.entries(languageLabelMap) as [Language, string][]).map(
+                    ([code, label]) => (
+                      <SelectItem key={code} value={code}>
+                        {label}
+                      </SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
         </div>
       </div>
 

@@ -5,6 +5,8 @@ interface LogoProps {
 }
 
 const IDLE_TIMEOUT = 45000;
+const LOGO_SCALE = 0.8;
+const LOGO_VERTICAL_SHIFT = 3;
 
 export function Logo({ className = "" }: LogoProps) {
   const [isAnimating, setIsAnimating] = useState(false);
@@ -61,49 +63,51 @@ export function Logo({ className = "" }: LogoProps) {
   }, [resetIdleTimer]);
 
   return (
-    <div className={`inline-flex items-center ${className}`}>
+    <div
+      className={`inline-flex items-center ${className}`}
+      style={{
+        transform: `translateY(${LOGO_VERTICAL_SHIFT}px) scale(${LOGO_SCALE})`,
+        transformOrigin: "center",
+      }}
+    >
       <style>{`
         @keyframes dropBounce {
           0% {
-            transform: scaleX(-1) translateY(-80px);
+            transform: translateY(-80px);
             opacity: 0;
           }
           20% {
             opacity: 1;
           }
           50% {
-            transform: scaleX(-1) translateY(0);
+            transform: translateY(0);
           }
           65% {
-            transform: scaleX(-1) translateY(-12px);
+            transform: translateY(-12px);
           }
           80% {
-            transform: scaleX(-1) translateY(0);
+            transform: translateY(0);
           }
           90% {
-            transform: scaleX(-1) translateY(-4px);
+            transform: translateY(-4px);
           }
           100% {
-            transform: scaleX(-1) translateY(0);
+            transform: translateY(0);
           }
         }
-        .e-drop {
+        .logo-drop {
           animation: dropBounce 0.8s ease-out forwards;
         }
-        .e-normal {
-          transform: scaleX(-1);
+        .logo-rest {
+          transform: translateY(0);
         }
       `}</style>
-      
-      <span className="text-2xl md:text-3xl font-bold flex items-center" style={{ fontFamily: "Cairo, sans-serif" }}>
-        <span 
-          className={`text-green-600 ${isAnimating ? 'e-drop' : 'e-normal'}`}
-        >
-          E
-        </span>
-        <span className="text-red-500 mx-0.5">-</span>
-        <span className="text-blue-500">بيع</span>
-      </span>
+
+      <img
+        src="/اي بيع-01.svg"
+        alt="E-بيع"
+        className={`h-8 md:h-10 transition-transform ${isAnimating ? "logo-drop" : "logo-rest"}`}
+      />
     </div>
   );
 }
