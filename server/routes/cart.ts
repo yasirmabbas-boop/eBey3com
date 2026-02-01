@@ -16,7 +16,7 @@ const checkoutSchema = z.object({
   fullName: z.string().trim().min(3).max(100),
   phone: z.string().regex(/^07[3-9][0-9]{8}$/),
   city: z.string().trim().min(3).max(50),
-  addressLine1: z.string().trim().min(10).max(200),
+  addressLine1: z.string().trim().min(5).max(200),
   addressLine2: z.string().trim().max(200).optional(),
   shippingCost: z.number().int().min(0),
   saveAddress: z.boolean().optional(),
