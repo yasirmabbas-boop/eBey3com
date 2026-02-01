@@ -297,8 +297,8 @@ export default function CheckoutPage() {
     
     if (!addressLine1.trim()) {
       errors.push("العنوان مطلوب");
-    } else if (addressLine1.trim().length < 10) {
-      errors.push("العنوان يجب أن يكون 10 أحرف على الأقل");
+    } else if (addressLine1.trim().length < 5) {
+      errors.push("العنوان يجب أن يكون 5 أحرف على الأقل");
     }
     
     if (errors.length > 0) {
