@@ -37,10 +37,8 @@ export function useCart() {
 
   const addToCartMutation = useMutation({
     mutationFn: async ({ listingId, quantity = 1 }: { listingId: string; quantity?: number }) => {
-      const res = await fetch("/api/cart", {
+      const res = await secureRequest("/api/cart", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        credentials: "include",
         body: JSON.stringify({ listingId, quantity }),
       });
       if (!res.ok) {
@@ -74,10 +72,8 @@ export function useCart() {
 
   const removeFromCartMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/cart/${id}`, {
+      const res = await secureRequest(`/api/cart/${id}`, {
         method: "DELETE",
-        credentials: "include",
-        headers: getAuthHeaders(),
       });
       if (!res.ok) {
         const error = await res.json();
