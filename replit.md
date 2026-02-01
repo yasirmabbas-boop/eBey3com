@@ -139,6 +139,55 @@ Delivery integration with driver cancellation support (`server/services/delivery
   - `POST /api/webhooks/delivery/cancellation` - Driver cancellation events
   - `GET /api/delivery/cancellation-reasons` - Get available cancellation reasons
 
+### CSRF Protection & Secure Requests (Updated Feb 2026)
+
+The platform implements a dual-layer authentication and CSRF protection system:
+
+**Authentication Methods**:
+- **Bearer Tokens**: Stored in localStorage, used for API authentication
+- **Session Cookies**: Used for session management with PostgreSQL store
+
+**CSRF Protection Strategy**:
+- CSRF tokens are required for state-changing requests (POST, PUT, DELETE)
+- Bearer token requests bypass CSRF validation (tokens in localStorage are not vulnerable to CSRF attacks)
+- CSRF middleware located at `server/middleware/csrf.ts`
+
+**secureRequest Helper** (`client/src/lib/queryClient.ts`):
+A unified fetch wrapper that automatically handles:
+- Bearer token injection from localStorage
+- CSRF token fetching for mutations
+- Content-Type headers for JSON payloads
+- Credentials inclusion for cookies
+
+**Usage Pattern**:
+```typescript
+import { secureRequest } from "@/lib/queryClient";
+
+// For queries (GET)
+const res = await secureRequest("/api/data", { method: "GET" });
+
+// For mutations (POST/PUT/DELETE) - CSRF token added automatically
+const res = await secureRequest("/api/data", {
+  method: "POST",
+  body: JSON.stringify(data),
+});
+```
+
+**Files Updated (Feb 2026)**:
+| File | Change |
+|------|--------|
+| `client/src/lib/queryClient.ts` | Added `secureRequest` helper |
+| `server/middleware/csrf.ts` | Added Bearer token bypass |
+| `client/src/pages/checkout.tsx` | Fixed missing secureRequest import |
+| `client/src/pages/product.tsx` | Fixed missing secureRequest import |
+| `client/src/hooks/use-cart.ts` | Replaced raw fetch with secureRequest |
+| `server/routes/cart.ts` | Fixed addressLine1 validation (10→5 chars) |
+
+**Best Practices**:
+- Always use `secureRequest` instead of raw `fetch` for authenticated requests
+- For file uploads with FormData, omit Content-Type (browser sets it automatically)
+- Check server logs for 403 errors indicating CSRF issues
+
 ## External Dependencies
 
 ### Database
