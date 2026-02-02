@@ -1,0 +1,76 @@
+48:04.14
+4857eb36
+User
+codePrefix: 'messaging'
+2026-02-02 21:48:04.14
+4857eb36
+User
+at FirebaseMessagingError.fromServerError (/home/runner/workspace/node_modules/firebase-admin/lib/utils/error.js:269:16)
+2026-02-02 21:48:04.14
+4857eb36
+User
+code: 'messaging/third-party-auth-error',
+2026-02-02 21:48:04.14
+4857eb36
+User
+},
+2026-02-02 21:48:04.14
+4857eb36
+User
+at async file:///home/runner/workspace/dist/index.js:88:1047
+2026-02-02 21:48:04.14
+4857eb36
+User
+errorInfo: {
+2026-02-02 21:48:04.14
+4857eb36
+User
+at async file:///home/runner/workspace/dist/index.js:96:4292 {
+2026-02-02 21:48:04.14
+4857eb36
+User
+at /home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-api-request-internal.js:82:75
+2026-02-02 21:48:04.14
+4857eb36
+User
+[FCM] Failed to send notification: FirebaseMessagingError: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-02 21:48:04.14
+4857eb36
+User
+at async Promise.allSettled (index 0)
+2026-02-02 21:48:04.14
+4857eb36
+User
+at async lt (file:///home/runner/workspace/dist/index.js:88:652)
+2026-02-02 21:48:04.14
+4857eb36
+User
+at async J8 (file:///home/runner/workspace/dist/index.js:87:61614)
+2026-02-02 21:48:04.14
+4857eb36
+User
+}
+2026-02-02 21:48:04.14
+4857eb36
+User
+[push] Sent 1/2 notifications to user fb_25872581299020147
+2026-02-02 21:48:04.14
+4857eb36
+User
+[push] Error sending to user fb_25872581299020147: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-02 21:48:04.14
+4857eb36
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2026-02-02 21:48:04.14
+4857eb36
+User
+at createFirebaseError (/home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-errors-internal.js:35:47)
+2026-02-02 21:48:04.14
+4857eb36
+User
+message: 'Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.'
+2026-02-02 21:48:04.17
+4857eb36
+User
+6:48:04 PM [express] POST /api/offers 201 in 592ms :: {"id":"3a67e162-61e1-46be-8af8-31dfa
