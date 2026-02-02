@@ -1,0 +1,175 @@
+`UIScene` lifecycle will soon be required. Failure to adopt will result in an assert in the future.
+Could not create a sandbox extension for '/var/containers/Bundle/Application/20C09FC8-FA97-48FA-842A-25EFE97AF2A8/App.app'
+Loading network plugin
+KeyboardPlugin: resize mode - body
+⚡️  Loading app at https://ebey3.com...
+Reachable via WiFi
+void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+WebContent[4378] Could not register system wide server: -25204
+WebContent[4378] _AXAddToElementCache was called even though the element was in the cache: <WKAccessibilityWebPageObject: 0x124a180a0>
+WebContent[4378] Unable to hide query parameters from script (missing data)
+⚡️  [warn] - [PWA] Service Workers not supported in this browser
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: eyJhbGci...
+⚡️  To Native ->  StatusBar setOverlaysWebView 77076741
+⚡️  To Native ->  StatusBar setStyle 77076742
+⚡️  To Native ->  StatusBar setBackgroundColor 77076743
+⚡️  To Native ->  App addListener 77076744
+⚡️  To Native ->  App addListener 77076745
+⚡️  To Native ->  App addListener 77076746
+⚡️  TO JS undefined
+⚡️  TO JS {}
+⚡️  TO JS undefined
+WebContent[4378] Service "com.apple.CARenderServer" failed bootstrap look up (1) - (os/kern) invalid address
+WebContent[4378] Failed to initialize application enviroment context
+WebContent[4378] Failed to load a device context.
+WebContent[4378] Failed to initialize application enviroment context
+WebContent[4378] Failed to load a device context.
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 200
+⚡️  [log] - [DEBUG useAuth] User data from /api/auth/me: {
+  "id": "fb_25872581299020147",
+  "accountCode": null,
+  "username": null,
+  "phone": "07510325610",
+  "email": "info@ebey3.com",
+  "password": null,
+  "displayName": "Yasir Abbas",
+  "avatar": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_",
+  "role": "user",
+  "accountType": "buyer",
+  "isVerified": true,
+  "isAdmin": true,
+  "isTrusted": true,
+  "isAuthenticated": true,
+  "authenticityGuaranteed": false,
+  "totalPurchases": 0,
+  "isBanned": false,
+  "banReason": null,
+  "bannedAt": null,
+  "idDocumentUrl": null,
+  "verificationStatus": "pending",
+  "sellerApproved": true,
+  "sellerRequestStatus": "approved",
+  "sellerRequestDate": null,
+  "sellerApprovalDate": null,
+  "totalSales": 3,
+  "rating": 5,
+  "ratingCount": 1,
+  "buyerRating": 0,
+  "buyerRatingCount": 0,
+  "authProvider": "facebook",
+  "authProviderId": "25872581299020147",
+  "twoFactorEnabled": false,
+  "twoFactorSecret": null,
+  "city": "أربيل",
+  "addressLine1": "أربيل القرية الإيطالية ",
+  "addressLine2": null,
+  "district": null,
+  "locationLat": null,
+  "locationLng": null,
+  "mapUrl": null,
+  "ageBracket": "",
+  "gender": null,
+  "interests": [
+    "electronics",
+    "sports",
+    "home",
+    "phones"
+  ],
+  "surveyCompleted": true,
+  "language": "ar",
+  "createdAt": "2026-01-26T18:53:00.643Z",
+  "lastLoginAt": "2026-01-31T08:32:53.392Z",
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYl8yNTg3MjU4MTI5OTAyMDE0NyIsInBob25lIjoiMDc1MTAzMjU2MTAiLCJwaG9uZVZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NzAwNDE1MDUsImV4cCI6MTc3MjYzMzUwNX0.MfYuts-JYPW72Qor9Lr7JFLHQJaba6Nt-Fl8TYauMTo",
+  "tokenExpiresAt": "2026-03-04T14:11:45.396Z",
+  "facebookId": null,
+  "facebookLongLivedToken": "EAAgC1PtuczwBQnpobqbEBEm6LnGgBpkI9bWorz9R4xQ6aB31rZAQMr6P93WBKuQpcS9nTZBrsp8LC4sLczbqDZBwKCV1IXMm7mRu1yBVwY4aoIp4fc5TDAfaddljSYf4jNJ4upCtrPXzd5Ow64h2aa3PoLyKvdqdU6gMJF86pBZCTR4AV8OYtJAkYxAH",
+  "phoneVerified": true,
+  "biddingLimit": 100000,
+  "completedPurchases": 0
+}
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: eyJhbGci...
+⚡️  To Native ->  PushNotifications checkPermissions 77076747
+⚡️  TO JS {"receive":"granted"}
+⚡️  To Native ->  SplashScreen hide 77076748
+⚡️  TO JS undefined
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 200
+⚡️  [log] - [DEBUG useAuth] User data from /api/auth/me: {
+  "id": "fb_25872581299020147",
+  "accountCode": null,
+  "username": null,
+  "phone": "07510325610",
+  "email": "info@ebey3.com",
+  "password": null,
+  "displayName": "Yasir Abbas",
+  "avatar": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_",
+  "role": "user",
+  "accountType": "buyer",
+  "isVerified": true,
+  "isAdmin": true,
+  "isTrusted": true,
+  "isAuthenticated": true,
+  "authenticityGuaranteed": false,
+  "totalPurchases": 0,
+  "isBanned": false,
+  "banReason": null,
+  "bannedAt": null,
+  "idDocumentUrl": null,
+  "verificationStatus": "pending",
+  "sellerApproved": true,
+  "sellerRequestStatus": "approved",
+  "sellerRequestDate": null,
+  "sellerApprovalDate": null,
+  "totalSales": 3,
+  "rating": 5,
+  "ratingCount": 1,
+  "buyerRating": 0,
+  "buyerRatingCount": 0,
+  "authProvider": "facebook",
+  "authProviderId": "25872581299020147",
+  "twoFactorEnabled": false,
+  "twoFactorSecret": null,
+  "city": "أربيل",
+  "addressLine1": "أربيل القرية الإيطالية ",
+  "addressLine2": null,
+  "district": null,
+  "locationLat": null,
+  "locationLng": null,
+  "mapUrl": null,
+  "ageBracket": "",
+  "gender": null,
+  "interests": [
+    "electronics",
+    "sports",
+    "home",
+    "phones"
+  ],
+  "surveyCompleted": true,
+  "language": "ar",
+  "createdAt": "2026-01-26T18:53:00.643Z",
+  "lastLoginAt": "2026-01-31T08:32:53.392Z",
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYl8yNTg3MjU4MTI5OTAyMDE0NyIsInBob25lIjoiMDc1MTAzMjU2MTAiLCJwaG9uZVZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NzAwNDE1MDUsImV4cCI6MTc3MjYzMzUwNX0.MfYuts-JYPW72Qor9Lr7JFLHQJaba6Nt-Fl8TYauMTo",
+  "tokenExpiresAt": "2026-03-04T14:11:45.396Z",
+  "facebookId": null,
+  "facebookLongLivedToken": "EAAgC1PtuczwBQnpobqbEBEm6LnGgBpkI9bWorz9R4xQ6aB31rZAQMr6P93WBKuQpcS9nTZBrsp8LC4sLczbqDZBwKCV1IXMm7mRu1yBVwY4aoIp4fc5TDAfaddljSYf4jNJ4upCtrPXzd5Ow64h2aa3PoLyKvdqdU6gMJF86pBZCTR4AV8OYtJAkYxAH",
+  "phoneVerified": true,
+  "biddingLimit": 100000,
+  "completedPurchases": 0
+}
+SplashScreen.hideSplash: SplashScreen was automatically hidden after default timeout. You should call `SplashScreen.hide()` as soon as your web app is loaded (or increase the timeout). Read more at https://capacitorjs.com/docs/apis/splash-screen#hiding-the-splash-screen
+⚡️  [log] - [WebSocket] Connected to notification server
+WebContent[4378] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+WebContent[4378] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+WebContent[4378] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+⚡️  WebView loaded
+⚡️  TO JS {"isActive":false}
+⚡️  [log] - App state changed: background
+⚡️  [log] - App state changed: background
+⚡️  [log] - [WebSocket] Received message: NOTIFICATION {"type":"NOTIFICATION","notification":{"id":"c00ed8a5-9ba7-4713-bffa-da2cc92a6c69","type":"offer_received","title":"عرض سعر جديد","message":"مستخدم 6852 قدم عرض سعر 18,000,000 د.ع على \"زوج ساعتين أوميغا كونستليشن كرونوميتر أوتوماتيكية | Pair of Omega Constellati...\"","linkUrl":"/seller-dashboard?tab=offers&offerId=86817704-72d4-4639-b9bc-bb2fd5e21f0c"},"timestamp":"2026-02-02T15:16:18.158Z"}
+⚡️  [log] - [WebSocket] Processing NOTIFICATION: عرض سعر جديد مستخدم 6852 قدم عرض سعر 18,000,000 د.ع على "زوج ساعتين أوميغا كونستليشن كرونوميتر أوتوماتيكية | Pair of Omega Constellati..."
+⚡️  [log] - [WebSocket] Toast shown successfully
+⚡️  TO JS {"isActive":true}
+⚡️  [log] - App state changed: active
+⚡️  [log] - App state changed: active
+⚡️  TO JS {"isActive":false}
+⚡️  [log] - App state changed: background
+⚡️  [log] - App state changed: background
