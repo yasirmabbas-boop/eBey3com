@@ -8,6 +8,17 @@ import { validateCsrfToken } from "../middleware/csrf";
  * Handles web push subscriptions and native device token registration
  */
 export function registerPushRoutes(app: Express): void {
+  // Log all incoming push requests for debugging
+  app.use("/api/push", (req, res, next) => {
+    console.log(`[push] Incoming ${req.method} ${req.path}`, {
+      hasAuth: !!req.headers.authorization,
+      hasCsrf: !!req.headers['x-csrf-token'],
+      contentType: req.headers['content-type'],
+      bodyKeys: req.body ? Object.keys(req.body) : [],
+    });
+    next();
+  });
+
   // Apply CSRF validation to all push routes except GET requests
   app.use("/api/push", validateCsrfToken);
   
@@ -36,18 +47,25 @@ export function registerPushRoutes(app: Express): void {
    * Register web push subscription (for PWA/web browsers)
    */
   app.post("/api/push/subscribe", async (req, res) => {
+    console.log("[push] /subscribe endpoint hit");
+    console.log("[push] Request body:", JSON.stringify(req.body, null, 2));
     try {
       const userId = await getUserIdFromRequest(req);
+      console.log("[push] User ID from request:", userId);
       if (!userId) {
+        console.log("[push] No userId found, returning 401");
         return res.status(401).json({ error: "غير مسجل الدخول" });
       }
 
       const { endpoint, keys } = req.body;
+      console.log("[push] Parsed data:", { endpoint: endpoint?.substring(0, 50) + '...', hasKeys: !!keys });
       
       if (!endpoint || !keys?.p256dh || !keys?.auth) {
+        console.log("[push] Missing data:", { hasEndpoint: !!endpoint, hasP256dh: !!keys?.p256dh, hasAuth: !!keys?.auth });
         return res.status(400).json({ error: "Missing subscription data" });
       }
 
+      console.log("[push] Creating push subscription in database...");
       await storage.createPushSubscription(
         userId,
         endpoint,
@@ -59,7 +77,7 @@ export function registerPushRoutes(app: Express): void {
         null  // no deviceName for web
       );
 
-      console.log(`[push] Web push subscription registered for user ${userId}`);
+      console.log(`[push] Web push subscription registered successfully for user ${userId}`);
       res.json({ success: true });
     } catch (error) {
       console.error("[push] Subscribe error:", error);
@@ -72,22 +90,35 @@ export function registerPushRoutes(app: Express): void {
    * Register native device token (iOS/Android via FCM)
    */
   app.post("/api/push/register-native", async (req, res) => {
+    console.log("[push] /register-native endpoint hit");
+    console.log("[push] Request body:", JSON.stringify(req.body, null, 2));
     try {
       const userId = await getUserIdFromRequest(req);
+      console.log("[push] User ID from request:", userId);
       if (!userId) {
+        console.log("[push] No userId found, returning 401");
         return res.status(401).json({ error: "غير مسجل الدخول" });
       }
 
       const { token, platform, deviceId, deviceName } = req.body;
+      console.log("[push] Parsed native data:", { 
+        tokenLength: token?.length || 0, 
+        platform, 
+        deviceId: deviceId || 'none',
+        deviceName: deviceName || 'none'
+      });
       
       if (!token || !platform) {
+        console.log("[push] Missing token or platform:", { hasToken: !!token, hasPlatform: !!platform });
         return res.status(400).json({ error: "Missing token or platform" });
       }
 
       if (platform !== 'ios' && platform !== 'android') {
+        console.log("[push] Invalid platform:", platform);
         return res.status(400).json({ error: "Invalid platform. Must be 'ios' or 'android'" });
       }
 
+      console.log("[push] Creating native push subscription in database...");
       await storage.createPushSubscription(
         userId,
         null, // no endpoint for native
@@ -99,7 +130,7 @@ export function registerPushRoutes(app: Express): void {
         deviceName || null
       );
 
-      console.log(`[push] Native ${platform} token registered for user ${userId} (device: ${deviceName || 'unknown'})`);
+      console.log(`[push] Native ${platform} token registered successfully for user ${userId} (device: ${deviceName || 'unknown'})`);
       res.json({ success: true });
     } catch (error) {
       console.error("[push] Register native error:", error);
