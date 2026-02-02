@@ -33,19 +33,17 @@ export const initNativePushNotifications = async (
       return false;
     }
 
-    console.log('[Push] Permission granted, registering with push service...');
-    // Register with Apple / Google to receive push via APNS/FCM
-    await PushNotifications.register();
-    console.log('[Push] PushNotifications.register() called, waiting for token...');
-
-    // Listen for registration token
+    // IMPORTANT: Set up all listeners BEFORE calling register()
+    // This ensures we don't miss the token callback
+    console.log('[Push] Setting up registration listener...');
     await PushNotifications.addListener('registration', (token: Token) => {
       console.log('[Push] Registration listener fired! Token received:', token.value);
-      console.log('[Push] Calling onToken callback with token:', token.value);
+      console.log('[Push] Token length:', token.value?.length || 0);
+      console.log('[Push] Calling onToken callback with token...');
       onToken(token.value);
     });
 
-    // Listen for registration errors
+    console.log('[Push] Setting up registrationError listener...');
     await PushNotifications.addListener('registrationError', (error: any) => {
       console.error('[Push] Registration error listener fired! Error:', error);
       console.error('[Push] Error details:', JSON.stringify(error, null, 2));
@@ -75,7 +73,14 @@ export const initNativePushNotifications = async (
       );
     }
 
-    console.log('[Push] All listeners set up, returning true');
+    console.log('[Push] All listeners set up, now calling register()...');
+    
+    // NOW register with Apple / Google to receive push via APNS/FCM
+    // The token will be received via the 'registration' listener above
+    await PushNotifications.register();
+    console.log('[Push] PushNotifications.register() called successfully');
+
+    console.log('[Push] Returning true from initNativePushNotifications');
     return true;
   } catch (error) {
     console.error('[Push] Error initializing native push notifications:', error);
