@@ -97,17 +97,47 @@ export function PushNotificationPrompt() {
           return;
         }
 
+        // FIX #2: Ensure Service Worker is registered before calling ready
+        console.log("[Push] Checking service worker registration...");
+        let registration: ServiceWorkerRegistration;
+        
+        if (navigator.serviceWorker.controller) {
+          // SW is already controlling the page
+          console.log("[Push] Service worker already controlling page");
+          registration = await navigator.serviceWorker.ready;
+        } else {
+          // SW not registered yet, register it first
+          console.log("[Push] Service worker not registered, registering now...");
+          try {
+            registration = await navigator.serviceWorker.register('/sw.js', {
+              scope: '/'
+            });
+            console.log("[Push] Service worker registered, waiting for ready...");
+            // Wait for the service worker to be ready (with timeout)
+            registration = await Promise.race([
+              navigator.serviceWorker.ready,
+              new Promise<ServiceWorkerRegistration>((_, reject) => 
+                setTimeout(() => reject(new Error("Service worker ready timeout")), 10000)
+              )
+            ]);
+            console.log("[Push] Service worker is ready");
+          } catch (swError) {
+            console.error("[Push] Service worker registration/ready failed:", swError);
+            throw new Error(`Service worker not ready: ${swError instanceof Error ? swError.message : String(swError)}`);
+          }
+        }
+
         // Get VAPID key using secureRequest (for consistency, though GET doesn't need CSRF)
         const vapidResponse = await secureRequest("/api/push/vapid-public-key");
         if (!vapidResponse.ok) throw new Error("Failed to get VAPID key");
         const { publicKey } = await vapidResponse.json();
 
-        const registration = await navigator.serviceWorker.ready;
-        
+        console.log("[Push] Creating push subscription...");
         const subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicKey),
         });
+        console.log("[Push] Push subscription created:", subscription.endpoint.substring(0, 50) + '...');
 
         // Register subscription using secureRequest for auth and CSRF
         const subscribeResponse = await secureRequest("/api/push/subscribe", {
@@ -116,8 +146,24 @@ export function PushNotificationPrompt() {
           body: JSON.stringify(subscription.toJSON()),
         });
 
-        if (!subscribeResponse.ok) throw new Error("Failed to save subscription");
+        // FIX #1: Verify backend response includes success confirmation before setting localStorage
+        if (!subscribeResponse.ok) {
+          const errorText = await subscribeResponse.text();
+          console.error("[Push] Backend subscription failed:", subscribeResponse.status, errorText);
+          throw new Error(`Failed to save subscription: ${subscribeResponse.status} ${errorText}`);
+        }
 
+        // Parse response to confirm success
+        const responseData = await subscribeResponse.json();
+        console.log("[Push] Backend subscription response:", responseData);
+        
+        if (responseData.success !== true && responseData.success !== undefined) {
+          console.error("[Push] Backend returned non-success response:", responseData);
+          throw new Error("Backend subscription save returned non-success");
+        }
+
+        // FIX #1: Only set localStorage AFTER confirming DB save succeeded
+        console.log("[Push] Subscription saved successfully, updating localStorage");
         localStorage.setItem(SUBSCRIBED_KEY, "true");
         setShowPrompt(false);
       }
@@ -127,6 +173,13 @@ export function PushNotificationPrompt() {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined
       });
+      
+      // FIX #1: Clear localStorage on error to prevent stuck state
+      // If subscription failed, remove the subscribed flag so user can retry
+      if (localStorage.getItem(SUBSCRIBED_KEY) === "true") {
+        console.log("[Push] Clearing localStorage due to error");
+        localStorage.removeItem(SUBSCRIBED_KEY);
+      }
     } finally {
       setIsSubscribing(false);
       console.log("[Push] handleSubscribe finished");
@@ -139,16 +192,51 @@ export function PushNotificationPrompt() {
     const dismissed = localStorage.getItem(DISMISSED_KEY);
     const subscribed = localStorage.getItem(SUBSCRIBED_KEY);
     
-    // Debug: Log localStorage status to Xcode console
+    // Debug: Log localStorage status
     console.log("[Push] localStorage status:", {
       dismissed: dismissed || "null",
       subscribed: subscribed || "null",
       willShowPrompt: !dismissed && !subscribed
     });
     
-    if (dismissed || subscribed) return;
+    // FIX #1: Verify localStorage subscription matches DB state
+    const verifySubscription = async () => {
+      if (subscribed === "true" && !isNative) {
+        // For web/PWA, verify subscription exists in DB
+        try {
+          const subscriptionsResponse = await secureRequest("/api/push/subscriptions");
+          if (subscriptionsResponse.ok) {
+            const subscriptions = await subscriptionsResponse.json();
+            const hasWebSubscription = subscriptions.some((sub: any) => sub.platform === 'web');
+            
+            if (!hasWebSubscription) {
+              console.warn("[Push] localStorage says subscribed but DB has no web subscription - clearing localStorage");
+              localStorage.removeItem(SUBSCRIBED_KEY);
+              // Don't return - allow prompt to show
+            } else {
+              console.log("[Push] Verified: subscription exists in DB");
+              return true; // Subscription verified
+            }
+          }
+        } catch (err) {
+          console.error("[Push] Failed to verify subscription:", err);
+          // On error, don't clear localStorage - might be network issue
+        }
+      }
+      return false;
+    };
 
     const checkPermission = async () => {
+      // FIX #1: Verify subscription state first
+      const isVerified = await verifySubscription();
+      
+      const dismissedAfterVerify = localStorage.getItem(DISMISSED_KEY);
+      const subscribedAfterVerify = localStorage.getItem(SUBSCRIBED_KEY);
+      
+      if (dismissedAfterVerify || (subscribedAfterVerify && isVerified)) {
+        console.log("[Push] User dismissed or subscribed (verified), skipping prompt");
+        return;
+      }
       console.log("[Push] checkPermission() called, isNative:", isNative);
       
       if (isNative) {
