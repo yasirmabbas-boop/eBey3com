@@ -20,15 +20,22 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
   try {
     const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf-8');
     const parsed = JSON.parse(decoded);
+    
+    // FORCE fix newlines in the private key
+    // Replit prod sometimes flattens these, causing silent signing failures
+    const formattedPrivateKey = (parsed.private_key || '').replace(/\\n/g, '\n');
+    
     serviceAccount = {
       projectId: parsed.project_id,
       clientEmail: parsed.client_email,
-      privateKey: parsed.private_key,
+      privateKey: formattedPrivateKey,
     };
     console.log('📦 Firebase credentials loaded from base64 encoded JSON');
     console.log('[FCM Init] Project ID:', parsed.project_id);
     console.log('[FCM Init] Client Email:', parsed.client_email);
-    console.log('[FCM Init] Private key length:', (parsed.private_key || '').length);
+    console.log('[FCM Init] Private key length:', formattedPrivateKey.length);
+    console.log('[FCM Init] Private key starts with:', formattedPrivateKey.substring(0, 30));
+    console.log('[FCM Init] Private key has actual newlines:', formattedPrivateKey.includes('\n'));
   } catch (error) {
     console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_BASE64:', error);
   }
