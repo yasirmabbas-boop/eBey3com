@@ -79,6 +79,12 @@ export async function sendFCMNotification(
   token: string,
   payload: FCMPayload
 ): Promise<void> {
+  console.log('[FCM Send] isInitialized:', isInitialized);
+  console.log('[FCM Send] serviceAccount exists:', !!serviceAccount);
+  if (serviceAccount) {
+    console.log('[FCM Send] projectId:', serviceAccount.projectId);
+  }
+  
   if (!isInitialized) {
     throw new Error('Firebase Admin SDK not initialized - check FCM credentials');
   }

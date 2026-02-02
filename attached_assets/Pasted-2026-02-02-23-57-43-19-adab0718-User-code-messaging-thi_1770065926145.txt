@@ -1,0 +1,152 @@
+2026-02-02 23:57:43.19
+adab0718
+User
+code: 'messaging/third-party-auth-error',
+2026-02-02 23:57:43.19
+adab0718
+User
+at FirebaseMessagingError.fromServerError (/home/runner/workspace/node_modules/firebase-admin/lib/utils/error.js:269:16)
+2026-02-02 23:57:43.19
+adab0718
+User
+at async file:///home/runner/workspace/dist/index.js:88:1174
+2026-02-02 23:57:43.19
+adab0718
+User
+[FCM] Failed to send notification: FirebaseMessagingError: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-02 23:57:43.19
+adab0718
+User
+[push] Error sending to user fb_25872581299020147: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-02 23:57:43.19
+adab0718
+User
+codePrefix: 'messaging'
+2026-02-02 23:57:43.19
+adab0718
+User
+message: 'Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.'
+2026-02-02 23:57:43.19
+adab0718
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2026-02-02 23:57:43.19
+adab0718
+User
+at async file:///home/runner/workspace/dist/index.js:96:4292 {
+2026-02-02 23:57:43.19
+adab0718
+User
+errorInfo: {
+2026-02-02 23:57:43.19
+adab0718
+User
+at async lt (file:///home/runner/workspace/dist/index.js:88:779)
+2026-02-02 23:57:43.19
+adab0718
+User
+at createFirebaseError (/home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-errors-internal.js:35:47)
+2026-02-02 23:57:43.19
+adab0718
+User
+at async Promise.allSettled (index 0)
+2026-02-02 23:57:43.19
+adab0718
+User
+at /home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-api-request-internal.js:82:75
+2026-02-02 23:57:43.19
+adab0718
+User
+}
+2026-02-02 23:57:43.22
+adab0718
+User
+8:57:43 PM [express] POST /api/offers 201 in 669ms :: {"id":"6fd7b4b9-8b02-4d23-bf23-f859298576f1","listingId":"d68f3d4c-fac8-43d5-b016-94761f7290bd","buyerId":"fb_1651977129496120","sellerId":"fb_25872581299020147","offerAmount":1999999,"message":null,"status":"pending","counterAmount":null,"counterMessage":null,"expiresAt":"2026-02-03T20:57:42.650Z","createdAt":"2026-02-02T20:57:42.667Z","respondedAt":null}
+2026-02-02 23:57:43.25
+adab0718
+User
+8:57:43 PM [express] GET /api/notifications/count 200 in 194ms :: {"count":8}
+2026-02-02 23:57:51.75
+adab0718
+User
+8:57:51 PM [ws] WebSocket client disconnected
+2026-02-02 23:57:54.40
+adab0718
+User
+8:57:54 PM [express] GET /api/csrf-token 200 in 257ms :: {"token":"7447d2359ebd74749ab286522a2be586c99467189e2d5eb0cfc0fddb77e2ba6f"}
+2026-02-02 23:57:55.24
+adab0718
+User
+[push] Web push sent to user fb_25872581299020147
+2026-02-02 23:57:55.27
+adab0718
+User
+at async lt (file:///home/runner/workspace/dist/index.js:88:779)
+2026-02-02 23:57:55.27
+adab0718
+User
+at async file:///home/runner/workspace/dist/index.js:96:4292 {
+2026-02-02 23:57:55.27
+adab0718
+User
+code: 'messaging/third-party-auth-error',
+2026-02-02 23:57:55.27
+adab0718
+User
+[push] Error sending to user fb_25872581299020147: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-02 23:57:55.27
+adab0718
+User
+at async J8 (file:///home/runner/workspace/dist/index.js:87:61614)
+2026-02-02 23:57:55.27
+adab0718
+User
+},
+2026-02-02 23:57:55.27
+adab0718
+User
+errorInfo: {
+2026-02-02 23:57:55.27
+adab0718
+User
+[FCM] Failed to send notification: FirebaseMessagingError: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-02 23:57:55.27
+adab0718
+User
+message: 'Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.'
+2026-02-02 23:57:55.27
+adab0718
+User
+at async Promise.allSettled (index 1)
+2026-02-02 23:57:55.27
+adab0718
+User
+at FirebaseMessagingError.fromServerError (/home/runner/workspace/node_modules/firebase-admin/lib/utils/error.js:269:16)
+2026-02-02 23:57:55.27
+adab0718
+User
+at async file:///home/runner/workspace/dist/index.js:88:1174
+2026-02-02 23:57:55.27
+adab0718
+User
+at createFirebaseError (/home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-errors-internal.js:35:47)
+2026-02-02 23:57:55.27
+adab0718
+User
+codePrefix: 'messaging'
+2026-02-02 23:57:55.27
+adab0718
+User
+at /home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-api-request-internal.js:82:75
+2026-02-02 23:57:55.27
+adab0718
+User
+}
+2026-02-02 23:57:55.27
+adab0718
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2026-02-02 23:57:55.27
+adab0718
+User
+[push] Sent 1/2 notifications to user fb_25872581299020147
