@@ -1,0 +1,84 @@
+26-02-02 23:51:54.22
+10455d7a
+User
+[push] Web push sent to user fb_1651977129496120
+2026-02-02 23:51:54.22
+10455d7a
+User
+[push] Web push sent to user fb_1651977129496120
+2026-02-02 23:51:54.26
+10455d7a
+User
+[push] Sent 3/3 notifications to user fb_1651977129496120
+2026-02-02 23:51:54.29
+10455d7a
+User
+8:51:54 PM [express] PUT /api/offers/e8f1f759-7233-425f-8b35-f8c36b9aba93/respond 200 in 348ms :: {"id":"e8f1f759-7233-425f-8b35-f8c36b9aba93","listingId":"d68f3d4c-fac8-43d5-b016-94761f7290bd","buyerId":"fb_1651977129496120","sellerId":"fb_25872581299020147","offerAmount":1999999,"message":null,"status":"rejected","counterAmount":null,"counterMessage":null,"expiresAt":"2026-02-03T20:00:24.390Z","createdAt":"2026-02-02T20:00:24.406Z","respondedAt":"2026-02-02T20:51:54.055Z"}
+2026-02-02 23:51:55.31
+10455d7a
+User
+8:51:55 PM [express] GET /api/notifications/count 200 in 516ms :: {"count":66}
+2026-02-02 23:51:55.65
+10455d7a
+User
+8:51:55 PM [express] GET /api/received-offers 200 in 1073ms :: [Response: 126160 bytes]
+2026-02-02 23:51:56.92
+10455d7a
+User
+8:51:56 PM [express] GET /api/csrf-token 200 in 58ms :: {"token":"701f68f653a0d2387a273c5795face94e94c5203bfe9eb8993846e9b64bff0c2"}
+2026-02-02 23:51:57.39
+10455d7a
+User
+8:51:57 PM [ws] Sent NOTIFICATION notification to user fb_1651977129496120 (3 connection(s))
+2026-02-02 23:51:57.48
+10455d7a
+User
+[push] Web push sent to user fb_1651977129496120
+2026-02-02 23:51:57.48
+10455d7a
+User
+[push] Web push sent to user fb_1651977129496120
+2026-02-02 23:51:57.48
+10455d7a
+User
+[push] Web push sent to user fb_1651977129496120
+2026-02-02 23:51:57.51
+10455d7a
+User
+[push] Sent 3/3 notifications to user fb_1651977129496120
+2026-02-02 23:51:57.54
+10455d7a
+User
+8:51:57 PM [express] PUT /api/offers/3a67e162-61e1-46be-8af8-31dfa46aa381/respond 200 in 326ms :: {"id":"3a67e162-61e1-46be-8af8-31dfa46aa381","listingId":"d68f3d4c-fac8-43d5-b016-94761f7290bd","buyerId":"fb_1651977129496120","sellerId":"fb_25872581299020147","offerAmount":1999999,"message":null,"status":"rejected","counterAmount":null,"counterMessage":null,"expiresAt":"2026-02-03T18:48:03.675Z","createdAt":"2026-02-02T18:48:03.695Z","respondedAt":"2026-02-02T20:51:57.333Z"}
+2026-02-02 23:51:58.65
+10455d7a
+User
+8:51:58 PM [express] GET /api/notifications/count 200 in 500ms :: {"count":67}
+2026-02-02 23:51:58.84
+10455d7a
+User
+8:51:58 PM [express] GET /api/received-offers 200 in 1048ms :: [Response: 126183 bytes]
+2026-02-02 23:52:10.22
+10455d7a
+User
+8:52:10 PM [express] GET /api/csrf-token 200 in 276ms :: {"token":"7949e73b23522cc1384d159811140a2386caff330d1c1b9757c40b2a81ab4f86"}
+2026-02-02 23:52:10.89
+10455d7a
+User
+8:52:10 PM [ws] Sent NOTIFICATION notification to user fb_1651977129496120 (3 connection(s))
+2026-02-02 23:52:11.09
+10455d7a
+User
+[push] Web push sent to user fb_1651977129496120
+2026-02-02 23:52:11.11
+10455d7a
+User
+[push] Web push sent to user fb_1651977129496120
+2026-02-02 23:52:11.12
+10455d7a
+User
+[push] Web push sent to user fb_1651977129496120
+2026-02-02 23:52:11.32
+10455d7a
+User
+[push] Sent 3/3 notifications to user fb_1651977129496120
