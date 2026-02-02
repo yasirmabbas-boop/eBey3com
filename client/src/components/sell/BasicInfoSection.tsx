@@ -36,6 +36,7 @@ export function BasicInfoSection({
   tagInput,
   language,
   t,
+  wasAIFilled,
   onInputChange,
   onTagInputChange,
   onAddTag,

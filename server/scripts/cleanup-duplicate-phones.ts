@@ -19,7 +19,7 @@ interface DuplicateGroup {
     facebookId: string | null;
     authProvider: string | null;
     createdAt: Date | null;
-    lastActive: Date | null;
+    lastLoginAt: Date | null;
     transactionCount: number;
     listingCount: number;
     bidCount: number;
@@ -124,8 +124,8 @@ function selectPrimaryAccount(accounts: DuplicateGroup["accounts"]) {
 
   // Priority 3: Most recently active
   const accountsByRecent = [...accounts].sort((a, b) => {
-    const dateA = a.lastActive || a.createdAt || new Date(0);
-    const dateB = b.lastActive || b.createdAt || new Date(0);
+    const dateA = a.lastLoginAt || a.createdAt || new Date(0);
+    const dateB = b.lastLoginAt || b.createdAt || new Date(0);
     return dateB.getTime() - dateA.getTime();
   });
 

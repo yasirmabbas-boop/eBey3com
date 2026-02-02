@@ -30,6 +30,7 @@ export function BiddingWindow({
   currentBid,
   totalBids,
   minimumBid,
+  auctionEndTime,
   onBidSuccess,
   onRequireAuth,
   onRequirePhoneVerification,

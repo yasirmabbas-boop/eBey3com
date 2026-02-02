@@ -110,7 +110,7 @@ export function registerMessageRoutes(app: Express): void {
         const sender = await storage.getUser(senderId);
         const senderName = sender?.displayName || sender?.username || "مستخدم";
         const receiver = await storage.getUser(receiverId);
-        const receiverLang = receiver?.language || 'ar';
+        const receiverLang = (receiver?.language || 'ar') as 'ar' | 'en' | 'ku';
         
         const msg = getNotificationMessage('new_message', receiverLang, {
           senderName,

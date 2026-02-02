@@ -84,7 +84,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
 
       if (listing.sellerId) {
         const seller = await storage.getUser(listing.sellerId);
-        const lang = seller?.language || 'ar';
+        const lang = (seller?.language || 'ar') as 'ar' | 'en' | 'ku';
         const msg = getNotificationMessage('auction_ended_no_bids', lang, { title: listing.title });
         
         const notification = await storage.createNotification({
@@ -189,7 +189,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
           notifiedBidders.add(bid.userId);
           
           const bidder = await storage.getUser(bid.userId);
-          const lang = bidder?.language || 'ar';
+          const lang = (bidder?.language || 'ar') as 'ar' | 'en' | 'ku';
           const msg = getNotificationMessage('auction_ended_no_reserve', lang, {
             title: listing.title,
             highestBid: highestBid.amount,
@@ -287,7 +287,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
       })
       .returning();
 
-    const winnerLang = winner.language || 'ar';
+    const winnerLang = (winner.language || 'ar') as 'ar' | 'en' | 'ku';
     const winnerMsg = getNotificationMessage('auction_won', winnerLang, {
       title: listing.title,
       amount: highestBid.amount
@@ -365,7 +365,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
         outbidUsers.add(bid.userId);
         
         const bidder = await storage.getUser(bid.userId);
-        const lang = bidder?.language || 'ar';
+        const lang = (bidder?.language || 'ar') as 'ar' | 'en' | 'ku';
         const msg = getNotificationMessage('auction_lost', lang, {
           title: listing.title,
           amount: highestBid.amount

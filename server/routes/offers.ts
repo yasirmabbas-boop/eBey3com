@@ -426,7 +426,7 @@ export function registerOffersRoutes(app: Express): void {
               if (otherOffer.buyerId) {
                 try {
                   const buyerUser = await storage.getUser(otherOffer.buyerId);
-                  const buyerLang = buyerUser?.language || 'ar';
+                  const buyerLang = (buyerUser?.language || 'ar') as 'ar' | 'en' | 'ku';
                   const msg = getNotificationMessage('offer_rejected', buyerLang, {
                     title: listing.title
                   });

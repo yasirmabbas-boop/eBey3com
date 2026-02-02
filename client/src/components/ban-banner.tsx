@@ -22,6 +22,11 @@ export function BanBanner() {
       title: "ئەژمارەکەت قەدەغەکراوە",
       message: "ئەژمارەکەت لە سەکۆکە قەدەغەکراوە. ناتوانیت مزایدە بکەیت یان بکڕیت یان بفرۆشیت یان پەیام بنێریت.",
       logout: "دەرچوون",
+    },
+    en: {
+      title: "Your account has been banned",
+      message: "Your account is banned from the platform. You cannot bid, buy, sell, or send messages.",
+      logout: "Logout",
     }
   };
 

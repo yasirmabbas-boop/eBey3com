@@ -879,7 +879,7 @@ export function registerProductRoutes(app: Express): void {
           const { sendToUser } = await import("../websocket");
           
           const bidder = await storage.getUser(highestBid.userId);
-          const lang = bidder?.language || 'ar';
+          const lang = (bidder?.language || 'ar') as 'ar' | 'en' | 'ku';
           const msg = getNotificationMessage('outbid', lang, {
             title: listing.title,
             amount: amount
@@ -953,7 +953,7 @@ export function registerProductRoutes(app: Express): void {
         totalBids: (updatedListing?.totalBids || 0),
         bidderId: userId,
         bidderName: user.displayName || "مستخدم",
-        previousHighBidderId: highestBid?.userId || null,
+        previousHighBidderId: highestBid?.userId || undefined,
         timestamp: new Date().toISOString(),
         auctionEndTime: auctionEndStr,
         timeExtended: newEndTime !== endTime,

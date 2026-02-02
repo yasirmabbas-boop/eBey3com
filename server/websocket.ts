@@ -146,7 +146,7 @@ export function getActiveConnections(): number {
 interface AuctionEndUpdate {
   type: "auction_end";
   listingId: string;
-  status: "sold" | "no_bids";
+  status: "sold" | "no_bids" | "reserve_not_met";
   winnerId: string | null;
   winnerName: string | null;
   winningBid: number | null;

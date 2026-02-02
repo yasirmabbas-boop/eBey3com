@@ -178,11 +178,11 @@ interface SellerReturnRequest {
 
 const getStatusBadge = (status: string, language: "ar" | "ku" | "en") => {
   const labels = {
-    active: { ar: "نشط", ku: "چالاک" },
-    sold: { ar: "مباع", ku: "فرۆشرا" },
-    pending_shipment: { ar: "بانتظار الشحن", ku: "چاوەڕێی ناردن" },
-    shipped: { ar: "تم الشحن", ku: "نێردرا" },
-    draft: { ar: "مسودة", ku: "ڕەشنووس" },
+    active: { ar: "نشط", ku: "چالاک", en: "Active" },
+    sold: { ar: "مباع", ku: "فرۆشرا", en: "Sold" },
+    pending_shipment: { ar: "بانتظار الشحن", ku: "چاوەڕێی ناردن", en: "Pending Shipment" },
+    shipped: { ar: "تم الشحن", ku: "نێردرا", en: "Shipped" },
+    draft: { ar: "مسودة", ku: "ڕەشنووس", en: "Draft" },
   };
   switch (status) {
     case "active":
@@ -202,10 +202,10 @@ const getStatusBadge = (status: string, language: "ar" | "ku" | "en") => {
 
 const getDeliveryBadge = (status: string, language: "ar" | "ku" | "en") => {
   const labels = {
-    pending_payment: { ar: "بانتظار الدفع", ku: "چاوەڕێی پارەدان" },
-    pending_shipment: { ar: "بانتظار الشحن", ku: "چاوەڕێی ناردن" },
-    shipped: { ar: "تم الشحن", ku: "نێردرا" },
-    delivered: { ar: "تم التسليم", ku: "گەیەندرا" },
+    pending_payment: { ar: "بانتظار الدفع", ku: "چاوەڕێی پارەدان", en: "Pending Payment" },
+    pending_shipment: { ar: "بانتظار الشحن", ku: "چاوەڕێی ناردن", en: "Pending Shipment" },
+    shipped: { ar: "تم الشحن", ku: "نێردرا", en: "Shipped" },
+    delivered: { ar: "تم التسليم", ku: "گەیەندرا", en: "Delivered" },
   };
   switch (status) {
     case "pending_payment":
@@ -225,8 +225,8 @@ const getDeliveryBadge = (status: string, language: "ar" | "ku" | "en") => {
 
 const getTypeBadge = (type: string, language: "ar" | "ku" | "en") => {
   const labels = {
-    auction: { ar: "مزاد", ku: "مزایدە" },
-    fixed: { ar: "سعر ثابت", ku: "نرخی جێگیر" },
+    auction: { ar: "مزاد", ku: "مزایدە", en: "Auction" },
+    fixed: { ar: "سعر ثابت", ku: "نرخی جێگیر", en: "Fixed Price" },
   };
   return type === "auction" ? (
     <Badge variant="outline" className="border-primary text-primary">
@@ -666,10 +666,10 @@ export default function SellerDashboard() {
       return res.json();
     },
     onSuccess: (_, variables) => {
-      const messages: Record<string, { ar: string; ku: string }> = {
-        accept: { ar: "تم قبول العرض بنجاح - تم إنشاء طلب جديد", ku: "پێشنیار قبوڵکرا - داواکارییەکی نوێ دروستکرا" },
-        reject: { ar: "تم رفض العرض", ku: "پێشنیار ڕەتکرایەوە" },
-        counter: { ar: "تم إرسال عرض مقابل", ku: "پێشنیارێکی بەرامبەر نێردرا" },
+      const messages: Record<string, { ar: string; ku: string; en: string }> = {
+        accept: { ar: "تم قبول العرض بنجاح - تم إنشاء طلب جديد", ku: "پێشنیار قبوڵکرا - داواکارییەکی نوێ دروستکرا", en: "Offer accepted successfully - New order created" },
+        reject: { ar: "تم رفض العرض", ku: "پێشنیار ڕەتکرایەوە", en: "Offer rejected" },
+        counter: { ar: "تم إرسال عرض مقابل", ku: "پێشنیارێکی بەرامبەر نێردرا", en: "Counter offer sent" },
       };
       toast({ title: t("success"), description: messages[variables.action]?.[language] || (language === "ar" ? "تم تحديث العرض" : "پێشنیار نوێکرایەوە") });
       queryClient.invalidateQueries({ queryKey: ["/api/received-offers"] });
@@ -822,7 +822,7 @@ export default function SellerDashboard() {
       window.dataLayer.push({
         'event': 'submit_rating',
         'rating_value': buyerRating,
-        'rated_entity_id': selectedOrderForAction?.buyerId
+        'rated_entity_id': selectedOrderForAction?.buyer?.id
       });
       
       toast({ title: "تم التقييم", description: "تم تقييم المشتري بنجاح" });

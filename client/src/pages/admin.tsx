@@ -1066,7 +1066,7 @@ export default function AdminPage() {
                       <p className="text-sm text-destructive">
                         {usersError instanceof Error ? usersError.message : "حدث خطأ أثناء تحميل المستخدمين"}
                       </p>
-                      <Button variant="outline" className="mt-4" onClick={usersRefetch}>
+                      <Button variant="outline" className="mt-4" onClick={() => usersRefetch()}>
                         إعادة المحاولة
                       </Button>
                     </CardContent>

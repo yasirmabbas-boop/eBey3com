@@ -553,7 +553,7 @@ export class DatabaseStorage implements IStorage {
       selectFields.relevanceScore = searchRankSql;
     }
     
-    let query = db.select(selectFields)
+    let query: any = db.select(selectFields)
       .from(listings)
       .where(whereClause);
     
@@ -1695,11 +1695,14 @@ export class DatabaseStorage implements IStorage {
     const pendingMap = new Map(pendingReportCounts.map(r => [r.targetId, r.count]));
     const totalMap = new Map(totalReportCounts.map(r => [r.targetId, r.count]));
 
-    return results.map(r => ({
-      ...r,
-      totalReportsOnTarget: totalMap.get(r.targetId) || 1,
-      pendingReportsOnTarget: pendingMap.get(r.targetId) || 0,
-    }));
+    return {
+      reports: results.map(r => ({
+        ...r,
+        totalReportsOnTarget: totalMap.get(r.targetId) || 1,
+        pendingReportsOnTarget: pendingMap.get(r.targetId) || 0,
+      })),
+      total,
+    };
   }
 
   async updateReportStatus(id: string, status: string, adminNotes?: string, resolvedBy?: string): Promise<Report | undefined> {
