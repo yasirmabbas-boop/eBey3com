@@ -28,47 +28,6 @@ export function PushNotificationPrompt() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    
-    const dismissed = localStorage.getItem(DISMISSED_KEY);
-    const subscribed = localStorage.getItem(SUBSCRIBED_KEY);
-    
-    // Debug: Log localStorage status to Xcode console
-    console.log("[Push] localStorage status:", {
-      dismissed: dismissed || "null",
-      subscribed: subscribed || "null",
-      willShowPrompt: !dismissed && !subscribed
-    });
-    
-    if (dismissed || subscribed) return;
-
-    const checkPermission = async () => {
-      if (isNative) {
-        // Check native push permission
-        const permission = await checkNativePushPermission();
-        if (permission === 'granted' || permission === 'denied') return;
-        
-        const timer = setTimeout(() => {
-          setShowPrompt(true);
-        }, 5000);
-        return () => clearTimeout(timer);
-      } else {
-        // Check web push permission
-        if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
-        if (Notification.permission === "granted") return;
-        if (Notification.permission === "denied") return;
-        
-        const timer = setTimeout(() => {
-          setShowPrompt(true);
-        }, 5000);
-        return () => clearTimeout(timer);
-      }
-    };
-
-    checkPermission();
-  }, [isAuthenticated]);
-
   const handleSubscribe = useCallback(async () => {
     console.log("[Push] handleSubscribe called, isNative:", isNative);
     setIsSubscribing(true);
@@ -125,8 +84,12 @@ export function PushNotificationPrompt() {
           localStorage.setItem(DISMISSED_KEY, "true");
         }
       } else {
-        // Handle web push notifications (existing logic)
-        const permission = await Notification.requestPermission();
+        // Handle web push notifications
+        // Check current permission (don't request if already granted)
+        let permission = Notification.permission;
+        if (permission === 'default') {
+          permission = await Notification.requestPermission();
+        }
         
         if (permission !== "granted") {
           setShowPrompt(false);
@@ -169,6 +132,69 @@ export function PushNotificationPrompt() {
       console.log("[Push] handleSubscribe finished");
     }
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const dismissed = localStorage.getItem(DISMISSED_KEY);
+    const subscribed = localStorage.getItem(SUBSCRIBED_KEY);
+    
+    // Debug: Log localStorage status to Xcode console
+    console.log("[Push] localStorage status:", {
+      dismissed: dismissed || "null",
+      subscribed: subscribed || "null",
+      willShowPrompt: !dismissed && !subscribed
+    });
+    
+    if (dismissed || subscribed) return;
+
+    const checkPermission = async () => {
+      if (isNative) {
+        // Check native push permission
+        const permission = await checkNativePushPermission();
+        console.log("[Push] Permission status:", permission);
+        
+        // If permission is already granted but user isn't subscribed, auto-register
+        if (permission === 'granted') {
+          console.log("[Push] Permission already granted, auto-registering...");
+          // Automatically trigger registration
+          handleSubscribe();
+          return;
+        }
+        
+        if (permission === 'denied') {
+          console.log("[Push] Permission denied, not showing prompt");
+          return;
+        }
+        
+        // Permission is 'prompt' - show the prompt after delay
+        const timer = setTimeout(() => {
+          setShowPrompt(true);
+        }, 5000);
+        return () => clearTimeout(timer);
+      } else {
+        // Check web push permission
+        if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+        
+        if (Notification.permission === "granted") {
+          console.log("[Push] Web permission already granted, auto-registering...");
+          // Automatically trigger registration for web
+          handleSubscribe();
+          return;
+        }
+        
+        if (Notification.permission === "denied") return;
+        
+        // Permission is 'default' - show the prompt after delay
+        const timer = setTimeout(() => {
+          setShowPrompt(true);
+        }, 5000);
+        return () => clearTimeout(timer);
+      }
+    };
+
+    checkPermission();
+  }, [isAuthenticated, handleSubscribe]);
 
   const handleDismiss = () => {
     localStorage.setItem(DISMISSED_KEY, "true");
