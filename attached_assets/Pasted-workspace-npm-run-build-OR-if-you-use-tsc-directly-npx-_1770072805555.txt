@@ -1,0 +1,392 @@
+workspace$ npm run build
+# OR (if you use tsc directly)
+npx tsc
+
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v6.4.1 building for production...
+✓ 2759 modules transformed.
+rendering chunks (85)...[meta-images] using dev domain: https://2e607e21-532b-495b-8d75-179bb2556e64-00-2duzc9r9vyybl.riker.replit.dev
+[meta-images] updating meta image tags to: https://2e607e21-532b-495b-8d75-179bb2556e64-00-2duzc9r9vyybl.riker.replit.dev/opengraph.jpg
+../dist/public/index.html                                      6.70 kB │ gzip:   2.39 kB
+../dist/public/assets/index-CukXaxQC.css                     168.16 kB │ gzip:  25.53 kB
+../dist/public/assets/web-CAnJrhrw.js                          0.12 kB │ gzip:   0.13 kB
+../dist/public/assets/skeleton-BAvhWJ1H.js                     0.18 kB │ gzip:   0.17 kB
+../dist/public/assets/plus-CdyLhJd8.js                         0.33 kB │ gzip:   0.25 kB
+../dist/public/assets/arrow-left-0Kp9HTqw.js                   0.34 kB │ gzip:   0.27 kB
+../dist/public/assets/ban-BnkHwRTv.js                          0.35 kB │ gzip:   0.28 kB
+../dist/public/assets/circle-check-big-CIn3LWd_.js             0.36 kB │ gzip:   0.29 kB
+../dist/public/assets/web-Bw0leDKH.js                          0.36 kB │ gzip:   0.25 kB
+../dist/public/assets/smartphone-izs4I7kL.js                   0.37 kB │ gzip:   0.29 kB
+../dist/public/assets/info-KS_mrCKV.js                         0.37 kB │ gzip:   0.28 kB
+../dist/public/assets/rotate-ccw-D6GaRlCw.js                   0.37 kB │ gzip:   0.29 kB
+../dist/public/assets/circle-x-6r0GA5uS.js                     0.38 kB │ gzip:   0.28 kB
+../dist/public/assets/credit-card-J_EhJ3sg.js                  0.38 kB │ gzip:   0.29 kB
+../dist/public/assets/mail-chrbWrIe.js                         0.39 kB │ gzip:   0.31 kB
+../dist/public/assets/dollar-sign-MimR1Yxo.js                  0.39 kB │ gzip:   0.30 kB
+../dist/public/assets/copy-D_NezKqG.js                         0.40 kB │ gzip:   0.31 kB
+../dist/public/assets/globe-DnI2xAj8.js                        0.41 kB │ gzip:   0.30 kB
+../dist/public/assets/banknote-CUfgchpK.js                     0.41 kB │ gzip:   0.31 kB
+../dist/public/assets/circle-question-mark-BKbUxUOx.js         0.42 kB │ gzip:   0.31 kB
+../dist/public/assets/external-link-DONKVCeR.js                0.42 kB │ gzip:   0.31 kB
+../dist/public/assets/chart-column-CuGCxIpW.js                 0.42 kB │ gzip:   0.30 kB
+../dist/public/assets/funnel-C8g6YFlK.js                       0.42 kB │ gzip:   0.32 kB
+../dist/public/assets/map-pin-PIya02_9.js                      0.43 kB │ gzip:   0.33 kB
+../dist/public/assets/calendar-CAE3GGi2.js                     0.43 kB │ gzip:   0.31 kB
+../dist/public/assets/textarea-DB8FK4IX.js                     0.46 kB │ gzip:   0.32 kB
+../dist/public/assets/wallet-D4GqeRM8.js                       0.46 kB │ gzip:   0.31 kB
+../dist/public/assets/send-BnC2kPhp.js                         0.46 kB │ gzip:   0.34 kB
+../dist/public/assets/users-DWmEIHJU.js                        0.48 kB │ gzip:   0.33 kB
+../dist/public/assets/trash-2-MggsEleO.js                      0.50 kB │ gzip:   0.32 kB
+../dist/public/assets/file-text-C-Rpi_k7.js                    0.51 kB │ gzip:   0.32 kB
+../dist/public/assets/share-2-DAeYpS2v.js                      0.53 kB │ gzip:   0.34 kB
+../dist/public/assets/package-CUOoQMYk.js                      0.55 kB │ gzip:   0.36 kB
+../dist/public/assets/truck-D3ryhd_m.js                        0.57 kB │ gzip:   0.37 kB
+../dist/public/assets/hand-coins-DkI8BgQM.js                   0.58 kB │ gzip:   0.39 kB
+../dist/public/assets/trophy-Dmb2ClqD.js                       0.65 kB │ gzip:   0.38 kB
+../dist/public/assets/verified-badge-D1HV9feA.js               0.68 kB │ gzip:   0.48 kB
+../dist/public/assets/share-utils-DjkeFgma.js                  0.71 kB │ gzip:   0.36 kB
+../dist/public/assets/web-DJLY7QIc.js                          0.76 kB │ gzip:   0.35 kB
+../dist/public/assets/separator-EE_ansJD.js                    1.02 kB │ gzip:   0.59 kB
+../dist/public/assets/auction-countdown-BQCmqnge.js            2.18 kB │ gzip:   0.83 kB
+../dist/public/assets/sheet-Cr-6g_jr.js                        2.35 kB │ gzip:   0.91 kB
+../dist/public/assets/about-DlbguXBK.js                        3.10 kB │ gzip:   1.32 kB
+../dist/public/assets/empty-state-ozo-eFCM.js                  3.11 kB │ gzip:   1.32 kB
+../dist/public/assets/browse-recently-viewed-i8AvGT-i.js       3.12 kB │ gzip:   1.59 kB
+../dist/public/assets/tabs-ClivH1iF.js                         3.19 kB │ gzip:   1.35 kB
+../dist/public/assets/progress-Dwa5ELaS.js                     3.32 kB │ gzip:   1.55 kB
+../dist/public/assets/radio-group-CaIuqMnX.js                  3.90 kB │ gzip:   1.77 kB
+../dist/public/assets/data-deletion-BCQBDSkv.js                4.65 kB │ gzip:   1.56 kB
+../dist/public/assets/alert-dialog-D-R22KdC.js                 4.90 kB │ gzip:   1.82 kB
+../dist/public/assets/security-guide-DEBMTLR6.js               4.90 kB │ gzip:   1.46 kB
+../dist/public/assets/favorites-BjnPi8d_.js                    5.16 kB │ gzip:   2.15 kB
+../dist/public/assets/forgot-password-kfexYLqe.js              5.70 kB │ gzip:   2.38 kB
+../dist/public/assets/address-selection-modal-BKMCyRdP.js      5.80 kB │ gzip:   2.14 kB
+../dist/public/assets/onboarding-Cb__H3iJ.js                   6.52 kB │ gzip:   2.39 kB
+../dist/public/assets/cart-Caua5mYc.js                         6.54 kB │ gzip:   2.08 kB
+../dist/public/assets/contact-2Q3eD-e0.js                      6.98 kB │ gzip:   2.38 kB
+../dist/public/assets/phone-verification-modal-B-DXNVyY.js     7.43 kB │ gzip:   2.43 kB
+../dist/public/assets/my-bids-cn-WLKF8.js                      7.93 kB │ gzip:   2.64 kB
+../dist/public/assets/nativeCamera-DxVDP9Je.js                 8.65 kB │ gzip:   3.62 kB
+../dist/public/assets/security-vY8gsthV.js                     8.67 kB │ gzip:   1.80 kB
+../dist/public/assets/swipe-cX4U7M6o.js                        9.05 kB │ gzip:   3.27 kB
+../dist/public/assets/messages-CgTwYgCB.js                     9.08 kB │ gzip:   2.93 kB
+../dist/public/assets/notifications-Qxhpaz45.js                9.45 kB │ gzip:   3.49 kB
+../dist/public/assets/auctions-dashboard-DhzaqqMk.js           9.66 kB │ gzip:   3.83 kB
+../dist/public/assets/my-auctions-DkaEWXX6.js                  9.98 kB │ gzip:   3.80 kB
+../dist/public/assets/security-settings-y0hFZrho.js           10.10 kB │ gzip:   2.90 kB
+../dist/public/assets/seller-profile-DbfQK52H.js              12.10 kB │ gzip:   4.23 kB
+../dist/public/assets/register-B6jLcgQT.js                    12.38 kB │ gzip:   4.36 kB
+../dist/public/assets/terms-qEz20AT7.js                       12.56 kB │ gzip:   3.61 kB
+../dist/public/assets/deals-guide-D_JefFrN.js                 14.07 kB │ gzip:   4.67 kB
+../dist/public/assets/settings-DIV65mB6.js                    14.77 kB │ gzip:   4.59 kB
+../dist/public/assets/my-account-YNCc5JkG.js                  15.48 kB │ gzip:   4.29 kB
+../dist/public/assets/checkout-wODXRci1.js                    19.09 kB │ gzip:   6.03 kB
+../dist/public/assets/my-sales-CamE1jlS.js                    24.98 kB │ gzip:   6.01 kB
+../dist/public/assets/privacy-Cht8C8Dl.js                     27.64 kB │ gzip:   5.70 kB
+../dist/public/assets/buyer-dashboard-DAjHQ8A7.js             28.36 kB │ gzip:   6.95 kB
+../dist/public/assets/my-purchases-BNIqFzMp.js                30.31 kB │ gzip:   7.54 kB
+../dist/public/assets/sell-wizard-oi86D4IJ.js                 36.81 kB │ gzip:  10.20 kB
+../dist/public/assets/search-DFKfmVwd.js                      40.25 kB │ gzip:  11.88 kB
+../dist/public/assets/browser-image-compression-DILJcqf6.js   53.16 kB │ gzip:  20.85 kB
+../dist/public/assets/sell-4ZRIgaBq.js                        58.15 kB │ gzip:  14.08 kB
+../dist/public/assets/admin-Bmyv0KEw.js                       61.22 kB │ gzip:  11.56 kB
+../dist/public/assets/seller-dashboard-ms0tixfv.js            76.65 kB │ gzip:  17.35 kB
+../dist/public/assets/shipping-label-DD-BoWr1.js              99.42 kB │ gzip:  24.67 kB
+../dist/public/assets/product-DriLBIxO.js                    101.76 kB │ gzip:  30.96 kB
+../dist/public/assets/index-CXZO6h5o.js                      661.41 kB │ gzip: 208.93 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 7.50s
+building server...
+
+  dist/index.js  1.8mb ⚠️
+
+⚡ Done in 287ms
+grep "firebase-creds" dist/index.js
+
+
+client/src/components/ban-banner.tsx:28:13 - error TS7053: Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ ar: { title: string; message: string; logout: string; }; ku: { title: string; message: string; logout: string; }; }'.
+  Property 'en' does not exist on type '{ ar: { title: string; message: string; logout: string; }; ku: { title: string; message: string; logout: string; }; }'.
+
+28   const t = messages[language] || messages.ar;
+               ~~~~~~~~~~~~~~~~~~
+
+client/src/components/bidding-window.tsx:73:9 - error TS2304: Cannot find name 'auctionEndTime'.
+
+73     if (auctionEndTime) {
+           ~~~~~~~~~~~~~~
+
+client/src/components/bidding-window.tsx:74:30 - error TS2304: Cannot find name 'auctionEndTime'.
+
+74       const endTime = typeof auctionEndTime === "string" ? new Date(auctionEndTime) : auctionEndTime;
+                                ~~~~~~~~~~~~~~
+
+client/src/components/bidding-window.tsx:74:69 - error TS2304: Cannot find name 'auctionEndTime'.
+
+74       const endTime = typeof auctionEndTime === "string" ? new Date(auctionEndTime) : auctionEndTime;
+                                                                       ~~~~~~~~~~~~~~
+
+client/src/components/bidding-window.tsx:74:87 - error TS2304: Cannot find name 'auctionEndTime'.
+
+74       const endTime = typeof auctionEndTime === "string" ? new Date(auctionEndTime) : auctionEndTime;
+                                                                                         ~~~~~~~~~~~~~~
+
+client/src/components/sell/BasicInfoSection.tsx:59:12 - error TS2304: Cannot find name 'wasAIFilled'.
+
+59           {wasAIFilled && (
+              ~~~~~~~~~~~
+
+client/src/pages/admin.tsx:814:66 - error TS2322: Type '(options?: RefetchOptions | undefined) => Promise<QueryObserverResult<{ reports: Report[]; pagination: { page: number; limit: number; total: number; hasMore: boolean; totalPages: number; }; }, Error>>' is not assignable to type 'MouseEventHandler<HTMLButtonElement>'.
+  Types of parameters 'options' and 'event' are incompatible.
+    Type 'MouseEvent<HTMLButtonElement, MouseEvent>' has no properties in common with type 'RefetchOptions'.
+
+814                       <Button variant="outline" className="mt-4" onClick={reportsRefetch}>
+                                                                     ~~~~~~~
+
+  node_modules/@types/react/index.d.ts:2506:9
+    2506         onClick?: MouseEventHandler<T> | undefined;
+                 ~~~~~~~
+    The expected type comes from property 'onClick' which is declared here on type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'
+
+client/src/pages/admin.tsx:1069:66 - error TS2322: Type '(options?: RefetchOptions | undefined) => Promise<QueryObserverResult<{ users: User[]; pagination: { page: number; limit: number; total: number; hasMore: boolean; totalPages: number; }; }, Error>>' is not assignable to type 'MouseEventHandler<HTMLButtonElement>'.
+  Types of parameters 'options' and 'event' are incompatible.
+    Type 'MouseEvent<HTMLButtonElement, MouseEvent>' has no properties in common with type 'RefetchOptions'.
+
+1069                       <Button variant="outline" className="mt-4" onClick={usersRefetch}>
+                                                                      ~~~~~~~
+
+  node_modules/@types/react/index.d.ts:2506:9
+    2506         onClick?: MouseEventHandler<T> | undefined;
+                 ~~~~~~~
+    The expected type comes from property 'onClick' which is declared here on type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'
+
+client/src/pages/seller-dashboard.tsx:189:74 - error TS7053: Element implicitly has an 'any' type because expression of type '"ar" | "ku" | "en"' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+189       return <Badge className="bg-emerald-50 text-emerald-700 border-0">{labels.active[language]}</Badge>;
+                                                                             ~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:191:68 - error TS7053: Element implicitly has an 'any' type because expression of type '"ar" | "ku" | "en"' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+191       return <Badge className="bg-blue-50 text-blue-700 border-0">{labels.sold[language]}</Badge>;
+                                                                       ~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:193:70 - error TS7053: Element implicitly has an 'any' type because expression of type '"ar" | "ku" | "en"' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+193       return <Badge className="bg-amber-50 text-amber-700 border-0">{labels.pending_shipment[language]}</Badge>;
+                                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:195:72 - error TS7053: Element implicitly has an 'any' type because expression of type '"ar" | "ku" | "en"' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+195       return <Badge className="bg-violet-50 text-violet-700 border-0">{labels.shipped[language]}</Badge>;
+                                                                           ~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:197:74 - error TS7053: Element implicitly has an 'any' type because expression of type '"ar" | "ku" | "en"' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+197       return <Badge className="bg-muted text-muted-foreground border-0">{labels.draft[language]}</Badge>;
+                                                                             ~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:212:70 - error TS7053: Element implicitly has an 'any' type because expression of type '"ar" | "ku" | "en"' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+212       return <Badge className="bg-amber-50 text-amber-700 border-0">{labels.pending_payment[language]}</Badge>;
+                                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:215:70 - error TS7053: Element implicitly has an 'any' type because expression of type '"ar" | "ku" | "en"' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+215       return <Badge className="bg-amber-50 text-amber-700 border-0">{labels.pending_shipment[language]}</Badge>;
+                                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:217:68 - error TS7053: Element implicitly has an 'any' type because expression of type '"ar" | "ku" | "en"' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+217       return <Badge className="bg-blue-50 text-blue-700 border-0">{labels.shipped[language]}</Badge>;
+                                                                       ~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:220:74 - error TS7053: Element implicitly has an 'any' type because expression of type '"ar" | "ku" | "en"' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+220       return <Badge className="bg-emerald-50 text-emerald-700 border-0">{labels.delivered[language]}</Badge>;
+                                                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:234:8 - error TS7053: Element implicitly has an 'any' type because expression of type '"ar" | "ku" | "en"' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+234       {labels.auction[language]}
+           ~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:239:8 - error TS7053: Element implicitly has an 'any' type because expression of type '"ar" | "ku" | "en"' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+239       {labels.fixed[language]}
+           ~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:580:12 - error TS7053: Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+580     return labels[reason]?.[language] || reason;
+               ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:674:49 - error TS7053: Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ ar: string; ku: string; }'.
+  Property 'en' does not exist on type '{ ar: string; ku: string; }'.
+
+674       toast({ title: t("success"), description: messages[variables.action]?.[language] || (language === "ar" ? "تم تحديث العرض" : "پێشنیار نوێکرایەوە") });
+                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+client/src/pages/seller-dashboard.tsx:825:52 - error TS2551: Property 'buyerId' does not exist on type 'SellerOrder'. Did you mean 'buyer'?
+
+825         'rated_entity_id': selectedOrderForAction?.buyerId
+                                                       ~~~~~~~
+
+  client/src/pages/seller-dashboard.tsx:137:3
+    137   buyer?: {
+          ~~~~~
+    'buyer' is declared here.
+
+server/auction-processor.ts:88:69 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'Language'.
+
+88         const msg = getNotificationMessage('auction_ended_no_bids', lang, { title: listing.title });
+                                                                       ~~~~
+
+server/auction-processor.ts:150:72 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'Language'.
+
+150         const msg = getNotificationMessage('auction_ended_no_reserve', lang, {
+                                                                           ~~~~
+
+server/auction-processor.ts:193:74 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'Language'.
+
+193           const msg = getNotificationMessage('auction_ended_no_reserve', lang, {
+                                                                             ~~~~
+
+server/auction-processor.ts:235:9 - error TS2322: Type '"reserve_not_met"' is not assignable to type '"sold" | "no_bids"'.
+
+235         status: "reserve_not_met",
+            ~~~~~~
+
+  server/websocket.ts:149:3
+    149   status: "sold" | "no_bids";
+          ~~~~~~
+    The expected type comes from property 'status' which is declared here on type 'Omit<AuctionEndUpdate, "type">'
+
+server/auction-processor.ts:291:61 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'Language'.
+
+291     const winnerMsg = getNotificationMessage('auction_won', winnerLang, {
+                                                                ~~~~~~~~~~
+
+server/auction-processor.ts:327:64 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'Language'.
+
+327       const sellerMsg = getNotificationMessage('auction_sold', sellerLang, {
+                                                                   ~~~~~~~~~~
+
+server/auction-processor.ts:369:60 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'Language'.
+
+369         const msg = getNotificationMessage('auction_lost', lang, {
+                                                               ~~~~
+
+server/routes/messages.ts:115:59 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'Language'.
+
+115         const msg = getNotificationMessage('new_message', receiverLang, {
+                                                              ~~~~~~~~~~~~
+
+server/routes/offers.ts:89:62 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'Language'.
+
+89         const msg = getNotificationMessage('offer_received', sellerLang, {
+                                                                ~~~~~~~~~~
+
+server/routes/offers.ts:430:72 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'Language'.
+
+430                   const msg = getNotificationMessage('offer_rejected', buyerLang, {
+                                                                           ~~~~~~~~~
+
+server/routes/products.ts:883:56 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'Language'.
+
+883           const msg = getNotificationMessage('outbid', lang, {
+                                                           ~~~~
+
+server/routes/products.ts:956:9 - error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+
+956         previousHighBidderId: highestBid?.userId || null,
+            ~~~~~~~~~~~~~~~~~~~~
+
+  server/websocket.ts:15:3
+    15   previousHighBidderId?: string;
+         ~~~~~~~~~~~~~~~~~~~~
+    The expected type comes from property 'previousHighBidderId' which is declared here on type 'BidUpdate'
+
+server/scripts/cleanup-duplicate-phones.ts:88:31 - error TS2339: Property 'lastActive' does not exist on type '{ id: string; accountCode: string | null; username: string | null; phone: string | null; email: string | null; password: string | null; displayName: string; avatar: string | null; role: string; ... 45 more ...; completedPurchases: number; }'.
+
+88           lastActive: account.lastActive,
+                                 ~~~~~~~~~~
+
+server/storage.ts:562:7 - error TS2741: Property 'orderBy' is missing in type 'Omit<PgSelectBase<"listings", any, "partial" | "single", Record<"listings", "not-null">, false, "where" | "orderBy", ({ [x: string]: any; } | { [x: string]: any; })[], any>, "where" | "orderBy">' but required in type 'Omit<PgSelectBase<"listings", any, "partial" | "single", Record<"listings", "not-null">, false, "where", ({ [x: string]: any; } | { [x: string]: any; })[], any>, "where">'.
+
+562       query = query.orderBy(desc(searchRankSql), desc(listings.createdAt));
+          ~~~~~
+
+  node_modules/drizzle-orm/pg-core/query-builders/select.d.ts:471:5
+    471     orderBy(builder: (aliases: this['_']['selection']) => ValueOrArray<PgColumn | SQL | SQL.Aliased>): PgSelectWithout<this, TDynamic, 'orderBy'>;
+            ~~~~~~~
+    'orderBy' is declared here.
+
+server/storage.ts:564:7 - error TS2741: Property 'orderBy' is missing in type 'Omit<PgSelectBase<"listings", any, "partial" | "single", Record<"listings", "not-null">, false, "where" | "orderBy", ({ [x: string]: any; } | { [x: string]: any; })[], any>, "where" | "orderBy">' but required in type 'Omit<PgSelectBase<"listings", any, "partial" | "single", Record<"listings", "not-null">, false, "where", ({ [x: string]: any; } | { [x: string]: any; })[], any>, "where">'.
+
+564       query = query.orderBy(desc(listings.createdAt));
+          ~~~~~
+
+  node_modules/drizzle-orm/pg-core/query-builders/select.d.ts:471:5
+    471     orderBy(builder: (aliases: this['_']['selection']) => ValueOrArray<PgColumn | SQL | SQL.Aliased>): PgSelectWithout<this, TDynamic, 'orderBy'>;
+            ~~~~~~~
+    'orderBy' is declared here.
+
+server/storage.ts:1698:5 - error TS2739: Type '{ totalReportsOnTarget: number; pendingReportsOnTarget: number; id: string; reporterId: string; reportType: string; targetId: string; targetType: string; reason: string; details: string | null; ... 11 more ...; sellerName: string; }[]' is missing the following properties from type '{ reports: ReportWithDetails[]; total: number; }': reports, total
+
+1698     return results.map(r => ({
+         ~~~~~~
+
+server/test-whatsapp.ts:93:24 - error TS2554: Expected 2 arguments, but got 1.
+
+93   const result = await sendWhatsAppOTP(phoneNumber);
+                          ~~~~~~~~~~~~~~~
+
+  server/whatsapp.ts:55:54
+    55 export async function sendWhatsAppOTP(phone: string, code: string): Promise<{ success: boolean; error?: string; errorAr?: string }> {
+                                                            ~~~~~~~~~~~~
+    An argument for 'code' was not provided.
+
+server/test-whatsapp.ts:115:32 - error TS2304: Cannot find name 'verifyWhatsAppOTP'.
+
+115     const verifyResult = await verifyWhatsAppOTP(phoneNumber, code);
+                                   ~~~~~~~~~~~~~~~~~
+
+
+Found 40 errors in 12 files.
+
+Errors  Files
+     1  client/src/components/ban-banner.tsx:28
+     4  client/src/components/bidding-window.tsx:73
+     1  client/src/components/sell/BasicInfoSection.tsx:59
+     2  client/src/pages/admin.tsx:814
+    14  client/src/pages/seller-dashboard.tsx:189
+     7  server/auction-processor.ts:88
+     1  server/routes/messages.ts:115
+     2  server/routes/offers.ts:89
+     2  server/routes/products.ts:883
+     1  server/scripts/cleanup-duplicate-phones.ts:88
+     3  server/storage.ts:562
+     2  server/test-whatsapp.ts:93
+~/workspace$ grep "firebase-creds" dist/index.js
+~/workspace$ 
+~/workspace$ 
+~/workspace$ 
