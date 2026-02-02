@@ -1,0 +1,190 @@
+`UIScene` lifecycle will soon be required. Failure to adopt will result in an assert in the future.
+Could not create a sandbox extension for '/var/containers/Bundle/Application/68ACABC7-9BF9-4EF7-B2A8-5993241E8C06/App.app'
+Loading network plugin
+KeyboardPlugin: resize mode - body
+⚡️  Loading app at https://ebey3.com...
+Reachable via WiFi
+void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+WebContent[4948] Could not register system wide server: -25204
+WebContent[4948] _AXAddToElementCache was called even though the element was in the cache: <WKAccessibilityWebPageObject: 0x164e480a0>
+WebContent[4948] Service "com.apple.CARenderServer" failed bootstrap look up (1) - (os/kern) invalid address
+WebContent[4948] Failed to initialize application enviroment context
+WebContent[4948] Failed to load a device context.
+WebContent[4948] Failed to initialize application enviroment context
+WebContent[4948] Failed to load a device context.
+WebContent[4948] Unable to hide query parameters from script (missing data)
+⚡️  To Native ->  StatusBar setOverlaysWebView 105166079
+⚡️  [warn] - [PWA] Service Workers not supported in this browser
+⚡️  To Native ->  StatusBar setStyle 105166080
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: NULL
+⚡️  To Native ->  StatusBar setBackgroundColor 105166081
+⚡️  To Native ->  App addListener 105166082
+⚡️  To Native ->  App addListener 105166083
+⚡️  To Native ->  App addListener 105166084
+⚡️  TO JS undefined
+⚡️  TO JS {}
+⚡️  TO JS undefined
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 401
+⚡️  [log] - [queryClient] Received 401, clearing auth token
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: NULL
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 401
+SplashScreen.hideSplash: SplashScreen was automatically hidden after default timeout. You should call `SplashScreen.hide()` as soon as your web app is loaded (or increase the timeout). Read more at https://capacitorjs.com/docs/apis/splash-screen#hiding-the-splash-screen
+WebContent[4948] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+⚡️  To Native ->  SplashScreen hide 105166085
+⚡️  TO JS undefined
+WebContent[4948] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+⚡️  WebView loaded
+⚡️  [warn] - [PWA] Service Workers not supported in this browser
+⚡️  WebView loaded
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: NULL
+⚡️  To Native ->  StatusBar setOverlaysWebView 110019297
+⚡️  To Native ->  StatusBar setStyle 110019298
+⚡️  To Native ->  StatusBar setBackgroundColor 110019299
+⚡️  To Native ->  App addListener 110019300
+⚡️  To Native ->  App addListener 110019301
+⚡️  TO JS undefined
+⚡️  To Native ->  App addListener 110019302
+⚡️  TO JS {}
+⚡️  TO JS undefined
+⚡️  [log] - [queryClient] Received 401, clearing auth token
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 401
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: NULL
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 401
+⚡️  To Native ->  SplashScreen hide 110019303
+⚡️  TO JS undefined
+SOAuthorizationCoordinator::tryAuthorize (2): Attempting to perform subframe navigation.
+unable to make sandbox extension: [2: No such file or directory]
+⚡️  TO JS {"isActive":false}
+⚡️  [log] - App state changed: background
+⚡️  [log] - App state changed: background
+⚡️  TO JS {"isActive":true}
+⚡️  [log] - App state changed: active
+⚡️  [log] - App state changed: active
+UIKeyboardLayoutStar implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+Reporter disconnected. { function=sendMessage, reporterID=21238613278721 }
+Reporter disconnected. { function=sendMessage, reporterID=21238613278721 }
+Reporter disconnected. { function=sendMessage, reporterID=21238613278721 }
+Reporter disconnected. { function=sendMessage, reporterID=21238613278721 }
+Reporter disconnected. { function=sendMessage, reporterID=21238613278721 }
+Reporter disconnected. { function=sendMessage, reporterID=21238613278721 }
+Reporter disconnected. { function=sendMessage, reporterID=21238613278721 }
+Reporter disconnected. { function=sendMessage, reporterID=21238613278721 }
+Reporter disconnected. { function=sendMessage, reporterID=21238613278721 }
+-[RTIInputSystemClient remoteTextInputSessionWithID:textSuggestionsChanged:]  Can only set suggestions for an active session. sessionID = CF63CFE2-E61F-449F-883B-8AC6FB833C69
+containerToPush is nil, will not push anything to candidate receiver for request token: 99C6CD58
+-[RTIInputSystemClient remoteTextInputSessionWithID:performInputOperation:]  perform input operation requires a valid sessionID. inputModality = Keyboard, inputOperation = <null selector>, customInfoType = UIEmojiSearchOperations
+-[RTIInputSystemClient remoteTextInputSessionWithID:textSuggestionsChanged:]  Can only set suggestions for an active session. sessionID = CF63CFE2-E61F-449F-883B-8AC6FB833C69
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: eyJhbGci...
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 200
+⚡️  [log] - [DEBUG useAuth] User data from /api/auth/me: {
+  "id": "fb_25872581299020147",
+  "accountCode": null,
+  "username": null,
+  "phone": "07510325610",
+  "email": "info@ebey3.com",
+  "password": null,
+  "displayName": "Yasir Abbas",
+  "avatar": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_",
+  "role": "user",
+  "accountType": "buyer",
+  "isVerified": true,
+  "isAdmin": true,
+  "isTrusted": true,
+  "isAuthenticated": true,
+  "authenticityGuaranteed": false,
+  "totalPurchases": 0,
+  "isBanned": false,
+  "banReason": null,
+  "bannedAt": null,
+  "idDocumentUrl": null,
+  "verificationStatus": "pending",
+  "sellerApproved": true,
+  "sellerRequestStatus": "approved",
+  "sellerRequestDate": null,
+  "sellerApprovalDate": null,
+  "totalSales": 5,
+  "rating": 5,
+  "ratingCount": 2,
+  "buyerRating": 0,
+  "buyerRatingCount": 0,
+  "authProvider": "facebook",
+  "authProviderId": "25872581299020147",
+  "twoFactorEnabled": false,
+  "twoFactorSecret": null,
+  "city": "أربيل",
+  "addressLine1": "أربيل القرية الإيطالية ",
+  "addressLine2": null,
+  "district": null,
+  "locationLat": null,
+  "locationLng": null,
+  "mapUrl": null,
+  "ageBracket": "",
+  "gender": null,
+  "interests": [
+    "electronics",
+    "sports",
+    "home",
+    "phones"
+  ],
+  "surveyCompleted": true,
+  "language": "ar",
+  "createdAt": "2026-01-26T18:53:00.643Z",
+  "lastLoginAt": "2026-02-02T16:42:15.165Z",
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYl8yNTg3MjU4MTI5OTAyMDE0NyIsInBob25lIjoiMDc1MTAzMjU2MTAiLCJwaG9uZVZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NzAwNTA1NjAsImV4cCI6MTc3MjY0MjU2MH0.Bc1z5IGIT5Ca-gSv4zh_ngovaaqFxpii6Raqh3_yddI",
+  "tokenExpiresAt": "2026-03-04T16:42:40.048Z",
+  "facebookId": null,
+  "facebookLongLivedToken": "EAAgC1PtuczwBQqOQhMsBwUvOkyD1RJC1DEqhiQtxzciVwJBOru5pLr92jv3O966wM9Nostvk7NI7TeZA7v0rSGXnYxTPqlTBFs2vif6Ghya5Xwio0V7wCFDCMrPvzg9hsrUOIJo2yuFts2KGS7erBfcOkHKn6jNZAH5mb6oT0cdFTf7gRpXnLLIkGt",
+  "phoneVerified": true,
+  "biddingLimit": 100000,
+  "completedPurchases": 0
+}
+⚡️  [log] - [Push] localStorage status: {"dismissed":"null","subscribed":"null","willShowPrompt":true}
+⚡️  [log] - [Push] About to call checkPermission()
+⚡️  [log] - [Push] checkPermission() called, isNative: true
+⚡️  [log] - [Push] Calling checkNativePushPermission...
+⚡️  To Native ->  PushNotifications checkPermissions 110019304
+⚡️  TO JS {"receive":"prompt"}
+⚡️  [log] - [Push] Native permission status: prompt
+⚡️  [log] - [Push] Permission is prompt, will show prompt in 5 seconds
+⚡️  [log] - [WebSocket] Connected to notification server
+⚡️  [log] - [Push] Showing native prompt now
+⚡️  [log] - [Push] handleSubscribe called, isNative: true
+⚡️  [log] - [Push] Initializing native push notifications...
+⚡️  [log] - [Push] initNativePushNotifications called, isNative: true
+⚡️  [log] - [Push] Checking permissions...
+⚡️  To Native ->  PushNotifications checkPermissions 110019305
+⚡️  TO JS {"receive":"prompt"}
+⚡️  [log] - [Push] Current permission status: {"receive":"prompt"}
+⚡️  To Native ->  PushNotifications requestPermissions 110019306
+⚡️  [log] - [Push] Requesting permissions...
+⚡️  TO JS {"isActive":false}
+⚡️  [log] - App state changed: background
+⚡️  [log] - App state changed: background
+⚡️  TO JS {"receive":"granted"}
+⚡️  [log] - [Push] Permission request result: {"receive":"granted"}
+⚡️  [log] - [Push] Setting up registration listener...
+⚡️  To Native ->  PushNotifications addListener 110019307
+⚡️  To Native ->  PushNotifications addListener 110019308
+⚡️  [log] - [Push] Setting up registrationError listener...
+⚡️  [log] - [Push] Setting up pushNotificationReceived listener
+⚡️  To Native ->  PushNotifications addListener 110019309
+⚡️  To Native ->  ⚡️  [log] - [Push] Setting up pushNotificationActionPerformed listener
+PushNotifications addListener 110019310
+⚡️  To Native ->  ⚡️  [log] - [Push] All listeners set up, now calling register()...
+PushNotifications register 110019311
+⚡️  TO JS undefined
+⚡️  [log] - [Push] PushNotifications.register() called successfully
+⚡️  [log] - [Push] Returning true from initNativePushNotifications
+⚡️  [log] - [Push] initNativePushNotifications returned: true
+⚡️  [log] - [Push] handleSubscribe finished
+⚡️  TO JS {"isActive":true}
+⚡️  [log] - App state changed: active
+⚡️  [log] - App state changed: active
+🔔 [AppDelegate] APNS token received: 75e5ed3bcbf73737828f9adf0662201a00d8854ba8b6f40bc145e05efd03f39e
+-[RTIInputSystemClient remoteTextInputSessionWithID:performInputOperation:]  perform input operation requires a valid sessionID. inputModality = Keyboard, inputOperation = dismissAutoFillPanel, customInfoType = UIUserInteractionRemoteInputOperations
+⚡️  TO JS {"isActive":false}
+⚡️  [log] - App state changed: background
+⚡️  [log] - App state changed: background
+-[RTIInputSystemClient remoteTextInputSessionWithID:performInputOperation:]  perform input operation requires a valid sessionID. inputModality = Keyboard, inputOperation = dismissAutoFillPanel, customInfoType = UIUserInteractionRemoteInputOperations
+Snapshotting a view (0x10921a800, UIKeyboardImpl) that is not in a visible window requires afterScreenUpdates:YES.
+Reporter disconnected or already stopped. { func=stop, reporterID=21238613278721 }

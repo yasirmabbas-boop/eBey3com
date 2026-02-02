@@ -1,0 +1,112 @@
+02-02 19:42:23.92
+51b5dfd7
+User
+4:42:23 PM [ws] WebSocket client disconnected
+2026-02-02 19:42:29.96
+51b5dfd7
+User
+[VerifyWay] Sending OTP via WhatsApp...
+2026-02-02 19:42:29.96
+51b5dfd7
+User
+[VerifyWay DEBUG] Original phone input: 07510325610
+2026-02-02 19:42:29.96
+51b5dfd7
+User
+[OTP Service] Code: 487419, Expires: 2026-02-02T16:47:29.965Z
+2026-02-02 19:42:29.96
+51b5dfd7
+User
+[OTP Service] Generating OTP for 9647510325610
+2026-02-02 19:42:29.96
+51b5dfd7
+User
+[VerifyWay DEBUG] Formatted phone: 9647510325610
+2026-02-02 19:42:29.96
+51b5dfd7
+User
+[OTP] /api/request-otp body: { hasPhoneNumber: true, hasPhone: false }
+2026-02-02 19:42:29.96
+51b5dfd7
+User
+[VerifyWay DEBUG] VERIFYWAY_TOKEN configured: true
+2026-02-02 19:42:29.96
+51b5dfd7
+User
+[VerifyWay DEBUG] OTP code: 487419
+2026-02-02 19:42:30.38
+51b5dfd7
+User
+[VerifyWay] Response status: 200
+2026-02-02 19:42:30.38
+51b5dfd7
+User
+[VerifyWay] Response data: {"status":"success","message_id":"4011cbc185523c880c3bc941ae64d86ff279","recipient":"+9647510325610","code":"487419"}
+2026-02-02 19:42:30.38
+51b5dfd7
+User
+[OTP Service] OTP sent successfully to 9647510325610
+2026-02-02 19:42:30.38
+51b5dfd7
+User
+[VerifyWay] OTP sent successfully
+2026-02-02 19:42:30.38
+51b5dfd7
+User
+4:42:30 PM [express] POST /api/request-otp 200 in 424ms :: {"success":true,"message":"تم إرسال رمز التحقق إلى واتساب","expiresIn":300}
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+offset: 0,
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+category: undefined,
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+conditionsCount: undefined,
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+sellerId: undefined,
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+[DEBUG-SERVER] API /api/listings request {
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+isOwnProfile: false,
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+citiesCount: undefined
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+maxPrice: undefined,
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+limit: 100,
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+includeSoldFinal: false,
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+[STORAGE] getListingsPaginated called with: {
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+[STORAGE] Adding availableListingCondition (filtering out sold items)
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+sellerId: undefined,
+2026-02-02 19:42:40.74
+51b5dfd7
+User
+page: 1
