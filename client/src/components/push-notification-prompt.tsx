@@ -149,51 +149,84 @@ export function PushNotificationPrompt() {
     if (dismissed || subscribed) return;
 
     const checkPermission = async () => {
+      console.log("[Push] checkPermission() called, isNative:", isNative);
+      
       if (isNative) {
         // Check native push permission
-        const permission = await checkNativePushPermission();
-        console.log("[Push] Permission status:", permission);
-        
-        // If permission is already granted but user isn't subscribed, auto-register
-        if (permission === 'granted') {
-          console.log("[Push] Permission already granted, auto-registering...");
-          // Automatically trigger registration
-          handleSubscribe();
+        console.log("[Push] Calling checkNativePushPermission...");
+        try {
+          const permission = await checkNativePushPermission();
+          console.log("[Push] Native permission status:", permission);
+          
+          // If permission is already granted but user isn't subscribed, auto-register
+          if (permission === 'granted') {
+            console.log("[Push] Permission already granted, auto-registering NOW...");
+            // Automatically trigger registration - don't await to avoid blocking
+            handleSubscribe().catch((err) => {
+              console.error("[Push] Auto-register failed:", err);
+            });
+            return;
+          }
+          
+          if (permission === 'denied') {
+            console.log("[Push] Permission denied, not showing prompt");
+            localStorage.setItem(DISMISSED_KEY, "true");
+            return;
+          }
+          
+          // Permission is 'prompt' - show the prompt after delay
+          console.log("[Push] Permission is prompt, will show prompt in 5 seconds");
+          const timer = setTimeout(() => {
+            console.log("[Push] Showing native prompt now");
+            setShowPrompt(true);
+          }, 5000);
+          return () => clearTimeout(timer);
+        } catch (err) {
+          console.error("[Push] checkNativePushPermission threw error:", err);
           return;
         }
-        
-        if (permission === 'denied') {
-          console.log("[Push] Permission denied, not showing prompt");
-          return;
-        }
-        
-        // Permission is 'prompt' - show the prompt after delay
-        const timer = setTimeout(() => {
-          setShowPrompt(true);
-        }, 5000);
-        return () => clearTimeout(timer);
       } else {
         // Check web push permission
-        if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+        console.log("[Push] Checking web push support...");
+        if (!("Notification" in window)) {
+          console.log("[Push] Notification API not supported");
+          return;
+        }
+        if (!("serviceWorker" in navigator)) {
+          console.log("[Push] Service Worker not supported");
+          return;
+        }
+        
+        console.log("[Push] Web Notification.permission:", Notification.permission);
         
         if (Notification.permission === "granted") {
           console.log("[Push] Web permission already granted, auto-registering...");
           // Automatically trigger registration for web
-          handleSubscribe();
+          handleSubscribe().catch((err) => {
+            console.error("[Push] Web auto-register failed:", err);
+          });
           return;
         }
         
-        if (Notification.permission === "denied") return;
+        if (Notification.permission === "denied") {
+          console.log("[Push] Web permission denied");
+          return;
+        }
         
         // Permission is 'default' - show the prompt after delay
+        console.log("[Push] Web permission is default, will show prompt in 5 seconds");
         const timer = setTimeout(() => {
+          console.log("[Push] Showing web prompt now");
           setShowPrompt(true);
         }, 5000);
         return () => clearTimeout(timer);
       }
     };
 
-    checkPermission();
+    console.log("[Push] About to call checkPermission()");
+    checkPermission().catch((err) => {
+      console.error("[Push] checkPermission() failed:", err);
+    });
   }, [isAuthenticated, handleSubscribe]);
 
   const handleDismiss = () => {
