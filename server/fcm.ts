@@ -6,18 +6,44 @@
 import admin from 'firebase-admin';
 
 // Initialize Firebase Admin SDK
-const serviceAccount = {
-  projectId: process.env.FCM_PROJECT_ID,
-  clientEmail: process.env.FCM_CLIENT_EMAIL,
-  privateKey: process.env.FCM_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-};
+// Support two methods:
+// 1. FIREBASE_SERVICE_ACCOUNT_BASE64 - Base64 encoded JSON (recommended, avoids newline issues)
+// 2. FCM_PROJECT_ID, FCM_CLIENT_EMAIL, FCM_PRIVATE_KEY - Separate values (legacy)
+
+let serviceAccount: admin.ServiceAccount | null = null;
+
+// Method 1: Base64 encoded service account JSON (preferred)
+if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+  try {
+    const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf-8');
+    const parsed = JSON.parse(decoded);
+    serviceAccount = {
+      projectId: parsed.project_id,
+      clientEmail: parsed.client_email,
+      privateKey: parsed.private_key,
+    };
+    console.log('📦 Firebase credentials loaded from base64 encoded JSON');
+  } catch (error) {
+    console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_BASE64:', error);
+  }
+}
+
+// Method 2: Separate environment variables (fallback)
+if (!serviceAccount && process.env.FCM_PROJECT_ID && process.env.FCM_CLIENT_EMAIL && process.env.FCM_PRIVATE_KEY) {
+  serviceAccount = {
+    projectId: process.env.FCM_PROJECT_ID,
+    clientEmail: process.env.FCM_CLIENT_EMAIL,
+    privateKey: process.env.FCM_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  };
+  console.log('🔑 Firebase credentials loaded from separate env vars');
+}
 
 let isInitialized = false;
 
-if (serviceAccount.projectId && serviceAccount.clientEmail && serviceAccount.privateKey) {
+if (serviceAccount) {
   try {
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+      credential: admin.credential.cert(serviceAccount),
     });
     isInitialized = true;
     console.log('✅ Firebase Admin SDK initialized successfully');
@@ -26,7 +52,8 @@ if (serviceAccount.projectId && serviceAccount.clientEmail && serviceAccount.pri
   }
 } else {
   console.warn('⚠️ FCM credentials not configured - native push notifications will not work');
-  console.warn('   Required: FCM_PROJECT_ID, FCM_CLIENT_EMAIL, FCM_PRIVATE_KEY');
+  console.warn('   Option 1: Set FIREBASE_SERVICE_ACCOUNT_BASE64 (base64 encoded JSON)');
+  console.warn('   Option 2: Set FCM_PROJECT_ID, FCM_CLIENT_EMAIL, FCM_PRIVATE_KEY');
 }
 
 export interface FCMPayload {
