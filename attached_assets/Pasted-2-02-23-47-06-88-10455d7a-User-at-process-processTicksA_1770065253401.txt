@@ -1,0 +1,72 @@
+2-02 23:47:06.88
+10455d7a
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2026-02-02 23:47:06.88
+10455d7a
+User
+},
+2026-02-02 23:47:06.88
+10455d7a
+User
+at /home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-api-request-internal.js:82:75
+2026-02-02 23:47:06.88
+10455d7a
+User
+[FCM] Failed to send notification: FirebaseMessagingError: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-02 23:47:06.88
+10455d7a
+User
+at async Promise.allSettled (index 0)
+2026-02-02 23:47:06.88
+10455d7a
+User
+at async J8 (file:///home/runner/workspace/dist/index.js:87:61614)
+2026-02-02 23:47:06.88
+10455d7a
+User
+at async file:///home/runner/workspace/dist/index.js:96:4292 {
+2026-02-02 23:47:06.88
+10455d7a
+User
+message: 'Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.'
+2026-02-02 23:47:06.88
+10455d7a
+User
+errorInfo: {
+2026-02-02 23:47:06.88
+10455d7a
+User
+at async file:///home/runner/workspace/dist/index.js:88:1174
+2026-02-02 23:47:06.88
+10455d7a
+User
+[push] Error sending to user fb_25872581299020147: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-02 23:47:06.88
+10455d7a
+User
+at createFirebaseError (/home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-errors-internal.js:35:47)
+2026-02-02 23:47:06.88
+10455d7a
+User
+}
+2026-02-02 23:47:06.88
+10455d7a
+User
+at async lt (file:///home/runner/workspace/dist/index.js:88:779)
+2026-02-02 23:47:06.88
+10455d7a
+User
+code: 'messaging/third-party-auth-error',
+2026-02-02 23:47:06.88
+10455d7a
+User
+codePrefix: 'messaging'
+2026-02-02 23:47:06.88
+10455d7a
+User
+at FirebaseMessagingError.fromServerError (/home/runner/workspace/node_modules/firebase-admin/lib/utils/error.js:269:16)
+2026-02-02 23:47:06.91
+10455d7a
+User
+8:47:06 PM [express] POST /api/offers 201 in 801ms :: {"id":"d31a7152-b9ea-

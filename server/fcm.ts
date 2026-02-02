@@ -13,6 +13,9 @@ import admin from 'firebase-admin';
 let serviceAccount: admin.ServiceAccount | null = null;
 
 // Method 1: Base64 encoded service account JSON (preferred)
+console.log('[FCM Init] FIREBASE_SERVICE_ACCOUNT_BASE64 exists:', !!process.env.FIREBASE_SERVICE_ACCOUNT_BASE64);
+console.log('[FCM Init] FIREBASE_SERVICE_ACCOUNT_BASE64 length:', (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || '').length);
+
 if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
   try {
     const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf-8');
@@ -23,6 +26,9 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
       privateKey: parsed.private_key,
     };
     console.log('📦 Firebase credentials loaded from base64 encoded JSON');
+    console.log('[FCM Init] Project ID:', parsed.project_id);
+    console.log('[FCM Init] Client Email:', parsed.client_email);
+    console.log('[FCM Init] Private key length:', (parsed.private_key || '').length);
   } catch (error) {
     console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_BASE64:', error);
   }
