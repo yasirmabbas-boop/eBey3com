@@ -4,19 +4,49 @@
  */
 
 import admin from 'firebase-admin';
+import fs from 'fs';
+import path from 'path';
 
 // Initialize Firebase Admin SDK
-// Support two methods:
-// 1. FIREBASE_SERVICE_ACCOUNT_BASE64 - Base64 encoded JSON (recommended, avoids newline issues)
-// 2. FCM_PROJECT_ID, FCM_CLIENT_EMAIL, FCM_PRIVATE_KEY - Separate values (legacy)
+// Priority order:
+// 1. Local JSON file (most reliable, bypasses env var corruption)
+// 2. FIREBASE_SERVICE_ACCOUNT_BASE64 - Base64 encoded JSON
+// 3. FCM_PROJECT_ID, FCM_CLIENT_EMAIL, FCM_PRIVATE_KEY - Separate values (legacy)
 
 let serviceAccount: admin.ServiceAccount | null = null;
 
-// Method 1: Base64 encoded service account JSON (preferred)
-console.log('[FCM Init] FIREBASE_SERVICE_ACCOUNT_BASE64 exists:', !!process.env.FIREBASE_SERVICE_ACCOUNT_BASE64);
-console.log('[FCM Init] FIREBASE_SERVICE_ACCOUNT_BASE64 length:', (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || '').length);
+// Method 1: Load from JSON file (PRIORITY - bypasses env var issues)
+const serviceAccountPath = path.join(process.cwd(), 'ebey3-67950-firebase-adminsdk-fbsvc-cf76a606aa.json');
+console.log('[FCM Init] Checking for service account file at:', serviceAccountPath);
 
-if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+if (fs.existsSync(serviceAccountPath)) {
+  try {
+    const rawData = fs.readFileSync(serviceAccountPath, 'utf8');
+    const parsed = JSON.parse(rawData);
+    serviceAccount = {
+      projectId: parsed.project_id,
+      clientEmail: parsed.client_email,
+      privateKey: parsed.private_key,
+    };
+    console.log('📁 Firebase credentials loaded from JSON file (RELIABLE METHOD)');
+    console.log('[FCM Init] Project ID:', parsed.project_id);
+    console.log('[FCM Init] Client Email:', parsed.client_email);
+    console.log('[FCM Init] Private key length:', (parsed.private_key || '').length);
+    console.log('[FCM Init] Private key starts with:', (parsed.private_key || '').substring(0, 30));
+    console.log('[FCM Init] Private key ends with:', (parsed.private_key || '').slice(-30));
+    console.log('[FCM Init] Private key has actual newlines:', (parsed.private_key || '').includes('\n'));
+  } catch (error) {
+    console.error('❌ Failed to parse service account JSON file:', error);
+  }
+} else {
+  console.log('[FCM Init] Service account file not found, trying env vars...');
+}
+
+// Method 2: Base64 encoded service account JSON (fallback)
+if (!serviceAccount && process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+  console.log('[FCM Init] FIREBASE_SERVICE_ACCOUNT_BASE64 exists:', !!process.env.FIREBASE_SERVICE_ACCOUNT_BASE64);
+  console.log('[FCM Init] FIREBASE_SERVICE_ACCOUNT_BASE64 length:', (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || '').length);
+  
   try {
     const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf-8');
     const parsed = JSON.parse(decoded);
@@ -35,13 +65,14 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
     console.log('[FCM Init] Client Email:', parsed.client_email);
     console.log('[FCM Init] Private key length:', formattedPrivateKey.length);
     console.log('[FCM Init] Private key starts with:', formattedPrivateKey.substring(0, 30));
+    console.log('[FCM Init] Private key ends with:', formattedPrivateKey.slice(-30));
     console.log('[FCM Init] Private key has actual newlines:', formattedPrivateKey.includes('\n'));
   } catch (error) {
     console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_BASE64:', error);
   }
 }
 
-// Method 2: Separate environment variables (fallback)
+// Method 3: Separate environment variables (legacy fallback)
 if (!serviceAccount && process.env.FCM_PROJECT_ID && process.env.FCM_CLIENT_EMAIL && process.env.FCM_PRIVATE_KEY) {
   serviceAccount = {
     projectId: process.env.FCM_PROJECT_ID,
