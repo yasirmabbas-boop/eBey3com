@@ -1,0 +1,204 @@
+Last login: Mon Feb  2 16:27:48 on ttys009
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+anonymous:~ yasirabbas$ git pull
+fatal: not a git repository (or any of the parent directories): .git
+anonymous:~ yasirabbas$ pod install
+[!] No `Podfile' found in the project directory.
+anonymous:~ yasirabbas$ 
+anonymous:~ yasirabbas$ npm run yasirabbas/ebey3.com
+npm error code ENOENT
+npm error syscall open
+npm error path /Users/yasirabbas/package.json
+npm error errno -2
+npm error enoent Could not read package.json: Error: ENOENT: no such file or directory, open '/Users/yasirabbas/package.json'
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: /Users/yasirabbas/.npm/_logs/2026-02-02T17_14_04_795Z-debug-0.log
+anonymous:~ yasirabbas$ cd /Users/yasirabbas/eBey3com && git pull
+hint: You have divergent branches and need to specify how to reconcile them.
+hint: You can do so by running one of the following commands sometime before
+hint: your next pull:
+hint:
+hint:   git config pull.rebase false  # merge
+hint:   git config pull.rebase true   # rebase
+hint:   git config pull.ff only       # fast-forward only
+hint:
+hint: You can replace "git config" with "git config --global" to set a default
+hint: preference for all repositories. You can also pass --rebase, --no-rebase,
+hint: or --ff-only on the command line to override the configured default per
+hint: invocation.
+fatal: Need to specify how to reconcile divergent branches.
+anonymous:eBey3com yasirabbas$ 
+anonymous:eBey3com yasirabbas$ git pull --no-rebase
+error: Your local changes to the following files would be overwritten by merge:
+  ios/App/App/App.entitlements ios/App/App/AppRelease.entitlements ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json ios/App/App/Assets.xcassets/AppIcon.appiconset/اي بيع-04.png ios/App/App/Assets.xcassets/Splash.imageset/Contents.json ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png ios/App/App/Assets.xcassets/Splash.imageset/اي بيع-05 copy 2.png ios/App/App/Assets.xcassets/Splash.imageset/اي بيع-05 copy.png ios/App/App/Assets.xcassets/Splash.imageset/اي بيع-05.png
+Merge with strategy ort failed.
+anonymous:eBey3com yasirabbas$ git stash
+Saved working directory and index state WIP on main: d742e5c Add safe-area padding for Android topbar
+anonymous:eBey3com yasirabbas$ git pull
+git stash pop
+hint: You have divergent branches and need to specify how to reconcile them.
+hint: You can do so by running one of the following commands sometime before
+hint: your next pull:
+hint:
+hint:   git config pull.rebase false  # merge
+hint:   git config pull.rebase true   # rebase
+hint:   git config pull.ff only       # fast-forward only
+hint:
+hint: You can replace "git config" with "git config --global" to set a default
+hint: preference for all repositories. You can also pass --rebase, --no-rebase,
+hint: or --ff-only on the command line to override the configured default per
+hint: invocation.
+fatal: Need to specify how to reconcile divergent branches.
+anonymous:eBey3com yasirabbas$ git stash pop
+On branch main
+Your branch and 'origin/main' have diverged,
+and have 1 and 592 different commits each, respectively.
+  (use "git pull" if you want to integrate the remote branch with yours)
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	new file:   ios/App/App/App.entitlements
+	new file:   ios/App/App/AppRelease.entitlements
+	new file:   "ios/App/App/Assets.xcassets/AppIcon.appiconset/\330\247\331\212 \330\250\331\212\330\271-04.png"
+	new file:   "ios/App/App/Assets.xcassets/Splash.imageset/\330\247\331\212 \330\250\331\212\330\271-05 copy 2.png"
+	new file:   "ios/App/App/Assets.xcassets/Splash.imageset/\330\247\331\212 \330\250\331\212\330\271-05 copy.png"
+	new file:   "ios/App/App/Assets.xcassets/Splash.imageset/\330\247\331\212 \330\250\331\212\330\271-05.png"
+
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   ios/App/App.xcodeproj/project.pbxproj
+	modified:   ios/App/App/AppDelegate.swift
+	deleted:    ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
+	modified:   ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json
+	modified:   ios/App/App/Assets.xcassets/Splash.imageset/Contents.json
+	deleted:    ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png
+	deleted:    ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png
+	deleted:    ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png
+	modified:   ios/App/App/Info.plist
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	"client/public/\330\247\331\212 \330\250\331\212\330\271-04.png"
+	"client/public/\330\247\331\212 \330\250\331\212\330\271-04.svg"
+	ios/App/App/GoogleService-Info.plist
+
+Dropped refs/stash@{0} (5892b7756900d4abb2e09f65c0bf56aecbb16304)
+anonymous:eBey3com yasirabbas$ git checkout --ours ios/App/App/
+Updated 8 paths from the index
+anonymous:eBey3com yasirabbas$ git add ios/App/App/
+anonymous:eBey3com yasirabbas$ git pull --no-rebase
+error: Your local changes to the following files would be overwritten by merge:
+  ios/App/App/App.entitlements ios/App/App/AppRelease.entitlements ios/App/App/Assets.xcassets/AppIcon.appiconset/اي بيع-04.png ios/App/App/Assets.xcassets/Splash.imageset/اي بيع-05 copy 2.png ios/App/App/Assets.xcassets/Splash.imageset/اي بيع-05 copy.png ios/App/App/Assets.xcassets/Splash.imageset/اي بيع-05.png ios/App/App/GoogleService-Info.plist
+Merge with strategy ort failed.
+anonymous:eBey3com yasirabbas$ cd ios/App && pod install
+Analyzing dependencies
+Downloading dependencies
+Generating Pods project
+Integrating client project
+Pod installation complete! There are 11 dependencies from the Podfile and 11 total pods installed.
+anonymous:App yasirabbas$ open App.xcworkspace
+anonymous:App yasirabbas$ import FirebaseCore
+Version: ImageMagick 7.1.2-13 Q16-HDRI x86_64 23522 https://imagemagick.org
+Copyright: (C) 1999 ImageMagick Studio LLC
+License: https://imagemagick.org/license/
+Features: Cipher DPC HDRI Modules 
+Delegates (built-in): bzlib heic jng jpeg lcms ltdl lzma png tiff webp xml zlib zstd
+Compiler: clang (16.0.0)
+Usage: import [options ...] [ file ]
+
+Image Settings:
+  -adjoin              join images into a single multi-image file
+  -border              include window border in the output image
+  -channel type        apply option to select image channels
+  -colorspace type     alternate image colorspace
+  -comment string      annotate image with comment
+  -compress type       type of pixel compression when writing the image
+  -define format:option
+                       define one or more image format options
+  -density geometry    horizontal and vertical density of the image
+  -depth value         image depth
+  -descend             obtain image by descending window hierarchy
+  -display server      X server to contact
+  -dispose method      layer disposal method
+  -dither method       apply error diffusion to image
+  -delay value         display the next image after pausing
+  -encipher filename   convert plain pixels to cipher pixels
+  -endian type         endianness (MSB or LSB) of the image
+  -encoding type       text encoding type
+  -filter type         use this filter when resizing an image
+  -format "string"     output formatted image characteristics
+  -frame               include window manager frame
+  -gravity direction   which direction to gravitate towards
+  -identify            identify the format and characteristics of the image
+  -interlace type      None, Line, Plane, or Partition
+  -interpolate method  pixel color interpolation method
+  -label string        assign a label to an image
+  -limit type value    Area, Disk, Map, or Memory resource limit
+  -monitor             monitor progress
+  -page geometry       size and location of an image canvas
+  -pause seconds       seconds delay between snapshots
+  -pointsize value     font point size
+  -quality value       JPEG/MIFF/PNG compression level
+  -quiet               suppress all warning messages
+  -regard-warnings     pay attention to warning messages
+  -repage geometry     size and location of an image canvas
+  -respect-parentheses settings remain in effect until parenthesis boundary
+  -sampling-factor geometry
+                       horizontal and vertical sampling factor
+  -scene value         image scene number
+  -screen              select image from root window
+  -seed value          seed a new sequence of pseudo-random numbers
+  -set property value  set an image property
+  -silent              operate silently, i.e. don't ring any bells 
+  -snaps value         number of screen snapshots
+  -support factor      resize support: > 1.0 is blurry, < 1.0 is sharp
+  -synchronize         synchronize image to storage device
+  -taint               declare the image as modified
+  -transparent-color color
+                       transparent color
+  -treedepth value     color tree depth
+  -verbose             print detailed information about the image
+  -virtual-pixel method
+                       Constant, Edge, Mirror, or Tile
+  -window id           select window with this id or name
+                       root selects whole screen
+
+Image Operators:
+  -annotate geometry text
+                       annotate the image with text
+  -colors value        preferred number of colors in the image
+  -crop geometry       preferred size and location of the cropped image
+  -encipher filename   convert plain pixels to cipher pixels
+  -extent geometry     set the image size
+  -geometry geometry   preferred size or location of the image
+  -help                print program options
+  -monochrome          transform image to black and white
+  -negate              replace every pixel with its complementary color 
+  -quantize colorspace reduce colors in this colorspace
+  -resize geometry     resize the image
+  -rotate degrees      apply Paeth rotation to the image
+  -strip               strip image of all profiles and comments
+  -thumbnail geometry  create a thumbnail of the image
+  -transparent color   make this color transparent within the image
+  -trim                trim image edges
+  -type type           image type
+
+Miscellaneous Options:
+  -debug events        display copious debugging information
+  -help                print program options
+  -list type           print a list of supported option arguments
+  -log format          format of debugging information
+  -version             print version information
+
+By default, 'file' is written in the MIFF image format.  To
+specify a particular image format, precede the filename with an image
+format name and a colon (i.e. ps:image) or specify the image type as
+the filename suffix (i.e. image.ps).  Specify 'file' as '-' for
+standard input or output.
+import: delegate library support not built-in '' (X11) @ error/import.c/ImportImageCommand/1302.
+anonymous:App yasirabbas$ import FirebaseMessaging

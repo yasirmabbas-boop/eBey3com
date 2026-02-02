@@ -1,0 +1,200 @@
+`UIScene` lifecycle will soon be required. Failure to adopt will result in an assert in the future.
+Could not create a sandbox extension for '/var/containers/Bundle/Application/0F491492-18C2-46F0-A184-9CC1ABEC6816/App.app'
+KeyboardPlugin: resize mode - body
+Loading network plugin
+⚡️  Loading app at https://ebey3.com...
+Reachable via WiFi
+void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+WebContent[5099] Could not register system wide server: -25204
+WebContent[5099] _AXAddToElementCache was called even though the element was in the cache: <WKAccessibilityWebPageObject: 0x1645140a0>
+WebContent[5099] Service "com.apple.CARenderServer" failed bootstrap look up (1) - (os/kern) invalid address
+WebContent[5099] Failed to initialize application enviroment context
+WebContent[5099] Failed to load a device context.
+WebContent[5099] Failed to initialize application enviroment context
+WebContent[5099] Failed to load a device context.
+WebContent[5099] Unable to hide query parameters from script (missing data)
+SplashScreen.hideSplash: SplashScreen was automatically hidden after default timeout. You should call `SplashScreen.hide()` as soon as your web app is loaded (or increase the timeout). Read more at https://capacitorjs.com/docs/apis/splash-screen#hiding-the-splash-screen
+⚡️  [warn] - [PWA] Service Workers not supported in this browser
+⚡️  To Native ->  StatusBar setOverlaysWebView 40647356
+⚡️  To Native ->  StatusBar setStyle 40647357
+⚡️  To Native ->  StatusBar setBackgroundColor 40647358
+⚡️  To Native ->  App addListener 40647359
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: NULL
+⚡️  To Native ->  App addListener 40647360
+⚡️  To Native ->  App addListener 40647361
+⚡️  TO JS undefined
+⚡️  TO JS {}
+⚡️  TO JS undefined
+⚡️  [log] - [queryClient] Received 401, clearing auth token
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 401
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: NULL
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 401
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: NULL
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 401
+WebContent[5099] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+⚡️  To Native ->  SplashScreen hide 40647362
+⚡️  TO JS undefined
+WebContent[5099] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+⚡️  WebView loaded
+⚡️  [warn] - [PWA] Service Workers not supported in this browser
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: NULL
+⚡️  To Native ->  StatusBar setOverlaysWebView 99071597
+⚡️  To Native ->  StatusBar setStyle 99071598
+⚡️  To Native ->  StatusBar setBackgroundColor 99071599
+⚡️  To Native ->  App addListener 99071600
+⚡️  To Native ->  App addListener 99071601
+⚡️  To Native ->  App addListener 99071602
+⚡️  TO JS undefined
+⚡️  TO JS {}
+⚡️  TO JS undefined
+⚡️  [log] - [queryClient] Received 401, clearing auth token
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 401
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: NULL
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 401
+⚡️  WebView loaded
+⚡️  To Native ->  SplashScreen hide 99071603
+⚡️  TO JS undefined
+UIKeyboardLayoutStar implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+Reporter disconnected. { function=sendMessage, reporterID=21887153340417 }
+Reporter disconnected. { function=sendMessage, reporterID=21887153340417 }
+Reporter disconnected. { function=sendMessage, reporterID=21887153340417 }
+Reporter disconnected. { function=sendMessage, reporterID=21887153340417 }
+Reporter disconnected. { function=sendMessage, reporterID=21887153340417 }
+Reporter disconnected. { function=sendMessage, reporterID=21887153340417 }
+Reporter disconnected. { function=sendMessage, reporterID=21887153340417 }
+Reporter disconnected. { function=sendMessage, reporterID=21887153340417 }
+Reporter disconnected. { function=sendMessage, reporterID=21887153340417 }
+-[RTIInputSystemClient remoteTextInputSessionWithID:textSuggestionsChanged:]  Can only set suggestions for an active session. sessionID = 442A9995-B62E-403B-802A-9E14718EE862
+containerToPush is nil, will not push anything to candidate receiver for request token: 6C88AFFB
+-[RTIInputSystemClient remoteTextInputSessionWithID:performInputOperation:]  perform input operation requires a valid sessionID. inputModality = Keyboard, inputOperation = <null selector>, customInfoType = UIEmojiSearchOperations
+-[RTIInputSystemClient remoteTextInputSessionWithID:textSuggestionsChanged:]  Can only set suggestions for an active session. sessionID = 442A9995-B62E-403B-802A-9E14718EE862
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: eyJhbGci...
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 200
+⚡️  [log] - [DEBUG useAuth] User data from /api/auth/me: {
+  "id": "fb_25872581299020147",
+  "accountCode": null,
+  "username": null,
+  "phone": "07510325610",
+  "email": "info@ebey3.com",
+  "password": null,
+  "displayName": "Yasir Abbas",
+  "avatar": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_",
+  "role": "user",
+  "accountType": "buyer",
+  "isVerified": true,
+  "isAdmin": true,
+  "isTrusted": true,
+  "isAuthenticated": true,
+  "authenticityGuaranteed": false,
+  "totalPurchases": 0,
+  "isBanned": false,
+  "banReason": null,
+  "bannedAt": null,
+  "idDocumentUrl": null,
+  "verificationStatus": "pending",
+  "sellerApproved": true,
+  "sellerRequestStatus": "approved",
+  "sellerRequestDate": null,
+  "sellerApprovalDate": null,
+  "totalSales": 5,
+  "rating": 5,
+  "ratingCount": 2,
+  "buyerRating": 0,
+  "buyerRatingCount": 0,
+  "authProvider": "facebook",
+  "authProviderId": "25872581299020147",
+  "twoFactorEnabled": false,
+  "twoFactorSecret": null,
+  "city": "أربيل",
+  "addressLine1": "أربيل القرية الإيطالية ",
+  "addressLine2": null,
+  "district": null,
+  "locationLat": null,
+  "locationLng": null,
+  "mapUrl": null,
+  "ageBracket": "",
+  "gender": null,
+  "interests": [
+    "electronics",
+    "sports",
+    "home",
+    "phones"
+  ],
+  "surveyCompleted": true,
+  "language": "ar",
+  "createdAt": "2026-01-26T18:53:00.643Z",
+  "lastLoginAt": "2026-02-02T16:42:15.165Z",
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYl8yNTg3MjU4MTI5OTAyMDE0NyIsInBob25lIjoiMDc1MTAzMjU2MTAiLCJwaG9uZVZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NzAwNTI4MDMsImV4cCI6MTc3MjY0NDgwM30.NRlLJTOPZeDmvbEjzur-5gLXIXn1RQZ_uZCaIiNgJbk",
+  "tokenExpiresAt": "2026-03-04T17:20:03.924Z",
+  "facebookId": null,
+  "facebookLongLivedToken": "EAAgC1PtuczwBQqOQhMsBwUvOkyD1RJC1DEqhiQtxzciVwJBOru5pLr92jv3O966wM9Nostvk7NI7TeZA7v0rSGXnYxTPqlTBFs2vif6Ghya5Xwio0V7wCFDCMrPvzg9hsrUOIJo2yuFts2KGS7erBfcOkHKn6jNZAH5mb6oT0cdFTf7gRpXnLLIkGt",
+  "phoneVerified": true,
+  "biddingLimit": 100000,
+  "completedPurchases": 0
+}
+⚡️  [log] - [Push] localStorage status: {"dismissed":"null","subscribed":"null","willShowPrompt":true}
+⚡️  [log] - [Push] About to call checkPermission()
+⚡️  [log] - [Push] checkPermission() called, isNative: true
+⚡️  [log] - [Push] Calling checkNativePushPermission...
+⚡️  To Native ->  PushNotifications checkPermissions 99071604
+⚡️  TO JS {"receive":"prompt"}
+⚡️  [log] - [Push] Native permission status: prompt
+⚡️  [log] - [Push] Permission is prompt, will show prompt in 5 seconds
+⚡️  [log] - [WebSocket] Connected to notification server
+⚡️  [log] - [Push] Showing native prompt now
+⚡️  [log] - [Push] handleSubscribe called, isNative: true
+⚡️  [log] - [Push] Initializing native push notifications...
+⚡️  [log] - [Push] initNativePushNotifications called, isNative: true
+⚡️  [log] - [Push] Checking permissions...
+⚡️  To Native ->  PushNotifications checkPermissions 99071605
+⚡️  TO JS {"receive":"prompt"}
+⚡️  To Native ->  PushNotifications requestPermissions 99071606
+⚡️  [log] - [Push] Current permission status: {"receive":"prompt"}
+⚡️  [log] - [Push] Requesting permissions...
+⚡️  TO JS {"isActive":false}
+⚡️  [log] - App state changed: background
+⚡️  [log] - App state changed: background
+⚡️  TO JS {"receive":"granted"}
+⚡️  [log] - [Push] Permission request result: {"receive":"granted"}
+⚡️  To Native ->  ⚡️  [log] - [Push] Setting up registration listener...
+PushNotifications addListener 99071607
+⚡️  To Native ->  PushNotifications addListener 99071608
+⚡️  [log] - [Push] Setting up registrationError listener...
+⚡️  To Native ->  PushNotifications addListener 99071609
+⚡️  [log] - [Push] Setting up pushNotificationReceived listener
+⚡️  [log] - [Push] Setting up pushNotificationActionPerformed listener
+⚡️  To Native ->  PushNotifications addListener 99071610
+⚡️  To Native ->  PushNotifications register 99071611
+⚡️  [log] - [Push] All listeners set up, now calling register()...
+⚡️  TO JS undefined
+⚡️  [log] - [Push] PushNotifications.register() called successfully
+⚡️  [log] - [Push] Returning true from initNativePushNotifications
+⚡️  [log] - [Push] initNativePushNotifications returned: true
+⚡️  [log] - [Push] handleSubscribe finished
+⚡️  TO JS {"isActive":true}
+⚡️  [log] - App state changed: active
+⚡️  [log] - App state changed: active
+-[RTIInputSystemClient remoteTextInputSessionWithID:performInputOperation:]  perform input operation requires a valid sessionID. inputModality = Keyboard, inputOperation = dismissAutoFillPanel, customInfoType = UIUserInteractionRemoteInputOperations
+⚡️  TO JS {"isActive":false}
+⚡️  [log] - App state changed: background
+⚡️  [log] - App state changed: background
+-[RTIInputSystemClient remoteTextInputSessionWithID:performInputOperation:]  perform input operation requires a valid sessionID. inputModality = Keyboard, inputOperation = dismissAutoFillPanel, customInfoType = UIUserInteractionRemoteInputOperations
+Snapshotting a view (0x132e23400, UIKeyboardImpl) that is not in a visible window requires afterScreenUpdates:YES.
+Reporter disconnected or already stopped. { func=stop, reporterID=21887153340417 }
+WebContent[5099] 0x10f064150 - [sessionID=1] WebProcess::markAllLayersVolatile: Failed to mark layers as volatile for webPageID=8
+⚡️  [log] - [WebSocket] Received message: NOTIFICATION {"type":"NOTIFICATION","notification":{"id":"605fe0a5-f72e-4ab7-8262-72ccecab6a49","type":"offer_received","title":"عرض سعر جديد","message":"Leah Mohammed قدم عرض سعر 1,999,999 د.ع على \"ساعة سيكو 5 سبورتس سبيد تايمر كرونوغراف رجالية | Seiko 5 Sports Speed-Timer C...\"","linkUrl":"/seller-dashboard?tab=offers&offerId=e329925a-dfb1-4795-aeb3-bbad7cd8bcc3"},"timestamp":"2026-02-02T17:20:32.161Z"}
+⚡️  [log] - [WebSocket] Processing NOTIFICATION: عرض سعر جديد Leah Mohammed قدم عرض سعر 1,999,999 د.ع على "ساعة سيكو 5 سبورتس سبيد تايمر كرونوغراف رجالية | Seiko 5 Sports Speed-Timer C..."
+⚡️  [log] - [WebSocket] Toast shown successfully
+⚡️  [log] - [WebSocket] Received message: NOTIFICATION {"type":"NOTIFICATION","notification":{"id":"36d32b65-b81d-4031-a062-53c07ff43d3c","type":"offer_received","title":"عرض سعر جديد","message":"Leah Mohammed قدم عرض سعر 1,999,999 د.ع على \"ساعة سيكو 5 سبورتس سبيد تايمر كرونوغراف رجالية | Seiko 5 Sports Speed-Timer C...\"","linkUrl":"/seller-dashboard?tab=offers&offerId=77de09d7-cbea-4cce-9343-81d802b15665"},"timestamp":"2026-02-02T17:20:35.950Z"}
+⚡️  [log] - [WebSocket] Processing NOTIFICATION: عرض سعر جديد Leah Mohammed قدم عرض سعر 1,999,999 د.ع على "ساعة سيكو 5 سبورتس سبيد تايمر كرونوغراف رجالية | Seiko 5 Sports Speed-Timer C..."
+⚡️  [log] - [WebSocket] Toast shown successfully
+⚡️  [log] - [WebSocket] Received message: NOTIFICATION {"type":"NOTIFICATION","notification":{"id":"1a30dfdd-e5d7-4c54-84da-98e46df294dd","type":"offer_received","title":"عرض سعر جديد","message":"Leah Mohammed قدم عرض سعر 1,999,999 د.ع على \"ساعة سيكو 5 سبورتس سبيد تايمر كرونوغراف رجالية | Seiko 5 Sports Speed-Timer C...\"","linkUrl":"/seller-dashboard?tab=offers&offerId=acf18df9-170b-4ace-8554-f2b4be18d1fe"},"timestamp":"2026-02-02T17:20:39.416Z"}
+⚡️  [log] - [WebSocket] Processing NOTIFICATION: عرض سعر جديد Leah Mohammed قدم عرض سعر 1,999,999 د.ع على "ساعة سيكو 5 سبورتس سبيد تايمر كرونوغراف رجالية | Seiko 5 Sports Speed-Timer C..."
+⚡️  [log] - [WebSocket] Toast shown successfully
+⚡️  TO JS {"isActive":true}
+⚡️  [log] - App state changed: active
+⚡️  [log] - App state changed: active
+⚡️  TO JS {"isActive":false}
+⚡️  [log] - App state changed: background
+⚡️  [log] - App state changed: background
+Snapshotting a view (0x133ac4c00, UIKeyboardImpl) that has not been rendered at least once requires afterScreenUpdates:YES.
