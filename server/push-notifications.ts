@@ -54,11 +54,6 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
             console.log(`[push] Web push sent to user ${userId}`);
           } else {
             // Native push (iOS/Android) using FCM
-            if (!isFCMReady()) {
-              console.log('[push] FCM not configured, skipping native push');
-              return false;
-            }
-
             await sendFCMNotification(sub.fcmToken, {
               title: payload.title,
               body: payload.body,
