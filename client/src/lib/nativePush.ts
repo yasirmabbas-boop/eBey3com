@@ -9,45 +9,55 @@ export const initNativePushNotifications = async (
   onNotificationReceived?: (notification: PushNotificationSchema) => void,
   onNotificationTapped?: (notification: ActionPerformed) => void
 ): Promise<boolean> => {
+  console.log('[Push] initNativePushNotifications called, isNative:', isNative);
   if (!isNative) {
-    console.log('Not a native platform, skipping native push setup');
+    console.log('[Push] Not a native platform, skipping native push setup');
     return false;
   }
 
   try {
     // Check current permission status
+    console.log('[Push] Checking permissions...');
     let permStatus = await PushNotifications.checkPermissions();
+    console.log('[Push] Current permission status:', permStatus);
 
     if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
       // Request permissions
+      console.log('[Push] Requesting permissions...');
       permStatus = await PushNotifications.requestPermissions();
+      console.log('[Push] Permission request result:', permStatus);
     }
 
     if (permStatus.receive !== 'granted') {
-      console.log('Push notification permission not granted');
+      console.log('[Push] Push notification permission not granted:', permStatus.receive);
       return false;
     }
 
+    console.log('[Push] Permission granted, registering with push service...');
     // Register with Apple / Google to receive push via APNS/FCM
     await PushNotifications.register();
+    console.log('[Push] PushNotifications.register() called, waiting for token...');
 
     // Listen for registration token
     await PushNotifications.addListener('registration', (token: Token) => {
-      console.log('Push registration success, token:', token.value);
+      console.log('[Push] Registration listener fired! Token received:', token.value);
+      console.log('[Push] Calling onToken callback with token:', token.value);
       onToken(token.value);
     });
 
     // Listen for registration errors
     await PushNotifications.addListener('registrationError', (error: any) => {
-      console.error('Push registration error:', error);
+      console.error('[Push] Registration error listener fired! Error:', error);
+      console.error('[Push] Error details:', JSON.stringify(error, null, 2));
     });
 
     // Listen for push notifications received while app is in foreground
     if (onNotificationReceived) {
+      console.log('[Push] Setting up pushNotificationReceived listener');
       await PushNotifications.addListener(
         'pushNotificationReceived',
         (notification: PushNotificationSchema) => {
-          console.log('Push notification received:', notification);
+          console.log('[Push] Push notification received:', notification);
           onNotificationReceived(notification);
         }
       );
@@ -55,18 +65,24 @@ export const initNativePushNotifications = async (
 
     // Listen for push notifications tapped
     if (onNotificationTapped) {
+      console.log('[Push] Setting up pushNotificationActionPerformed listener');
       await PushNotifications.addListener(
         'pushNotificationActionPerformed',
         (notification: ActionPerformed) => {
-          console.log('Push notification action performed:', notification);
+          console.log('[Push] Push notification action performed:', notification);
           onNotificationTapped(notification);
         }
       );
     }
 
+    console.log('[Push] All listeners set up, returning true');
     return true;
   } catch (error) {
-    console.error('Error initializing native push notifications:', error);
+    console.error('[Push] Error initializing native push notifications:', error);
+    console.error('[Push] Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return false;
   }
 };

@@ -3,8 +3,9 @@ import { Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/lib/i18n";
-import { isNative, isWeb } from "@/lib/capacitor";
+import { isNative, isWeb, platform } from "@/lib/capacitor";
 import { initNativePushNotifications, checkNativePushPermission } from "@/lib/nativePush";
+import { secureRequest } from "@/lib/queryClient";
 
 const DISMISSED_KEY = "push-notification-dismissed";
 const SUBSCRIBED_KEY = "push-notification-subscribed";
@@ -32,6 +33,13 @@ export function PushNotificationPrompt() {
     
     const dismissed = localStorage.getItem(DISMISSED_KEY);
     const subscribed = localStorage.getItem(SUBSCRIBED_KEY);
+    
+    // Debug: Log localStorage status to Xcode console
+    console.log("[Push] localStorage status:", {
+      dismissed: dismissed || "null",
+      subscribed: subscribed || "null",
+      willShowPrompt: !dismissed && !subscribed
+    });
     
     if (dismissed || subscribed) return;
 
@@ -62,27 +70,38 @@ export function PushNotificationPrompt() {
   }, [isAuthenticated]);
 
   const handleSubscribe = useCallback(async () => {
+    console.log("[Push] handleSubscribe called, isNative:", isNative);
     setIsSubscribing(true);
     
     try {
       if (isNative) {
         // Handle native push notifications
+        console.log("[Push] Initializing native push notifications...");
         const success = await initNativePushNotifications(
           async (token) => {
-            // Send token to backend
-            const response = await fetch("/api/push/register-native", {
+            console.log("[Push] Token received from native plugin:", token);
+            console.log("[Push] About to send token to backend...");
+            // Send token to backend using secureRequest for auth and CSRF
+            const response = await secureRequest("/api/push/register-native", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              credentials: "include",
               body: JSON.stringify({ 
                 token,
-                platform: 'native'
+                platform: platform === "ios" ? "ios" : "android",
               }),
             });
 
+            console.log("[Push] Backend response status:", response.status);
+            console.log("[Push] Backend response ok:", response.ok);
+            
             if (response.ok) {
+              const responseData = await response.json();
+              console.log("[Push] Backend response data:", responseData);
               localStorage.setItem(SUBSCRIBED_KEY, "true");
               setShowPrompt(false);
+            } else {
+              const errorText = await response.text();
+              console.error("[Push] Backend registration failed:", response.status, errorText);
             }
           },
           (notification) => {
@@ -99,7 +118,9 @@ export function PushNotificationPrompt() {
           }
         );
 
+        console.log("[Push] initNativePushNotifications returned:", success);
         if (!success) {
+          console.error("[Push] Failed to initialize native push notifications");
           setShowPrompt(false);
           localStorage.setItem(DISMISSED_KEY, "true");
         }
@@ -113,7 +134,8 @@ export function PushNotificationPrompt() {
           return;
         }
 
-        const vapidResponse = await fetch("/api/push/vapid-public-key");
+        // Get VAPID key using secureRequest (for consistency, though GET doesn't need CSRF)
+        const vapidResponse = await secureRequest("/api/push/vapid-public-key");
         if (!vapidResponse.ok) throw new Error("Failed to get VAPID key");
         const { publicKey } = await vapidResponse.json();
 
@@ -124,7 +146,8 @@ export function PushNotificationPrompt() {
           applicationServerKey: urlBase64ToUint8Array(publicKey),
         });
 
-        const subscribeResponse = await fetch("/api/push/subscribe", {
+        // Register subscription using secureRequest for auth and CSRF
+        const subscribeResponse = await secureRequest("/api/push/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(subscription.toJSON()),
@@ -136,9 +159,14 @@ export function PushNotificationPrompt() {
         setShowPrompt(false);
       }
     } catch (error) {
-      console.error("Push subscription error:", error);
+      console.error("[Push] Push subscription error:", error);
+      console.error("[Push] Error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
     } finally {
       setIsSubscribing(false);
+      console.log("[Push] handleSubscribe finished");
     }
   }, []);
 

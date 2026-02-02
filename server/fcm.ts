@@ -52,13 +52,19 @@ export async function sendFCMNotification(
 
   const message: admin.messaging.Message = {
     token,
+    // Include both notification and data for better compatibility
+    // notification: shows when app is in background/closed
+    // data: ensures app can process when closed
     notification: {
       title: payload.title,
       body: payload.body,
     },
     data: {
+      title: payload.title,
+      body: payload.body,
       url: payload.url || '/',
       notificationId: payload.data?.id || '',
+      tag: payload.tag || '',
       ...(payload.data || {}),
     },
     // Android-specific configuration
@@ -71,12 +77,14 @@ export async function sendFCMNotification(
         priority: 'high' as const,
         defaultSound: true,
         defaultVibrateTimings: true,
+        clickAction: 'FLUTTER_NOTIFICATION_CLICK', // Ensures notification is clickable
       },
     },
     // iOS-specific configuration (APNS)
     apns: {
       headers: {
         'apns-priority': '10', // High priority
+        'apns-push-type': 'alert', // Required for iOS 13+
       },
       payload: {
         aps: {
@@ -89,8 +97,10 @@ export async function sendFCMNotification(
           'thread-id': payload.tag, // Groups notifications by tag
           'content-available': 1, // Wake app in background
         },
-        // Custom data
+        // Custom data - ensure all data is in payload for background handling
         url: payload.url || '/',
+        notificationId: payload.data?.id || '',
+        tag: payload.tag || '',
         ...(payload.data || {}),
       },
     },
@@ -136,7 +146,11 @@ export async function sendFCMMulticast(
       body: payload.body,
     },
     data: {
+      title: payload.title,
+      body: payload.body,
       url: payload.url || '/',
+      notificationId: payload.data?.id || '',
+      tag: payload.tag || '',
       ...(payload.data || {}),
     },
     android: {
@@ -145,9 +159,17 @@ export async function sendFCMMulticast(
         tag: payload.tag,
         sound: 'default',
         channelId: 'default',
+        priority: 'high' as const,
+        defaultSound: true,
+        defaultVibrateTimings: true,
+        clickAction: 'FLUTTER_NOTIFICATION_CLICK',
       },
     },
     apns: {
+      headers: {
+        'apns-priority': '10',
+        'apns-push-type': 'alert',
+      },
       payload: {
         aps: {
           alert: {
@@ -157,7 +179,12 @@ export async function sendFCMMulticast(
           sound: 'default',
           badge: payload.badge || 1,
           'thread-id': payload.tag,
+          'content-available': 1,
         },
+        url: payload.url || '/',
+        notificationId: payload.data?.id || '',
+        tag: payload.tag || '',
+        ...(payload.data || {}),
       },
     },
   };
