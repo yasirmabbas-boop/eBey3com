@@ -1,0 +1,87 @@
+This is a frustrating specific of Replit's infrastructure, but we are narrowing it down.
+
+Since the debug endpoint "did not work" and the error persists despite the newline fix, we are likely dealing with **Variable Truncation** or **Synchronization** issues, not just formatting.
+
+When you say "the key is present in both environments," please be aware that Replit has **two completely separate places** for secrets:
+
+1. **Workspace Secrets:** (The padlock icon) → Used for Development.
+2. **Deployment Settings:** (The deploy pane) → Used for Production.
+*These are NOT automatically synced.*
+
+Here is the plan to fix this definitively.
+
+### Solution 1: The "Key Integrity" Check (Do this first)
+
+Replit environment variables sometimes get **truncated** (cut off) if they are too long, or they might be missing the "Footer" of the RSA key.
+
+Add this specific log to your startup code (right before `admin.initializeApp`):
+
+```javascript
+const key = serviceAccount.privateKey || "";
+console.log("--- KEY INTEGRITY CHECK ---");
+console.log("Length:", key.length);
+console.log("Start:", key.substring(0, 30)); // Should see -----BEGIN PRIVATE KEY-----
+console.log("End:", key.slice(-30));         // Should see -----END PRIVATE KEY-----
+console.log("--- END CHECK ---");
+
+```
+
+**Deploy and check the logs:**
+
+* **If the "End" log is missing `-----END PRIVATE KEY-----`:** Your environment variable is being cut off.
+* *Fix:* You must upload the `service-account.json` file instead (see Solution 2).
+
+
+* **If the logs show the full key:** Then the issue is **System Time**.
+* *Fix:* Add `console.log("Server Time:", new Date().toString())`. If the time is off by >5 minutes, you must restart the deployment.
+
+
+
+---
+
+### Solution 2: The "File Upload" Bypass (The Guaranteed Fix)
+
+Since Environment Variables are proving unreliable in the production container, stop using them for the credentials. Use a file instead. This bypasses the formatting/truncation issues entirely.
+
+**1. Upload the File:**
+
+* In your Replit Workspace, upload your `firebase-service-account.json` file (the one you downloaded from Firebase).
+* *Note:* Ensure this file is named exactly `firebase-service-account.json`.
+
+**2. Update your Code:**
+Change your initialization logic to read from the file directly, but **only** if the file exists (fallback to env var for safety).
+
+```javascript
+import fs from 'fs'; // or const fs = require('fs');
+
+let serviceAccount;
+
+// Priority 1: Try to load from file (Bypasses Env Var corruption)
+if (fs.existsSync('./firebase-service-account.json')) {
+  console.log("Loading credentials from local JSON file...");
+  const rawData = fs.readFileSync('./firebase-service-account.json', 'utf8');
+  serviceAccount = JSON.parse(rawData);
+} 
+// Priority 2: Fallback to Env Var (The old way)
+else {
+  console.log("Loading credentials from ENV...");
+  const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf-8');
+  const parsed = JSON.parse(decoded);
+  serviceAccount = {
+    projectId: parsed.project_id,
+    clientEmail: parsed.client_email,
+    privateKey: parsed.private_key.replace(/\\n/g, '\n'),
+  };
+}
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+```
+
+**3. Deploy:**
+Replit deployments *do* bundle files present in the file tree. This will force the production server to use the exact same file that works in development.
+
+**Why this works:**
+Files are binary-safe and do not suffer from the shell escaping, newline flattening, or character limit truncation that Environment Variables face in containerized deployments.
