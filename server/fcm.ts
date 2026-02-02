@@ -53,6 +53,9 @@ if (!serviceAccount && process.env.FCM_PROJECT_ID && process.env.FCM_CLIENT_EMAI
 
 let isInitialized = false;
 
+// Log system time to check for clock drift
+console.log('[FCM Init] System Time:', new Date().toISOString());
+
 if (serviceAccount) {
   try {
     admin.initializeApp({
@@ -60,6 +63,31 @@ if (serviceAccount) {
     });
     isInitialized = true;
     console.log('✅ Firebase Admin SDK initialized successfully');
+    
+    // DEBUG: Test OAuth token generation directly to see raw errors
+    (async function debugAuth() {
+      console.log("--- START AUTH DEBUG ---");
+      try {
+        const { GoogleAuth } = await import('google-auth-library');
+        const auth = new GoogleAuth({
+          credentials: {
+            client_email: serviceAccount!.clientEmail,
+            private_key: serviceAccount!.privateKey,
+          },
+          scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+        });
+
+        console.log("[AUTH DEBUG] Attempting to get access token...");
+        const client = await auth.getClient();
+        const token = await client.getAccessToken();
+        console.log("[AUTH DEBUG] SUCCESS: Token generated:", token.token ? "Yes (Masked)" : "No");
+      } catch (error: any) {
+        console.error("[AUTH DEBUG] FAILURE:", error.message || error);
+        // Look specifically for: "invalid_grant", "Invalid JWT Signature", or "Clock skew"
+      }
+      console.log("--- END AUTH DEBUG ---");
+    })();
+    
   } catch (error) {
     console.error('❌ Firebase Admin SDK initialization failed:', error);
   }
