@@ -1,0 +1,765 @@
+'/var/containers/Bundle/Application/AB122740-E3FE-42C7-B214-F23613EE95B7/App.app'
+
+Loading network plugin
+
+KeyboardPlugin: resize mode - body
+
+⚡️  Loading app at https://ebey3.com...
+
+Reachable via WiFi
+
+WebContent[4268] Could not register system wide server: -25204
+
+WebContent[4268] _AXAddToElementCache was called even though the element was in the cache: <WKAccessibilityWebPageObject: 0x16457c0a0>
+
+⚡️  JS Eval error A JavaScript exception occurred
+
+WebContent[4268] Unable to hide query parameters from script (missing data)
+
+⚡️  [warn] - [PWA] Service Workers not supported in this browser
+
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: eyJhbGci...
+
+⚡️  To Native ->  StatusBar setOverlaysWebView 96596350
+
+⚡️  To Native ->  StatusBar setStyle 96596351
+
+⚡️  To Native ->  StatusBar setBackgroundColor 96596352
+
+⚡️  To Native ->  App addListener 96596353
+
+⚡️  To Native ->  App ⚡️  TO JS addListener 96596354
+
+undefined
+
+⚡️  To Native ->  App addListener 96596355
+
+⚡️  TO JS {}
+
+⚡️  TO JS undefined
+
+WebContent[4268] Service "com.apple.CARenderServer" failed bootstrap look up (1) - (os/kern) invalid address
+
+WebContent[4268] Failed to initialize application enviroment context
+
+WebContent[4268] Failed to load a device context.
+
+WebContent[4268] Failed to initialize application enviroment context
+
+WebContent[4268] Failed to load a device context.
+
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 200
+
+⚡️  To Native ->  PushNotifications checkPermissions 96596356
+
+⚡️  [log] - [DEBUG useAuth] User data from /api/auth/me: {
+
+  "id": "fb_25872581299020147",
+
+  "accountCode": null,
+
+  "username": null,
+
+  "phone": "07510325610",
+
+  "email": "info@ebey3.com",
+
+  "password": null,
+
+  "displayName": "Yasir Abbas",
+
+  "avatar": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_",
+
+  "role": "user",
+
+  "accountType": "buyer",
+
+  "isVerified": true,
+
+  "isAdmin": true,
+
+  "isTrusted": true,
+
+  "isAuthenticated": true,
+
+  "authenticityGuaranteed": false,
+
+  "totalPurchases": 0,
+
+  "isBanned": false,
+
+  "banReason": null,
+
+  "bannedAt": null,
+
+  "idDocumentUrl": null,
+
+  "verificationStatus": "pending",
+
+  "sellerApproved": true,
+
+  "sellerRequestStatus": "approved",
+
+  "sellerRequestDate": null,
+
+  "sellerApprovalDate": null,
+
+  "totalSales": 3,
+
+  "rating": 5,
+
+  "ratingCount": 1,
+
+  "buyerRating": 0,
+
+  "buyerRatingCount": 0,
+
+  "authProvider": "facebook",
+
+  "authProviderId": "25872581299020147",
+
+  "twoFactorEnabled": false,
+
+  "twoFactorSecret": null,
+
+  "city": "أربيل",
+
+  "addressLine1": "أربيل القرية الإيطالية ",
+
+  "addressLine2": null,
+
+  "district": null,
+
+  "locationLat": null,
+
+  "locationLng": null,
+
+  "mapUrl": null,
+
+  "ageBracket": "",
+
+  "gender": null,
+
+  "interests": [
+
+    "electronics",
+
+    "sports",
+
+    "home",
+
+    "phones"
+
+  ],
+
+  "surveyCompleted": true,
+
+  "language": "ar",
+
+  "createdAt": "2026-01-26T18:53:00.643Z",
+
+  "lastLoginAt": "2026-01-31T08:32:53.392Z",
+
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYl8yNTg3MjU4MTI5OTAyMDE0NyIsInBob25lIjoiMDc1MTAzMjU2MTAiLCJwaG9uZVZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NzAwNDE1MDUsImV4cCI6MTc3MjYzMzUwNX0.MfYuts-JYPW72Qor9Lr7JFLHQJaba6Nt-Fl8TYauMTo",
+
+  "tokenExpiresAt": "2026-03-04T14:11:45.396Z",
+
+  "facebookId": null,
+
+  "facebookLongLivedToken": "EAAgC1PtuczwBQnpobqbEBEm6LnGgBpkI9bWorz9R4xQ6aB31rZAQMr6P93WBKuQpcS9nTZBrsp8LC4sLczbqDZBwKCV1IXMm7mRu1yBVwY4aoIp4fc5TDAfaddljSYf4jNJ4upCtrPXzd5Ow64h2aa3PoLyKvdqdU6gMJF86pBZCTR4AV8OYtJAkYxAH",
+
+  "phoneVerified": true,
+
+  "biddingLimit": 100000,
+
+  "completedPurchases": 0
+
+}
+
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: eyJhbGci...
+
+⚡️  TO JS {"receive":"granted"}
+
+⚡️  To Native ->  SplashScreen hide 96596357
+
+⚡️  TO JS undefined
+
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 200
+
+⚡️  [log] - [DEBUG useAuth] User data from /api/auth/me: {
+
+  "id": "fb_25872581299020147",
+
+  "accountCode": null,
+
+  "username": null,
+
+  "phone": "07510325610",
+
+  "email": "info@ebey3.com",
+
+  "password": null,
+
+  "displayName": "Yasir Abbas",
+
+  "avatar": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_",
+
+  "role": "user",
+
+  "accountType": "buyer",
+
+  "isVerified": true,
+
+  "isAdmin": true,
+
+  "isTrusted": true,
+
+  "isAuthenticated": true,
+
+  "authenticityGuaranteed": false,
+
+  "totalPurchases": 0,
+
+  "isBanned": false,
+
+  "banReason": null,
+
+  "bannedAt": null,
+
+  "idDocumentUrl": null,
+
+  "verificationStatus": "pending",
+
+  "sellerApproved": true,
+
+  "sellerRequestStatus": "approved",
+
+  "sellerRequestDate": null,
+
+  "sellerApprovalDate": null,
+
+  "totalSales": 3,
+
+  "rating": 5,
+
+  "ratingCount": 1,
+
+  "buyerRating": 0,
+
+  "buyerRatingCount": 0,
+
+  "authProvider": "facebook",
+
+  "authProviderId": "25872581299020147",
+
+  "twoFactorEnabled": false,
+
+  "twoFactorSecret": null,
+
+  "city": "أربيل",
+
+  "addressLine1": "أربيل القرية الإيطالية ",
+
+  "addressLine2": null,
+
+  "district": null,
+
+  "locationLat": null,
+
+  "locationLng": null,
+
+  "mapUrl": null,
+
+  "ageBracket": "",
+
+  "gender": null,
+
+  "interests": [
+
+    "electronics",
+
+    "sports",
+
+    "home",
+
+    "phones"
+
+  ],
+
+  "surveyCompleted": true,
+
+  "language": "ar",
+
+  "createdAt": "2026-01-26T18:53:00.643Z",
+
+  "lastLoginAt": "2026-01-31T08:32:53.392Z",
+
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYl8yNTg3MjU4MTI5OTAyMDE0NyIsInBob25lIjoiMDc1MTAzMjU2MTAiLCJwaG9uZVZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NzAwNDE1MDUsImV4cCI6MTc3MjYzMzUwNX0.MfYuts-JYPW72Qor9Lr7JFLHQJaba6Nt-Fl8TYauMTo",
+
+  "tokenExpiresAt": "2026-03-04T14:11:45.396Z",
+
+  "facebookId": null,
+
+  "facebookLongLivedToken": "EAAgC1PtuczwBQnpobqbEBEm6LnGgBpkI9bWorz9R4xQ6aB31rZAQMr6P93WBKuQpcS9nTZBrsp8LC4sLczbqDZBwKCV1IXMm7mRu1yBVwY4aoIp4fc5TDAfaddljSYf4jNJ4upCtrPXzd5Ow64h2aa3PoLyKvdqdU6gMJF86pBZCTR4AV8OYtJAkYxAH",
+
+  "phoneVerified": true,
+
+  "biddingLimit": 100000,
+
+  "completedPurchases": 0
+
+}
+
+⚡️  [log] - [WebSocket] Connected to notification server
+
+⚡️  WebView loaded
+
+0x1151101e0 - GPUProcessProxy::gpuProcessExited: reason=IdleExit
+
+0x1150dc0c0 - [PID=4268] WebProcessProxy::gpuProcessExited: reason=IdleExit
+
+Failed to terminate process: Error Domain=com.apple.extensionKit.errorDomain Code=18 "(null)" UserInfo={NSUnderlyingError=0x109c25770 {Error Domain=RBSRequestErrorDomain Code=3 "No such process found" UserInfo={NSLocalizedFailureReason=No such process found}}}
+
+Failed to terminate process: Error Domain=com.apple.extensionKit.errorDomain Code=18 "(null)" UserInfo={NSUnderlyingError=0x109c27a50 {Error Domain=RBSRequestErrorDomain Code=3 "No such process found" UserInfo={NSLocalizedFailureReason=No such process found}}}
+
+Got a keyboard will change frame notification, but keyboard was not even present.
+
+Got a keyboard will change frame notification, but keyboard was not even present.
+
+Got a keyboard will hide notification, but keyboard was not even present.
+
+⚡️  TO JS {"isActive":true}
+
+⚡️  [log] - [WebSocket] Received message: NOTIFICATION {"type":"NOTIFICATION","notification":{"id":"96289b89-17d1-4807-b6f1-7c3f4fb77f11","type":"offer_received","title":"عرض سعر جديد","message":"مستخدم 6852 قدم عرض سعر 18,000,000 د.ع على \"زوج ساعتين أوميغا كونستليشن كرونوميتر أوتوماتيكية | Pair of Omega Constellati...\"","linkUrl":"/seller-dashboard?tab=offers&offerId=2ef82fab-b599-4812-8d20-2c518cafde9b"},"timestamp":"2026-02-02T15:01:03.706Z"}
+
+⚡️  [log] - [WebSocket] Processing NOTIFICATION: عرض سعر جديد مستخدم 6852 قدم عرض سعر 18,000,000 د.ع على "زوج ساعتين أوميغا كونستليشن كرونوميتر أوتوماتيكية | Pair of Omega Constellati..."
+
+⚡️  [log] - [WebSocket] Toast shown successfully
+
+⚡️  [log] - App state changed: active
+
+⚡️  [log] - App state changed: active
+
+WebContent[4268] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+
+WebContent[4268] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+
+WebContent[4268] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: eyJhbGci...
+
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 200
+
+⚡️  [log] - [DEBUG useAuth] User data from /api/auth/me: {
+
+  "id": "fb_25872581299020147",
+
+  "accountCode": null,
+
+  "username": null,
+
+  "phone": "07510325610",
+
+  "email": "info@ebey3.com",
+
+  "password": null,
+
+  "displayName": "Yasir Abbas",
+
+  "avatar": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_",
+
+  "role": "user",
+
+  "accountType": "buyer",
+
+  "isVerified": true,
+
+  "isAdmin": true,
+
+  "isTrusted": true,
+
+  "isAuthenticated": true,
+
+  "authenticityGuaranteed": false,
+
+  "totalPurchases": 0,
+
+  "isBanned": false,
+
+  "banReason": null,
+
+  "bannedAt": null,
+
+  "idDocumentUrl": null,
+
+  "verificationStatus": "pending",
+
+  "sellerApproved": true,
+
+  "sellerRequestStatus": "approved",
+
+  "sellerRequestDate": null,
+
+  "sellerApprovalDate": null,
+
+  "totalSales": 3,
+
+  "rating": 5,
+
+  "ratingCount": 1,
+
+  "buyerRating": 0,
+
+  "buyerRatingCount": 0,
+
+  "authProvider": "facebook",
+
+  "authProviderId": "25872581299020147",
+
+  "twoFactorEnabled": false,
+
+  "twoFactorSecret": null,
+
+  "city": "أربيل",
+
+  "addressLine1": "أربيل القرية الإيطالية ",
+
+  "addressLine2": null,
+
+  "district": null,
+
+  "locationLat": null,
+
+  "locationLng": null,
+
+  "mapUrl": null,
+
+  "ageBracket": "",
+
+  "gender": null,
+
+  "interests": [
+
+    "electronics",
+
+    "sports",
+
+    "home",
+
+    "phones"
+
+  ],
+
+  "surveyCompleted": true,
+
+  "language": "ar",
+
+  "createdAt": "2026-01-26T18:53:00.643Z",
+
+  "lastLoginAt": "2026-01-31T08:32:53.392Z",
+
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYl8yNTg3MjU4MTI5OTAyMDE0NyIsInBob25lIjoiMDc1MTAzMjU2MTAiLCJwaG9uZVZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NzAwNDE1MDUsImV4cCI6MTc3MjYzMzUwNX0.MfYuts-JYPW72Qor9Lr7JFLHQJaba6Nt-Fl8TYauMTo",
+
+  "tokenExpiresAt": "2026-03-04T14:11:45.396Z",
+
+  "facebookId": null,
+
+  "facebookLongLivedToken": "EAAgC1PtuczwBQnpobqbEBEm6LnGgBpkI9bWorz9R4xQ6aB31rZAQMr6P93WBKuQpcS9nTZBrsp8LC4sLczbqDZBwKCV1IXMm7mRu1yBVwY4aoIp4fc5TDAfaddljSYf4jNJ4upCtrPXzd5Ow64h2aa3PoLyKvdqdU6gMJF86pBZCTR4AV8OYtJAkYxAH",
+
+  "phoneVerified": true,
+
+  "biddingLimit": 100000,
+
+  "completedPurchases": 0
+
+}
+
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: eyJhbGci...
+
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 200
+
+⚡️  [log] - [DEBUG useAuth] User data from /api/auth/me: {
+
+  "id": "fb_25872581299020147",
+
+  "accountCode": null,
+
+  "username": null,
+
+  "phone": "07510325610",
+
+  "email": "info@ebey3.com",
+
+  "password": null,
+
+  "displayName": "Yasir Abbas",
+
+  "avatar": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_",
+
+  "role": "user",
+
+  "accountType": "buyer",
+
+  "isVerified": true,
+
+  "isAdmin": true,
+
+  "isTrusted": true,
+
+  "isAuthenticated": true,
+
+  "authenticityGuaranteed": false,
+
+  "totalPurchases": 0,
+
+  "isBanned": false,
+
+  "banReason": null,
+
+  "bannedAt": null,
+
+  "idDocumentUrl": null,
+
+  "verificationStatus": "pending",
+
+  "sellerApproved": true,
+
+  "sellerRequestStatus": "approved",
+
+  "sellerRequestDate": null,
+
+  "sellerApprovalDate": null,
+
+  "totalSales": 3,
+
+  "rating": 5,
+
+  "ratingCount": 1,
+
+  "buyerRating": 0,
+
+  "buyerRatingCount": 0,
+
+  "authProvider": "facebook",
+
+  "authProviderId": "25872581299020147",
+
+  "twoFactorEnabled": false,
+
+  "twoFactorSecret": null,
+
+  "city": "أربيل",
+
+  "addressLine1": "أربيل القرية الإيطالية ",
+
+  "addressLine2": null,
+
+  "district": null,
+
+  "locationLat": null,
+
+  "locationLng": null,
+
+  "mapUrl": null,
+
+  "ageBracket": "",
+
+  "gender": null,
+
+  "interests": [
+
+    "electronics",
+
+    "sports",
+
+    "home",
+
+    "phones"
+
+  ],
+
+  "surveyCompleted": true,
+
+  "language": "ar",
+
+  "createdAt": "2026-01-26T18:53:00.643Z",
+
+  "lastLoginAt": "2026-01-31T08:32:53.392Z",
+
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYl8yNTg3MjU4MTI5OTAyMDE0NyIsInBob25lIjoiMDc1MTAzMjU2MTAiLCJwaG9uZVZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NzAwNDE1MDUsImV4cCI6MTc3MjYzMzUwNX0.MfYuts-JYPW72Qor9Lr7JFLHQJaba6Nt-Fl8TYauMTo",
+
+  "tokenExpiresAt": "2026-03-04T14:11:45.396Z",
+
+  "facebookId": null,
+
+  "facebookLongLivedToken": "EAAgC1PtuczwBQnpobqbEBEm6LnGgBpkI9bWorz9R4xQ6aB31rZAQMr6P93WBKuQpcS9nTZBrsp8LC4sLczbqDZBwKCV1IXMm7mRu1yBVwY4aoIp4fc5TDAfaddljSYf4jNJ4upCtrPXzd5Ow64h2aa3PoLyKvdqdU6gMJF86pBZCTR4AV8OYtJAkYxAH",
+
+  "phoneVerified": true,
+
+  "biddingLimit": 100000,
+
+  "completedPurchases": 0
+
+}
+
+WebContent[4268] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+
+Failed to terminate process: Error Domain=com.apple.extensionKit.errorDomain Code=18 "(null)" UserInfo={NSUnderlyingError=0x11dca3480 {Error Domain=RBSRequestErrorDomain Code=3 "No such process found" UserInfo={NSLocalizedFailureReason=No such process found}}}
+
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: eyJhbGci...
+
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 200
+
+⚡️  [log] - [DEBUG useAuth] User data from /api/auth/me: {
+
+  "id": "fb_25872581299020147",
+
+  "accountCode": null,
+
+  "username": null,
+
+  "phone": "07510325610",
+
+  "email": "info@ebey3.com",
+
+  "password": null,
+
+  "displayName": "Yasir Abbas",
+
+  "avatar": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_",
+
+  "role": "user",
+
+  "accountType": "buyer",
+
+  "isVerified": true,
+
+  "isAdmin": true,
+
+  "isTrusted": true,
+
+  "isAuthenticated": true,
+
+  "authenticityGuaranteed": false,
+
+  "totalPurchases": 0,
+
+  "isBanned": false,
+
+  "banReason": null,
+
+  "bannedAt": null,
+
+  "idDocumentUrl": null,
+
+  "verificationStatus": "pending",
+
+  "sellerApproved": true,
+
+  "sellerRequestStatus": "approved",
+
+  "sellerRequestDate": null,
+
+  "sellerApprovalDate": null,
+
+  "totalSales": 3,
+
+  "rating": 5,
+
+  "ratingCount": 1,
+
+  "buyerRating": 0,
+
+  "buyerRatingCount": 0,
+
+  "authProvider": "facebook",
+
+  "authProviderId": "25872581299020147",
+
+  "twoFactorEnabled": false,
+
+  "twoFactorSecret": null,
+
+  "city": "أربيل",
+
+  "addressLine1": "أربيل القرية الإيطالية ",
+
+  "addressLine2": null,
+
+  "district": null,
+
+  "locationLat": null,
+
+  "locationLng": null,
+
+  "mapUrl": null,
+
+  "ageBracket": "",
+
+  "gender": null,
+
+  "interests": [
+
+    "electronics",
+
+    "sports",
+
+    "home",
+
+    "phones"
+
+  ],
+
+  "surveyCompleted": true,
+
+  "language": "ar",
+
+  "createdAt": "2026-01-26T18:53:00.643Z",
+
+  "lastLoginAt": "2026-01-31T08:32:53.392Z",
+
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYl8yNTg3MjU4MTI5OTAyMDE0NyIsInBob25lIjoiMDc1MTAzMjU2MTAiLCJwaG9uZVZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NzAwNDE1MDUsImV4cCI6MTc3MjYzMzUwNX0.MfYuts-JYPW72Qor9Lr7JFLHQJaba6Nt-Fl8TYauMTo",
+
+  "tokenExpiresAt": "2026-03-04T14:11:45.396Z",
+
+  "facebookId": null,
+
+  "facebookLongLivedToken": "EAAgC1PtuczwBQnpobqbEBEm6LnGgBpkI9bWorz9R4xQ6aB31rZAQMr6P93WBKuQpcS9nTZBrsp8LC4sLczbqDZBwKCV1IXMm7mRu1yBVwY4aoIp4fc5TDAfaddljSYf4jNJ4upCtrPXzd5Ow64h2aa3PoLyKvdqdU6gMJF86pBZCTR4AV8OYtJAkYxAH",
+
+  "phoneVerified": true,
+
+  "biddingLimit": 100000,
+
+  "completedPurchases": 0
+
+}
+
+⚡️  TO JS {"isActive":false}
+
+⚡️  [log] - App state changed: background
+
+⚡️  [log] - App state changed: background
+
+⚡️  [log] - [WebSocket] Received message: NOTIFICATION {"type":"NOTIFICATION","notification":{"id":"e6a44086-f9b0-4f6c-bc5f-14210ed0d981","type":"offer_received","title":"عرض سعر جديد","message":"مستخدم 6852 قدم عرض سعر 18,000,000 د.ع على \"زوج ساعتين أوميغا كونستليشن كرونوميتر أوتوماتيكية | Pair of Omega Constellati...\"","linkUrl":"/seller-dashboard?tab=offers&offerId=91e2b4bc-ebcd-4926-8527-f8f6340a0f5a"},"timestamp":"2026-02-02T15:01:44.597Z"}
+
+⚡️  [log] - [WebSocket] Processing NOTIFICATION: عرض سعر جديد مستخدم 6852 قدم عرض سعر 18,000,000 د.ع على "زوج ساعتين أوميغا كونستليشن كرونوميتر أوتوماتيكية | Pair of Omega Constellati..."
+
+⚡️  [log] - [WebSocket] Toast shown successfully
+
+The logs show:
+Permission is granted: {"receive":"granted"}
+No [Push] logs — the JavaScript bundle with debug logs isn't loaded, or the registration flow isn't running
+No PushNotifications.register() call — registration isn't being triggered
+The issue: when permission is already 'granted', the prompt doesn't show and registration doesn't run automatically.
+Checking the code flow:
+Issue: when permission is 'granted', the code returns early (line 50) and never registers. If permission is granted but the user isn't subscribed, we should register automatically. Updating the logic to handle this:
+Updating the logic: when permission is 'granted' but the user isn't subscribed, automatically trigger registration instead of returning early:
+Updating the logic: when permission is 'granted' but the user isn't subscribed, automatically trigger registration:
+push-notification-prompt.tsx
+isAuthe
+// ... existing code ...  useEffect(() => {    if (!isAuthenticated) return;        const dismissed = localStorage.getItem(DISMISSED_KEY);    const subscribed = localStorage.getItem(SUBSCRIBED_KEY);        // Debug: Log localStorage status to Xcode console    console.log("[Push] localStorage status:", {      dismissed: dismissed || "null",      subscribed: subscribed || "null",      willShowPrompt: !dismissed && !subscribed    });        if (dismissed || subscribed) return;    const checkPermission = async () => {      if (isNative) {        // Check native push permission        const permission = await checkNativePushPermission();        console.log("[Push] Permission status:", permission);                // If permission is already granted but user isn't subscribed, auto-register        if (permission === 'granted') {          console.log("[Push] Permission already granted, auto-registering...");          // Automatically trigger registration          handleSubscribe();          return;        }                if (permission === 'denied') {          console.log("[Push] Permission denied, not showing prompt");          return;        }                // Permission is 'prompt' - show the prompt        const timer = setTimeout(() => {          setShowPrompt(true);        }, 5000);        return () => clearTimeout(timer);      } else {        // Check web push permission        if (!("Notification" in window) || !("serviceWorker" in navigator)) return;                if (Notification.permission === "granted") {          console.log("[Push] Web permission already granted, auto-registering...");          // Automatically trigger registration for web          handleSubscribe();          return;        }                if (Notification.permission === "denied") return;                const timer = setTimeout(() => {          setShowPrompt(true);        }, 5000);        return () => clearTimeout(timer);      }    };    checkPermission();  }, [isAuthenticated, handleSubscribe]);// ... rest of the code ...
+This change:
+Auto-registers when permission is 'granted' but the user isn't subscribed
+Shows the prompt only when permission is 'prompt'
+Skips when permission is 'denied'
+Should I apply this fix?

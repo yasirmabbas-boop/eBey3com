@@ -1,0 +1,100 @@
+-02-02 18:01:18.62
+152ff056
+User
+3:01:18 PM [express] GET /api/received-offers 200 in 1382ms :: [Response: 102588 bytes]
+2026-02-02 18:01:20.58
+152ff056
+User
+3:01:20 PM [express] GET /api/csrf-token 200 in 60ms :: {"token":"096a1e73242226f8f35fadc4da56db6a852d84766d2c5d1327eef2068e9f091a"}
+2026-02-02 18:01:21.10
+152ff056
+User
+[push] No push subscriptions found for user 1f8901d5-7087-4b77-81fc-110ddd0badb5
+2026-02-02 18:01:21.13
+152ff056
+User
+3:01:21 PM [express] PUT /api/offers/2ef82fab-b599-4812-8d20-2c518cafde9b/respond 200 in 237ms :: {"id":"2ef82fab-b599-4812-8d20-2c518cafde9b","listingId":"18b88c40-d574-41e4-b46c-e72728a527ac","buyerId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","sellerId":"fb_25872581299020147","offerAmount":18000000,"message":null,"status":"rejected","counterAmount":null,"counterMessage":null,"expiresAt":"2026-02-03T15:01:03.612Z","createdAt":"2026-02-02T15:01:03.627Z","respondedAt":"2026-02-02T15:01:21.018Z"}
+2026-02-02 18:01:22.27
+152ff056
+User
+3:01:22 PM [express] GET /api/received-offers 200 in 887ms :: [Response: 102611 bytes]
+2026-02-02 18:01:25.82
+152ff056
+User
+[api/auth/me] Checking Bearer token: eyJhbGci...
+2026-02-02 18:01:25.85
+152ff056
+User
+[api/auth/me] Found user by token: fb_25872581299020147 phoneVerified: true
+2026-02-02 18:01:25.86
+152ff056
+User
+3:01:25 PM [express] GET /api/search-suggestions 304 in 61ms
+2026-02-02 18:01:25.89
+152ff056
+User
+3:01:25 PM [express] GET /api/auth/me 200 in 91ms :: [Response: 1802 bytes]
+2026-02-02 18:01:31.42
+152ff056
+User
+3:01:31 PM [ws] User 1f8901d5-7087-4b77-81fc-110ddd0badb5 connected via WebSocket
+2026-02-02 18:01:31.42
+152ff056
+User
+3:01:31 PM [ws] WebSocket client connected
+2026-02-02 18:01:31.42
+152ff056
+User
+3:01:31 PM [ws] WebSocket client connected
+2026-02-02 18:01:31.42
+152ff056
+User
+3:01:31 PM [ws] User 1f8901d5-7087-4b77-81fc-110ddd0badb5 connected via WebSocket
+2026-02-02 18:01:31.42
+152ff056
+User
+3:01:31 PM [ws] WebSocket client connected
+2026-02-02 18:01:31.42
+152ff056
+User
+3:01:31 PM [ws] User 1f8901d5-7087-4b77-81fc-110ddd0badb5 connected via WebSocket
+2026-02-02 18:01:44.17
+152ff056
+User
+3:01:44 PM [express] GET /api/csrf-token 200 in 67ms :: {"token":"e25918c9e4713e8e83fe2921d4c4b70440b02336884eee79ee004093017dda94"}
+2026-02-02 18:01:44.17
+152ff056
+User
+3:01:44 PM [express] GET /api/csrf-token 200 in 67ms :: {"token":"e25918c9e4713e8e83fe2921d4c4b70440b02336884eee79ee004093017dda94"}
+2026-02-02 18:01:44.59
+152ff056
+User
+3:01:44 PM [ws] Sent NOTIFICATION notification to user fb_25872581299020147 (1 connection(s))
+2026-02-02 18:01:44.63
+152ff056
+User
+[push] No push subscriptions found for user fb_25872581299020147
+2026-02-02 18:01:44.66
+152ff056
+User
+3:01:44 PM [express] POST /api/offers 201 in 243ms :: {"id":"91e2b4bc-ebcd-4926-8527-f8f6340a0f5a","listingId":"18b88c40-d574-41e4-b46c-e72728a527ac","buyerId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","sellerId":"fb_25872581299020147","offerAmount":18000000,"message":null,"status":"pending","counterAmount":null,"counterMessage":null,"expiresAt":"2026-02-03T15:01:44.502Z","createdAt":"2026-02-02T15:01:44.517Z","respondedAt":null}
+2026-02-02 18:01:44.66
+152ff056
+User
+3:01:44 PM [express] POST /api/offers 201 in 243ms :: {"id":"91e2b4bc-ebcd-4926-8527-f8f6340a0f5a","listingId":"18b88c40-d574-41e4-b46c-e72728a527ac","buyerId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","sellerId":"fb_25872581299020147","offerAmount":18000000,"message":null,"status":"pending","counterAmount":null,"counterMessage":null,"expiresAt":"2026-02-03T15:01:44.502Z","createdAt":"2026-02-02T15:01:44.517Z","respondedAt":null}
+2026-02-02 18:01:45.21
+152ff056
+User
+3:01:45 PM [express] GET /api/notifications/count 200 in 269ms :: {"count":1}
+2026-02-02 18:01:45.21
+152ff056
+User
+3:01:45 PM [express] GET /api/notifications/count 200 in 269ms :: {"count":1}
+2026-02-02 18:01:45.21
+152ff056
+User
+3:01:45 PM [express] GET /api/notifications/count 200 in 269ms :: {"count":1}
+2026-02-02 18:01:45.21
+152ff056
+User
+3:01:45 PM [express] GET /api/notifications/count 200 in 269ms :: {"count":1}
