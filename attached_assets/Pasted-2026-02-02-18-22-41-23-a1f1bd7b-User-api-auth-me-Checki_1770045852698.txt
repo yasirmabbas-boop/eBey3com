@@ -1,0 +1,156 @@
+2026-02-02 18:22:41.23
+a1f1bd7b
+User
+[api/auth/me] Checking Bearer token: eyJhbGci...
+2026-02-02 18:22:41.26
+a1f1bd7b
+User
+[api/auth/me] Found user by token: fb_25872581299020147 phoneVerified: true
+2026-02-02 18:22:41.27
+a1f1bd7b
+User
+3:22:41 PM [express] GET /api/search-suggestions 200 in 66ms
+2026-02-02 18:22:41.27
+a1f1bd7b
+User
+3:22:41 PM [express] GET /api/search-suggestions 200 in 66ms
+2026-02-02 18:22:41.27
+a1f1bd7b
+User
+3:22:41 PM [express] GET /api/search-suggestions 200 in 66ms
+2026-02-02 18:22:41.32
+a1f1bd7b
+User
+3:22:41 PM [express] GET /api/notifications/count 200 in 146ms :: {"count":4}
+2026-02-02 18:22:41.32
+a1f1bd7b
+User
+3:22:41 PM [express] GET /api/messages/fb_25872581299020147/1f8901d5-7087-4b77-81fc-110ddd0badb5 200 in 119ms :: [{"id":"1f7a9fac-6c21-4a1a-8fad-9a8ecbc7fc7e","senderId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","receiverId":"fb_25872581299020147","listingId":null,"content":"Hi info y want to this any more","isRead":false,"createdAt":"2026-02-02T15:21:50.791Z"}]
+2026-02-02 18:22:41.32
+a1f1bd7b
+User
+3:22:41 PM [express] GET /api/messages/fb_25872581299020147 200 in 93ms :: [Response: 2471 bytes]
+2026-02-02 18:22:41.33
+a1f1bd7b
+User
+3:22:41 PM [express] GET /api/cart 200 in 92ms :: []
+2026-02-02 18:22:41.42
+a1f1bd7b
+User
+3:22:41 PM [ws] User fb_25872581299020147 connected via WebSocket
+2026-02-02 18:22:41.42
+a1f1bd7b
+User
+3:22:41 PM [ws] WebSocket client connected
+2026-02-02 18:22:41.47
+a1f1bd7b
+User
+3:22:41 PM [express] GET /api/auth/me 200 in 271ms :: [Response: 1802 bytes]
+2026-02-02 18:22:41.52
+a1f1bd7b
+User
+3:22:41 PM [express] GET /api/users/1f8901d5-7087-4b77-81fc-110ddd0badb5 200 in 280ms :: {"id":"1f8901d5-7087-4b77-81fc-110ddd0badb5","displayName":"مستخدم 6852","phone":"+964 750 156 6852","avatar":null,"sellerApproved":false,"isVerified":false,"totalSales":0,"rating":0,"ratingCount":0,"city":null,"createdAt":"2026-02-02T13:43:48.439Z"}
+2026-02-02 18:22:41.62
+a1f1bd7b
+User
+3:22:41 PM [express] GET /api/users/1f8901d5-7087-4b77-81fc-110ddd0badb5 200 in 88ms :: {"id":"1f8901d5-7087-4b77-81fc-110ddd0badb5","displayName":"مستخدم 6852","phone":"+964 750 156 6852","avatar":null,"sellerApproved":false,"isVerified":false,"totalSales":0,"rating":0,"ratingCount":0,"city":null,"createdAt":"2026-02-02T13:43:48.439Z"}
+2026-02-02 18:22:41.63
+a1f1bd7b
+User
+3:22:41 PM [express] GET /api/users/21a76619-7d46-43cd-b2b3-41c95acd9670 200 in 87ms :: {"id":"21a76619-7d46-43cd-b2b3-41c95acd9670","displayName":"Yousif","phone":"07729361250","avatar":null,"sellerApproved":false,"isVerified":false,"totalSales":0,"rating":0,"ratingCount":0,"city":null,"createdAt":"2026-01-30T23:36:36.084Z"}
+2026-02-02 18:22:41.67
+a1f1bd7b
+User
+3:22:41 PM [express] GET /api/users/1f8901d5-7087-4b77-81fc-110ddd0badb5 200 in 87ms :: {"id":"1f8901d5-7087-4b77-81fc-110ddd0badb5","displayName":"مستخدم 6852","phone":"+964 750 156 6852","avatar":null,"sellerApproved":false,"isVerified":false,"totalSales":0,"rating":0,"ratingCount":0,"city":null,"createdAt":"2026-02-02T13:43:48.439Z"}
+2026-02-02 18:22:41.91
+a1f1bd7b
+User
+3:22:41 PM [express] PATCH /api/messages/1f7a9fac-6c21-4a1a-8fad-9a8ecbc7fc7e/read 200 in 59ms
+2026-02-02 18:22:58.59
+a1f1bd7b
+User
+3:22:58 PM [ws] WebSocket client disconnected
+2026-02-02 18:22:59.16
+a1f1bd7b
+User
+3:22:59 PM [ws] Sent NOTIFICATION notification to user 1f8901d5-7087-4b77-81fc-110ddd0badb5 (2 connection(s))
+2026-02-02 18:22:59.18
+a1f1bd7b
+User
+[push] No push subscriptions found for user 1f8901d5-7087-4b77-81fc-110ddd0badb5
+2026-02-02 18:22:59.19
+a1f1bd7b
+User
+3:22:59 PM [ws] Sent NEW_MESSAGE notification to user 1f8901d5-7087-4b77-81fc-110ddd0badb5 (2 connection(s))
+2026-02-02 18:22:59.22
+a1f1bd7b
+User
+3:22:59 PM [express] POST /api/messages 200 in 595ms :: {"id":"b903c677-9bfc-43da-8530-7e6243699b37","senderId":"fb_25872581299020147","receiverId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","listingId":null,"content":"It’s no problem. Send us your address and we will send the money","isRead":false,"createdAt":"2026-02-02T15:22:59.051Z"}
+2026-02-02 18:22:59.63
+a1f1bd7b
+User
+3:22:59 PM [express] GET /api/messages/fb_25872581299020147 200 in 114ms :: [Response: 2750 bytes]
+2026-02-02 18:22:59.78
+a1f1bd7b
+User
+3:22:59 PM [express] GET /api/messages/fb_25872581299020147/1f8901d5-7087-4b77-81fc-110ddd0badb5 200 in 264ms :: [Response: 527 bytes]
+2026-02-02 18:23:00.13
+a1f1bd7b
+User
+3:23:00 PM [express] GET /api/users/1f8901d5-7087-4b77-81fc-110ddd0badb5 304 in 92ms :: {"id":"1f8901d5-7087-4b77-81fc-110ddd0badb5","displayName":"مستخدم 6852","phone":"+964 750 156 6852","avatar":null,"sellerApproved":false,"isVerified":false,"totalSales":0,"rating":0,"ratingCount":0,"city":null,"createdAt":"2026-02-02T13:43:48.439Z"}
+2026-02-02 18:23:02.98
+a1f1bd7b
+User
+[api/auth/me] Checking Bearer token: eyJhbGci...
+2026-02-02 18:23:03.03
+a1f1bd7b
+User
+3:23:03 PM [express] GET /api/search-suggestions 304 in 61ms
+2026-02-02 18:23:03.18
+a1f1bd7b
+User
+[api/auth/me] Found user by token: fb_25872581299020147 phoneVerified: true
+2026-02-02 18:23:03.21
+a1f1bd7b
+User
+3:23:03 PM [express] GET /api/auth/me 200 in 264ms :: [Response: 1802 bytes]
+2026-02-02 18:23:06.90
+a1f1bd7b
+User
+3:23:06 PM [ws] WebSocket client disconnected
+2026-02-02 18:23:06.90
+a1f1bd7b
+User
+3:23:06 PM [ws] WebSocket client disconnected
+2026-02-02 18:23:06.90
+a1f1bd7b
+User
+3:23:06 PM [ws] WebSocket client disconnected
+2026-02-02 18:23:06.90
+a1f1bd7b
+User
+3:23:06 PM [ws] WebSocket client disconnected
+2026-02-02 18:23:06.90
+a1f1bd7b
+User
+3:23:06 PM [ws] WebSocket client disconnected
+2026-02-02 18:23:11.71
+a1f1bd7b
+User
+3:23:11 PM [express] GET /api/notifications/count 304 in 142ms :: {"count":4}
+2026-02-02 18:23:11.71
+a1f1bd7b
+User
+3:23:11 PM [express] GET /api/notifications/count 304 in 142ms :: {"count":4}
+2026-02-02 18:23:11.71
+a1f1bd7b
+User
+3:23:11 PM [express] GET /api/notifications/count 304 in 142ms :: {"count":4}
+2026-02-02 18:23:34.88
+a1f1bd7b
+User
+3:23:34 PM [ws] WebSocket client disconnected
+2026-02-02 18:23:34.88
+a1f1bd7b
+User
+3:23:34 PM [ws] WebSocket client disconn
