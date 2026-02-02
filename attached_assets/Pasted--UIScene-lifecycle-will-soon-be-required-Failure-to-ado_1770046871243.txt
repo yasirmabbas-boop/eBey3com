@@ -1,0 +1,185 @@
+`UIScene` lifecycle will soon be required. Failure to adopt will result in an assert in the future.
+Could not create a sandbox extension for '/var/containers/Bundle/Application/F6A301AD-0C2F-46BD-A612-19AA34152505/App.app'
+KeyboardPlugin: resize mode - body
+Loading network plugin
+⚡️  Loading app at https://ebey3.com...
+Reachable via WiFi
+void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+WebContent[4548] Could not register system wide server: -25204
+WebContent[4548] _AXAddToElementCache was called even though the element was in the cache: <WKAccessibilityWebPageObject: 0x1651540a0>
+WebContent[4548] Unable to hide query parameters from script (missing data)
+⚡️  [warn] - [PWA] Service Workers not supported in this browser
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: eyJhbGci...
+⚡️  To Native ->  StatusBar setOverlaysWebView 72682969
+⚡️  To Native ->  StatusBar setStyle 72682970
+⚡️  To Native ->  StatusBar setBackgroundColor 72682971
+⚡️  To Native ->  App addListener 72682972
+⚡️  To Native ->  App addListener 72682973
+⚡️  To Native ->  App addListener 72682974
+⚡️  TO JS undefined
+⚡️  TO JS {}
+⚡️  TO JS undefined
+WebContent[4548] Service "com.apple.CARenderServer" failed bootstrap look up (1) - (os/kern) invalid address
+WebContent[4548] Failed to initialize application enviroment context
+WebContent[4548] Failed to load a device context.
+WebContent[4548] Failed to initialize application enviroment context
+WebContent[4548] Failed to load a device context.
+⚡️  To Native ->  PushNotifications checkPermissions 72682975
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 200
+⚡️  [log] - [DEBUG useAuth] User data from /api/auth/me: {
+  "id": "fb_25872581299020147",
+  "accountCode": null,
+  "username": null,
+  "phone": "07510325610",
+  "email": "info@ebey3.com",
+  "password": null,
+  "displayName": "Yasir Abbas",
+  "avatar": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_",
+  "role": "user",
+  "accountType": "buyer",
+  "isVerified": true,
+  "isAdmin": true,
+  "isTrusted": true,
+  "isAuthenticated": true,
+  "authenticityGuaranteed": false,
+  "totalPurchases": 0,
+  "isBanned": false,
+  "banReason": null,
+  "bannedAt": null,
+  "idDocumentUrl": null,
+  "verificationStatus": "pending",
+  "sellerApproved": true,
+  "sellerRequestStatus": "approved",
+  "sellerRequestDate": null,
+  "sellerApprovalDate": null,
+  "totalSales": 5,
+  "rating": 5,
+  "ratingCount": 2,
+  "buyerRating": 0,
+  "buyerRatingCount": 0,
+  "authProvider": "facebook",
+  "authProviderId": "25872581299020147",
+  "twoFactorEnabled": false,
+  "twoFactorSecret": null,
+  "city": "أربيل",
+  "addressLine1": "أربيل القرية الإيطالية ",
+  "addressLine2": null,
+  "district": null,
+  "locationLat": null,
+  "locationLng": null,
+  "mapUrl": null,
+  "ageBracket": "",
+  "gender": null,
+  "interests": [
+    "electronics",
+    "sports",
+    "home",
+    "phones"
+  ],
+  "surveyCompleted": true,
+  "language": "ar",
+  "createdAt": "2026-01-26T18:53:00.643Z",
+  "lastLoginAt": "2026-01-31T08:32:53.392Z",
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYl8yNTg3MjU4MTI5OTAyMDE0NyIsInBob25lIjoiMDc1MTAzMjU2MTAiLCJwaG9uZVZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NzAwNDE1MDUsImV4cCI6MTc3MjYzMzUwNX0.MfYuts-JYPW72Qor9Lr7JFLHQJaba6Nt-Fl8TYauMTo",
+  "tokenExpiresAt": "2026-03-04T14:11:45.396Z",
+  "facebookId": null,
+  "facebookLongLivedToken": "EAAgC1PtuczwBQnpobqbEBEm6LnGgBpkI9bWorz9R4xQ6aB31rZAQMr6P93WBKuQpcS9nTZBrsp8LC4sLczbqDZBwKCV1IXMm7mRu1yBVwY4aoIp4fc5TDAfaddljSYf4jNJ4upCtrPXzd5Ow64h2aa3PoLyKvdqdU6gMJF86pBZCTR4AV8OYtJAkYxAH",
+  "phoneVerified": true,
+  "biddingLimit": 100000,
+  "completedPurchases": 0
+}
+⚡️  [log] - [DEBUG useAuth] authToken from localStorage: eyJhbGci...
+⚡️  TO JS {"receive":"granted"}
+WebContent[4548] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+WebContent[4548] makeImagePlus:3798: *** ERROR: 'WEBP'-_reader->initImage[0] failed err=-50
+⚡️  To Native ->  SplashScreen hide 72682976
+⚡️  TO JS undefined
+⚡️  [log] - [DEBUG useAuth] /api/auth/me response status: 200
+⚡️  [log] - [DEBUG useAuth] User data from /api/auth/me: {
+  "id": "fb_25872581299020147",
+  "accountCode": null,
+  "username": null,
+  "phone": "07510325610",
+  "email": "info@ebey3.com",
+  "password": null,
+  "displayName": "Yasir Abbas",
+  "avatar": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_",
+  "role": "user",
+  "accountType": "buyer",
+  "isVerified": true,
+  "isAdmin": true,
+  "isTrusted": true,
+  "isAuthenticated": true,
+  "authenticityGuaranteed": false,
+  "totalPurchases": 0,
+  "isBanned": false,
+  "banReason": null,
+  "bannedAt": null,
+  "idDocumentUrl": null,
+  "verificationStatus": "pending",
+  "sellerApproved": true,
+  "sellerRequestStatus": "approved",
+  "sellerRequestDate": null,
+  "sellerApprovalDate": null,
+  "totalSales": 5,
+  "rating": 5,
+  "ratingCount": 2,
+  "buyerRating": 0,
+  "buyerRatingCount": 0,
+  "authProvider": "facebook",
+  "authProviderId": "25872581299020147",
+  "twoFactorEnabled": false,
+  "twoFactorSecret": null,
+  "city": "أربيل",
+  "addressLine1": "أربيل القرية الإيطالية ",
+  "addressLine2": null,
+  "district": null,
+  "locationLat": null,
+  "locationLng": null,
+  "mapUrl": null,
+  "ageBracket": "",
+  "gender": null,
+  "interests": [
+    "electronics",
+    "sports",
+    "home",
+    "phones"
+  ],
+  "surveyCompleted": true,
+  "language": "ar",
+  "createdAt": "2026-01-26T18:53:00.643Z",
+  "lastLoginAt": "2026-01-31T08:32:53.392Z",
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYl8yNTg3MjU4MTI5OTAyMDE0NyIsInBob25lIjoiMDc1MTAzMjU2MTAiLCJwaG9uZVZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NzAwNDE1MDUsImV4cCI6MTc3MjYzMzUwNX0.MfYuts-JYPW72Qor9Lr7JFLHQJaba6Nt-Fl8TYauMTo",
+  "tokenExpiresAt": "2026-03-04T14:11:45.396Z",
+  "facebookId": null,
+  "facebookLongLivedToken": "EAAgC1PtuczwBQnpobqbEBEm6LnGgBpkI9bWorz9R4xQ6aB31rZAQMr6P93WBKuQpcS9nTZBrsp8LC4sLczbqDZBwKCV1IXMm7mRu1yBVwY4aoIp4fc5TDAfaddljSYf4jNJ4upCtrPXzd5Ow64h2aa3PoLyKvdqdU6gMJF86pBZCTR4AV8OYtJAkYxAH",
+  "phoneVerified": true,
+  "biddingLimit": 100000,
+  "completedPurchases": 0
+}
+⚡️  [log] - [WebSocket] Connected to notification server
+⚡️  WebView loaded
+⚡️  TO JS {"isActive":false}
+⚡️  [log] - App state changed: background
+⚡️  [log] - App state changed: background
+⚡️  [log] - [WebSocket] Received message: NOTIFICATION {"type":"NOTIFICATION","notification":{"id":"b369f290-c7ca-4ced-a732-6c840dd24fd5","type":"new_message","title":"رسالة جديدة 💬","message":"مستخدم 6852: هلو","linkUrl":"/messages/1f8901d5-7087-4b77-81fc-110ddd0badb5"},"timestamp":"2026-02-02T15:40:16.839Z"}
+⚡️  [log] - [WebSocket] Processing NOTIFICATION: رسالة جديدة 💬 مستخدم 6852: هلو
+⚡️  [log] - [WebSocket] Toast shown successfully
+⚡️  [log] - [WebSocket] Received message: NEW_MESSAGE {"type":"NEW_MESSAGE","message":{"id":"320a26a7-7838-4e9f-81b2-3070ad9e562a","senderId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","receiverId":"fb_25872581299020147","listingId":null,"content":"هلو","isRead":false,"createdAt":"2026-02-02T15:40:16.738Z","senderName":"مستخدم 6852"},"timestamp":"2026-02-02T15:40:16.868Z"}
+⚡️  [log] - [WebSocket] Processing NEW_MESSAGE: {"type":"NEW_MESSAGE","message":{"id":"320a26a7-7838-4e9f-81b2-3070ad9e562a","senderId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","receiverId":"fb_25872581299020147","listingId":null,"content":"هلو","isRead":false,"createdAt":"2026-02-02T15:40:16.738Z","senderName":"مستخدم 6852"},"timestamp":"2026-02-02T15:40:16.868Z"}
+⚡️  [log] - [WebSocket] NEW_MESSAGE event dispatched and queries invalidated
+⚡️  [log] - [WebSocket] Received message: NOTIFICATION {"type":"NOTIFICATION","notification":{"id":"eea363c8-73b7-408c-a559-34ce28e859b7","type":"new_message","title":"رسالة جديدة 💬","message":"مستخدم 6852: هلو","linkUrl":"/messages/1f8901d5-7087-4b77-81fc-110ddd0badb5"},"timestamp":"2026-02-02T15:40:26.365Z"}
+⚡️  [log] - [WebSocket] Processing NOTIFICATION: رسالة جديدة 💬 مستخدم 6852: هلو
+⚡️  [log] - [WebSocket] Toast shown successfully
+⚡️  [log] - [WebSocket] Received message: NEW_MESSAGE {"type":"NEW_MESSAGE","message":{"id":"fbde424d-8365-454b-b8be-e6f5d31bbf32","senderId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","receiverId":"fb_25872581299020147","listingId":null,"content":"هلو","isRead":false,"createdAt":"2026-02-02T15:40:26.259Z","senderName":"مستخدم 6852"},"timestamp":"2026-02-02T15:40:26.396Z"}
+⚡️  [log] - [WebSocket] Processing NEW_MESSAGE: {"type":"NEW_MESSAGE","message":{"id":"fbde424d-8365-454b-b8be-e6f5d31bbf32","senderId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","receiverId":"fb_25872581299020147","listingId":null,"content":"هلو","isRead":false,"createdAt":"2026-02-02T15:40:26.259Z","senderName":"مستخدم 6852"},"timestamp":"2026-02-02T15:40:26.396Z"}
+⚡️  [log] - [WebSocket] NEW_MESSAGE event dispatched and queries invalidated
+⚡️  [log] - [WebSocket] Received message: NOTIFICATION {"type":"NOTIFICATION","notification":{"id":"8a203236-3496-43d1-a05c-a03f1bd9fa58","type":"new_message","title":"رسالة جديدة 💬","message":"مستخدم 6852: هلو","linkUrl":"/messages/1f8901d5-7087-4b77-81fc-110ddd0badb5"},"timestamp":"2026-02-02T15:40:30.758Z"}
+⚡️  [log] - [WebSocket] Processing NOTIFICATION: رسالة جديدة 💬 مستخدم 6852: هلو
+⚡️  [log] - [WebSocket] Toast shown successfully
+⚡️  [log] - [WebSocket] Received message: NEW_MESSAGE {"type":"NEW_MESSAGE","message":{"id":"40c071b2-4dbd-4978-a003-5f36eb3b902f","senderId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","receiverId":"fb_25872581299020147","listingId":null,"content":"هلو","isRead":false,"createdAt":"2026-02-02T15:40:30.654Z","senderName":"مستخدم 6852"},"timestamp":"2026-02-02T15:40:30.789Z"}
+⚡️  [log] - [WebSocket] Processing NEW_MESSAGE: {"type":"NEW_MESSAGE","message":{"id":"40c071b2-4dbd-4978-a003-5f36eb3b902f","senderId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","receiverId":"fb_25872581299020147","listingId":null,"content":"هلو","isRead":false,"createdAt":"2026-02-02T15:40:30.654Z","senderName":"مستخدم 6852"},"timestamp":"2026-02-02T15:40:30.789Z"}
+⚡️  [log] - [WebSocket] NEW_MESSAGE event dispatched and queries invalidated
+⚡️  TO JS {"isActive":true}
+⚡️  [log] - App state changed: active
+⚡️  [log] - App state changed: active

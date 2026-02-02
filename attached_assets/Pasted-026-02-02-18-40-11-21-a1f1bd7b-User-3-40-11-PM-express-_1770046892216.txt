@@ -1,0 +1,104 @@
+026-02-02 18:40:11.21
+a1f1bd7b
+User
+3:40:11 PM [express] GET /api/messages/1f8901d5-7087-4b77-81fc-110ddd0badb5/fb_25872581299020147 200 in 299ms :: [Response: 527 bytes]
+2026-02-02 18:40:11.38
+a1f1bd7b
+User
+3:40:11 PM [ws] User 1f8901d5-7087-4b77-81fc-110ddd0badb5 connected via WebSocket
+2026-02-02 18:40:11.38
+a1f1bd7b
+User
+3:40:11 PM [ws] WebSocket client connected
+2026-02-02 18:40:11.39
+a1f1bd7b
+User
+3:40:11 PM [express] GET /api/users/fb_25872581299020147 200 in 87ms :: {"id":"fb_25872581299020147","displayName":"Yasir Abbas","phone":"07510325610","avatar":"https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_","sellerApproved":true,"isVerified":true,"totalSales":5,"rating":5,"ratingCount":2,"city":"أربيل","createdAt":"2026-01-26T18:53:00.643Z"}
+2026-02-02 18:40:11.59
+a1f1bd7b
+User
+3:40:11 PM [express] GET /api/users/fb_25872581299020147 200 in 87ms :: {"id":"fb_25872581299020147","displayName":"Yasir Abbas","phone":"07510325610","avatar":"https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_","sellerApproved":true,"isVerified":true,"totalSales":5,"rating":5,"ratingCount":2,"city":"أربيل","createdAt":"2026-01-26T18:53:00.643Z"}
+2026-02-02 18:40:11.97
+a1f1bd7b
+User
+3:40:11 PM [express] PATCH /api/messages/b903c677-9bfc-43da-8530-7e6243699b37/read 200 in 59ms
+2026-02-02 18:40:16.84
+a1f1bd7b
+User
+3:40:16 PM [ws] Sent NOTIFICATION notification to user fb_25872581299020147 (1 connection(s))
+2026-02-02 18:40:16.90
+a1f1bd7b
+User
+3:40:16 PM [express] POST /api/messages 200 in 206ms :: {"id":"320a26a7-7838-4e9f-81b2-3070ad9e562a","senderId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","receiverId":"fb_25872581299020147","listingId":null,"content":"هلو","isRead":false,"createdAt":"2026-02-02T15:40:16.738Z"}
+2026-02-02 18:40:17.36
+a1f1bd7b
+User
+3:40:17 PM [express] GET /api/messages/1f8901d5-7087-4b77-81fc-110ddd0badb5/fb_25872581299020147 200 in 93ms :: [Response: 745 bytes]
+2026-02-02 18:40:17.36
+a1f1bd7b
+User
+3:40:17 PM [express] GET /api/messages/1f8901d5-7087-4b77-81fc-110ddd0badb5 200 in 89ms :: [Response: 745 bytes]
+2026-02-02 18:40:17.71
+a1f1bd7b
+User
+3:40:17 PM [express] GET /api/users/fb_25872581299020147 304 in 89ms :: {"id":"fb_25872581299020147","displayName":"Yasir Abbas","phone":"07510325610","avatar":"https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_","sellerApproved":true,"isVerified":true,"totalSales":5,"rating":5,"ratingCount":2,"city":"أربيل","createdAt":"2026-01-26T18:53:00.643Z"}
+2026-02-02 18:40:26.39
+a1f1bd7b
+User
+3:40:26 PM [ws] Sent NEW_MESSAGE notification to user fb_25872581299020147 (1 connection(s))
+2026-02-02 18:40:26.42
+a1f1bd7b
+User
+3:40:26 PM [express] POST /api/messages 200 in 243ms :: {"id":"fbde424d-8365-454b-b8be-e6f5d31bbf32","senderId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","receiverId":"fb_25872581299020147","listingId":null,"content":"هلو","isRead":false,"createdAt":"2026-02-02T15:40:26.259Z"}
+2026-02-02 18:40:26.83
+a1f1bd7b
+User
+3:40:26 PM [express] GET /api/messages/1f8901d5-7087-4b77-81fc-110ddd0badb5/fb_25872581299020147 200 in 87ms :: [Response: 964 bytes]
+2026-02-02 18:40:26.87
+a1f1bd7b
+User
+3:40:26 PM [express] GET /api/messages/1f8901d5-7087-4b77-81fc-110ddd0badb5 200 in 132ms :: [Response: 964 bytes]
+2026-02-02 18:40:27.23
+a1f1bd7b
+User
+3:40:27 PM [express] GET /api/users/fb_25872581299020147 304 in 89ms :: {"id":"fb_25872581299020147","displayName":"Yasir Abbas","phone":"07510325610","avatar":"https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_","sellerApproved":true,"isVerified":true,"totalSales":5,"rating":5,"ratingCount":2,"city":"أربيل","createdAt":"2026-01-26T18:53:00.643Z"}
+2026-02-02 18:40:30.75
+a1f1bd7b
+User
+3:40:30 PM [ws] Sent NOTIFICATION notification to user fb_25872581299020147 (1 connection(s))
+2026-02-02 18:40:30.78
+a1f1bd7b
+User
+[push] No push subscriptions found for user fb_25872581299020147
+2026-02-02 18:40:30.79
+a1f1bd7b
+User
+3:40:30 PM [ws] Sent NEW_MESSAGE notification to user fb_25872581299020147 (1 connection(s))
+2026-02-02 18:40:30.82
+a1f1bd7b
+User
+3:40:30 PM [express] POST /api/messages 200 in 211ms :: {"id":"40c071b2-4dbd-4978-a003-5f36eb3b902f","senderId":"1f8901d5-7087-4b77-81fc-110ddd0badb5","receiverId":"fb_25872581299020147","listingId":null,"content":"هلو","isRead":false,"createdAt":"2026-02-02T15:40:30.654Z"}
+2026-02-02 18:40:31.27
+a1f1bd7b
+User
+3:40:31 PM [express] GET /api/messages/1f8901d5-7087-4b77-81fc-110ddd0badb5 200 in 92ms :: [Response: 1183 bytes]
+2026-02-02 18:40:31.28
+a1f1bd7b
+User
+3:40:31 PM [express] GET /api/messages/1f8901d5-7087-4b77-81fc-110ddd0badb5/fb_25872581299020147 200 in 94ms :: [Response: 1183 bytes]
+2026-02-02 18:40:31.66
+a1f1bd7b
+User
+3:40:31 PM [express] GET /api/users/fb_25872581299020147 304 in 91ms :: {"id":"fb_25872581299020147","displayName":"Yasir Abbas","phone":"07510325610","avatar":"https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_","sellerApproved":true,"isVerified":true,"totalSales":5,"rating":5,"ratingCount":2,"city":"أربيل","createdAt":"2026-01-26T18:53:00.643Z"}
+2026-02-02 18:40:40.12
+a1f1bd7b
+User
+3:40:40 PM [express] GET /api/notifications/count 200 in 146ms :: {"count":7}
+2026-02-02 18:40:40.29
+a1f1bd7b
+User
+3:40:40 PM [express] GET /api/notifications/count 200 in 307ms :: {"count":7}
+2026-02-02 18:40:40.31
+a1f1bd7b
+User
+3:40:40 PM [express] GET /api/notifications/count 200 in 331ms :: {"count":7}
