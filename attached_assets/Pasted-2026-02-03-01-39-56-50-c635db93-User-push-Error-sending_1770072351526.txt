@@ -1,0 +1,156 @@
+2026-02-03 01:39:56.50
+c635db93
+User
+[push] Error sending to user fb_25872581299020147: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-03 01:39:56.50
+c635db93
+User
+codePrefix: 'messaging'
+2026-02-03 01:39:56.50
+c635db93
+User
+code: 'messaging/third-party-auth-error',
+2026-02-03 01:39:56.50
+c635db93
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2026-02-03 01:39:56.53
+c635db93
+User
+10:39:56 PM [express] POST /api/offers 201 in 615ms :: {"id":"98c48b18-59fd-49a4-8e5a-d6265ef6b556","listingId":"d68f3d4c-fac8-43d5-b016-94761f7290bd","buyerId":"fb_1651977129496120","sellerId":"fb_25872581299020147","offerAmount":1999999,"message":null,"status":"pending","counterAmount":null,"counterMessage":null,"expiresAt":"2026-02-03T22:39:56.015Z","createdAt":"2026-02-02T22:39:56.032Z","respondedAt":null}
+2026-02-03 01:40:01.11
+c635db93
+User
+10:40:01 PM [express] GET /api/notifications/count 304 in 145ms :: {"count":68}
+2026-02-03 01:40:01.11
+c635db93
+User
+10:40:01 PM [express] GET /api/notifications/count 304 in 145ms :: {"count":68}
+2026-02-03 01:43:54.16
+2cab2a21
+User
+10:43:54 PM [ws] WebSocket client disconnected
+2026-02-03 01:44:28.06
+c635db93
+User
+10:44:28 PM [express] GET /api/csrf-token 200 in 238ms :: {"token":"4c76ec43a39c6f64d0660487c32287c97d81039e59bd587c6d112bcbbb90e619"}
+2026-02-03 01:44:28.45
+c635db93
+User
+10:44:28 PM [ws] User fb_1651977129496120 connected via WebSocket
+2026-02-03 01:44:28.45
+c635db93
+User
+10:44:28 PM [ws] WebSocket client connected
+2026-02-03 01:44:28.72
+c635db93
+User
+[FCM Send] projectId: ebey3-67950
+2026-02-03 01:44:28.72
+c635db93
+User
+[FCM Send] isInitialized: true
+2026-02-03 01:44:28.72
+c635db93
+User
+[FCM Send] serviceAccount exists: true
+2026-02-03 01:44:28.79
+c635db93
+User
+at createFirebaseError (/home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-errors-internal.js:35:47)
+2026-02-03 01:44:28.79
+c635db93
+User
+at async file:///home/runner/workspace/dist/index.js:91:1788
+2026-02-03 01:44:28.79
+c635db93
+User
+at async Promise.allSettled (index 1)
+2026-02-03 01:44:28.79
+c635db93
+User
+message: 'Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.'
+2026-02-03 01:44:28.79
+c635db93
+User
+}
+2026-02-03 01:44:28.79
+c635db93
+User
+at async file:///home/runner/workspace/dist/index.js:99:4292 {
+2026-02-03 01:44:28.79
+c635db93
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2026-02-03 01:44:28.79
+c635db93
+User
+at async lt (file:///home/runner/workspace/dist/index.js:91:1393)
+2026-02-03 01:44:28.79
+c635db93
+User
+errorInfo: {
+2026-02-03 01:44:28.79
+c635db93
+User
+[FCM] Failed to send notification: FirebaseMessagingError: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-03 01:44:28.79
+c635db93
+User
+code: 'messaging/third-party-auth-error',
+2026-02-03 01:44:28.79
+c635db93
+User
+},
+2026-02-03 01:44:28.79
+c635db93
+User
+codePrefix: 'messaging'
+2026-02-03 01:44:28.79
+c635db93
+User
+at FirebaseMessagingError.fromServerError (/home/runner/workspace/node_modules/firebase-admin/lib/utils/error.js:269:16)
+2026-02-03 01:44:28.79
+c635db93
+User
+at /home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-api-request-internal.js:82:75
+2026-02-03 01:44:28.79
+c635db93
+User
+at async X8 (file:///home/runner/workspace/dist/index.js:87:61807)
+2026-02-03 01:44:28.79
+c635db93
+User
+[push] Error sending to user fb_25872581299020147: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-03 01:44:28.87
+c635db93
+User
+[push] Web push sent to user fb_25872581299020147
+2026-02-03 01:44:28.90
+c635db93
+User
+[push] Sent 1/2 notifications to user fb_25872581299020147
+2026-02-03 01:44:28.93
+c635db93
+User
+10:44:28 PM [express] POST /api/offers 201 in 617ms :: {"id":"dedc31f3-a885-4621-98b7-cc6ca2fb2053","listingId":"d68f3d4c-fac8-43d5-b016-94761f7290bd","buyerId":"fb_1651977129496120","sellerId":"fb_25872581299020147","offerAmount":1999999,"message":null,"status":"pending","counterAmount":null,"counterMessage":null,"expiresAt":"2026-02-03T22:44:28.598Z","createdAt":"2026-02-02T22:44:28.615Z","respondedAt":null}
+2026-02-03 01:44:28.96
+c635db93
+User
+10:44:28 PM [express] GET /api/notifications/count 304 in 325ms :: {"count":68}
+2026-02-03 01:44:31.58
+2cab2a21
+User
+10:44:31 PM [ws] WebSocket client disconnected
+2026-02-03 01:44:31.58
+2cab2a21
+System
+system: received signal terminated
+2026-02-03 01:44:31.60
+2cab2a21
+System
+command finished with error [node ./dist/index.js]: signal: terminated
+2026-02-03 01:44:31.65
+2cab2a21
+System
+main done, exiting

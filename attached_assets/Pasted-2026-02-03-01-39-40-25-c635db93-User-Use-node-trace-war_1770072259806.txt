@@ -1,0 +1,156 @@
+2026-02-03 01:39:40.25
+c635db93
+User
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-02-03 01:39:40.25
+c635db93
+User
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+2026-02-03 01:39:40.25
+c635db93
+User
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+2026-02-03 01:39:50.84
+c635db93
+User
+[api/auth/me] Checking Bearer token: eyJhbGci...
+2026-02-03 01:39:50.87
+c635db93
+User
+[api/auth/me] Found user by token: fb_1651977129496120 phoneVerified: true
+2026-02-03 01:39:50.91
+c635db93
+User
+10:39:50 PM [express] GET /api/auth/me 200 in 308ms :: [Response: 1734 bytes]
+2026-02-03 01:39:50.91
+c635db93
+User
+10:39:50 PM [express] GET /api/search-suggestions 200 in 315ms
+2026-02-03 01:39:51.09
+c635db93
+User
+10:39:51 PM [express] GET /api/listings/d68f3d4c-fac8-43d5-b016-94761f7290bd/purchase-status 304 in 493ms :: {"hasPurchased":false}
+2026-02-03 01:39:51.10
+c635db93
+User
+10:39:51 PM [express] GET /api/listings/d68f3d4c-fac8-43d5-b016-94761f7290bd 200 in 498ms :: [Response: 1432 bytes]
+2026-02-03 01:39:51.45
+c635db93
+User
+10:39:51 PM [express] GET /api/csrf-token 200 in 61ms :: {"token":"ab2e9e244c288a033d4205ecebd7e3c5e7bf890aaeaf92b53cd9a4d215a2e966"}
+2026-02-03 01:39:51.47
+c635db93
+User
+10:39:51 PM [express] GET /api/users/fb_25872581299020147/public 304 in 93ms :: {"id":"fb_25872581299020147","displayName":"Yasir Abbas","avatar":"https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=25872581299020147&height=50&width=50&ext=1772045580&hash=AT_UO5qASk7oRoLvTpTTDsu_","isVerified":true,"isAuthenticated":true,"totalSales":5,"rating":5,"ratingCount":2,"city":"أربيل","createdAt":"2026-01-26T18:53:00.643Z"}
+2026-02-03 01:39:51.83
+c635db93
+User
+10:39:51 PM [express] POST /api/listings/d68f3d4c-fac8-43d5-b016-94761f7290bd/view 200 in 123ms :: {"views":20}
+2026-02-03 01:39:55.70
+c635db93
+User
+10:39:55 PM [express] GET /api/csrf-token 200 in 64ms :: {"token":"7b807ccedb1c48fa5347c61d4b3d125106bc49c82d2de1363c74be3df95996d5"}
+2026-02-03 01:39:56.15
+c635db93
+User
+[FCM Send] projectId: ebey3-67950
+2026-02-03 01:39:56.15
+c635db93
+User
+[FCM Send] isInitialized: true
+2026-02-03 01:39:56.15
+c635db93
+User
+[FCM Send] serviceAccount exists: true
+2026-02-03 01:39:56.43
+c635db93
+User
+[push] Web push sent to user fb_25872581299020147
+2026-02-03 01:39:56.50
+c635db93
+User
+at async file:///home/runner/workspace/dist/index.js:91:1788
+2026-02-03 01:39:56.50
+c635db93
+User
+at async lt (file:///home/runner/workspace/dist/index.js:91:1393)
+2026-02-03 01:39:56.50
+c635db93
+User
+at createFirebaseError (/home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-errors-internal.js:35:47)
+2026-02-03 01:39:56.50
+c635db93
+User
+at /home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-api-request-internal.js:82:75
+2026-02-03 01:39:56.50
+c635db93
+User
+errorInfo: {
+2026-02-03 01:39:56.50
+c635db93
+User
+[push] Sent 1/2 notifications to user fb_25872581299020147
+2026-02-03 01:39:56.50
+c635db93
+User
+[FCM] Failed to send notification: FirebaseMessagingError: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-03 01:39:56.50
+c635db93
+User
+at async Promise.allSettled (index 1)
+2026-02-03 01:39:56.50
+c635db93
+User
+at FirebaseMessagingError.fromServerError (/home/runner/workspace/node_modules/firebase-admin/lib/utils/error.js:269:16)
+2026-02-03 01:39:56.50
+c635db93
+User
+}
+2026-02-03 01:39:56.50
+c635db93
+User
+message: 'Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.'
+2026-02-03 01:39:56.50
+c635db93
+User
+at async file:///home/runner/workspace/dist/index.js:99:4292 {
+2026-02-03 01:39:56.50
+c635db93
+User
+},
+2026-02-03 01:39:56.50
+c635db93
+User
+at async X8 (file:///home/runner/workspace/dist/index.js:87:61807)
+2026-02-03 01:39:56.50
+c635db93
+User
+[push] Error sending to user fb_25872581299020147: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-03 01:39:56.50
+c635db93
+User
+codePrefix: 'messaging'
+2026-02-03 01:39:56.50
+c635db93
+User
+code: 'messaging/third-party-auth-error',
+2026-02-03 01:39:56.50
+c635db93
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2026-02-03 01:39:56.53
+c635db93
+User
+10:39:56 PM [express] POST /api/offers 201 in 615ms :: {"id":"98c48b18-59fd-49a4-8e5a-d6265ef6b556","listingId":"d68f3d4c-fac8-43d5-b016-94761f7290bd","buyerId":"fb_1651977129496120","sellerId":"fb_25872581299020147","offerAmount":1999999,"message":null,"status":"pending","counterAmount":null,"counterMessage":null,"expiresAt":"2026-02-03T22:39:56.015Z","createdAt":"2026-02-02T22:39:56.032Z","respondedAt":null}
+2026-02-03 01:40:01.11
+c635db93
+User
+10:40:01 PM [express] GET /api/notifications/count 304 in 145ms :: {"count":68}
+2026-02-03 01:40:01.11
+c635db93
+User
+10:40:01 PM [express] GET /api/notifications/count 304 in 145ms :: {"count":68}
+2026-02-03 01:43:54.16
+2cab2a21
+User
+10:43:54 PM [ws] WebSocket client disconnecte
