@@ -1,0 +1,12 @@
+Based on the gcloud logging read commands executed, I could not find any error logs for the google.firebase.fcm.v1.FcmService.SendMessage method within the Firebase Cloud Messaging API in project ebey3-67950 over the last 24 hours. The commands returned no results.
+The page context indicates that the Firebase Cloud Messaging API has a 100% error rate, but without specific error logs, it's not possible to determine the exact cause or provide a fix.
+To troubleshoot this issue, I recommend the following:
+Verify API Calls: Ensure that your application is actively making calls to the google.firebase.fcm.v1.FcmService.SendMessage method. The absence of logs could mean no calls were made or no errors were recorded in the logging system for other reasons.
+Check Client-Side Errors: The 100% error rate might be originating from the client application before the request even reaches the Firebase Cloud Messaging API, or it could be a specific error code that is not being logged as a severity=ERROR in Cloud Logging.
+Review API Documentation: Although I attempted to retrieve specific documentation links, the provided links were not directly relevant to the google.firebase.fcm.v1.FcmService.SendMessage method. You should consult the official Firebase Cloud Messaging API documentation for common error codes and troubleshooting steps related to sending messages. Look for information on:
+Authentication issues (e.g., invalid server key, missing credentials).
+Invalid message payloads (e.g., incorrect format, missing required fields).
+Device registration token issues (e.g., expired, invalid, or unregistered tokens).
+Network connectivity problems.
+Increase Log Verbosity: If possible, configure your application to log more detailed information about its interactions with the FCM API, including request and response bodies, and any error messages received directly from the API.
+Check Service Health: Verify the Firebase Cloud Messaging service status on the Google Cloud Status Dashboard to rule out any widespread outages.

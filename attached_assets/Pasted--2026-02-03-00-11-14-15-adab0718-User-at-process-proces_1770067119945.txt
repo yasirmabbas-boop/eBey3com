@@ -1,0 +1,197 @@
+
+2026-02-03 00:11:14.15
+adab0718
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2026-02-03 00:13:20.84
+7c5e7cd2
+User
+✅ Offer expiration cron job started (runs every 5 minutes)
+2026-02-03 00:13:20.85
+7c5e7cd2
+User
+✅ Notification cleanup cron job started (runs daily at 3 AM)
+2026-02-03 00:13:20.85
+7c5e7cd2
+User
+9:13:20 PM [express] serving on port 5000
+2026-02-03 00:13:20.85
+7c5e7cd2
+User
+[2026-02-02T21:13:20.855Z] [auction-processor] [INFO] Starting auction processor...
+2026-02-03 00:13:20.85
+7c5e7cd2
+User
+[2026-02-02T21:13:20.859Z] [auction-processor] [INFO] Auction processor started, checking every 30 seconds
+2026-02-03 00:13:26.39
+7c5e7cd2
+User
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+2026-02-03 00:13:26.39
+7c5e7cd2
+User
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+2026-02-03 00:13:26.39
+7c5e7cd2
+User
+(node:29) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+2026-02-03 00:13:26.39
+7c5e7cd2
+User
+(Use `node --trace-warnings ...` to show where the warning was created)
+2026-02-03 00:13:26.39
+7c5e7cd2
+User
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+2026-02-03 00:13:26.39
+7c5e7cd2
+User
+To prepare for this change:
+2026-02-03 00:13:26.39
+7c5e7cd2
+User
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+2026-02-03 00:15:49.71
+7c5e7cd2
+User
+9:15:49 PM [express] GET /api/csrf-token 200 in 64ms :: {"token":"bc6c825a4fc3409bd113e2339fbd5e11dac1d29901bd380d283a9d3b83acd51d"}
+2026-02-03 00:15:50.08
+7c5e7cd2
+User
+9:15:50 PM [ws] User fb_1651977129496120 connected via WebSocket
+2026-02-03 00:15:50.08
+7c5e7cd2
+User
+9:15:50 PM [ws] WebSocket client connected
+2026-02-03 00:15:50.39
+7c5e7cd2
+User
+[FCM Send] projectId: ebey3-67950
+2026-02-03 00:15:50.39
+7c5e7cd2
+User
+[FCM Send] serviceAccount exists: true
+2026-02-03 00:15:50.39
+7c5e7cd2
+User
+[FCM Send] isInitialized: true
+2026-02-03 00:15:50.64
+7c5e7cd2
+User
+[push] Web push sent to user fb_25872581299020147
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+at async J8 (file:///home/runner/workspace/dist/index.js:87:61766)
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+},
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+at /home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-api-request-internal.js:82:75
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+at async lt (file:///home/runner/workspace/dist/index.js:88:779)
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+[FCM] Failed to send notification: FirebaseMessagingError: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+message: 'Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.'
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+at async Promise.allSettled (index 1)
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+at FirebaseMessagingError.fromServerError (/home/runner/workspace/node_modules/firebase-admin/lib/utils/error.js:269:16)
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+code: 'messaging/third-party-auth-error',
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+at createFirebaseError (/home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-errors-internal.js:35:47)
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+[push] Error sending to user fb_25872581299020147: Request is missing required authentication credential. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+errorInfo: {
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+codePrefix: 'messaging'
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+at async file:///home/runner/workspace/dist/index.js:96:4292 {
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+at async file:///home/runner/workspace/dist/index.js:88:1174
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+}
+2026-02-03 00:15:50.72
+7c5e7cd2
+User
+[push] Sent 1/2 notifications to user fb_25872581299020147
+2026-02-03 00:15:50.75
+7c5e7cd2
+User
+9:15:50 PM [express] POST /api/offers 201 in 764ms :: {"id":"ee488da3-618e-4da7-b3e1-6ece1e2ad406","listingId":"d68f3d4c-fac8-43d5-b016-94761f7290bd","buyerId":"fb_1651977129496120","sellerId":"fb_25872581299020147","offerAmount":1999999,"message":null,"status":"pending","counterAmount":null,"counterMessage":null,"expiresAt":"2026-02-03T21:15:50.259Z","createdAt":"2026-02-02T21:15:50.274Z","respondedAt":null}
+2026-02-03 00:15:55.44
+7c5e7cd2
+User
+9:15:55 PM [express] GET /api/csrf-token 200 in 61ms :: {"token":"a3f19e74d27d977c2507f30d0b7f648fc0e0b8f540a381b445fe3d81d90b5044"}
+2026-02-03 00:15:55.89
+7c5e7cd2
+User
+[FCM Send] isInitialized: true
+2026-02-03 00:15:55.89
+7c5e7cd2
+User
+[FCM Send] projectId: ebey3-67950
+2026-02-03 00:15:55.89
+7c5e7cd2
+User
+[FCM Send] serviceAccount exists: true
+2026-02-03 00:15:56.03
+7c5e7cd2
+User
+[push] Web push sent to user fb_25872581299020147
+2026-02-03 00:15:56.10
+7c5e7cd2
+User
+at async J8 (file:///home/runner/workspace/dist/index.js:87:61766)
+2026-02-03 00:15:56.10
+7c5e7cd2
+User
+errorInfo: {
+2026-02-03 00:15:56.10
+7c5e7cd2
+User
+at createFirebaseError (/home/runner/workspace/node_modules/firebase-admin/lib/messaging/messaging-errors-internal.js:35:47)
+2026-02-03 00:15:56.10
+7c5e7cd2
+User
+at async file:///home/runner/workspace/dist/index.js:88:1174
+2026-02-03 00:15:56.10
+7c5e7cd2
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
