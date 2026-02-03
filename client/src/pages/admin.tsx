@@ -135,6 +135,12 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "deleted-listings" | "messages" | "cancellations" | "payouts">("stats");
   const [listingSearch, setListingSearch] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
+  
+  // Pagination state for each tab
+  const [reportsPage, setReportsPage] = useState(1);
+  const [usersPage, setUsersPage] = useState(1);
+  const [listingsPage, setListingsPage] = useState(1);
+  const pageSize = 20;
   const [walletAdjustment, setWalletAdjustment] = useState({
     targetUserId: "",
     accountType: "seller",
