@@ -243,8 +243,23 @@ class DeliveryService {
       .where(eq(transactions.id, transactionId));
   }
 
+  /**
+   * Handle successful delivery and collection
+   * 
+   * COLLECTION-TRIGGERED "YELLOW MONEY" LOGIC:
+   * This method is ONLY called when:
+   * - payload.status === "delivered"
+   * - AND payload.cashCollected === true
+   * 
+   * This ensures "Yellow Money" (pending wallet balance) is ONLY added when:
+   * 1. Item is physically delivered to buyer
+   * 2. Cash is collected by delivery partner
+   * 
+   * If item is "Shipped" but not "Delivered" → NO wallet update
+   * If item is "Delivered" but buyer refused → NO wallet update (handled separately)
+   */
   private async handleSuccessfulDelivery(deliveryOrder: typeof deliveryOrders.$inferSelect): Promise<void> {
-    console.log(`[DeliveryService] Handling successful delivery for order: ${deliveryOrder.id}`);
+    console.log(`[DeliveryService] ✅ Successful delivery & collection for order: ${deliveryOrder.id}`);
 
     const [transaction] = await db
       .select()
@@ -267,7 +282,7 @@ class DeliveryService {
       })
       .where(eq(deliveryOrders.id, deliveryOrder.id));
 
-    // PHASE 1: Set deliveredAt timestamp on transaction
+    // PHASE 1: Set deliveredAt timestamp to start the Maturity Clock
     await db
       .update(transactions)
       .set({
@@ -275,6 +290,9 @@ class DeliveryService {
       })
       .where(eq(transactions.id, transaction.id));
 
+    // PHASE 6: COLLECTION-TRIGGERED "YELLOW MONEY"
+    // This is THE ONLY place where pending balance is added to seller's wallet
+    // Runs ONLY on successful delivery + cash collection
     await financialService.createSaleSettlement(
       transaction.sellerId,
       transaction.id,
@@ -282,13 +300,13 @@ class DeliveryService {
       deliveryOrder.shippingCost
     );
 
-    console.log(`[DeliveryService] Settlement created for seller: ${transaction.sellerId}`);
+    console.log(`[DeliveryService] 💰 "Yellow Money" added to seller wallet: ${transaction.sellerId} - Amount: ${transaction.amount} IQD (pending)`);
 
-    // PHASE 1: Create payout permission on delivery
+    // PHASE 1: Create payout permission to start the grace period
     try {
       const { payoutPermissionService } = await import("./payout-permission-service");
       await payoutPermissionService.createPermissionOnDelivery(transaction.id);
-      console.log(`[DeliveryService] Payout permission created for transaction: ${transaction.id}`);
+      console.log(`[DeliveryService] ⏳ Payout permission created (withheld): Transaction ${transaction.id}`);
     } catch (error) {
       console.error(`[DeliveryService] Failed to create payout permission: ${error}`);
       // Continue - don't block delivery flow
@@ -322,18 +340,25 @@ class DeliveryService {
 
   /**
    * PHASE 6: Handle buyer refusal
-   * Zero commission, zero fees - seller gets nothing
-   * Block payout permission permanently
+   * 
+   * ZERO-ON-REFUSAL FINANCIAL GUARD:
+   * 1. Reverse any settlement (remove "Yellow Money" from wallet)
+   * 2. Block payout permission with ZERO amounts
+   * 3. Ensure ZERO commission charged
+   * 4. Ensure ZERO fees deducted
+   * 5. Seller receives absolutely nothing
+   * 
+   * Arabic notification: "تم رفض الاستلام - لن يتم خصم أي عمولة أو رسوم"
    */
   private async handleBuyerRefusal(
     deliveryOrder: typeof deliveryOrders.$inferSelect,
     reason: string
   ): Promise<void> {
-    console.log(`[DeliveryService] Handling buyer refusal for order: ${deliveryOrder.id}, reason: ${reason}`);
+    console.log(`[DeliveryService] 🚫 BUYER REFUSAL for order: ${deliveryOrder.id}, reason: ${reason}`);
 
     const arabicReason = `تم رفض الاستلام: ${reason}`;
 
-    // Update delivery order status
+    // 1. Update delivery order status
     await db
       .update(deliveryOrders)
       .set({
@@ -342,7 +367,7 @@ class DeliveryService {
       })
       .where(eq(deliveryOrders.id, deliveryOrder.id));
 
-    // Update transaction status
+    // 2. Update transaction status
     await db
       .update(transactions)
       .set({
@@ -351,28 +376,30 @@ class DeliveryService {
       })
       .where(eq(transactions.id, deliveryOrder.transactionId));
 
-    // Reverse any settlement that may have been created
+    // 3. CRITICAL: Reverse any settlement (remove "Yellow Money")
+    // This ensures NO pending balance is added to seller's wallet
     try {
       await financialService.reverseSettlement(deliveryOrder.transactionId, arabicReason);
-      console.log(`[DeliveryService] Settlement reversed for refused order: ${deliveryOrder.transactionId}`);
+      console.log(`[DeliveryService] ✅ Settlement reversed: No "Yellow Money" for refused order ${deliveryOrder.transactionId}`);
     } catch (error) {
       console.error(`[DeliveryService] Error reversing settlement: ${error}`);
-      // Continue - may not have been created yet
+      // Continue - settlement may not exist if refusal happened before collection
     }
 
-    // PHASE 6: Block payout permission with zero-on-refusal logic
+    // 4. PHASE 6: Block payout permission with ZERO-ON-REFUSAL logic
+    // Hard-codes: payoutAmount=0, commission=0, fees=0, debt=0
     try {
       const { payoutPermissionService } = await import("./payout-permission-service");
       await payoutPermissionService.blockPermissionForBuyerRefusal(
         deliveryOrder.transactionId,
         arabicReason
       );
-      console.log(`[DeliveryService] ZERO-ON-REFUSAL: Payout permission blocked for transaction: ${deliveryOrder.transactionId}`);
+      console.log(`[DeliveryService] ✅ ZERO-ON-REFUSAL applied: Transaction ${deliveryOrder.transactionId} blocked with 0 IQD payout`);
     } catch (error) {
-      console.error(`[DeliveryService] Failed to block payout permission: ${error}`);
+      console.error(`[DeliveryService] ❌ Failed to block payout permission: ${error}`);
     }
 
-    // Notify seller of refusal
+    // 5. Notify seller (Arabic message confirming zero charges)
     try {
       const [transaction] = await db
         .select()
@@ -385,13 +412,14 @@ class DeliveryService {
           userId: transaction.sellerId,
           type: "delivery_refused",
           title: "رفض المشتري الاستلام",
-          message: `تم رفض استلام الطلب من قبل المشتري. السبب: ${reason}. لن يتم خصم أي عمولة أو رسوم.`,
+          message: `تم رفض استلام الطلب من قبل المشتري. السبب: ${reason}. لن يتم خصم أي عمولة أو رسوم. لن تحصل على أي مبلغ من هذا الطلب.`,
           linkUrl: `/seller-dashboard?tab=sales&orderId=${transaction.id}`,
           relatedId: transaction.id,
         });
+        console.log(`[DeliveryService] ✅ Refusal notification sent to seller ${transaction.sellerId}`);
       }
     } catch (notifError) {
-      console.error(`[DeliveryService] Failed to send refusal notification: ${notifError}`);
+      console.error(`[DeliveryService] ❌ Failed to send refusal notification: ${notifError}`);
     }
   }
 

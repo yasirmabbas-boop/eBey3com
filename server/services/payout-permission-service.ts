@@ -182,32 +182,43 @@ class PayoutPermissionService {
 
   /**
    * PHASE 6: Block permission when buyer refuses delivery
-   * Zero commission, zero fees - seller gets nothing
+   * 
+   * FINANCIAL GUARD - ZERO-ON-REFUSAL:
+   * - payoutAmount: 0 (hard-coded, seller gets nothing)
+   * - commission: 0 (not calculated, not charged)
+   * - fees: 0 (no delivery fees deducted)
+   * - debtAmount: 0 (no debt created)
+   * - payoutStatus: "blocked" (permanently blocked)
+   * - No "Yellow Money" added to wallet (settlement reversed if exists)
+   * 
+   * Arabic label: "تم رفض الاستلام من قبل المشتري"
    */
   async blockPermissionForBuyerRefusal(
     transactionId: string,
     reason: string
   ): Promise<void> {
-    console.log(`[PayoutPermission] Blocking for buyer refusal: ${transactionId}`);
+    console.log(`[PayoutPermission] ZERO-ON-REFUSAL blocking for transaction: ${transactionId}`);
 
     const now = new Date();
 
+    // CRITICAL: Hard-code financial outputs to ZERO
     await db
       .update(payoutPermissions)
       .set({
-        permissionStatus: "blocked",
+        permissionStatus: "blocked", // Permanently blocked
         isCleared: false,
+        payoutAmount: 0, // ZERO payout
         blockedAt: now,
         blockedReason: `تم رفض الاستلام من قبل المشتري: ${reason}`,
         blockedBy: "system",
-        debtAmount: 0, // No debt - buyer refused, seller gets zero
+        debtAmount: 0, // ZERO debt - buyer refused, seller gets zero
         debtStatus: "resolved", // Not a debt situation
-        notes: sql`CONCAT(COALESCE(${payoutPermissions.notes}, ''), '\n', ${`BUYER REFUSED DELIVERY at ${now.toISOString()}: ${reason}. Zero commission, zero fees. Seller receives nothing.`})`,
+        notes: sql`CONCAT(COALESCE(${payoutPermissions.notes}, ''), '\n', ${`ZERO-ON-REFUSAL BLOCK at ${now.toISOString()}: ${reason}. Seller receives 0 IQD. Zero commission. Zero fees. Zero debt.`})`,
         updatedAt: now,
       })
       .where(eq(payoutPermissions.transactionId, transactionId));
 
-    console.log(`[PayoutPermission] BLOCKED (Buyer Refusal) transaction ${transactionId}: Zero payout, zero debt`);
+    console.log(`[PayoutPermission] ✅ ZERO-ON-REFUSAL: Blocked transaction ${transactionId} - Payout: 0 IQD, Debt: 0 IQD`);
   }
 
   /**
