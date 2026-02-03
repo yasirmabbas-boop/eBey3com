@@ -1,325 +1,41 @@
-/**
- * Firebase Cloud Messaging Integration
- * Handles push notifications for iOS and Android via FCM
- */
+  // server/fcm.ts
+  import admin from './firebase'; 
 
-import admin from 'firebase-admin';
-import fs from 'fs';
-import path from 'path';
-
-// Initialize Firebase Admin SDK
-// Priority order:
-// 1. Local JSON file (most reliable, bypasses env var corruption)
-// 2. FIREBASE_SERVICE_ACCOUNT_BASE64 - Base64 encoded JSON
-// 3. FCM_PROJECT_ID, FCM_CLIENT_EMAIL, FCM_PRIVATE_KEY - Separate values (legacy)
-
-let serviceAccount: admin.ServiceAccount | null = null;
-
-// Method 1: Load from JSON file (PRIORITY - bypasses env var issues)
-const serviceAccountPath = path.join(process.cwd(), 'ebey3-67950-firebase-adminsdk-fbsvc-cf76a606aa.json');
-console.log('[FCM Init] Checking for service account file at:', serviceAccountPath);
-
-if (fs.existsSync(serviceAccountPath)) {
-  try {
-    const rawData = fs.readFileSync(serviceAccountPath, 'utf8');
-    const parsed = JSON.parse(rawData);
-    serviceAccount = {
-      projectId: parsed.project_id,
-      clientEmail: parsed.client_email,
-      privateKey: parsed.private_key,
-    };
-    console.log('📁 Firebase credentials loaded from JSON file (RELIABLE METHOD)');
-    console.log('[FCM Init] Project ID:', parsed.project_id);
-    console.log('[FCM Init] Client Email:', parsed.client_email);
-    console.log('[FCM Init] Private key length:', (parsed.private_key || '').length);
-    console.log('[FCM Init] Private key starts with:', (parsed.private_key || '').substring(0, 30));
-    console.log('[FCM Init] Private key ends with:', (parsed.private_key || '').slice(-30));
-    console.log('[FCM Init] Private key has actual newlines:', (parsed.private_key || '').includes('\n'));
-  } catch (error) {
-    console.error('❌ Failed to parse service account JSON file:', error);
-  }
-} else {
-  console.log('[FCM Init] Service account file not found, trying env vars...');
-}
-
-// Method 2: Base64 encoded service account JSON (fallback)
-if (!serviceAccount && process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
-  console.log('[FCM Init] FIREBASE_SERVICE_ACCOUNT_BASE64 exists:', !!process.env.FIREBASE_SERVICE_ACCOUNT_BASE64);
-  console.log('[FCM Init] FIREBASE_SERVICE_ACCOUNT_BASE64 length:', (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || '').length);
-  
-  try {
-    const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf-8');
-    const parsed = JSON.parse(decoded);
-    
-    // FORCE fix newlines in the private key
-    // Replit prod sometimes flattens these, causing silent signing failures
-    const formattedPrivateKey = (parsed.private_key || '').replace(/\\n/g, '\n');
-    
-    serviceAccount = {
-      projectId: parsed.project_id,
-      clientEmail: parsed.client_email,
-      privateKey: formattedPrivateKey,
-    };
-    console.log('📦 Firebase credentials loaded from base64 encoded JSON');
-    console.log('[FCM Init] Project ID:', parsed.project_id);
-    console.log('[FCM Init] Client Email:', parsed.client_email);
-    console.log('[FCM Init] Private key length:', formattedPrivateKey.length);
-    console.log('[FCM Init] Private key starts with:', formattedPrivateKey.substring(0, 30));
-    console.log('[FCM Init] Private key ends with:', formattedPrivateKey.slice(-30));
-    console.log('[FCM Init] Private key has actual newlines:', formattedPrivateKey.includes('\n'));
-  } catch (error) {
-    console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_BASE64:', error);
-  }
-}
-
-// Method 3: Separate environment variables (legacy fallback)
-if (!serviceAccount && process.env.FCM_PROJECT_ID && process.env.FCM_CLIENT_EMAIL && process.env.FCM_PRIVATE_KEY) {
-  serviceAccount = {
-    projectId: process.env.FCM_PROJECT_ID,
-    clientEmail: process.env.FCM_CLIENT_EMAIL,
-    privateKey: process.env.FCM_PRIVATE_KEY.replace(/\\n/g, '\n'),
-  };
-  console.log('🔑 Firebase credentials loaded from separate env vars');
-}
-
-let isInitialized = false;
-
-// Log system time to check for clock drift
-console.log('[FCM Init] System Time:', new Date().toISOString());
-
-if (serviceAccount) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-    isInitialized = true;
-    console.log('✅ Firebase Admin SDK initialized successfully');
-    
-    // DEBUG: Test OAuth token generation directly to see raw errors
-    (async function debugAuth() {
-      console.log("--- START AUTH DEBUG ---");
-      try {
-        const { GoogleAuth } = await import('google-auth-library');
-        const auth = new GoogleAuth({
-          credentials: {
-            client_email: serviceAccount!.clientEmail,
-            private_key: serviceAccount!.privateKey,
-          },
-          scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-        });
-
-        console.log("[AUTH DEBUG] Attempting to get access token...");
-        const client = await auth.getClient();
-        const token = await client.getAccessToken();
-        console.log("[AUTH DEBUG] SUCCESS: Token generated:", token.token ? "Yes (Masked)" : "No");
-      } catch (error: any) {
-        console.error("[AUTH DEBUG] FAILURE:", error.message || error);
-        // Look specifically for: "invalid_grant", "Invalid JWT Signature", or "Clock skew"
-      }
-      console.log("--- END AUTH DEBUG ---");
-    })();
-    
-  } catch (error) {
-    console.error('❌ Firebase Admin SDK initialization failed:', error);
-  }
-} else {
-  console.warn('⚠️ FCM credentials not configured - native push notifications will not work');
-  console.warn('   Option 1: Set FIREBASE_SERVICE_ACCOUNT_BASE64 (base64 encoded JSON)');
-  console.warn('   Option 2: Set FCM_PROJECT_ID, FCM_CLIENT_EMAIL, FCM_PRIVATE_KEY');
-}
-
-export interface FCMPayload {
-  title: string;
-  body: string;
-  url?: string;
-  tag?: string;
-  data?: Record<string, string>;
-  badge?: number;
-}
-
-/**
- * Send push notification via Firebase Cloud Messaging
- * Works for both iOS and Android
- */
-export async function sendFCMNotification(
-  token: string,
-  payload: FCMPayload
-): Promise<void> {
-  console.log('[FCM Send] isInitialized:', isInitialized);
-  console.log('[FCM Send] serviceAccount exists:', !!serviceAccount);
-  if (serviceAccount) {
-    console.log('[FCM Send] projectId:', serviceAccount.projectId);
-  }
-  
-  if (!isInitialized) {
-    throw new Error('Firebase Admin SDK not initialized - check FCM credentials');
+  export function isFCMReady() {
+    return true;
   }
 
-  const message: admin.messaging.Message = {
-    token,
-    // Include both notification and data for better compatibility
-    // notification: shows when app is in background/closed
-    // data: ensures app can process when closed
-    notification: {
-      title: payload.title,
-      body: payload.body,
-    },
-    data: {
-      title: payload.title,
-      body: payload.body,
-      url: payload.url || '/',
-      notificationId: payload.data?.id || '',
-      tag: payload.tag || '',
-      ...(payload.data || {}),
-    },
-    // Android-specific configuration
-    android: {
-      priority: 'high',
-      notification: {
-        tag: payload.tag,
-        sound: 'default',
-        channelId: 'default',
-        priority: 'high' as const,
-        defaultSound: true,
-        defaultVibrateTimings: true,
-        clickAction: 'FLUTTER_NOTIFICATION_CLICK', // Ensures notification is clickable
-      },
-    },
-    // iOS-specific configuration (APNS)
-    apns: {
-      headers: {
-        'apns-priority': '10', // High priority
-        'apns-push-type': 'alert', // Required for iOS 13+
-      },
-      payload: {
-        aps: {
-          alert: {
-            title: payload.title,
-            body: payload.body,
-          },
-          sound: 'default',
-          badge: payload.badge || 1,
-          'thread-id': payload.tag, // Groups notifications by tag
-          'content-available': 1, // Wake app in background
+  export async function sendFCMNotification(token: string, payload: any) {
+    try {
+      console.log(`[FCM] Sending to token: ${token.substring(0, 10)}...`);
+
+      const response = await admin.messaging().send({
+        token: token,
+        notification: {
+          title: payload.title,
+          body: payload.body,
         },
-        // Custom data - ensure all data is in payload for background handling
-        url: payload.url || '/',
-        notificationId: payload.data?.id || '',
-        tag: payload.tag || '',
-        ...(payload.data || {}),
-      },
-    },
-  };
+        data: payload.data || {},
+        android: {
+          priority: 'high',
+          notification: {
+            sound: 'default',
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'default',
+              badge: payload.badge,
+            },
+          },
+        },
+      });
 
-  try {
-    const response = await admin.messaging().send(message);
-    console.log(`[FCM] Notification sent successfully: ${response}`);
-  } catch (error: any) {
-    console.error(`[FCM] Failed to send notification:`, error);
-    
-    // Re-throw with error code for caller to handle
-    if (error.code === 'messaging/invalid-registration-token' ||
-        error.code === 'messaging/registration-token-not-registered') {
-      const err = new Error('Invalid FCM token');
-      (err as any).code = error.code;
-      throw err;
+      console.log('[FCM] Successfully sent message:', response);
+      return true;
+    } catch (error) {
+      console.error('[FCM] Error sending message:', error);
+      throw error;
     }
-    
-    throw error;
   }
-}
-
-/**
- * Send notifications to multiple devices
- */
-export async function sendFCMMulticast(
-  tokens: string[],
-  payload: FCMPayload
-): Promise<{ successCount: number; failureCount: number; failedTokens: string[] }> {
-  if (!isInitialized) {
-    throw new Error('Firebase Admin SDK not initialized');
-  }
-
-  if (tokens.length === 0) {
-    return { successCount: 0, failureCount: 0, failedTokens: [] };
-  }
-
-  const message: admin.messaging.MulticastMessage = {
-    tokens,
-    notification: {
-      title: payload.title,
-      body: payload.body,
-    },
-    data: {
-      title: payload.title,
-      body: payload.body,
-      url: payload.url || '/',
-      notificationId: payload.data?.id || '',
-      tag: payload.tag || '',
-      ...(payload.data || {}),
-    },
-    android: {
-      priority: 'high',
-      notification: {
-        tag: payload.tag,
-        sound: 'default',
-        channelId: 'default',
-        priority: 'high' as const,
-        defaultSound: true,
-        defaultVibrateTimings: true,
-        clickAction: 'FLUTTER_NOTIFICATION_CLICK',
-      },
-    },
-    apns: {
-      headers: {
-        'apns-priority': '10',
-        'apns-push-type': 'alert',
-      },
-      payload: {
-        aps: {
-          alert: {
-            title: payload.title,
-            body: payload.body,
-          },
-          sound: 'default',
-          badge: payload.badge || 1,
-          'thread-id': payload.tag,
-          'content-available': 1,
-        },
-        url: payload.url || '/',
-        notificationId: payload.data?.id || '',
-        tag: payload.tag || '',
-        ...(payload.data || {}),
-      },
-    },
-  };
-
-  try {
-    const response = await admin.messaging().sendEachForMulticast(message);
-    
-    const failedTokens: string[] = [];
-    response.responses.forEach((resp: any, idx: number) => {
-      if (!resp.success) {
-        failedTokens.push(tokens[idx]);
-      }
-    });
-
-    console.log(`[FCM] Multicast sent: ${response.successCount} success, ${response.failureCount} failed`);
-    
-    return {
-      successCount: response.successCount,
-      failureCount: response.failureCount,
-      failedTokens,
-    };
-  } catch (error) {
-    console.error('[FCM] Multicast send failed:', error);
-    throw error;
-  }
-}
-
-/**
- * Check if Firebase is initialized and ready
- */
-export function isFCMReady(): boolean {
-  return isInitialized;
-}
