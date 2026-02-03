@@ -118,6 +118,19 @@ export function registerPushRoutes(app: Express): void {
         return res.status(400).json({ error: "Invalid platform. Must be 'ios' or 'android'" });
       }
 
+      // First, remove any existing subscription with this FCM token
+      // This ensures the token is only registered to one user at a time
+      // (handles the case where a user signed out but token wasn't properly cleaned up)
+      try {
+        const deleted = await storage.deletePushSubscriptionByToken(token);
+        if (deleted) {
+          console.log(`[push] Removed existing subscription for token (switching accounts)`);
+        }
+      } catch (cleanupError) {
+        console.warn("[push] Error cleaning up old token:", cleanupError);
+        // Continue with registration
+      }
+
       console.log("[push] Creating native push subscription in database...");
       await storage.createPushSubscription(
         userId,

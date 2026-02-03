@@ -139,6 +139,18 @@ export function registerAuthRoutes(app: Express): void {
       if (userId) {
         // Clear auth token in database
         await storage.updateUser(userId, { authToken: null } as any);
+        
+        // Delete all push subscriptions for this user
+        // This ensures notifications don't go to the old account when a new user signs in on the same device
+        try {
+          const deletedCount = await storage.deletePushSubscriptionsByUserId(userId);
+          if (deletedCount > 0) {
+            console.log(`[api/auth/logout] Deleted ${deletedCount} push subscription(s) for user ${userId}`);
+          }
+        } catch (pushError) {
+          console.error("[api/auth/logout] Error deleting push subscriptions:", pushError);
+          // Continue with logout even if push deletion fails
+        }
       }
       
       // Destroy session

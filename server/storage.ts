@@ -257,6 +257,7 @@ export interface IStorage {
   getPushSubscriptionsByUserId(userId: string): Promise<any[]>;
   deletePushSubscription(endpoint: string): Promise<boolean>;
   deletePushSubscriptionByToken(token: string): Promise<boolean>;
+  deletePushSubscriptionsByUserId(userId: string): Promise<number>;
   updatePushSubscription(id: string, data: { lastUsed?: Date }): Promise<void>;
 }
 
@@ -2033,6 +2034,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(pushSubscriptions.fcmToken, token))
       .returning();
     return !!result;
+  }
+
+  async deletePushSubscriptionsByUserId(userId: string): Promise<number> {
+    const results = await db.delete(pushSubscriptions)
+      .where(eq(pushSubscriptions.userId, userId))
+      .returning();
+    return results.length;
   }
 
   async updatePushSubscription(id: string, data: { lastUsed?: Date }): Promise<void> {
