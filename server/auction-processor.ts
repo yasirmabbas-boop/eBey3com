@@ -146,7 +146,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
       // Notify seller that reserve price wasn't met
       if (listing.sellerId) {
         const seller = await storage.getUser(listing.sellerId);
-        const lang = seller?.language || 'ar';
+        const lang = (seller?.language || 'ar') as 'ar' | 'en' | 'ku';
         const msg = getNotificationMessage('auction_ended_no_reserve', lang, {
           title: listing.title,
           highestBid: highestBid.amount,
@@ -323,7 +323,7 @@ export async function processEndedAuction(listing: any): Promise<AuctionResult> 
 
     if (listing.sellerId) {
       const seller = await storage.getUser(listing.sellerId);
-      const sellerLang = seller?.language || 'ar';
+      const sellerLang = (seller?.language || 'ar') as 'ar' | 'en' | 'ku';
       const sellerMsg = getNotificationMessage('auction_sold', sellerLang, {
         title: listing.title,
         amount: highestBid.amount,

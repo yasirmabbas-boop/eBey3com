@@ -206,7 +206,7 @@ export const NOTIFICATION_MESSAGES = {
 } as const;
 
 export type NotificationType = keyof typeof NOTIFICATION_MESSAGES;
-export type Language = 'ar' | 'ku';
+export type Language = 'ar' | 'en' | 'ku';
 
 /**
  * Get notification message in user's language with fallback to Arabic
@@ -226,8 +226,9 @@ export function getNotificationMessage(
     };
   }
   
-  // Use requested language, fallback to Arabic
-  const langMessages = messages[language] || messages.ar;
+  // Use requested language, fallback to Arabic (en not supported, falls back to ar)
+  const effectiveLang = language === 'en' ? 'ar' : language;
+  const langMessages = (messages as any)[effectiveLang] || messages.ar;
   
   return {
     title: langMessages.title,
