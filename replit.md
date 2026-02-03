@@ -1,284 +1,92 @@
 # E-بيع (E-Bay Iraq) - Iraqi Auction Marketplace
 
 ## Overview
-
-E-بيع is an Arabic-language online auction and marketplace platform designed specifically for the Iraqi market. The platform enables users to buy and sell vintage items, electronics, collectibles, and various goods through both auction-style bidding and fixed-price listings. The application features a modern React frontend with an Express.js backend, PostgreSQL database, and is optimized for right-to-left (RTL) Arabic text display.
+E-بيع is an Arabic-language online auction and marketplace platform tailored for the Iraqi market, enabling users to buy and sell items through auctions and fixed-price listings. It features a modern React frontend with an Express.js backend and a PostgreSQL database, optimized for right-to-left (RTL) Arabic text and supporting both Arabic and Sorani Kurdish. The platform includes a comprehensive financial system with commission structures, hold periods, and automated payouts, along with a sophisticated logistics and bank clearing system to manage payment permissions and returns. It's designed for deployment as a native iOS/Android app via Despia, leveraging native features like haptic feedback, biometric authentication, and push notifications.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
+### Frontend
 - **Framework**: React 18 with TypeScript
-- **Routing**: Wouter (lightweight React router)
-- **State Management**: TanStack React Query for server state
-- **Styling**: Tailwind CSS v4 with shadcn/ui component library
-- **UI Components**: Radix UI primitives with custom styling (New York theme)
-- **Build Tool**: Vite with custom plugins for Replit integration
-- **RTL Support**: Full Arabic language support with RTL layout direction
-- **Multilingual**: Arabic and Sorani Kurdish language support with live switching
+- **Routing**: Wouter
+- **State Management**: TanStack React Query
+- **Styling**: Tailwind CSS v4 with shadcn/ui and Radix UI primitives
+- **Internationalization**: Full RTL support, Arabic and Sorani Kurdish multilingual capabilities
 
-### Backend Architecture
+### Backend
 - **Runtime**: Node.js with Express.js
 - **Language**: TypeScript with ESM modules
-- **API Structure**: RESTful endpoints under `/api/*` prefix
+- **API Structure**: RESTful endpoints
 - **Database ORM**: Drizzle ORM with PostgreSQL dialect
-- **Schema Validation**: Zod with drizzle-zod integration
-
-### Project Structure
-```
-├── client/           # React frontend application
-│   ├── src/
-│   │   ├── components/   # Reusable UI components
-│   │   ├── pages/        # Route-based page components
-│   │   ├── hooks/        # Custom React hooks
-│   │   └── lib/          # Utilities and query client
-├── server/           # Express backend
-│   ├── index.ts      # Server entry point
-│   ├── routes.ts     # API route definitions
-│   ├── storage.ts    # Database access layer
-│   └── db.ts         # Database connection
-├── shared/           # Shared types and schemas
-│   └── schema.ts     # Drizzle database schema
-└── migrations/       # Database migrations
-```
+- **Schema Validation**: Zod with drizzle-zod
 
 ### Database Design
-The PostgreSQL database includes tables for:
-- **users**: User accounts with verification status, ratings, and authentication
-- **listings**: Product listings with auction/fixed-price support
-- **bids**: Auction bids tracking
-- **watchlist**: User saved items
-- **analytics**: Usage tracking
-- **messages**: User-to-user communication
-- **reviews**: Seller ratings
-- **transactions**: Completed purchases
-- **categories**: Product categorization
+- PostgreSQL database with tables for users, listings, bids, watchlist, analytics, messages, reviews, transactions, categories, payout permissions, and return requests.
 
 ### Key Design Patterns
-- **Storage Interface**: Abstract database operations through `IStorage` interface for testability
-- **Schema-First**: Drizzle schema serves as single source of truth for types
-- **API Validation**: Zod schemas validate all API inputs
-- **Component Composition**: shadcn/ui components built on Radix primitives
+- **Storage Interface**: Abstracted database operations.
+- **Schema-First**: Drizzle schema as the single source of truth.
+- **API Validation**: Zod schemas for all API inputs.
+- **Component Composition**: shadcn/ui components built on Radix primitives.
 
 ### Auction Processing System
-The platform includes an automated auction processing system (`server/auction-processor.ts`):
-- **Background Job**: Runs every 30 seconds to check for ended auctions
-- **Grace Period**: 5-second buffer after auction end to handle network latency
-- **Winner Detection**: Determines highest bidder and creates pending transaction
-- **Notifications**: Sends notifications to winner, seller, and outbid users
-- **WebSocket Broadcast**: Real-time UI updates via `auction_end` events
-- **No Bids Handling**: Notifies seller if auction ends without bids
-- **Error Logging**: Comprehensive logging with timestamps for debugging
-
-### Development vs Production
-- Development: Vite dev server with HMR, served through Express middleware
-- Production: Static build served from `dist/public`, server bundled with esbuild
-
-### Migration Workflow (Recommended)
-- **Tooling**: Drizzle Kit with SQL migrations in `migrations/`
-- **Primary command**: `npm run db:migrate` (applies migration files)
-- **When to use `db:push`**: local-only prototyping when you intentionally skip migration history
-
-#### Apply flow (staging-first)
-1. Apply migrations locally or on staging:
-   - Ensure `DATABASE_URL` points to the target database
-   - Run `npm run db:migrate`
-2. Sanity-check critical endpoints and logs
-3. Apply the same migration set to production
-
-#### Minimal pre-prod checklist
-- Snapshot/backup available
-- Migration runs cleanly
-- Key flows verified (login, listing create, checkout/offers)
-- Monitor logs for 10–15 minutes post-deploy
-
-### Production Setup
-After publishing, the production database is empty. To set up the admin account:
-
-1. Run the seed script in the Shell:
-   ```bash
-   npx tsx server/seed.ts
-   ```
-
-2. This creates the admin account:
-   - Username: yabbas25
-   - Password: Ss120$JyA
-   - Access: /admin dashboard
-
-**Note**: Development and production databases are separate. Data created in development won't appear in production.
-
-### Admin Dashboard
-Access the admin panel at `/admin` (admin accounts only):
-- **إحصائيات** - Site statistics
-- **البلاغات** - Report management
-- **المستخدمين** - User management
+An automated system running every 30 seconds to manage auction endings, determine winners, handle no-bid scenarios, send notifications, and provide real-time UI updates via WebSockets.
 
 ### Financial System
-The platform includes a comprehensive financial system (`server/services/financial-service.ts`):
-- **Commission Structure**: 15 free sales per month, then 8% on subsequent sales
-- **Hold Period**: 48 hours (2 days) from delivery confirmation before funds are available
-- **Wallet Transactions**: Tracks sale earnings, commission fees, shipping deductions
-- **Weekly Payouts**: Automated payout summaries for sellers
-- **Settlement**: Creates 3 transactions per sale: sale_earning (+), commission_fee (-), shipping_deduction (-)
+- **Commission**: 15 free sales, then 8% on subsequent sales.
+- **Hold Period**: 48 hours post-delivery confirmation.
+- **Wallet Transactions**: Tracks earnings, commissions, shipping.
+- **Payouts**: Weekly automated payout summaries.
 
-### Delivery System
-Delivery integration with driver cancellation support (`server/services/delivery-service.ts`):
-- **Cancellation Reasons**:
-  - `no_show` - العميل غير موجود
-  - `no_answer` - لا يرد على الهاتف
-  - `customer_refused` - العميل رفض الاستلام
-  - `customer_return` - العميل طلب الإرجاع
-  - `wrong_address` - العنوان خاطئ
-  - `inaccessible` - لا يمكن الوصول
-  - `damaged_package` - الطرد تالف
-- **Webhook Endpoints**:
-  - `POST /api/webhooks/delivery` - Status updates from delivery company
-  - `POST /api/webhooks/delivery/cancellation` - Driver cancellation events
-  - `GET /api/delivery/cancellation-reasons` - Get available cancellation reasons
+### Logistics and Bank Clearing System
+- **Payout Permission State Machine**: `withheld` → `locked` → `cleared` → `blocked` → `paid` to manage seller payouts based on delivery and return status.
+- **Zero-on-Refusal Financial Guard**: No financial impact on seller if a buyer refuses delivery.
+- **Logistics API**: Endpoints for delivery status updates, confirmations, refusals, returns, and payout permission management.
+- **Cron Jobs**: Hourly processing of grace periods and daily checks for overdue debts.
 
-### CSRF Protection & Secure Requests (Updated Feb 2026)
+### CSRF Protection & Secure Requests
+- Dual-layer authentication with Bearer Tokens (localStorage) and Session Cookies (PostgreSQL store).
+- CSRF tokens required for state-changing requests, with Bearer token requests bypassing CSRF validation.
+- `secureRequest` helper for authenticated requests, handling token injection, CSRF tokens, and headers.
 
-The platform implements a dual-layer authentication and CSRF protection system:
+### Image Upload System
+- Optimized eBay-style pipeline for image uploads.
+- **Specifications**: Max 7MB, target 1600x1600px, WebP format.
+- **Client-side**: Compression (to 2MB, 1600px max, WebP conversion) before upload.
+- **Server-side**: Parallel processing, HEIC to WebP conversion, main image and thumbnail generation, parallel upload to object storage.
 
-**Authentication Methods**:
-- **Bearer Tokens**: Stored in localStorage, used for API authentication
-- **Session Cookies**: Used for session management with PostgreSQL store
-
-**CSRF Protection Strategy**:
-- CSRF tokens are required for state-changing requests (POST, PUT, DELETE)
-- Bearer token requests bypass CSRF validation (tokens in localStorage are not vulnerable to CSRF attacks)
-- CSRF middleware located at `server/middleware/csrf.ts`
-
-**secureRequest Helper** (`client/src/lib/queryClient.ts`):
-A unified fetch wrapper that automatically handles:
-- Bearer token injection from localStorage
-- CSRF token fetching for mutations
-- Content-Type headers for JSON payloads
-- Credentials inclusion for cookies
-
-**Usage Pattern**:
-```typescript
-import { secureRequest } from "@/lib/queryClient";
-
-// For queries (GET)
-const res = await secureRequest("/api/data", { method: "GET" });
-
-// For mutations (POST/PUT/DELETE) - CSRF token added automatically
-const res = await secureRequest("/api/data", {
-  method: "POST",
-  body: JSON.stringify(data),
-});
-```
-
-**Files Updated (Feb 2026)**:
-| File | Change |
-|------|--------|
-| `client/src/lib/queryClient.ts` | Added `secureRequest` helper |
-| `server/middleware/csrf.ts` | Added Bearer token bypass |
-| `client/src/pages/checkout.tsx` | Fixed missing secureRequest import |
-| `client/src/pages/product.tsx` | Fixed missing secureRequest import |
-| `client/src/hooks/use-cart.ts` | Replaced raw fetch with secureRequest |
-| `server/routes/cart.ts` | Fixed addressLine1 validation (10→5 chars) |
-
-**Best Practices**:
-- Always use `secureRequest` instead of raw `fetch` for authenticated requests
-- For file uploads with FormData, omit Content-Type (browser sets it automatically)
-- Check server logs for 403 errors indicating CSRF issues
+### Despia Native App Integration
+The platform is built for deployment as a native iOS/Android app via Despia, leveraging native features:
+- **Platform Detection**: `isDespia()`, `isIOS()`, `isAndroid()`, `usePlatform()` hook.
+- **Native Features**: Haptic feedback, biometric authentication, camera roll access, screenshots, native share, local push notifications, OneSignal integration, screen brightness control, status bar customization, native loading spinner, device info, and settings access.
+- **Safe Areas**: CSS classes and variables for native app safe area handling.
 
 ## External Dependencies
 
 ### Database
-- **PostgreSQL**: Primary database via `DATABASE_URL` environment variable
-- **Drizzle ORM**: Type-safe database queries and migrations
+- **PostgreSQL**: Primary database.
+- **Drizzle ORM**: Type-safe queries and migrations.
 
 ### Frontend Libraries
-- **@tanstack/react-query**: Server state management and caching
-- **Radix UI**: Accessible component primitives (dialog, dropdown, tabs, etc.)
-- **embla-carousel-react**: Touch-friendly carousels
-- **react-hook-form**: Form state management with Zod resolver
-- **date-fns**: Date formatting utilities
+- **@tanstack/react-query**: Server state management.
+- **Radix UI**: Accessible component primitives.
+- **embla-carousel-react**: Carousels.
+- **react-hook-form**: Form management with Zod resolver.
+- **date-fns**: Date utilities.
 
 ### Backend Libraries
-- **express-session**: Session management
-- **connect-pg-simple**: PostgreSQL session store
-- **multer**: File upload handling (for product images)
-
-### Image Upload System (eBay-style optimization)
-The platform uses an optimized image upload pipeline modeled after eBay's approach:
-
-**Specifications**:
-- **Max file size**: 7MB (server-side limit)
-- **Target resolution**: 1600×1600 pixels (enables zoom feature)
-- **Format**: WebP (~30% better compression than JPEG)
-- **Thumbnail**: 400×400 pixels, WebP format
-
-**Client-side Compression** (`browser-image-compression`):
-- Compresses images before upload to reduce transfer time
-- Target: 2MB max, 1600px max dimension
-- Converts to WebP format in browser
-- HEIC files bypass client compression (handled server-side)
-
-**Server-side Processing** (`server/image-processor.ts`):
-- Parallel processing for multiple images
-- HEIC to WebP conversion for iPhone photos
-- Generates both main image and thumbnail
-- Parallel upload of main + thumbnail to object storage
-
-**Upload Endpoints**:
-- `POST /api/uploads/optimized` - Optimized multi-image upload
-- Returns: `{ images: [{ main: string, thumbnail?: string }] }`
+- **express-session**: Session management.
+- **connect-pg-simple**: PostgreSQL session store.
+- **multer**: File upload handling.
 
 ### Build Tools
-- **Vite**: Frontend bundling with React plugin
-- **esbuild**: Server bundling for production
-- **Tailwind CSS**: Utility-first styling via @tailwindcss/vite
+- **Vite**: Frontend bundling.
+- **esbuild**: Server bundling.
+- **Tailwind CSS**: Styling.
 
 ### Replit-Specific
-- **@replit/vite-plugin-runtime-error-modal**: Development error overlay
-- **@replit/vite-plugin-cartographer**: Development tooling
-- **Custom meta-images plugin**: OpenGraph image handling for deployments
-
-### Despia Native App Integration
-The app is built for deployment as a native iOS/Android app via Despia. Key native features implemented:
-
-**Platform Detection** (`client/src/lib/despia.ts`):
-- `isDespia()` - Check if running in native app
-- `isIOS()` / `isAndroid()` - Platform-specific detection
-- `usePlatform()` hook for React components
-
-**Native Features Available**:
-- **Haptic Feedback**: `hapticLight()`, `hapticSuccess()`, `hapticError()` - for user interactions
-- **Biometric Auth**: `requestBiometricAuth()` - Face ID / Touch ID / Fingerprint
-- **Camera Roll**: `saveToPhotos(imageUrl)` - Save images to device
-- **Screenshots**: `takeScreenshot()` - Programmatic screenshot
-- **Native Share**: `nativeShare({ message, url, title })` - iOS/Android share sheet
-- **Local Push**: `scheduleLocalPush(seconds, message, title, url)` - Schedule notifications
-- **OneSignal**: `getOneSignalPlayerId()` - Push notification registration
-- **Screen Brightness**: `setScreenBrightness('auto' | 'on' | 'off')`
-- **Status Bar**: `setStatusBarColor(r, g, b)` - Customize status bar color
-- **Spinner**: `showSpinner()` / `hideSpinner()` - Native loading indicator
-- **Device Info**: `getDeviceId()`, `getAppVersion()`
-- **Settings**: `openAppSettings()` - Open device settings
-
-**Safe Areas** (`client/src/index.css`):
-- CSS classes: `.safe-area-top`, `.safe-area-bottom`, `.safe-area-padding`
-- CSS variables: `--safe-area-top`, `--safe-area-bottom`, etc.
-
-**Usage Pattern**:
-```typescript
-import { isDespia, hapticSuccess, saveToPhotos } from '@/lib/despia';
-import { usePlatform } from '@/hooks/use-platform';
-
-// In component
-const { isNative, platform } = usePlatform();
-
-const handleAction = () => {
-  hapticSuccess(); // Triggers haptic on native, no-op on web
-  if (isDespia()) {
-    saveToPhotos(imageUrl); // Only available in native
-  }
-};
-```
+- **@replit/vite-plugin-runtime-error-modal**: Development error overlay.
+- **@replit/vite-plugin-cartographer**: Development tooling.
+- **Custom meta-images plugin**: OpenGraph image handling.
