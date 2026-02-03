@@ -14,6 +14,16 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { useLanguage } from "@/lib/i18n";
 import { FormError } from "@/components/form-error";
 import { validatePhone, validatePassword } from "@/lib/form-validation";
+import { isDespia } from "@/lib/despia";
+
+declare global {
+  interface Window {
+    FB: {
+      login: (callback: (response: { authResponse?: { accessToken: string; userID: string } }) => void, options?: { scope: string }) => void;
+      getLoginStatus: (callback: (response: { status: string; authResponse?: { accessToken: string; userID: string } }) => void) => void;
+    };
+  }
+}
 
 type Step = "credentials" | "2fa" | "otp" | "otp-verify";
 
@@ -381,7 +391,7 @@ export default function SignIn() {
                   <button
                     type="button"
                     disabled={!fbTermsAccepted}
-                    onClick={() => {
+                    onClick={async () => {
                       if (!fbTermsAccepted) {
                         toast({
                           title: t("error"),
@@ -394,6 +404,61 @@ export default function SignIn() {
                         });
                         return;
                       }
+
+                      // For Despia native apps: Use Facebook JS SDK (in-app login)
+                      if (isDespia() && window.FB) {
+                        console.log("[Facebook Login] Using FB SDK for Despia native app");
+                        setIsLoading(true);
+                        
+                        window.FB.login(async (response) => {
+                          if (response.authResponse) {
+                            const { accessToken, userID } = response.authResponse;
+                            console.log("[Facebook Login] Got FB access token, validating with server...");
+                            
+                            try {
+                              const res = await fetch("/api/auth/facebook/token", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                credentials: "include",
+                                body: JSON.stringify({ accessToken, userID }),
+                              });
+                              
+                              const data = await res.json();
+                              
+                              if (res.ok && data.success) {
+                                console.log("[Facebook Login] Server validation successful");
+                                if (data.authToken) {
+                                  localStorage.setItem("authToken", data.authToken);
+                                }
+                                queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+                                queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+                                navigate(data.needsOnboarding ? "/onboarding" : "/");
+                              } else {
+                                throw new Error(data.error || "Login failed");
+                              }
+                            } catch (error) {
+                              console.error("[Facebook Login] Error:", error);
+                              toast({
+                                title: t("error"),
+                                description: tr(
+                                  "فشل تسجيل الدخول بفيسبوك",
+                                  "چوونە ژوورەوە لەگەڵ فەیسبووک سەرکەوتوو نەبوو",
+                                  "Facebook login failed"
+                                ),
+                                variant: "destructive",
+                              });
+                            } finally {
+                              setIsLoading(false);
+                            }
+                          } else {
+                            console.log("[Facebook Login] User cancelled or error");
+                            setIsLoading(false);
+                          }
+                        }, { scope: "public_profile,email" });
+                        return;
+                      }
+
+                      // For web browsers: Use popup-based redirect flow
                       const width = 600, height = 700;
                       const left = window.screen.width / 2 - width / 2;
                       const top = window.screen.height / 2 - height / 2;

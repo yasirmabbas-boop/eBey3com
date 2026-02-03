@@ -39,6 +39,20 @@
     
     <!-- WAuth SDK for WhatsApp Authentication -->
     <script src="https://auth.wauth.in/sdk.js" data-app-id="3677ee4ce08381655ae90d0f1ec2743b" async defer></script>
+    
+    <!-- Facebook SDK for In-App Login (Despia Native) -->
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId: '1149652599968295',
+          cookie: true,
+          xfbml: false,
+          version: 'v18.0'
+        });
+        console.log('[Facebook SDK] Initialized');
+      };
+    </script>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
   </head>
   <body>
     <!-- Google Tag Manager (noscript) -->

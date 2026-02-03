@@ -14,6 +14,7 @@ import { useLanguage } from "@/lib/i18n";
 import { FormError } from "@/components/form-error";
 import { validatePhone, validatePassword } from "@/lib/form-validation";
 import { PhoneVerificationModal } from "@/components/phone-verification-modal";
+import { isDespia } from "@/lib/despia";
 
 export default function Register() {
   const [, navigate] = useLocation();
@@ -230,7 +231,7 @@ export default function Register() {
               <button
                 type="button"
                 disabled={!termsAccepted}
-                onClick={() => {
+                onClick={async () => {
                   if (!termsAccepted) {
                     toast({
                       title: t("error"),
@@ -243,6 +244,61 @@ export default function Register() {
                     });
                     return;
                   }
+
+                  // For Despia native apps: Use Facebook JS SDK (in-app login)
+                  if (isDespia() && window.FB) {
+                    console.log("[Facebook Register] Using FB SDK for Despia native app");
+                    setIsLoading(true);
+                    
+                    window.FB.login(async (response) => {
+                      if (response.authResponse) {
+                        const { accessToken, userID } = response.authResponse;
+                        console.log("[Facebook Register] Got FB access token, validating with server...");
+                        
+                        try {
+                          const res = await fetch("/api/auth/facebook/token", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            credentials: "include",
+                            body: JSON.stringify({ accessToken, userID }),
+                          });
+                          
+                          const data = await res.json();
+                          
+                          if (res.ok && data.success) {
+                            console.log("[Facebook Register] Server validation successful");
+                            if (data.authToken) {
+                              localStorage.setItem("authToken", data.authToken);
+                            }
+                            queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+                            queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+                            navigate(data.needsOnboarding ? "/onboarding" : "/");
+                          } else {
+                            throw new Error(data.error || "Registration failed");
+                          }
+                        } catch (error) {
+                          console.error("[Facebook Register] Error:", error);
+                          toast({
+                            title: t("error"),
+                            description: tr(
+                              "فشل التسجيل بفيسبوك",
+                              "تۆمارکردن لەگەڵ فەیسبووک سەرکەوتوو نەبوو",
+                              "Facebook registration failed"
+                            ),
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      } else {
+                        console.log("[Facebook Register] User cancelled or error");
+                        setIsLoading(false);
+                      }
+                    }, { scope: "public_profile,email" });
+                    return;
+                  }
+
+                  // For web browsers: Use popup-based redirect flow
                   const width = 600, height = 700;
                   const left = window.screen.width / 2 - width / 2;
                   const top = window.screen.height / 2 - height / 2;

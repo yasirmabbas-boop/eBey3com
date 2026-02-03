@@ -257,6 +257,120 @@ export function setupFacebookAuth(app: Express): void {
    * Required by Meta Platform Policies when users remove app from Facebook
    * @see https://developers.facebook.com/docs/development/create-an-app/app-dashboard/data-deletion-callback
    */
+  /**
+   * Route: Token-based Facebook Login (for Despia Native Apps)
+   * Validates Facebook access token from JS SDK and creates session
+   * This endpoint is used for in-app login without browser redirects
+   */
+  app.post("/api/auth/facebook/token", async (req, res) => {
+    try {
+      const { accessToken, userID } = req.body;
+
+      if (!accessToken || !userID) {
+        return res.status(400).json({ error: "Missing accessToken or userID" });
+      }
+
+      console.log("[Facebook Token Auth] Validating token for user:", userID);
+
+      // Verify the token with Facebook Graph API
+      const verifyResponse = await axios.get(`https://graph.facebook.com/debug_token`, {
+        params: {
+          input_token: accessToken,
+          access_token: `${FB_APP_ID}|${FB_APP_SECRET}`,
+        },
+      });
+
+      const tokenData = verifyResponse.data.data;
+      
+      if (!tokenData.is_valid || tokenData.user_id !== userID) {
+        console.error("[Facebook Token Auth] Invalid token:", tokenData);
+        return res.status(401).json({ error: "Invalid Facebook token" });
+      }
+
+      if (tokenData.app_id !== FB_APP_ID) {
+        console.error("[Facebook Token Auth] Token app_id mismatch");
+        return res.status(401).json({ error: "Token not for this app" });
+      }
+
+      console.log("[Facebook Token Auth] Token verified, fetching user profile...");
+
+      // Fetch user profile from Facebook
+      const profileResponse = await axios.get(`https://graph.facebook.com/v18.0/${userID}`, {
+        params: {
+          fields: "id,first_name,last_name,email,picture.type(large)",
+          access_token: accessToken,
+        },
+      });
+
+      const profile = profileResponse.data;
+      console.log("[Facebook Token Auth] Profile fetched:", profile.id, profile.email);
+
+      // Exchange for long-lived token
+      const longLivedToken = await exchangeForLongLivedToken(accessToken);
+
+      // Get or create user (same logic as regular Facebook auth)
+      const facebookId = profile.id;
+      const email = profile.email || null;
+      const firstName = profile.first_name || "";
+      const lastName = profile.last_name || "";
+      const displayName = `${firstName} ${lastName}`.trim();
+      const profilePhoto = profile.picture?.data?.url || null;
+
+      // Use upsertFacebookUser which handles both create and update
+      const user = await authStorage.upsertFacebookUser({
+        id: `fb_${facebookId}`,
+        facebookId,
+        facebookLongLivedToken: longLivedToken,
+        email,
+        displayName,
+        avatar: profilePhoto,
+      });
+      console.log("[Facebook Token Auth] Upserted user:", user.id);
+
+      if (!user) {
+        return res.status(500).json({ error: "Failed to create or find user" });
+      }
+
+      // Set up session
+      (req.session as any).userId = user.id;
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      // Generate auth token for client
+      const authToken = crypto.randomBytes(32).toString("hex");
+      const tokenExpiresAt = new Date();
+      tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 30);
+      await authStorage.updateUser(user.id, { authToken, tokenExpiresAt } as any);
+
+      // Check if user needs onboarding
+      const fullUser = await authStorage.getUser(user.id);
+      const hasPhone = fullUser?.phone && fullUser.phone.trim() !== "";
+      const hasAddress = fullUser?.addressLine1 && fullUser.addressLine1.trim() !== "";
+      const needsOnboarding = !hasPhone || !hasAddress;
+
+      console.log("[Facebook Token Auth] Login successful for user:", user.id, "needsOnboarding:", needsOnboarding);
+
+      return res.json({
+        success: true,
+        authToken,
+        needsOnboarding,
+        redirectUrl: needsOnboarding ? "/onboarding" : "/",
+        user: {
+          id: user.id,
+          displayName: user.displayName,
+          profilePhoto: (user as any).profilePhoto,
+        },
+      });
+    } catch (error) {
+      console.error("[Facebook Token Auth] Error:", error);
+      return res.status(500).json({ error: "Authentication failed" });
+    }
+  });
+
   app.post("/api/facebook/data-deletion-callback", async (req, res) => {
     try {
       console.log("[Facebook Data Deletion] Received callback:", req.body);
