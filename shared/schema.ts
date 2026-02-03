@@ -216,6 +216,7 @@ export const transactions = pgTable("transactions", {
   trackingAvailableAt: timestamp("tracking_available_at"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   completedAt: timestamp("completed_at"),
+  deliveredAt: timestamp("delivered_at"), // When order was delivered
   buyerRating: integer("buyer_rating"),
   buyerFeedback: text("buyer_feedback"),
   sellerRating: integer("seller_rating"),
@@ -325,6 +326,7 @@ export const listings = pgTable("listings", {
   internationalShipping: boolean("international_shipping").notNull().default(false),
   internationalCountries: text("international_countries").array().default(sql`ARRAY[]::text[]`),
   returnPolicy: text("return_policy").notNull(),
+  returnPolicyDays: integer("return_policy_days").default(0), // Integer for automation
   returnDetails: text("return_details"),
   sellerName: text("seller_name").notNull(),
   sellerId: varchar("seller_id"),
@@ -704,5 +706,85 @@ export const insertDeliveryStatusLogSchema = createInsertSchema(deliveryStatusLo
 
 export type InsertDeliveryStatusLog = z.infer<typeof insertDeliveryStatusLogSchema>;
 export type DeliveryStatusLog = typeof deliveryStatusLog.$inferSelect;
+
+// Payout Permissions - Clearance ledger for logistics-bank system
+export const payoutPermissions = pgTable("payout_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Core identifiers
+  transactionId: varchar("transaction_id").notNull().unique(),
+  listingId: varchar("listing_id").notNull(),
+  sellerId: varchar("seller_id").notNull(),
+  buyerId: varchar("buyer_id").notNull(),
+  
+  // External references
+  externalOrderId: varchar("external_order_id"), // Delivery partner's order ID
+  deliveryPartnerId: varchar("delivery_partner_id").default("default"), // Which partner
+  
+  // Financial details
+  payoutAmount: integer("payout_amount").notNull(), // Amount cleared for payout (after commission)
+  originalAmount: integer("original_amount").notNull(), // Full order amount
+  platformCommission: integer("platform_commission").notNull().default(0),
+  currency: text("currency").default("IQD"),
+  
+  // Grace period & clearance logic
+  returnPolicyDays: integer("return_policy_days").notNull().default(0),
+  deliveredAt: timestamp("delivered_at").notNull(), // When order was delivered
+  gracePeriodExpiresAt: timestamp("grace_period_expires_at").notNull(), // deliveredAt + max(returnPolicyDays, 2)
+  
+  // Permission status state machine
+  // 'withheld' -> order delivered, grace period active
+  // 'locked' -> return request filed, payout blocked
+  // 'cleared' -> grace period expired, no return request, ready to pay
+  // 'paid' -> delivery partner confirmed payment to seller
+  // 'blocked' -> admin blocked payout (refund processed)
+  permissionStatus: text("permission_status").notNull().default("withheld"),
+  
+  // Clearance tracking
+  isCleared: boolean("is_cleared").notNull().default(false),
+  clearedAt: timestamp("cleared_at"),
+  clearedBy: varchar("cleared_by"), // 'system' or admin user ID
+  
+  // Payout tracking
+  paidAt: timestamp("paid_at"),
+  payoutReference: text("payout_reference"), // Delivery partner's payment reference
+  paidBy: varchar("paid_by"), // Delivery partner identifier
+  
+  // Lock/block tracking
+  lockedAt: timestamp("locked_at"),
+  lockedReason: text("locked_reason"),
+  lockedByReturnRequestId: varchar("locked_by_return_request_id"), // Reference to return request
+  
+  blockedAt: timestamp("blocked_at"),
+  blockedReason: text("blocked_reason"),
+  blockedBy: varchar("blocked_by"), // Admin user ID
+  
+  // Debt tracking (when blocked = debt owed by seller)
+  debtAmount: integer("debt_amount"), // Amount owed if refund was processed
+  debtDueDate: timestamp("debt_due_date"),
+  debtStatus: text("debt_status"), // 'pending', 'escalated', 'resolved'
+  
+  // Metadata
+  notes: text("notes"),
+  metadata: text("metadata"), // JSON string for additional data
+  
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+}, (table) => ({
+  transactionIdx: index("payout_permissions_transaction_idx").on(table.transactionId),
+  sellerIdx: index("payout_permissions_seller_idx").on(table.sellerId),
+  statusIdx: index("payout_permissions_status_idx").on(table.permissionStatus),
+  clearedIdx: index("payout_permissions_cleared_idx").on(table.isCleared),
+  gracePeriodIdx: index("payout_permissions_grace_period_idx").on(table.gracePeriodExpiresAt),
+}));
+
+export const insertPayoutPermissionSchema = createInsertSchema(payoutPermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertPayoutPermission = z.infer<typeof insertPayoutPermissionSchema>;
+export type PayoutPermission = typeof payoutPermissions.$inferSelect;
 
 export * from "./models/auth";

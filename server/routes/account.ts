@@ -477,7 +477,47 @@ export function registerAccountRoutes(app: Express): void {
     }
   });
 
-  // Get seller summary (stats)
+  /**
+   * GET /api/account/seller-summary
+   * 
+   * Returns seller performance statistics including listings, sales, revenue, and ratings.
+   * 
+   * @route GET /api/account/seller-summary
+   * @access Authenticated sellers only (requires phone verification)
+   * 
+   * @queryparam {string} [includeTrends] - Optional. Set to 'true' to include trend analysis.
+   *   When enabled, adds two additional fields to the response:
+   *   - `trends`: Percentage change in sales, revenue, and listings (comparing last 30 days to previous 30 days)
+   *   - `previousPeriod`: Historical data from the previous period for comparison
+   * 
+   * @returns {object} SellerSummary
+   * @returns {number} totalListings - Total number of listings (active + inactive)
+   * @returns {number} activeListings - Number of currently active listings
+   * @returns {number} totalSales - Total completed transactions
+   * @returns {number} totalRevenue - Total revenue from completed sales (IQD)
+   * @returns {number} pendingShipments - Number of orders awaiting shipment
+   * @returns {number} averageRating - Seller's average rating (0-5)
+   * @returns {number} ratingCount - Number of ratings received
+   * @returns {object} [trends] - Trend analysis (only if includeTrends=true)
+   * @returns {number} trends.salesChange - Sales change percentage vs previous period
+   * @returns {number} trends.revenueChange - Revenue change percentage vs previous period
+   * @returns {number} trends.listingsChange - Listings change percentage vs previous period
+   * @returns {object} [previousPeriod] - Previous period data (only if includeTrends=true)
+   * @returns {number} previousPeriod.totalSales - Sales count in previous 30-day period
+   * @returns {number} previousPeriod.totalRevenue - Revenue in previous 30-day period
+   * 
+   * @example
+   * // Basic request (backward compatible)
+   * GET /api/account/seller-summary
+   * 
+   * @example
+   * // Request with trends (Phase 1 feature)
+   * GET /api/account/seller-summary?includeTrends=true
+   * 
+   * @throws {401} Unauthorized - User not authenticated
+   * @throws {403} Forbidden - Phone not verified
+   * @throws {500} Internal Server Error - Database error
+   */
   app.get("/api/account/seller-summary", async (req, res) => {
     const userId = await getUserIdFromRequest(req);
     if (!userId) {
@@ -490,7 +530,9 @@ export function registerAccountRoutes(app: Express): void {
         return res.status(403).json({ error: "يجب التحقق من رقم هاتفك للوصول لهذه الميزة" });
       }
 
-      const summary = await storage.getSellerSummary(userId);
+      // Include trends if requested via query param (backward compatible)
+      const includeTrends = req.query.includeTrends === 'true';
+      const summary = await storage.getSellerSummary(userId, includeTrends);
       res.json(summary);
     } catch (error) {
       console.error("Error fetching seller summary:", error);

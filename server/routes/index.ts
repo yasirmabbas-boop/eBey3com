@@ -13,6 +13,8 @@ import { registerWalletRoutes } from "./wallet";
 import { registerReportsRoutes } from "./reports";
 import { registerObjectStorageRoutes } from "../replit_integrations/object_storage";
 import { registerPushRoutes } from "./push";
+import { registerAnalyticsRoutes } from "./analytics";
+import { registerLogisticsRoutes } from "./logistics-api";
 
 export async function registerRoutes(server: Server, app: Express): Promise<void> {
   registerObjectStorageRoutes(app);
@@ -28,4 +30,6 @@ export async function registerRoutes(server: Server, app: Express): Promise<void
   registerMessageRoutes(app);
   registerWalletRoutes(app);
   registerReportsRoutes(app);
+  registerAnalyticsRoutes(app);
+  registerLogisticsRoutes(app); // PHASE 4: Logistics API for delivery partner
 }

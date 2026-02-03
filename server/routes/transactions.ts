@@ -6,6 +6,9 @@ import { sendToUser } from "../websocket";
 import { financialService } from "../services/financial-service";
 import { sendPushNotification } from "../push-notifications";
 import { validateCsrfToken } from "../middleware/csrf";
+import { db } from "../db";
+import { transactions } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 async function sendNotificationAsync(params: {
   userId: string;
@@ -242,6 +245,13 @@ export function registerTransactionsRoutes(app: Express): void {
         return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
       }
 
+      // PHASE 1: Set deliveredAt timestamp before updating status
+      const deliveredAt = new Date();
+      await db
+        .update(transactions)
+        .set({ deliveredAt: deliveredAt })
+        .where(eq(transactions.id, transactionId));
+
       // Update transaction status to completed
       const updated = await storage.updateTransactionStatus(transactionId, "completed");
       
@@ -266,6 +276,16 @@ export function registerTransactionsRoutes(app: Express): void {
         } catch (err) {
           console.error("[Settlement] Error creating settlement:", err);
         }
+      }
+
+      // PHASE 1: Create payout permission on delivery
+      try {
+        const { payoutPermissionService } = await import("../services/payout-permission-service");
+        await payoutPermissionService.createPermissionOnDelivery(transactionId);
+        console.log(`[ManualDelivery] Payout permission created for transaction: ${transactionId}`);
+      } catch (error) {
+        console.error(`[ManualDelivery] Failed to create payout permission: ${error}`);
+        // Continue - don't block delivery flow
       }
       
       // Fire-and-forget notification (async, non-blocking)
@@ -661,6 +681,17 @@ export function registerTransactionsRoutes(app: Express): void {
         details: details || null,
       });
 
+      // PHASE 2: Lock payout permission immediately (kill-switch)
+      try {
+        const { payoutPermissionService } = await import("../services/payout-permission-service");
+        await payoutPermissionService.lockPermissionForReturn(transactionId, returnRequest.id);
+        console.log(`[ReturnRequest] Payout permission LOCKED for transaction: ${transactionId}`);
+      } catch (lockError) {
+        console.error(`[ReturnRequest] Failed to lock payout permission: ${lockError}`);
+        // Continue - return request is still created, but log warning
+        console.warn(`[ReturnRequest] WARNING: Return created but permission not locked for transaction ${transactionId}`);
+      }
+
       // Send notification to seller with deep link to returns tab
       try {
         const notification = await storage.createNotification({
@@ -878,14 +909,32 @@ export function registerTransactionsRoutes(app: Express): void {
         sellerResponse
       );
 
+      // PHASE 2: Handle payout permission based on seller decision
+      if (status === "rejected") {
+        // Seller rejected - unlock payout permission
+        try {
+          const { payoutPermissionService } = await import("../services/payout-permission-service");
+          await payoutPermissionService.unlockPermission(
+            request.transactionId,
+            `Return rejected by seller: ${sellerResponse || "No reason provided"}`
+          );
+          console.log(`[ReturnRequest] Payout permission UNLOCKED for transaction: ${request.transactionId}`);
+        } catch (unlockError) {
+          console.error(`[ReturnRequest] Failed to unlock payout permission: ${unlockError}`);
+        }
+      } else if (status === "approved") {
+        // Seller approved - permission stays LOCKED until admin processes refund
+        console.log(`[ReturnRequest] Seller approved return for transaction: ${request.transactionId}. Permission remains LOCKED pending admin refund.`);
+      }
+
       // Notify buyer
       try {
         const listing = await storage.getListing(request.listingId);
         const listingTitle = (listing as any)?.title || "المنتج";
         
-        const notificationTitle = status === "approved" ? "تم قبول طلب الإرجاع" : "تم رفض طلب الإرجاع";
+        const notificationTitle = status === "approved" ? "طلب الإرجاع قيد المراجعة" : "تم رفض طلب الإرجاع";
         const notificationMessage = status === "approved" 
-          ? `تم قبول طلب إرجاع "${listingTitle}". سيتم التواصل معك لترتيب الإرجاع.`
+          ? `وافق البائع على إرجاع "${listingTitle}". الإدارة تراجع الطلب الآن وسيتم معالجة المبلغ المسترجع خلال 24-48 ساعة.`
           : `تم رفض طلب إرجاع "${listingTitle}". ${sellerResponse || ""}`;
         
         const notification = await storage.createNotification({
@@ -916,6 +965,33 @@ export function registerTransactionsRoutes(app: Express): void {
         });
       } catch (notifError) {
         console.error("Failed to send notification for return response:", notifError);
+      }
+
+      // If approved, notify all admins for review
+      if (status === "approved") {
+        try {
+          const listing = await storage.getListing(request.listingId);
+          const listingTitle = (listing as any)?.title || "المنتج";
+          const transaction = await storage.getTransactionById(request.transactionId);
+          
+          // Get all admin users
+          const allUsers = await storage.getAllUsers();
+          const adminUsers = allUsers.filter((u: any) => u.isAdmin);
+
+          // Notify each admin
+          for (const admin of adminUsers) {
+            await storage.createNotification({
+              userId: admin.id,
+              type: "admin_return_review",
+              title: "طلب إرجاع يحتاج مراجعة",
+              message: `البائع وافق على إرجاع "${listingTitle}" (${transaction?.amount.toLocaleString()} د.ع). يرجى معالجة الاسترجاع.`,
+              linkUrl: `/admin?tab=returns&returnId=${request.id}`,
+              relatedId: request.id,
+            });
+          }
+        } catch (adminNotifError) {
+          console.error("Failed to notify admins of approved return:", adminNotifError);
+        }
       }
 
       return res.json(updatedRequest);

@@ -8,6 +8,7 @@ import { deliveryOrders, deliveryStatusLog, transactions, users, listings } from
 import { eq } from "drizzle-orm";
 import { deliveryApi, DeliveryWebhookPayload } from "./delivery-api";
 import { financialService } from "./financial-service";
+import { storage } from "../storage";
 
 export interface CreateDeliveryRequest {
   transactionId: string;
@@ -179,6 +180,9 @@ class DeliveryService {
       await this.handleSuccessfulDelivery(deliveryOrder);
     } else if (payload.status === "returned") {
       await this.handleReturn(deliveryOrder, payload.returnReason || "مرتجع من العميل");
+    } else if (payload.status === "customer_refused") {
+      // PHASE 6: Handle buyer refusal
+      await this.handleBuyerRefusal(deliveryOrder, payload.returnReason || "رفض المشتري الاستلام");
     }
 
     return true;
@@ -217,6 +221,10 @@ class DeliveryService {
         deliveryStatusMapped = "returned";
         txStatus = "returned";
         break;
+      case "customer_refused":
+        deliveryStatusMapped = "refused";
+        txStatus = "refused";
+        break;
       case "cancelled":
         deliveryStatusMapped = "cancelled";
         txStatus = "cancelled";
@@ -249,13 +257,23 @@ class DeliveryService {
       return;
     }
 
+    const deliveredAt = new Date();
+
     await db
       .update(deliveryOrders)
       .set({
-        actualDeliveryDate: new Date(),
+        actualDeliveryDate: deliveredAt,
         status: "delivered",
       })
       .where(eq(deliveryOrders.id, deliveryOrder.id));
+
+    // PHASE 1: Set deliveredAt timestamp on transaction
+    await db
+      .update(transactions)
+      .set({
+        deliveredAt: deliveredAt,
+      })
+      .where(eq(transactions.id, transaction.id));
 
     await financialService.createSaleSettlement(
       transaction.sellerId,
@@ -265,6 +283,16 @@ class DeliveryService {
     );
 
     console.log(`[DeliveryService] Settlement created for seller: ${transaction.sellerId}`);
+
+    // PHASE 1: Create payout permission on delivery
+    try {
+      const { payoutPermissionService } = await import("./payout-permission-service");
+      await payoutPermissionService.createPermissionOnDelivery(transaction.id);
+      console.log(`[DeliveryService] Payout permission created for transaction: ${transaction.id}`);
+    } catch (error) {
+      console.error(`[DeliveryService] Failed to create payout permission: ${error}`);
+      // Continue - don't block delivery flow
+    }
   }
 
   private async handleReturn(
@@ -290,6 +318,81 @@ class DeliveryService {
       .where(eq(transactions.id, deliveryOrder.transactionId));
 
     await financialService.reverseSettlement(deliveryOrder.transactionId, reason);
+  }
+
+  /**
+   * PHASE 6: Handle buyer refusal
+   * Zero commission, zero fees - seller gets nothing
+   * Block payout permission permanently
+   */
+  private async handleBuyerRefusal(
+    deliveryOrder: typeof deliveryOrders.$inferSelect,
+    reason: string
+  ): Promise<void> {
+    console.log(`[DeliveryService] Handling buyer refusal for order: ${deliveryOrder.id}, reason: ${reason}`);
+
+    const arabicReason = `تم رفض الاستلام: ${reason}`;
+
+    // Update delivery order status
+    await db
+      .update(deliveryOrders)
+      .set({
+        status: "customer_refused",
+        returnReason: arabicReason,
+      })
+      .where(eq(deliveryOrders.id, deliveryOrder.id));
+
+    // Update transaction status
+    await db
+      .update(transactions)
+      .set({
+        status: "refused",
+        deliveryStatus: "refused",
+      })
+      .where(eq(transactions.id, deliveryOrder.transactionId));
+
+    // Reverse any settlement that may have been created
+    try {
+      await financialService.reverseSettlement(deliveryOrder.transactionId, arabicReason);
+      console.log(`[DeliveryService] Settlement reversed for refused order: ${deliveryOrder.transactionId}`);
+    } catch (error) {
+      console.error(`[DeliveryService] Error reversing settlement: ${error}`);
+      // Continue - may not have been created yet
+    }
+
+    // PHASE 6: Block payout permission with zero-on-refusal logic
+    try {
+      const { payoutPermissionService } = await import("./payout-permission-service");
+      await payoutPermissionService.blockPermissionForBuyerRefusal(
+        deliveryOrder.transactionId,
+        arabicReason
+      );
+      console.log(`[DeliveryService] ZERO-ON-REFUSAL: Payout permission blocked for transaction: ${deliveryOrder.transactionId}`);
+    } catch (error) {
+      console.error(`[DeliveryService] Failed to block payout permission: ${error}`);
+    }
+
+    // Notify seller of refusal
+    try {
+      const [transaction] = await db
+        .select()
+        .from(transactions)
+        .where(eq(transactions.id, deliveryOrder.transactionId))
+        .limit(1);
+
+      if (transaction) {
+        await storage.createNotification({
+          userId: transaction.sellerId,
+          type: "delivery_refused",
+          title: "رفض المشتري الاستلام",
+          message: `تم رفض استلام الطلب من قبل المشتري. السبب: ${reason}. لن يتم خصم أي عمولة أو رسوم.`,
+          linkUrl: `/seller-dashboard?tab=sales&orderId=${transaction.id}`,
+          relatedId: transaction.id,
+        });
+      }
+    } catch (notifError) {
+      console.error(`[DeliveryService] Failed to send refusal notification: ${notifError}`);
+    }
   }
 
   async confirmDeliveryAcceptance(transactionId: string): Promise<boolean> {

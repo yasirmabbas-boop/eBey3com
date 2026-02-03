@@ -14,6 +14,7 @@ import { registerOtpRoutes } from "./otp-routes";
 import { startOtpCleanupCron } from "./otp-cron";
 import { startOfferExpirationCron } from "./offer-cron";
 import { startNotificationCleanupCron } from "./notification-cron";
+import { startPayoutPermissionCrons } from "./payout-permission-cron";
 import * as Sentry from "@sentry/node";
 
 // Initialize Sentry for error tracking
@@ -122,6 +123,9 @@ app.use((req, res, next) => {
   
   // Start notification cleanup cron job
   startNotificationCleanupCron();
+  
+  // PHASE 5: Start payout permission cron jobs
+  startPayoutPermissionCrons();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

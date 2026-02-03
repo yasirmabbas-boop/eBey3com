@@ -60,6 +60,16 @@ import {
   Instagram,
 } from "lucide-react";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram } from "@/lib/share-utils";
+import { resolveTabFromUrl, getActivitySectionFromDeepLink } from "@/lib/tab-migration";
+import { useFeatureFlag } from "@/lib/feature-flags";
+import { NeedsAttentionSection } from "@/components/seller/needs-attention-section";
+import { ConsolidatedTabs, ConsolidatedTabName } from "@/components/seller/consolidated-tabs";
+import { SellerBottomNav } from "@/components/seller/seller-bottom-nav";
+import { PerformanceCard } from "@/components/seller/performance-card";
+import { useDeepLinkScroll } from "@/hooks/use-deep-link-scroll";
+import { formatCurrency, formatNumber } from "@/lib/utils";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { SellerOnboarding } from "@/components/seller/seller-onboarding";
 import {
   Select,
   SelectContent,
@@ -286,8 +296,18 @@ export default function SellerDashboard() {
   const { toast } = useToast();
   const { language, t } = useLanguage();
   const [location, navigate] = useLocation();
+  
+  // Feature flags for gradual rollout
+  const showV2Dashboard = useFeatureFlag('seller_dashboard_v2');
+  const showConsolidatedTabs = useFeatureFlag('seller_consolidated_tabs');
+  const showMobileNav = useFeatureFlag('seller_mobile_nav');
+  const showAnalytics = useFeatureFlag('seller_analytics');
+  
+  // Deep link scroll and highlight
+  const { scrollToElement } = useDeepLinkScroll();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("products");
+  const [activitySubTab, setActivitySubTab] = useState<"messages" | "offers" | "returns">("messages");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [salesFilter, setSalesFilter] = useState("all");
@@ -306,26 +326,57 @@ export default function SellerDashboard() {
   const [deepLinkReturnId, setDeepLinkReturnId] = useState<string | null>(null);
   const [deepLinkListingId, setDeepLinkListingId] = useState<string | null>(null);
 
-  // Handle deep linking from notifications
+  // Handle deep linking from notifications with backward compatibility
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab");
+    const urlTab = params.get("tab");
+    const section = params.get("section"); // New: sub-tab support for activity
     const orderId = params.get("orderId");
     const offerId = params.get("offerId");
     const returnId = params.get("returnId");
     const listingId = params.get("listingId");
     
-    if (tab) {
-      setActiveTab(tab);
+    // Use tab migration system for backward compatibility with legacy URLs
+    const resolved = resolveTabFromUrl(urlTab);
+    
+    if (urlTab) {
+      // Map resolved tab to current UI tab names
+      // Phase 2 will use consolidated tabs directly; for now we use legacy names
+      const currentTabMap: Record<string, string> = {
+        'inventory': 'products',  // Phase 2: will use 'inventory' directly
+        'activity': 'messages',   // Phase 2: will use 'activity' with sub-tabs
+        'orders': 'sales',        // Phase 2: will use 'orders'
+        'earnings': 'wallet',     // Phase 2: will use 'earnings'
+      };
+      
+      // Map the resolved tab to current UI, or keep original if not in map
+      const tabToSet = currentTabMap[resolved.tab] || urlTab;
+      setActiveTab(tabToSet);
+      
+      // Handle activity sub-section
+      if (resolved.section || section) {
+        setActivitySubTab((resolved.section || section) as "messages" | "offers" | "returns");
+      }
     }
     
+    // Handle deep link IDs
     if (orderId) setDeepLinkOrderId(orderId);
-    if (offerId) setDeepLinkOfferId(offerId);
-    if (returnId) setDeepLinkReturnId(returnId);
+    if (offerId) {
+      setDeepLinkOfferId(offerId);
+      // Auto-navigate to offers tab/section when coming from offer notification
+      const activitySection = getActivitySectionFromDeepLink(offerId, null);
+      if (activitySection) setActivitySubTab(activitySection);
+    }
+    if (returnId) {
+      setDeepLinkReturnId(returnId);
+      // Auto-navigate to returns section when coming from return notification
+      const activitySection = getActivitySectionFromDeepLink(null, returnId);
+      if (activitySection) setActivitySubTab(activitySection);
+    }
     if (listingId) setDeepLinkListingId(listingId);
     
     // Clear query params from URL without reloading
-    if (tab || orderId || offerId || returnId || listingId) {
+    if (urlTab || section || orderId || offerId || returnId || listingId) {
       window.history.replaceState({}, "", "/seller-dashboard");
     }
   }, [location]);
@@ -540,11 +591,19 @@ export default function SellerDashboard() {
     if (deepLinkOrderId && sellerOrders.length > 0) {
       const order = sellerOrders.find(o => o.id === deepLinkOrderId);
       if (order) {
+        // Open the order detail dialog
         setSelectedOrderForAction(order);
+        
+        // Scroll to and highlight the order card in the list
+        scrollToElement(`order-card-${deepLinkOrderId}`, {
+          highlight: true,
+          delay: 500, // Wait for dialog animation
+        });
+        
         setDeepLinkOrderId(null);
       }
     }
-  }, [deepLinkOrderId, sellerOrders]);
+  }, [deepLinkOrderId, sellerOrders, scrollToElement]);
 
   // Auto-open return request when deep linked
   useEffect(() => {
@@ -563,11 +622,35 @@ export default function SellerDashboard() {
     if (deepLinkOfferId && receivedOffers.length > 0) {
       const offer = receivedOffers.find(o => o.id === deepLinkOfferId);
       if (offer) {
+        // Open the offer counter dialog
         setSelectedOfferForCounter(offer);
+        
+        // Scroll to and highlight the offer card in the list
+        scrollToElement(`offer-card-${deepLinkOfferId}`, {
+          highlight: true,
+          delay: 500,
+        });
+        
         setDeepLinkOfferId(null);
       }
     }
-  }, [deepLinkOfferId, receivedOffers]);
+  }, [deepLinkOfferId, receivedOffers, scrollToElement]);
+
+  // Auto-scroll to listing when deep linked
+  useEffect(() => {
+    if (deepLinkListingId && listings.length > 0) {
+      const listing = listings.find(l => l.id === deepLinkListingId);
+      if (listing) {
+        // Scroll to and highlight the product card
+        scrollToElement(`product-card-${deepLinkListingId}`, {
+          highlight: true,
+          delay: 300,
+        });
+        
+        setDeepLinkListingId(null);
+      }
+    }
+  }, [deepLinkListingId, listings, scrollToElement]);
 
   const getReturnReasonLabel = (reason: string) => {
     const labels: Record<string, { ar: string; ku: string }> = {
@@ -887,6 +970,30 @@ export default function SellerDashboard() {
     setShowShippingLabel(true);
   };
 
+  // Handle bulk shipping label printing for pending orders
+  const handlePrintBulkShippingLabels = () => {
+    if (pendingOrders.length > 0) {
+      // For now, open the shipping label for the first pending order
+      // Future enhancement: Batch print all pending labels
+      const firstPendingOrder = pendingOrders[0];
+      setSelectedProduct(firstPendingOrder as any);
+      setShowShippingLabel(true);
+      
+      // Also navigate to sales tab with pending filter
+      setActiveTab("sales");
+      setSalesFilter("pending");
+      
+      toast({
+        title: language === "ar" 
+          ? `${pendingOrders.length} طلبات بانتظار الشحن`
+          : `${pendingOrders.length} داواکاری چاوەڕێی ناردن`,
+        description: language === "ar"
+          ? "سيتم فتح ملصق الشحن للطلب الأول"
+          : "لیبلی ناردن بۆ یەکەمین داواکاری دەکرێتەوە",
+      });
+    }
+  };
+
   const handleEditProduct = (productId: string) => {
     navigate(`/sell?edit=${productId}`);
   };
@@ -961,6 +1068,11 @@ export default function SellerDashboard() {
     averageRating: sellerSummary?.averageRating ?? 0,
     totalReviews: sellerSummary?.ratingCount ?? 0,
   };
+
+  // Check if seller is new (no activity yet)
+  const isNewSeller = SELLER_STATS.totalProducts === 0 && 
+                      SELLER_STATS.soldItems === 0 && 
+                      SELLER_STATS.totalRevenue === 0;
 
   const isLoading = authLoading || listingsLoading;
 
@@ -1100,8 +1212,7 @@ export default function SellerDashboard() {
               <p className="text-[10px] text-green-600">{language === "ar" ? "المبيعات" : "فرۆشتن"}</p>
             </button>
             <div className="p-3 text-center">
-              <p className="text-xl font-bold text-purple-700">{SELLER_STATS.totalRevenue.toLocaleString()}</p>
-              <p className="text-[10px] text-purple-600">{language === "ar" ? "د.ع" : "د.ع"}</p>
+              <p className="text-xl font-bold text-purple-700">{formatCurrency(SELLER_STATS.totalRevenue)}</p>
             </div>
             <button 
               className="p-3 text-center hover:bg-amber-50/50 transition-colors"
@@ -1161,50 +1272,88 @@ export default function SellerDashboard() {
           </div>
         </div>
 
-        {pendingOrders.length > 0 && (
-          <Card className="mb-8 border-2 border-yellow-300 bg-yellow-50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-yellow-800 flex items-center gap-2">
-                <AlertCircle className="h-5 w-5" />
-                {language === "ar" ? `تحتاج إلى اهتمامك (${pendingOrders.length})` : `ئاگاداریت پێویستە (${pendingOrders.length})`}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {pendingOrders.slice(0, 5).map(order => (
-                  <div key={order.id} className="flex items-center justify-between bg-white p-3 rounded-lg border">
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src={order.listing?.images?.[0] || "https://via.placeholder.com/48"} 
-                        alt={order.listing?.title || "منتج"} 
-                        className="w-12 h-12 object-cover rounded" 
-                      />
-                      <div>
-                        <p className="font-semibold text-sm">{order.listing?.title || "منتج"}</p>
-                        <p className="text-xs text-gray-500">المشتري: {order.buyer?.name || "مشتري"}</p>
+        {/* Onboarding for New Sellers */}
+        {isNewSeller ? (
+          <SellerOnboarding 
+            onAddProduct={() => navigate("/sell")}
+          />
+        ) : (
+          <>
+            {/* Task-First Design: Show action cards for items needing attention */}
+            {showV2Dashboard ? (
+              <ErrorBoundary>
+                <NeedsAttentionSection
+              pendingOrders={pendingOrders.length}
+              pendingOffers={receivedOffers.filter(o => o.status === "pending").length}
+              unreadMessages={sellerMessages.filter(m => !m.isRead).length}
+              pendingReturns={returnRequests.filter(r => r.status === "pending").length}
+              onNavigate={(tab, section) => {
+                setActiveTab(tab);
+                if (section) {
+                  setActivitySubTab(section as "messages" | "offers" | "returns");
+                }
+                // Also set the sales filter if navigating to orders
+                if (tab === "sales") {
+                  setSalesFilter("pending");
+                }
+              }}
+              onPrintShippingLabels={handlePrintBulkShippingLabels}
+            />
+          </ErrorBoundary>
+        ) : (
+          // Legacy yellow alert card (will be removed in Phase 2)
+          pendingOrders.length > 0 && (
+            <Card className="mb-8 border-2 border-yellow-300 bg-yellow-50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-yellow-800 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  {language === "ar" ? `تحتاج إلى اهتمامك (${pendingOrders.length})` : `ئاگاداریت پێویستە (${pendingOrders.length})`}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {pendingOrders.slice(0, 5).map(order => (
+                    <div key={order.id} className="flex items-center justify-between bg-white p-3 rounded-lg border">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={order.listing?.images?.[0] || "https://via.placeholder.com/48"} 
+                          alt={order.listing?.title || "منتج"} 
+                          className="w-12 h-12 object-cover rounded" 
+                        />
+                        <div>
+                          <p className="font-semibold text-sm">{order.listing?.title || "منتج"}</p>
+                          <p className="text-xs text-gray-500">المشتري: {order.buyer?.name || "مشتري"}</p>
+                        </div>
                       </div>
+                      <Button 
+                        size="sm" 
+                        onClick={() => { setActiveTab("sales"); setSalesFilter("pending"); }}
+                        className="gap-1"
+                      >
+                        <Truck className="h-4 w-4" />
+                        إدارة الشحن
+                      </Button>
                     </div>
-                    <Button 
-                      size="sm" 
-                      onClick={() => { setActiveTab("sales"); setSalesFilter("pending"); }}
-                      className="gap-1"
-                    >
-                      <Truck className="h-4 w-4" />
-                      إدارة الشحن
+                  ))}
+                  {pendingOrders.length > 5 && (
+                    <Button variant="outline" className="w-full" onClick={() => { setActiveTab("sales"); setSalesFilter("pending"); }}>
+                      عرض الكل ({pendingOrders.length})
                     </Button>
-                  </div>
-                ))}
-                {pendingOrders.length > 5 && (
-                  <Button variant="outline" className="w-full" onClick={() => { setActiveTab("sales"); setSalesFilter("pending"); }}>
-                    عرض الكل ({pendingOrders.length})
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            {/* Performance Card (Phase 3: Analytics) */}
+            {showAnalytics && (
+              <div className="mb-6">
+                <PerformanceCard period={timePeriod === "7" ? "7d" : timePeriod === "30" ? "30d" : "30d"} />
+              </div>
+            )}
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-6 w-full max-w-4xl">
             <TabsTrigger value="products" className="gap-2">
               <Package className="h-4 w-4" />
@@ -1313,7 +1462,11 @@ export default function SellerDashboard() {
 
             <div className="grid gap-4">
               {filteredProducts.map(product => (
-                <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <Card 
+                  key={product.id} 
+                  className="overflow-hidden hover:shadow-lg transition-shadow"
+                  data-testid={`product-card-${product.id}`}
+                >
                   <div className="flex flex-col md:flex-row">
                     <Link href={`/product/${product.id}`} className="relative cursor-pointer">
                       <img 
@@ -1622,7 +1775,11 @@ export default function SellerDashboard() {
                     {receivedOffers.map(offer => {
                       const listing = listings.find(l => l.id === offer.listingId);
                       return (
-                        <div key={offer.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                        <div 
+                          key={offer.id} 
+                          className="border rounded-lg p-4 hover:bg-gray-50"
+                          data-testid={`offer-card-${offer.id}`}
+                        >
                           <div className="flex items-start gap-4">
                             {listing?.images?.[0] && (
                               <img 
@@ -2396,7 +2553,9 @@ export default function SellerDashboard() {
               </>
             )}
           </TabsContent>
-        </Tabs>
+            </Tabs>
+          </>
+        )}
       </div>
 
       {selectedProduct?.buyer && (
@@ -2911,6 +3070,25 @@ export default function SellerDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile bottom navigation for seller dashboard (Phase 2) */}
+      {showMobileNav && (
+        <SellerBottomNav
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            // Set sales filter when navigating to orders/sales
+            if (tab === "sales" || tab === "orders") {
+              setSalesFilter("all");
+            }
+          }}
+          unreadMessages={sellerMessages.filter(m => !m.isRead).length}
+          pendingOffers={receivedOffers.filter(o => o.status === "pending").length}
+          pendingReturns={returnRequests.filter(r => r.status === "pending").length}
+          pendingOrders={pendingOrders.length}
+          useNewTabNames={showConsolidatedTabs}
+        />
+      )}
     </Layout>
   );
 }

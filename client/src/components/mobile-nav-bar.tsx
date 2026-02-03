@@ -61,7 +61,7 @@ export function MobileNavBar() {
       }`}
       dir="rtl"
       style={{ 
-        zIndex: 99999,
+        zIndex: 'var(--main-nav-z-index, 99999)',
         paddingBottom: isNative ? "0px" : "var(--safe-area-bottom)",
         position: "fixed",
         display: "flex"
