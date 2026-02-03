@@ -1,23 +1,25 @@
-// server/firebase.ts
 import admin from 'firebase-admin';
-import { serviceAccount } from './firebase-creds'; 
+import fs from 'fs';
+import path from 'path';
 
-// 1. FORCE THE FIX: Convert literal \n to real newlines
-const rawKey = serviceAccount.private_key || "";
-const cleanKey = rawKey.replace(/\\n/g, '\n');
+// 1. READ THE FILE DIRECTLY
+// We now know this file exists and works perfectly.
+const keyPath = path.resolve(process.cwd(), 'server/service-account.json');
 
 if (!admin.apps.length) {
-  console.log("✅ [FIREBASE] Initializing...");
-
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: serviceAccount.project_id,
-        clientEmail: serviceAccount.client_email,
-        privateKey: cleanKey, // <--- WE USE THE FIXED KEY HERE
-      }),
-    });
-    console.log("🚀 [FIREBASE] Initialized successfully.");
+    if (fs.existsSync(keyPath)) {
+      const fileContent = fs.readFileSync(keyPath, 'utf8');
+      const serviceAccount = JSON.parse(fileContent);
+
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+
+      console.log("🚀 [FIREBASE] Initialized successfully using JSON file.");
+    } else {
+      console.error("❌ [FIREBASE] Critical: service-account.json not found.");
+    }
   } catch (err) {
     console.error("❌ [FIREBASE] Initialization Failed:", err);
   }
