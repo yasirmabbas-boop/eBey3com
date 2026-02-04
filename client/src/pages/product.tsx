@@ -27,6 +27,7 @@ import { AuctionCountdown } from "@/components/auction-countdown";
 import { InstagramShareCard } from "@/components/instagram-share-card";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { MandatoryPhoneVerificationModal } from "@/components/mandatory-phone-verification-modal";
+import { ProductComments } from "@/components/product-comments";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram, shareToTwitter } from "@/lib/share-utils";
 import { hapticSuccess, hapticError, hapticLight, saveToPhotos, isDespia } from "@/lib/despia";
 import type { Listing } from "@shared/schema";
@@ -1397,6 +1398,9 @@ export default function ProductPage() {
             {product.description || (language === "ar" ? "لا يوجد وصف متوفر لهذا المنتج." : "هیچ وەسفێک بۆ ئەم بەرهەمە بەردەست نییە.")}
           </p>
         </div>
+
+        {/* Comments (public) */}
+        <ProductComments listingId={product.id} />
 
         {/* Tags Section */}
         {product.tags && product.tags.length > 0 && (

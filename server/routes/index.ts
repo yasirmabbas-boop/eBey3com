@@ -15,6 +15,7 @@ import { registerObjectStorageRoutes } from "../replit_integrations/object_stora
 import { registerPushRoutes } from "./push";
 import { registerAnalyticsRoutes } from "./analytics";
 import { registerLogisticsRoutes } from "./logistics-api";
+import { registerCommentRoutes } from "./comments";
 
 export async function registerRoutes(server: Server, app: Express): Promise<void> {
   registerObjectStorageRoutes(app);
@@ -28,6 +29,7 @@ export async function registerRoutes(server: Server, app: Express): Promise<void
   registerTransactionsRoutes(app);
   registerCartRoutes(app);
   registerMessageRoutes(app);
+  registerCommentRoutes(app);
   registerWalletRoutes(app);
   registerReportsRoutes(app);
   registerAnalyticsRoutes(app);

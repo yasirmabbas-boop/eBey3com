@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAuth, type AuthUser } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
@@ -60,22 +60,17 @@ interface ListingsResponse {
   };
 }
 
-// Constants
-const WINDOW_SIZE = 15; // Render window
-const BUFFER_SIZE = 30; // State buffer
-
-// Helper functions
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("ar-IQ").format(price) + " د.ع";
 };
 
-const formatTimeRemaining = (endTime: string, lang: string) => {
+const formatTimeRemaining = (endTime: string, language: string) => {
   const end = new Date(endTime);
   const now = new Date();
   const diff = end.getTime() - now.getTime();
   
   if (diff <= 0) {
-    return lang === "ar" ? "انتهى" : "تەواو بوو";
+    return language === "ar" ? "انتهى" : "تەواو بوو";
   }
   
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -83,44 +78,25 @@ const formatTimeRemaining = (endTime: string, lang: string) => {
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
   
   if (days > 0) {
-    return lang === "ar" 
+    return language === "ar" 
       ? `${days} يوم ${hours} ساعة`
       : `${days} ڕۆژ ${hours} کاتژمێر`;
   }
   if (hours > 0) {
-    return lang === "ar"
+    return language === "ar"
       ? `${hours} ساعة ${minutes} دقيقة`
       : `${hours} کاتژمێر ${minutes} خولەک`;
   }
-  return lang === "ar"
+  return language === "ar"
     ? `${minutes} دقيقة`
     : `${minutes} خولەک`;
 };
 
-// XSS protection helper
-const safeText = (text: string | null | undefined): string => {
-  if (!text) return "";
-  return String(text).replace(/[<>]/g, "");
-};
-
-// Condition badge helper
-const getConditionLabel = (condition: string, lang: string): string => {
-  const labels: Record<string, { ar: string; ku: string }> = {
-    "New": { ar: "جديد", ku: "نوێ" },
-    "Used - Like New": { ar: "مستعمل - كالجديد", ku: "بەکارهێنراو - وەک نوێ" },
-    "Used - Good": { ar: "مستعمل - جيد", ku: "بەکارهێنراو - باش" },
-    "Vintage": { ar: "قديم/عتيق", ku: "کۆن" },
-  };
-  
-  const language = lang === "ar" ? "ar" : "ku";
-  return labels[condition]?.[language] || condition;
-};
-
 function SwipeCard({ 
-  listing: listingItem, 
+  listing, 
   onFavorite,
   isFavorited,
-  language: cardLanguage,
+  language,
   onQuickOffer,
   onQuickBid,
 }: { 
@@ -133,38 +109,20 @@ function SwipeCard({
 }) {
   const [, navigate] = useLocation();
   const [imageIndex, setImageIndex] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState<string>("");
-
-  // Real-time auction clock (Phase 4.1)
-  useEffect(() => {
-    if (!listingItem.auctionEndTime) {
-      setTimeRemaining("");
-      return;
-    }
-    
-    const updateTime = () => {
-      setTimeRemaining(formatTimeRemaining(listingItem.auctionEndTime!, cardLanguage));
-    };
-    
-    updateTime(); // Initial calculation
-    const interval = setInterval(updateTime, 60000); // Update every 60 seconds
-    
-    return () => clearInterval(interval);
-  }, [listingItem.auctionEndTime, cardLanguage]);
 
   const handleImageTap = (e: React.MouseEvent) => {
-    if (listingItem.images.length <= 1) return;
+    if (listing.images.length <= 1) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const width = rect.width;
     
     if (x < width / 3) {
-      setImageIndex(prev => (prev > 0 ? prev - 1 : listingItem.images.length - 1));
+      setImageIndex(prev => (prev > 0 ? prev - 1 : listing.images.length - 1));
     } else if (x > (width * 2) / 3) {
-      setImageIndex(prev => (prev < listingItem.images.length - 1 ? prev + 1 : 0));
+      setImageIndex(prev => (prev < listing.images.length - 1 ? prev + 1 : 0));
     } else {
-      navigate(`/product/${listingItem.id}`);
+      navigate(`/product/${listing.id}`);
     }
     hapticLight();
   };
@@ -175,10 +133,10 @@ function SwipeCard({
         className="absolute inset-0 cursor-pointer"
         onClick={handleImageTap}
       >
-        {listingItem.images.length > 0 ? (
+        {listing.images.length > 0 ? (
           <img 
-            src={listingItem.images[imageIndex]} 
-            alt={safeText(listingItem.title)}
+            src={listing.images[imageIndex]} 
+            alt={listing.title}
             className="h-full w-full object-contain bg-black"
           />
         ) : (
@@ -187,9 +145,9 @@ function SwipeCard({
           </div>
         )}
         
-        {listingItem.images.length > 1 && (
+        {listing.images.length > 1 && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-1">
-            {listingItem.images.map((_, idx) => (
+            {listing.images.map((_, idx) => (
               <div 
                 key={idx}
                 className={cn(
@@ -210,37 +168,37 @@ function SwipeCard({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <Link href={`/product/${listingItem.id}`}>
+            <Link href={`/product/${listing.id}`}>
               <h2 className="text-white text-lg font-bold line-clamp-2 mb-2">
-                {safeText(listingItem.title)}
+                {listing.title}
               </h2>
             </Link>
             
             <div className="flex items-center gap-2 mb-2">
-              {listingItem.saleType === "auction" ? (
+              {listing.saleType === "auction" ? (
                 <>
                   <Badge variant="secondary" className="bg-amber-500/80 text-white border-0">
-                    <Gavel className="h-3 w-3 ml-1" aria-hidden="true" />
-                    {cardLanguage === "ar" ? "مزاد" : "مزایەدە"}
+                    <Gavel className="h-3 w-3 ml-1" />
+                    {language === "ar" ? "مزاد" : "مزایەدە"}
                   </Badge>
                   <span className="text-white font-bold text-xl">
-                    {formatPrice(listingItem.currentBid || listingItem.price)}
+                    {formatPrice(listing.currentBid || listing.price)}
                   </span>
                 </>
               ) : (
                 <span className="text-white font-bold text-xl">
-                  {formatPrice(listingItem.price)}
+                  {formatPrice(listing.price)}
                 </span>
               )}
             </div>
 
-            {listingItem.saleType === "auction" && listingItem.auctionEndTime && (
+            {listing.saleType === "auction" && listing.auctionEndTime && (
               <div className="flex items-center gap-1 text-amber-400 text-sm mb-2">
-                <Clock className="h-4 w-4" aria-hidden="true" />
-                <span>{timeRemaining}</span>
-                {listingItem.totalBids > 0 && (
+                <Clock className="h-4 w-4" />
+                <span>{formatTimeRemaining(listing.auctionEndTime, language)}</span>
+                {listing.totalBids > 0 && (
                   <span className="text-white/70 mr-2">
-                    ({listingItem.totalBids} {cardLanguage === "ar" ? "مزايدة" : "مزایەدە"})
+                    ({listing.totalBids} {language === "ar" ? "مزايدة" : "مزایەدە"})
                   </span>
                 )}
               </div>
@@ -248,38 +206,46 @@ function SwipeCard({
 
             <div className="flex items-center gap-3 text-white/70 text-sm">
               <div className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" aria-hidden="true" />
-                <span>{safeText(listingItem.city)}</span>
+                <MapPin className="h-4 w-4" />
+                <span>{listing.city}</span>
               </div>
               <Badge variant="outline" className="text-white/70 border-white/30 text-xs">
-                {getConditionLabel(listingItem.condition, cardLanguage)}
+                {listing.condition === "New" 
+                  ? (language === "ar" ? "جديد" : "نوێ")
+                  : listing.condition === "Used - Like New"
+                  ? (language === "ar" ? "مستعمل - كالجديد" : "بەکارهێنراو - وەک نوێ")
+                  : listing.condition === "Used - Good"
+                  ? (language === "ar" ? "مستعمل - جيد" : "بەکارهێنراو - باش")
+                  : listing.condition === "Vintage"
+                  ? (language === "ar" ? "قديم/عتيق" : "کۆن")
+                  : listing.condition}
               </Badge>
             </div>
 
-            <Link href={`/seller/${listingItem.sellerId}`}>
+            <Link href={`/seller/${listing.sellerId}`}>
               <div className="flex items-center gap-2 mt-3 text-white/80 text-sm">
                 <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
-                  <User className="h-4 w-4" aria-hidden="true" />
+                  <User className="h-4 w-4" />
                 </div>
-                <span>{safeText(listingItem.sellerName)}</span>
+                <span>{listing.sellerName}</span>
               </div>
             </Link>
 
-            <Link href={`/product/${listingItem.id}`} className="mt-4">
+            <Link href={`/product/${listing.id}`} className="mt-4">
               <Button 
                 className="w-full bg-primary hover:bg-primary/90"
                 size="lg"
               >
-                {listingItem.saleType === "auction" 
-                  ? (cardLanguage === "ar" ? "مزايدة الآن" : "ئێستا مزایەدە بکە")
-                  : (cardLanguage === "ar" ? "شراء الآن" : "ئێستا بکڕە")
+                {listing.saleType === "auction" 
+                  ? (language === "ar" ? "مزايدة الآن" : "ئێستا مزایەدە بکە")
+                  : (language === "ar" ? "شراء الآن" : "ئێستا بکڕە")
                 }
               </Button>
             </Link>
           </div>
 
           <div className="flex flex-col items-center gap-4">
-            {listingItem.saleType === "auction" && onQuickBid && (
+            {listing.saleType === "auction" && onQuickBid && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -287,18 +253,17 @@ function SwipeCard({
                   hapticSuccess();
                 }}
                 className="flex flex-col items-center gap-1"
-                aria-label={cardLanguage === "ar" ? "مزايدة سريعة" : "مزایدەی خێرا"}
               >
                 <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
-                  <Gavel className="h-6 w-6 text-white" aria-hidden="true" />
+                  <Gavel className="h-6 w-6 text-white" />
                 </div>
                 <span className="text-white text-xs">
-                  {cardLanguage === "ar" ? "مزايدة" : "مزایەدە"}
+                  {language === "ar" ? "مزايدة" : "مزایەدە"}
                 </span>
               </button>
             )}
 
-            {listingItem.saleType === "fixed" && listingItem.isNegotiable && onQuickOffer && (
+            {listing.saleType === "fixed" && listing.isNegotiable && onQuickOffer && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -306,13 +271,12 @@ function SwipeCard({
                   hapticSuccess();
                 }}
                 className="flex flex-col items-center gap-1"
-                aria-label={cardLanguage === "ar" ? "تقديم عرض" : "پێشنیار کردن"}
               >
                 <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
-                  <Tag className="h-6 w-6 text-white" aria-hidden="true" />
+                  <Tag className="h-6 w-6 text-white" />
                 </div>
                 <span className="text-white text-xs">
-                  {cardLanguage === "ar" ? "عرض" : "پێشنیار"}
+                  {language === "ar" ? "عرض" : "پێشنیار"}
                 </span>
               </button>
             )}
@@ -324,10 +288,6 @@ function SwipeCard({
                 hapticSuccess();
               }}
               className="flex flex-col items-center gap-1"
-              aria-label={cardLanguage === "ar" 
-                ? `إضافة ${safeText(listingItem.title)} إلى المفضلة` 
-                : `${safeText(listingItem.title)} زیادکردن بۆ دڵخوازەکان`}
-              aria-pressed={isFavorited}
             >
               <div className={cn(
                 "h-12 w-12 rounded-full flex items-center justify-center transition-colors",
@@ -336,23 +296,20 @@ function SwipeCard({
                 <Heart className={cn(
                   "h-6 w-6 transition-colors",
                   isFavorited ? "text-white fill-white" : "text-white"
-                )} aria-hidden="true" />
+                )} />
               </div>
-              <span className="text-white text-xs" aria-hidden="true">
-                {listingItem.favoritesCount}
+              <span className="text-white text-xs">
+                {listing.favoritesCount}
               </span>
             </button>
 
-            <Link href={`/messages/${listingItem.sellerId}`}>
-              <button 
-                className="flex flex-col items-center gap-1"
-                aria-label={cardLanguage === "ar" ? "إرسال رسالة للبائع" : "نامە بنێرە بۆ فرۆشیار"}
-              >
+            <Link href={`/messages/${listing.sellerId}`}>
+              <button className="flex flex-col items-center gap-1">
                 <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
-                  <MessageCircle className="h-6 w-6 text-white" aria-hidden="true" />
+                  <MessageCircle className="h-6 w-6 text-white" />
                 </div>
                 <span className="text-white text-xs">
-                  {cardLanguage === "ar" ? "رسالة" : "پەیام"}
+                  {language === "ar" ? "رسالة" : "پەیام"}
                 </span>
               </button>
             </Link>
@@ -362,19 +319,18 @@ function SwipeCard({
                 e.stopPropagation();
                 if (navigator.share) {
                   navigator.share({
-                    title: listingItem.title,
-                    url: `${window.location.origin}/product/${listingItem.id}`
+                    title: listing.title,
+                    url: `${window.location.origin}/product/${listing.id}`
                   });
                 }
               }}
               className="flex flex-col items-center gap-1"
-              aria-label={cardLanguage === "ar" ? "مشاركة المنتج" : "هاوبەشی کردنی بەرهەم"}
             >
               <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
-                <Share2 className="h-6 w-6 text-white" aria-hidden="true" />
+                <Share2 className="h-6 w-6 text-white" />
               </div>
               <span className="text-white text-xs">
-                {cardLanguage === "ar" ? "مشاركة" : "هاوبەشی"}
+                {language === "ar" ? "مشاركة" : "هاوبەشی"}
               </span>
             </button>
           </div>
@@ -384,52 +340,15 @@ function SwipeCard({
   );
 }
 
-// Phase 1.1: Auth guard hook
-function useRequireAuth() {
-  const { user } = useAuth();
-  const { language } = useLanguage();
-  const { toast } = useToast();
-  
-  return useCallback((action: () => void) => {
-    if (!user) {
-      const redirectUrl = `/signin?redirect=${encodeURIComponent('/swipe')}`;
-      toast({
-        title: language === "ar" ? "تسجيل الدخول مطلوب" : "چوونە ژوورەوە پێویستە",
-        description: language === "ar"
-          ? "يجب عليك تسجيل الدخول أو إنشاء حساب للمتابعة"
-          : "دەبێت بچیتە ژوورەوە یان هەژمار دروست بکەیت بۆ بەردەوامبوون",
-        variant: "destructive",
-        duration: 8000,
-        action: (
-          <ToastAction 
-            altText={language === "ar" ? "تسجيل الدخول" : "چوونە ژوورەوە"} 
-            onClick={() => {
-              window.location.href = redirectUrl;
-            }}
-          >
-            {language === "ar" ? "تسجيل الدخول" : "چوونە ژوورەوە"}
-          </ToastAction>
-        ),
-      });
-      return false;
-    }
-    action();
-    return true;
-  }, [user, language, toast]);
-}
-
 export default function SwipePage() {
   const { user } = useAuth();
   const { language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const containerRef = useRef<HTMLDivElement>(null);
-  const cardRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-  
   const [currentIndex, setCurrentIndex] = useState(0);
   const [page, setPage] = useState(1);
   const [allListings, setAllListings] = useState<Listing[]>([]);
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: WINDOW_SIZE });
 
   // Offer/Bid quick actions
   const [offerDialogOpen, setOfferDialogOpen] = useState(false);
@@ -437,12 +356,6 @@ export default function SwipePage() {
   const [phoneVerificationOpen, setPhoneVerificationOpen] = useState(false);
   const [pendingOfferListing, setPendingOfferListing] = useState<Listing | null>(null);
   const [activeActionListing, setActiveActionListing] = useState<Listing | null>(null);
-  
-  // Phase 1.2: Type-safe user reference
-  const authUser = user as AuthUser | null;
-  const userPhone = authUser?.phone || "";
-  
-  const requireAuth = useRequireAuth();
 
   const { data, isLoading, isFetching } = useQuery<ListingsResponse>({
     queryKey: ["/api/listings", { page, limit: 10 }],
@@ -458,13 +371,12 @@ export default function SwipePage() {
     queryFn: async () => {
       const res = await fetch("/api/account/favorites", { credentials: "include" });
       if (!res.ok) return [];
-      const fetchedData = await res.json();
-      return fetchedData.map((f: { listingId: string }) => f.listingId);
+      const data = await res.json();
+      return data.map((f: { listingId: string }) => f.listingId);
     },
     enabled: !!user,
   });
 
-  // Phase 4.2: Optimistic favorites
   const toggleFavoriteMutation = useMutation({
     mutationFn: async ({ listingId, isFavorited }: { listingId: string; isFavorited: boolean }) => {
       const res = await fetch(`/api/listings/${listingId}/favorite`, {
@@ -474,112 +386,40 @@ export default function SwipePage() {
       if (!res.ok) throw new Error("Failed to toggle favorite");
       return res.json();
     },
-    onMutate: async ({ listingId, isFavorited }) => {
-      // Cancel outgoing queries
-      await queryClient.cancelQueries({ queryKey: ["/api/account/favorites"] });
-      
-      // Snapshot previous value
-      const previousFavorites = queryClient.getQueryData<string[]>(["/api/account/favorites"]) || [];
-      
-      // Optimistically update
-      queryClient.setQueryData<string[]>(["/api/account/favorites"], (old = []) => {
-        if (isFavorited) {
-          return old.filter(id => id !== listingId);
-        } else {
-          return [...old, listingId];
-        }
-      });
-      
-      return { previousFavorites };
-    },
-    onError: (err, variables, context) => {
-      // Rollback on error
-      if (context?.previousFavorites) {
-        queryClient.setQueryData(["/api/account/favorites"], context.previousFavorites);
-      }
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/account/favorites"] });
     },
   });
 
-  // Phase 2.1: Sliding window memory management
   useEffect(() => {
     if (data?.listings) {
       setAllListings(prev => {
         const existingIds = new Set(prev.map(l => l.id));
         const newListings = data.listings.filter(l => !existingIds.has(l.id));
-        const combined = [...prev, ...newListings];
-        
-        // Trim state buffer if it exceeds BUFFER_SIZE
-        if (combined.length > BUFFER_SIZE) {
-          const bufferStart = Math.max(0, currentIndex - Math.floor(BUFFER_SIZE / 2));
-          const bufferEnd = Math.min(combined.length, bufferStart + BUFFER_SIZE);
-          return combined.slice(bufferStart, bufferEnd);
-        }
-        
-        return combined;
+        return [...prev, ...newListings];
       });
     }
-  }, [data, currentIndex]);
+  }, [data]);
 
-  // Calculate visible indices
-  const getVisibleIndices = useCallback((currentIdx: number, total: number) => {
-    const halfWindow = Math.floor(WINDOW_SIZE / 2);
-    const start = Math.max(0, currentIdx - halfWindow);
-    const end = Math.min(total, currentIdx + halfWindow + 1);
-    return { start, end };
-  }, []);
-
-  // Update visible range when currentIndex changes
-  useEffect(() => {
-    const { start, end } = getVisibleIndices(currentIndex, allListings.length);
-    setVisibleRange({ start, end });
-  }, [currentIndex, allListings.length, getVisibleIndices]);
-
-  // Phase 2.2: IntersectionObserver for scroll tracking
-  useEffect(() => {
+  const handleScroll = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Find the most visible entry
-        let maxRatio = 0;
-        let mostVisibleIndex = currentIndex;
-        
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
-            maxRatio = entry.intersectionRatio;
-            const index = parseInt(entry.target.getAttribute('data-index') || '0', 10);
-            mostVisibleIndex = index;
-          }
-        });
-        
-        if (mostVisibleIndex !== currentIndex && maxRatio > 0.5) {
-          setCurrentIndex(mostVisibleIndex);
-          hapticLight();
-          
-          // Trigger pagination when near the end
-          if (mostVisibleIndex >= allListings.length - 3 && data?.pagination.hasMore && !isFetching) {
-            setPage(prev => prev + 1);
-          }
-        }
-      },
-      {
-        root: container,
-        threshold: [0, 0.25, 0.5, 0.75, 1.0],
-        rootMargin: '-20% 0px -20% 0px',
-      }
-    );
+    const scrollTop = container.scrollTop;
+    const itemHeight = container.clientHeight;
+    const newIndex = Math.round(scrollTop / itemHeight);
+    
+    if (newIndex !== currentIndex) {
+      setCurrentIndex(newIndex);
+      hapticLight();
+    }
 
-    // Observe all visible cards
-    cardRefs.current.forEach((card) => observer.observe(card));
-
-    return () => observer.disconnect();
+    if (newIndex >= allListings.length - 3 && data?.pagination.hasMore && !isFetching) {
+      setPage(prev => prev + 1);
+    }
   }, [currentIndex, allListings.length, data?.pagination.hasMore, isFetching]);
 
-  const scrollToIndex = useCallback((index: number) => {
+  const scrollToIndex = (index: number) => {
     const container = containerRef.current;
     if (!container || index < 0 || index >= allListings.length) return;
     
@@ -587,7 +427,7 @@ export default function SwipePage() {
       top: index * container.clientHeight,
       behavior: "smooth"
     });
-  }, [allListings.length]);
+  };
 
   if (isLoading && allListings.length === 0) {
     return (
@@ -623,58 +463,69 @@ export default function SwipePage() {
     );
   }
 
+  const requireAuth = (redirectPath: string) => {
+    if (user) return true;
+    const redirectUrl = `/signin?redirect=${encodeURIComponent(redirectPath)}`;
+    toast({
+      title: language === "ar" ? "تسجيل الدخول مطلوب" : "چوونە ژوورەوە پێویستە",
+      description:
+        language === "ar"
+          ? "يجب عليك تسجيل الدخول أو إنشاء حساب للمتابعة"
+          : "دەبێت بچیتە ژوورەوە یان هەژمار دروست بکەیت بۆ بەردەوامبوون",
+      variant: "destructive",
+      duration: 8000,
+      action: (
+        <ToastAction altText={language === "ar" ? "تسجيل الدخول" : "چوونە ژوورەوە"} onClick={() => (window.location.href = redirectUrl)}>
+          {language === "ar" ? "تسجيل الدخول" : "چوونە ژوورەوە"}
+        </ToastAction>
+      ),
+    });
+    return false;
+  };
+
   return (
     <Layout>
       <div 
         ref={containerRef}
         className="h-[calc(100vh-60px)] overflow-y-scroll snap-y snap-mandatory"
+        onScroll={handleScroll}
         style={{ scrollSnapType: "y mandatory" }}
       >
-        {allListings.slice(visibleRange.start, visibleRange.end).map((listingItem, idx) => {
-          const actualIndex = visibleRange.start + idx;
-          return (
-            <div 
-              key={listingItem.id}
-              ref={(el) => {
-                if (el) cardRefs.current.set(actualIndex, el);
-                else cardRefs.current.delete(actualIndex);
+        {allListings.map((listing, index) => (
+          <div 
+            key={listing.id}
+            className="h-[calc(100vh-60px)] snap-start snap-always"
+            style={{ scrollSnapAlign: "start" }}
+          >
+            <SwipeCard 
+              listing={listing}
+              onFavorite={() => {
+                if (!user) return;
+                toggleFavoriteMutation.mutate({
+                  listingId: listing.id,
+                  isFavorited: favorites.includes(listing.id)
+                });
               }}
-              data-index={actualIndex}
-              className="h-[calc(100vh-60px)] snap-start snap-always"
-              style={{ scrollSnapAlign: "start" }}
-            >
-              <SwipeCard 
-                listing={listingItem}
-                onFavorite={() => {
-                  if (!user) return;
-                  toggleFavoriteMutation.mutate({
-                    listingId: listingItem.id,
-                    isFavorited: favorites.includes(listingItem.id)
-                  });
-                }}
-                isFavorited={favorites.includes(listingItem.id)}
-                language={language}
-                onQuickOffer={() => {
-                  requireAuth(() => {
-                    if (authUser && !authUser.phoneVerified) {
-                      setPendingOfferListing(listingItem);
-                      setPhoneVerificationOpen(true);
-                      return;
-                    }
-                    setActiveActionListing(listingItem);
-                    setOfferDialogOpen(true);
-                  });
-                }}
-                onQuickBid={() => {
-                  requireAuth(() => {
-                    setActiveActionListing(listingItem);
-                    setBidSheetOpen(true);
-                  });
-                }}
-              />
-            </div>
-          );
-        })}
+              isFavorited={favorites.includes(listing.id)}
+              language={language}
+              onQuickOffer={() => {
+                if (!requireAuth("/swipe")) return;
+                if (user && !user.phoneVerified) {
+                  setPendingOfferListing(listing);
+                  setPhoneVerificationOpen(true);
+                  return;
+                }
+                setActiveActionListing(listing);
+                setOfferDialogOpen(true);
+              }}
+              onQuickBid={() => {
+                if (!requireAuth("/swipe")) return;
+                setActiveActionListing(listing);
+                setBidSheetOpen(true);
+              }}
+            />
+          </div>
+        ))}
 
         {isFetching && (
           <div className="h-[calc(100vh-60px)] flex items-center justify-center bg-black snap-start">
@@ -683,37 +534,28 @@ export default function SwipePage() {
         )}
       </div>
 
-      {/* Phase 4.3: Improved navigation buttons (48px touch targets + ARIA) */}
       <div className="fixed left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10">
         <button 
           onClick={() => scrollToIndex(currentIndex - 1)}
           disabled={currentIndex === 0}
-          className="h-12 w-12 rounded-full bg-black/50 flex items-center justify-center disabled:opacity-30 transition-opacity"
-          aria-label={language === "ar" ? "السابق" : "پێشوو"}
+          className="h-10 w-10 rounded-full bg-black/50 flex items-center justify-center disabled:opacity-30"
         >
-          <ChevronUp className="h-6 w-6 text-white" aria-hidden="true" />
+          <ChevronUp className="h-6 w-6 text-white" />
         </button>
         <button 
           onClick={() => scrollToIndex(currentIndex + 1)}
           disabled={currentIndex >= allListings.length - 1}
-          className="h-12 w-12 rounded-full bg-black/50 flex items-center justify-center disabled:opacity-30 transition-opacity"
-          aria-label={language === "ar" ? "التالي" : "دواتر"}
+          className="h-10 w-10 rounded-full bg-black/50 flex items-center justify-center disabled:opacity-30"
         >
-          <ChevronDown className="h-6 w-6 text-white" aria-hidden="true" />
+          <ChevronDown className="h-6 w-6 text-white" />
         </button>
       </div>
 
       <div
         className="fixed left-1/2 -translate-x-1/2 px-3 py-1 bg-black/70 rounded-full text-white text-sm z-10"
         style={{ bottom: "var(--bottom-nav-padding)" }}
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
       >
-        <span className="sr-only">
-          {language === "ar" ? "البند" : "بەرهەم"} {currentIndex + 1} {language === "ar" ? "من" : "لە"} {allListings.length}
-        </span>
-        <span aria-hidden="true">{currentIndex + 1} / {allListings.length}</span>
+        {currentIndex + 1} / {allListings.length}
       </div>
 
       {/* Offer dialog */}
@@ -734,18 +576,14 @@ export default function SwipePage() {
             <div className="mt-4">
               <BiddingWindow
                 listingId={activeActionListing.id}
-                userId={authUser?.id}
+                userId={user?.id}
                 currentBid={activeActionListing.currentBid || activeActionListing.price}
                 totalBids={activeActionListing.totalBids || 0}
                 minimumBid={(activeActionListing.currentBid || activeActionListing.price) + 1000}
                 auctionEndTime={activeActionListing.auctionEndTime}
-                onRequireAuth={() => {
-                  let authResult = false;
-                  requireAuth(() => { authResult = true; });
-                  return authResult;
-                }}
+                onRequireAuth={() => requireAuth("/swipe")}
                 onRequirePhoneVerification={() => setPhoneVerificationOpen(true)}
-                phoneVerified={!!authUser?.phoneVerified}
+                phoneVerified={!!user?.phoneVerified}
               />
             </div>
           )}
@@ -756,8 +594,8 @@ export default function SwipePage() {
       <PhoneVerificationModal
         open={phoneVerificationOpen}
         onOpenChange={setPhoneVerificationOpen}
-        phone={userPhone}
-        phoneVerified={!!authUser?.phoneVerified}
+        phone={(user as any)?.phone || (user as any)?.phoneNumber || ""}
+        phoneVerified={!!user?.phoneVerified}
         onVerified={() => {
           if (pendingOfferListing) {
             setActiveActionListing(pendingOfferListing);

@@ -10,6 +10,10 @@
   --safe-area-left: env(safe-area-inset-left, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
   
+  /* Bottom navigation sizing (main + seller) */
+  --bottom-nav-height: calc(4rem + var(--safe-area-bottom)); /* 4rem = 64px (h-16) */
+  --bottom-nav-padding: calc(var(--bottom-nav-height) + 1rem); /* +16px comfort */
+
   /* Z-Index Stack for Navigation & Overlays */
   /* Ensures proper layering above chat widgets (z-index: 999999) and main nav (99999) */
   --seller-nav-z-index: 100000;
