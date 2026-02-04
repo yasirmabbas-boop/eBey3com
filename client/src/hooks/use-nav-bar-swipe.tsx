@@ -41,7 +41,7 @@ export function useNavBarSwipe({
   const touchStartY = useRef<number | null>(null);
   const touchStartTime = useRef<number | null>(null);
   const lastTouchX = useRef<number | null>(null);
-  const navBarRef = useRef<HTMLDivElement | null>(null);
+  const navBarRef = useRef<HTMLElement | null>(null);
   const isActiveSwipe = useRef(false);
 
   const calculateTargetIndex = useCallback((deltaX: number): number | null => {

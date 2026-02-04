@@ -110,10 +110,13 @@ export function MobileNavBar() {
 
   // Calculate indicator position with swipe animation
   const getIndicatorPosition = () => {
-    const basePosition = (currentIndex / (navItems.length - 1)) * 100;
+    if (navItems.length === 0) return 0;
+    
+    const tabWidth = 100 / navItems.length;
+    const basePosition = currentIndex * tabWidth;
     
     if (swipeState.isSwiping && swipeState.targetIndex !== null) {
-      const targetPosition = (swipeState.targetIndex / (navItems.length - 1)) * 100;
+      const targetPosition = swipeState.targetIndex * tabWidth;
       const progress = swipeState.progress;
       return basePosition + (targetPosition - basePosition) * progress;
     }
