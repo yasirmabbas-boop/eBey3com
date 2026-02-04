@@ -408,7 +408,7 @@ export default function SellerDashboard() {
       if (!res.ok) throw new Error("Failed to fetch offers");
       return res.json();
     },
-    enabled: !!user?.id && (user as any)?.sellerApproved,
+    enabled: !!user?.id,
   });
 
   const { data: sellerSummary } = useQuery<{
@@ -421,7 +421,7 @@ export default function SellerDashboard() {
     ratingCount: number;
   }>({
     queryKey: ["/api/account/seller-summary"],
-    enabled: !!user?.id && (user as any)?.sellerApproved,
+    enabled: !!user?.id,
     staleTime: 0,
   });
 
@@ -436,7 +436,7 @@ export default function SellerDashboard() {
       if (!res.ok) throw new Error("Failed to fetch orders");
       return res.json();
     },
-    enabled: !!user?.id && (user as any)?.sellerApproved,
+    enabled: !!user?.id,
     staleTime: 0,
   });
 
@@ -451,7 +451,7 @@ export default function SellerDashboard() {
       if (!res.ok) throw new Error("Failed to fetch messages");
       return res.json();
     },
-    enabled: !!user?.id && (user as any)?.sellerApproved,
+    enabled: !!user?.id,
   });
 
   const { data: returnRequests = [], isLoading: returnsLoading } = useQuery<SellerReturnRequest[]>({
@@ -465,7 +465,7 @@ export default function SellerDashboard() {
       if (!res.ok) throw new Error("Failed to fetch return requests");
       return res.json();
     },
-    enabled: !!user?.id && (user as any)?.sellerApproved,
+    enabled: !!user?.id,
   });
 
   interface WalletBalance {
@@ -510,7 +510,7 @@ export default function SellerDashboard() {
       if (!res.ok) throw new Error("Failed to fetch wallet balance");
       return res.json();
     },
-    enabled: !!user?.id && (user as any)?.sellerApproved,
+    enabled: !!user?.id,
   });
 
   const { data: walletTransactions = [], isLoading: transactionsLoading } = useQuery<WalletTransaction[]>({
@@ -524,7 +524,7 @@ export default function SellerDashboard() {
       if (!res.ok) throw new Error("Failed to fetch transactions");
       return res.json();
     },
-    enabled: !!user?.id && (user as any)?.sellerApproved,
+    enabled: !!user?.id,
   });
 
   const { data: payouts = [], isLoading: payoutsLoading } = useQuery<WeeklyPayout[]>({
@@ -539,7 +539,7 @@ export default function SellerDashboard() {
       const data = await res.json();
       return data.payouts || [];
     },
-    enabled: !!user?.id && (user as any)?.sellerApproved,
+    enabled: !!user?.id,
   });
 
   const [returnResponseOpen, setReturnResponseOpen] = useState(false);
@@ -1087,17 +1087,17 @@ export default function SellerDashboard() {
     );
   }
 
-  if (!isAuthenticated || !(user as any)?.sellerApproved) {
+  if (!isAuthenticated) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 max-w-md text-center">
           <Card className="soft-border bg-amber-50/70">
             <CardContent className="pt-6">
               <Lock className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">للبائعين المعتمدين فقط</h2>
-              <p className="text-muted-foreground mb-6">يجب الحصول على موافقة المشرف للوصول لهذه الصفحة</p>
-              <Link href="/sell">
-                <Button className="w-full">تقديم طلب للبيع</Button>
+              <h2 className="text-2xl font-bold mb-2">يجب تسجيل الدخول</h2>
+              <p className="text-muted-foreground mb-6">سجل دخولك للوصول إلى لوحة البائع</p>
+              <Link href="/login">
+                <Button className="w-full">تسجيل الدخول</Button>
               </Link>
             </CardContent>
           </Card>
