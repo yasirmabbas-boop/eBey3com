@@ -1,4 +1,6 @@
 export const UNCLEAR_SUBJECT_TOKEN = "UNCLEAR_SUBJECT" as const;
+
+// What the API returns to the UI on 422
 export const BACKGROUND_TOO_COMPLEX_MESSAGE =
   "Background too complex to clean. Please try a clearer photo." as const;
 
@@ -7,20 +9,21 @@ export type PhotoCleanupResult =
   | { kind: "unclear_subject" };
 
 function buildSystemInstruction(): string {
-  // User-provided policy. MUST be followed as written.
-  return `You'e a an expert photo editor for an e-commerce platform. You 
-  
-Your ONLY task is to add a clean background of the provided photo. The item must remain exactly the same in appearance.
+  return `System prompt (Gemini) — background-only, 2 colors, tokenized fail-closed
 
-ALLOWED action (background only):
+You are a professional e-commerce photo editor.
+Your ONLY task is to replace the background of the provided photo. The item must remain exactly the same in appearance.
+
+ALLOWED EDITS (background only):
 Replace the background with a single, solid, uniform color using ONLY ONE of:
-White #FFFFFF
-Light gray #F2F2F2
+- White #FFFFFF
+- Light gray #F2F2F2
 
+Choose the color that provides clear contrast with the item so the item is easy to see (typically #F2F2F2 for very light/silver items; #FFFFFF for darker items).
 Background must be flat: no gradients, textures, patterns, shadows, vignettes, reflections, or added surfaces.
 
 STRICTLY FORBIDDEN (item must be unchanged):
-Do NOT change the item in ANY way. Do NOT add/remove details from the item itself. Do NOT alter scratches, patina, dust, texture, sharpness, noise, engraving, logos, dial text, watch hands, indices, bezel, case edges, or reflections on the item.
+Do NOT change the item in ANY way. Do NOT add/remove details. Do NOT alter scratches, patina, dust, texture, sharpness, noise, engraving, logos, dial text, watch hands, indices, bezel, case edges, or reflections on the item.
 Do NOT perform “enhancement” of the item: no denoise, no sharpen, no smoothing, no color correction, no relighting of the item.
 Do NOT crop, rotate, warp, resize, or change perspective.
 Do NOT add text, watermarks, props, or any new elements.
@@ -37,23 +40,32 @@ export function parseGeminiPhotoCleanupResponse(json: unknown): PhotoCleanupResu
   const parts = candidates?.[0]?.content?.parts;
   const safeParts = Array.isArray(parts) ? parts : [];
 
-  // If an image is present, we treat it as the output and ignore any accompanying text.
+  // FAIL-CLOSED: if token is present anywhere, treat as unclear even if an image is present.
+  for (const part of safeParts) {
+    const text = typeof part?.text === "string" ? part.text.trim() : "";
+    if (text === UNCLEAR_SUBJECT_TOKEN) {
+      return { kind: "unclear_subject" };
+    }
+  }
+
+  // Optional backward-compatible fallback (in case the model outputs the sentence)
+  for (const part of safeParts) {
+    const text = typeof part?.text === "string" ? part.text.trim() : "";
+    if (
+      text === BACKGROUND_TOO_COMPLEX_MESSAGE ||
+      text === `“${BACKGROUND_TOO_COMPLEX_MESSAGE}”`
+    ) {
+      return { kind: "unclear_subject" };
+    }
+  }
+
+  // Otherwise, look for an inline image
   for (const part of safeParts) {
     const inline = part?.inline_data ?? part?.inlineData;
     const data = inline?.data;
     const mimeType = inline?.mime_type ?? inline?.mimeType ?? "image/png";
     if (typeof data === "string" && data.length > 0) {
       return { kind: "image", imageBuffer: Buffer.from(data, "base64"), mimeType };
-    }
-  }
-
-  for (const part of safeParts) {
-    const text = typeof part?.text === "string" ? part.text.trim() : "";
-    if (text === BACKGROUND_TOO_COMPLEX_MESSAGE || text === `“${BACKGROUND_TOO_COMPLEX_MESSAGE}”`) {
-      return { kind: "unclear_subject" };
-    }
-    if (text === UNCLEAR_SUBJECT_TOKEN) {
-      return { kind: "unclear_subject" };
     }
   }
 
@@ -79,7 +91,10 @@ export async function cleanListingPhotoWithGemini(opts: {
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+      model
+    )}:generateContent`;
+
     const systemInstruction = buildSystemInstruction();
     const base64Image = imageBuffer.toString("base64");
 
@@ -114,7 +129,7 @@ export async function cleanListingPhotoWithGemini(opts: {
 
     const text = await res.text();
     if (!res.ok) {
-      // Don't leak provider internals (caller maps to a generic 502).
+      // Caller maps to a generic 502 (don’t expose provider internals).
       throw new Error(`Gemini request failed with status ${res.status}`);
     }
 
@@ -124,4 +139,3 @@ export async function cleanListingPhotoWithGemini(opts: {
     clearTimeout(timeout);
   }
 }
-

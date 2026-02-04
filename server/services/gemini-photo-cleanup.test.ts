@@ -21,6 +21,29 @@ describe("parseGeminiPhotoCleanupResponse", () => {
     expect(parseGeminiPhotoCleanupResponse(json)).toEqual({ kind: "unclear_subject" });
   });
 
+  it("fails closed when model outputs token and an image", () => {
+    const payload = Buffer.from("test-image-bytes");
+    const json = {
+      candidates: [
+        {
+          content: {
+            parts: [
+              { text: UNCLEAR_SUBJECT_TOKEN },
+              {
+                inline_data: {
+                  mime_type: "image/png",
+                  data: payload.toString("base64"),
+                },
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    expect(parseGeminiPhotoCleanupResponse(json)).toEqual({ kind: "unclear_subject" });
+  });
+
   it("returns unclear_subject when model outputs the exact fail-closed sentence", () => {
     const json = {
       candidates: [

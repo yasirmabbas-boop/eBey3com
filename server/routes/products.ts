@@ -13,7 +13,6 @@ import {
   cleanListingPhotoWithGemini,
   UNCLEAR_SUBJECT_TOKEN,
 } from "../services/gemini-photo-cleanup";
-import { processImage } from "../image-processor";
 import { ObjectNotFoundError, ObjectStorageService, objectStorageClient } from "../replit_integrations/object_storage/objectStorage";
 import {
   getUserIdFromRequest,
@@ -655,15 +654,6 @@ export function registerProductRoutes(app: Express): void {
         return res.status(422).json({ error: BACKGROUND_TOO_COMPLEX_MESSAGE });
       }
 
-      const processed = await processImage(result.imageBuffer, {
-        maxWidth: 1600,
-        maxHeight: 1600,
-        quality: 80,
-        format: "webp",
-        generateThumbnail: true,
-        thumbnailWidth: 400,
-      });
-
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR || "";
       if (!privateObjectDir) {
         return res.status(500).json({ error: "Object storage not configured" });
@@ -673,47 +663,43 @@ export function registerProductRoutes(app: Express): void {
       const bucket = objectStorageClient.bucket(bucketName);
 
       const mainId = randomUUID();
-      const mainEntityId = `uploads/${mainId}.webp`;
+      const ext = extensionFromMimeType(result.mimeType);
+
+      // Upload main exactly as Gemini returned it (preserve framing/resolution; no resize/rotate).
+      const mainEntityId = `uploads/${mainId}.${ext}`;
       const mainObjectName = [objectPrefix, mainEntityId].filter(Boolean).join("/");
       const mainUrl = `/objects/${mainEntityId}`;
 
-      const uploadPromises: Promise<void>[] = [];
-      uploadPromises.push(
-        bucket.file(mainObjectName).save(processed.main.buffer, {
-          contentType: "image/webp",
-          metadata: {
-            processedAt: new Date().toISOString(),
-            enhancedBy: "gemini",
-          },
-        })
-      );
+      await bucket.file(mainObjectName).save(result.imageBuffer, {
+        contentType: result.mimeType,
+        metadata: {
+          processedAt: new Date().toISOString(),
+          enhancedBy: "gemini",
+        },
+      });
 
-      let thumbnailUrl: string | undefined;
-      if (processed.thumbnail) {
-        const thumbEntityId = `uploads/${mainId}_thumb.webp`;
-        const thumbObjectName = [objectPrefix, thumbEntityId].filter(Boolean).join("/");
-        thumbnailUrl = `/objects/${thumbEntityId}`;
-        uploadPromises.push(
-          bucket.file(thumbObjectName).save(processed.thumbnail.buffer, {
-            contentType: "image/webp",
-            metadata: {
-              processedAt: new Date().toISOString(),
-              enhancedBy: "gemini",
-            },
-          })
-        );
-      }
+      // Thumbnail only (does not affect main).
+      const thumbEntityId = `uploads/${mainId}_thumb.webp`;
+      const thumbObjectName = [objectPrefix, thumbEntityId].filter(Boolean).join("/");
+      const thumbnailUrl = `/objects/${thumbEntityId}`;
+      const thumbBuffer = await sharp(result.imageBuffer, { failOnError: false })
+        .resize(400, 400, { fit: "cover", position: "center" })
+        .webp({ quality: 70 })
+        .toBuffer();
 
-      await Promise.all(uploadPromises);
+      await bucket.file(thumbObjectName).save(thumbBuffer, {
+        contentType: "image/webp",
+        metadata: {
+          processedAt: new Date().toISOString(),
+          enhancedBy: "gemini",
+        },
+      });
 
       // Best-effort delete old objects after successful upload.
       if (existingObjectPath) {
         const objectStorageService = new ObjectStorageService();
         await deleteObjectIfExists(objectStorageService, existingObjectPath);
-        const thumbPath = existingObjectPath.replace(/\.webp$/i, "_thumb.webp");
-        if (thumbPath !== existingObjectPath) {
-          await deleteObjectIfExists(objectStorageService, thumbPath);
-        }
+        await deleteObjectIfExists(objectStorageService, thumbPathForObjectPath(existingObjectPath));
       }
 
       return res.status(200).json({ imageUrl: mainUrl, thumbnailUrl });
@@ -1385,4 +1371,21 @@ async function deleteObjectIfExists(service: ObjectStorageService, objectPath: s
     // Best-effort delete: ignore errors but log for debugging.
     console.warn("[enhance-image] Failed to delete old object:", objectPath, error);
   }
+}
+
+function extensionFromMimeType(mimeType: string): "png" | "jpg" | "webp" {
+  const mt = (mimeType || "").toLowerCase();
+  if (mt === "image/webp") return "webp";
+  if (mt === "image/jpeg" || mt === "image/jpg") return "jpg";
+  return "png";
+}
+
+function thumbPathForObjectPath(objectPath: string): string {
+  // e.g. /objects/uploads/abc.webp -> /objects/uploads/abc_thumb.webp
+  const lastSlash = objectPath.lastIndexOf("/");
+  const dir = lastSlash >= 0 ? objectPath.slice(0, lastSlash + 1) : "";
+  const filename = lastSlash >= 0 ? objectPath.slice(lastSlash + 1) : objectPath;
+  const dot = filename.lastIndexOf(".");
+  const base = dot > 0 ? filename.slice(0, dot) : filename;
+  return `${dir}${base}_thumb.webp`;
 }
