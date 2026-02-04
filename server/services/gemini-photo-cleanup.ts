@@ -68,7 +68,7 @@ export async function cleanListingPhotoWithGemini(opts: {
   timeoutMs?: number;
 }): Promise<PhotoCleanupResult> {
   const { apiKey, imageBuffer, mimeType } = opts;
-  const model = opts.model || process.env.GEMINI_IMAGE_MODEL || "gemini-2.0-flash-exp";
+  const model = opts.model || process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-preview-05-20";
   const timeoutMs = opts.timeoutMs ?? 60_000;
 
   if (!apiKey) {
