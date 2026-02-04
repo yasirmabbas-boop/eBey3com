@@ -140,32 +140,7 @@ export function MobileNavBar() {
         display: "flex"
       }}
     >
-      {/* Swipe Progress Indicator */}
-      {swipeState.isSwiping && (
-        <div 
-          className="absolute top-0 left-0 h-0.5 bg-blue-500 transition-opacity duration-200"
-          style={{
-            width: `${swipeState.progress * 100}%`,
-            opacity: swipeState.targetIndex !== null ? 1 : 0.5,
-            transform: swipeState.direction === "right" 
-              ? `translateX(${isRTL ? 0 : 0}%)` 
-              : `translateX(${isRTL ? 100 : 0}%)`,
-            transformOrigin: isRTL ? "right" : "left",
-          }}
-        />
-      )}
-
       <div className="flex items-center justify-around w-full h-16 px-2 bg-white relative">
-        {/* Animated Indicator Bar */}
-        <div
-          className="absolute top-0 h-1 bg-blue-600 rounded-full transition-all duration-300 ease-out"
-          style={{
-            width: `${100 / navItems.length}%`,
-            left: `${indicatorPosition}%`,
-            transform: isRTL ? 'translateX(-100%)' : 'translateX(0)',
-            transformOrigin: isRTL ? "right" : "left",
-          }}
-        />
 
         {navItems.map((item, index) => {
           const active = isActiveSection(item.section);

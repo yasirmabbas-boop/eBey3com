@@ -19,6 +19,7 @@ interface SwipeReelItemProps {
   onBidOpen: () => void;
   onBuyNow: () => void;
   onShare: () => void;
+  onNavigateToListing: () => void;
 }
 
 export function SwipeReelItem({
@@ -28,6 +29,7 @@ export function SwipeReelItem({
   onBidOpen,
   onBuyNow,
   onShare,
+  onNavigateToListing,
 }: SwipeReelItemProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -72,16 +74,26 @@ export function SwipeReelItem({
     viewTrackedRef.current = false;
   }, [listing?.id]);
 
-  // Handle double-tap to favorite
+  const singleTapTimerRef = useRef<NodeJS.Timeout>();
+  
+  // Handle tap - single tap navigates, double tap favorites
   const handleTap = () => {
     const now = Date.now();
     const timeSinceLastTap = now - lastTapRef.current;
 
     if (timeSinceLastTap < 300) {
-      // Double tap detected
+      // Double tap detected - cancel single tap navigation and show heart
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+      }
       setShowHeartBurst(true);
       hapticSuccess();
       setTimeout(() => setShowHeartBurst(false), 1000);
+    } else {
+      // Single tap - wait briefly to see if it's a double tap
+      singleTapTimerRef.current = setTimeout(() => {
+        onNavigateToListing();
+      }, 300);
     }
 
     lastTapRef.current = now;

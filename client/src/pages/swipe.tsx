@@ -119,7 +119,9 @@ export default function SwipePage() {
 
   // Infinite scroll - load more when reaching end
   useEffect(() => {
-    if (currentIndex >= processedItems.length - 3 && !isLoading) {
+    // Only trigger pagination when we have items AND are near the end
+    // This prevents page 2 from loading before page 1 is displayed
+    if (processedItems.length > 0 && currentIndex >= processedItems.length - 3 && !isLoading) {
       const hasMore = listingsData?.pagination?.hasMore;
       if (hasMore) {
         setPage(prev => prev + 1);
@@ -343,6 +345,7 @@ export default function SwipePage() {
                   onBidOpen={() => handleBidOpen(item)}
                   onBuyNow={() => handleBuyNow(item)}
                   onShare={() => handleShare(item)}
+                  onNavigateToListing={() => navigate(`/product/${item.id}`)}
                 />
               </motion.div>
             )
