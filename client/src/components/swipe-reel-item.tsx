@@ -15,6 +15,7 @@ import type { Listing } from "@shared/schema";
 interface SwipeReelItemProps {
   listing: Listing;
   isActive: boolean;
+  shouldPreload?: boolean;
   onDetailsOpen: () => void;
   onBidOpen: () => void;
   onBuyNow: () => void;
@@ -25,6 +26,7 @@ interface SwipeReelItemProps {
 export function SwipeReelItem({
   listing,
   isActive,
+  shouldPreload = false,
   onDetailsOpen,
   onBidOpen,
   onBuyNow,
@@ -128,7 +130,7 @@ export function SwipeReelItem({
                 src={img}
                 alt={`${listing.title} - ${idx + 1}`}
                 className="w-full h-full object-contain"
-                priority={isActive && idx === 0}
+                priority={(shouldPreload || isActive) && idx === 0}
                 darkMode={true}
               />
             </div>
@@ -138,14 +140,14 @@ export function SwipeReelItem({
 
         {/* Dots Indicator */}
         {images.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-30">
             {images.map((_, idx) => (
               <div
                 key={idx}
-                className={`h-1.5 rounded-full transition-all ${
+                className={`h-2 rounded-full transition-all ${
                   idx === currentImageIndex
                     ? 'bg-white w-6'
-                    : 'bg-white/50 w-1.5'
+                    : 'bg-white/50 w-2'
                 }`}
               />
             ))}

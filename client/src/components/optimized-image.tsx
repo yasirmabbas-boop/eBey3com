@@ -49,9 +49,9 @@ export function OptimizedImage({
     auto: ""
   };
 
-  const bgColor = darkMode ? "bg-gray-900" : "bg-gray-100";
+  const bgColor = darkMode ? "bg-black" : "bg-gray-100";
   const loadingGradient = darkMode 
-    ? "bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900" 
+    ? "bg-black" 
     : "bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100";
 
   return (

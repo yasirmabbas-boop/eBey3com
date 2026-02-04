@@ -360,6 +360,7 @@ export default function SwipePage() {
               <SwipeReelItem
                 listing={item}
                 isActive={isCurrent}
+                shouldPreload={isVisible}
                 onDetailsOpen={() => handleDetailsOpen(item)}
                 onBidOpen={() => handleBidOpen(item)}
                 onBuyNow={() => handleBuyNow(item)}
