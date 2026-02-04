@@ -311,6 +311,7 @@ export const listings = pgTable("listings", {
   condition: text("condition").notNull(),
   brand: text("brand"),
   images: text("images").array().notNull().default(sql`ARRAY[]::text[]`),
+  originalImages: text("original_images").array().default(sql`ARRAY[]::text[]`),
   saleType: text("sale_type").notNull().default("fixed"),
   currentBid: integer("current_bid"),
   totalBids: integer("total_bids").default(0),
