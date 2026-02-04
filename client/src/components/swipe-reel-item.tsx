@@ -115,7 +115,7 @@ export function SwipeReelItem({
       onClick={handleTap}
     >
       {/* Image Carousel Area */}
-      <div className="swipe-image-area relative flex-1 overflow-hidden">
+      <div className="swipe-image-area relative flex-1 overflow-hidden z-10">
         {/* CSS Snap Scroll for Performance */}
         <div 
           className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
@@ -124,12 +124,12 @@ export function SwipeReelItem({
           {images.map((img, idx) => (
             <div 
               key={idx}
-              className="flex-shrink-0 w-full h-full snap-center relative"
+              className="flex-shrink-0 w-full h-full snap-center relative z-10"
             >
               <OptimizedImage
                 src={img}
                 alt={`${listing.title} - ${idx + 1}`}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain z-10"
                 priority={(shouldPreload || isActive) && idx === 0}
                 darkMode={true}
               />
