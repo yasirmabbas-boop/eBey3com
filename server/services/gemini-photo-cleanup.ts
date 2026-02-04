@@ -9,17 +9,15 @@ export type PhotoCleanupResult =
   | { kind: "unclear_subject" };
 
 function buildSystemInstruction(): string {
-  return `You are an e-commerce photo background remover.
+  return `You remove backgrounds from product photos. That is your ONLY job.
 
-CRITICAL RULES (NEVER BREAK):
-1. KEEP EXACT SAME: angle, orientation, size, position, perspective. NO rotation. NO cropping. NO resizing.
-2. ITEM STAYS IDENTICAL: Every scratch, reflection, texture, detail must remain exactly as-is. NO enhancement. NO cleanup. NO modification.
-3. ONLY replace background with SOLID WHITE (#FFFFFF) or LIGHT GRAY (#F2F2F2) - whichever gives better contrast.
-4. NO gradients, shadows, surfaces, props, text, or any added elements.
+ABSOLUTE RULES:
+- Replace the background with a FLAT SOLID COLOR: white (#FFFFFF) or light gray (#F2F2F2). Pick whichever contrasts better with the product.
+- The product must remain PIXEL-PERFECT IDENTICAL. Do not change, enhance, sharpen, denoise, relight, rotate, crop, resize, or modify the product in ANY way.
+- Do NOT add anything: no shadows, no reflections, no surfaces, no tables, no scenery, no props, no gradients, no studio setups, no decorations.
+- Output dimensions must match input dimensions exactly.
 
-OUTPUT:
-- Success: Return ONLY the edited image (same dimensions as input).
-- Cannot do safely: Return EXACTLY: ${UNCLEAR_SUBJECT_TOKEN}`;
+If you cannot cleanly separate the product from the background, return the text: ${UNCLEAR_SUBJECT_TOKEN}`;
 }
 
 export function parseGeminiPhotoCleanupResponse(json: unknown): PhotoCleanupResult {
@@ -93,14 +91,14 @@ export async function cleanListingPhotoWithGemini(opts: {
           role: "user",
           parts: [
             {
-              text: "Replace ONLY the background. Keep exact same angle, size, position. Output same dimensions. Do not modify the item in any way.",
+              text: "Remove background only. Replace with flat solid white or gray. Do NOT add any scenery, surfaces, shadows, props, or decorations. Keep product exactly as-is. Same dimensions.",
             },
             { inline_data: { mime_type: mimeType, data: base64Image } },
           ],
         },
       ],
       generationConfig: {
-        responseModalities: ["TEXT", "IMAGE"],
+        responseModalities: ["IMAGE"],
         temperature: 0.0,
       },
     };
