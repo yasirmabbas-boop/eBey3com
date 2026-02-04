@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { validateCsrfToken } from "../middleware/csrf";
+import { getUserIdFromRequest } from "./shared";
 
 export function registerUsersRoutes(app: Express): void {
   // Get public user profile (for seller info on product page)
@@ -77,15 +77,18 @@ export function registerUsersRoutes(app: Express): void {
     }
   });
 
-  // Apply CSRF validation to watchlist mutation routes
-  app.use("/api/watchlist", validateCsrfToken);
-  
-  // Add to watchlist
+  // Add to watchlist (requires authentication, verifies user matches)
   app.post("/api/watchlist", async (req, res) => {
     try {
       const { userId, listingId } = req.body;
       if (!userId || !listingId) {
         return res.status(400).json({ error: "userId and listingId are required" });
+      }
+      
+      // Verify authenticated user matches the userId in request
+      const authUserId = await getUserIdFromRequest(req);
+      if (!authUserId || authUserId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
       }
       
       // Check if already in watchlist
@@ -102,10 +105,17 @@ export function registerUsersRoutes(app: Express): void {
     }
   });
 
-  // Remove from watchlist
+  // Remove from watchlist (requires authentication, verifies user matches)
   app.delete("/api/watchlist/:userId/:listingId", async (req, res) => {
     try {
       const { userId, listingId } = req.params;
+      
+      // Verify authenticated user matches the userId in request
+      const authUserId = await getUserIdFromRequest(req);
+      if (!authUserId || authUserId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
+      }
+      
       await storage.removeFromWatchlist(userId, listingId);
       res.json({ message: "Removed from watchlist" });
     } catch (error) {
