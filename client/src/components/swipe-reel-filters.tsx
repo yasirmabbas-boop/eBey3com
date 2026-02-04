@@ -68,23 +68,31 @@ export function SwipeReelFilters({ filters, onFiltersChange }: SwipeReelFiltersP
     });
   };
 
+  const selectCategory = (categoryId: string) => {
+    const isSelected = filters.categories.includes(categoryId);
+    onFiltersChange({ 
+      ...filters, 
+      categories: isSelected ? [] : [categoryId]
+    });
+  };
+
   return (
-    <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b">
-      <div className="container mx-auto px-4 py-2">
+    <div className="absolute top-0 left-0 right-0 z-30">
+      <div className="px-2 py-2">
         <div className="flex items-center gap-2">
           {/* Quick Category Pills - Horizontal Scroll */}
-          <ScrollArea className="flex-1">
-            <div className="flex gap-2 pb-2">
-              {CATEGORIES.slice(0, 4).map((cat) => (
+          <div className="flex-1 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 px-1">
+              {CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => toggleCategory(cat.id)}
+                  onClick={() => selectCategory(cat.id)}
                   className={`
-                    flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium
+                    flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium
                     transition-colors whitespace-nowrap
                     ${filters.categories.includes(cat.id)
                       ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      : 'bg-black/50 text-white hover:bg-black/70'
                     }
                   `}
                 >
@@ -92,12 +100,12 @@ export function SwipeReelFilters({ filters, onFiltersChange }: SwipeReelFiltersP
                 </button>
               ))}
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Filter Sheet Trigger */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="relative">
+              <Button variant="outline" size="sm" className="relative bg-black/50 border-0 text-white hover:bg-black/70">
                 <SlidersHorizontal className="h-4 w-4" />
                 {activeFilterCount > 0 && (
                   <Badge 

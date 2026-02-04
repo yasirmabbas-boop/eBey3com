@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, AlertCircle, RotateCw } from "lucide-react";
-import { Layout } from "@/components/layout";
 import { SwipeReelItem } from "@/components/swipe-reel-item";
 import { SwipeReelFilters, SwipeFilters } from "@/components/swipe-reel-filters";
 import { SwipeReelDetails } from "@/components/swipe-reel-details";
@@ -250,55 +249,51 @@ export default function SwipePage() {
   // Loading state
   if (isLoading && processedItems.length === 0) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              {language === "ar" ? "جاري التحميل..." : "بارکردن..."}
-            </p>
-          </div>
+      <div className="fixed inset-0 bg-black flex items-center justify-center" style={{ paddingBottom: 'calc(64px + var(--safe-area-bottom, 0px))' }}>
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-white/70">
+            {language === "ar" ? "جاري التحميل..." : "بارکردن..."}
+          </p>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-screen px-4">
-          <div className="text-center">
-            <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">
-              {language === "ar" ? "حدث خطأ" : "هەڵەیەک ڕوویدا"}
-            </h2>
-            <p className="text-muted-foreground mb-4">
-              {language === "ar"
-                ? "فشل في تحميل المنتجات"
-                : "بارکردنی بەرهەمەکان شکستی هێنا"}
-            </p>
-            <Button onClick={() => refetch()}>
-              <RotateCw className="h-4 w-4 ml-2" />
-              {language === "ar" ? "إعادة المحاولة" : "دووبارە هەوڵ بدەرەوە"}
-            </Button>
-          </div>
+      <div className="fixed inset-0 bg-black flex items-center justify-center px-4" style={{ paddingBottom: 'calc(64px + var(--safe-area-bottom, 0px))' }}>
+        <div className="text-center">
+          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2 text-white">
+            {language === "ar" ? "حدث خطأ" : "هەڵەیەک ڕوویدا"}
+          </h2>
+          <p className="text-white/70 mb-4">
+            {language === "ar"
+              ? "فشل في تحميل المنتجات"
+              : "بارکردنی بەرهەمەکان شکستی هێنا"}
+          </p>
+          <Button onClick={() => refetch()}>
+            <RotateCw className="h-4 w-4 ml-2" />
+            {language === "ar" ? "إعادة المحاولة" : "دووبارە هەوڵ بدەرەوە"}
+          </Button>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   // Empty state
   if (processedItems.length === 0) {
     return (
-      <Layout>
+      <div className="fixed inset-0 bg-black" style={{ paddingBottom: 'calc(64px + var(--safe-area-bottom, 0px))' }}>
         <SwipeReelFilters filters={filters} onFiltersChange={setFilters} />
-        <div className="flex items-center justify-center h-[calc(100vh-120px)] px-4">
+        <div className="flex items-center justify-center h-full px-4">
           <div className="text-center">
-            <p className="text-xl font-bold mb-2">
+            <p className="text-xl font-bold mb-2 text-white">
               {language === "ar" ? "لا توجد منتجات" : "هیچ بەرهەمێک نییە"}
             </p>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-white/70 mb-4">
               {language === "ar"
                 ? "جرب تغيير الفلاتر"
                 : "فلتەرەکان بگۆڕە"}
@@ -310,23 +305,22 @@ export default function SwipePage() {
             </Button>
           </div>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   const currentListing = processedItems[currentIndex];
 
   return (
-    <Layout>
-      {/* Filters */}
-      <SwipeReelFilters filters={filters} onFiltersChange={setFilters} />
-
+    <div className="fixed inset-0 bg-black" style={{ paddingBottom: 'calc(64px + var(--safe-area-bottom, 0px))' }}>
       {/* Swipe Container */}
       <div
         ref={containerRef}
-        className="relative h-[calc(100vh-120px)] overflow-hidden bg-black"
+        className="relative h-full w-full overflow-hidden bg-black"
         style={{ touchAction: 'none' }}
       >
+        {/* Filters Overlay */}
+        <SwipeReelFilters filters={filters} onFiltersChange={setFilters} />
         <AnimatePresence mode="wait">
           {visibleItems.map(({ item, actualIndex }) => (
             actualIndex === currentIndex && (
@@ -352,8 +346,8 @@ export default function SwipePage() {
           ))}
         </AnimatePresence>
 
-        {/* Progress Indicator */}
-        <div className="absolute top-4 left-4 bg-black/60 text-white text-xs px-3 py-1 rounded-full z-20">
+        {/* Progress Indicator - positioned below the category filters */}
+        <div className="absolute top-14 left-4 bg-black/60 text-white text-xs px-3 py-1 rounded-full z-20">
           {currentIndex + 1} / {processedItems.length}
         </div>
       </div>
@@ -411,6 +405,6 @@ export default function SwipePage() {
           </SheetContent>
         </Sheet>
       )}
-    </Layout>
+    </div>
   );
 }
