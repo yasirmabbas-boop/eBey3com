@@ -15,6 +15,9 @@ interface ImageUploadSectionProps {
   onRemoveImage: (index: number) => void;
   onCameraClick?: () => void;
   onAIAnalyze?: () => void;
+  onCleanBackground?: (index: number) => void;
+  cleaningIndex?: number | null;
+  cleanErrorByIndex?: Record<number, string | undefined>;
 }
 
 export function ImageUploadSection({
@@ -27,6 +30,9 @@ export function ImageUploadSection({
   onRemoveImage,
   onCameraClick,
   onAIAnalyze,
+  onCleanBackground,
+  cleaningIndex,
+  cleanErrorByIndex,
 }: ImageUploadSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,19 +47,46 @@ export function ImageUploadSection({
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {images.map((img, index) => (
-            <div key={index} className="relative aspect-square rounded-lg overflow-hidden border bg-gray-100">
-              <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={() => onRemoveImage(index)}
-                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              {index === 0 && (
-                <Badge className="absolute bottom-2 right-2 bg-primary">
-                  {language === "ar" ? "الرئيسية" : "سەرەکی"}
-                </Badge>
+            <div key={index} className="space-y-2">
+              <div className="relative aspect-square rounded-lg overflow-hidden border bg-gray-100">
+                <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => onRemoveImage(index)}
+                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                {index === 0 && (
+                  <Badge className="absolute bottom-2 right-2 bg-primary">
+                    {language === "ar" ? "الرئيسية" : "سەرەکی"}
+                  </Badge>
+                )}
+              </div>
+
+              {onCleanBackground && (
+                <div className="space-y-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => onCleanBackground(index)}
+                    disabled={isUploadingImages || cleaningIndex === index}
+                  >
+                    {cleaningIndex === index ? (
+                      <>
+                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                        Cleaning…
+                      </>
+                    ) : (
+                      <>✨ Clean Background</>
+                    )}
+                  </Button>
+                  {cleanErrorByIndex?.[index] && (
+                    <p className="text-xs text-red-600">{cleanErrorByIndex[index]}</p>
+                  )}
+                </div>
               )}
             </div>
           ))}

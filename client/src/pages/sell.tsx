@@ -92,6 +92,8 @@ export default function SellPage() {
   const [tagInput, setTagInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [cleaningIndex, setCleaningIndex] = useState<number | null>(null);
+  const [cleanErrorByIndex, setCleanErrorByIndex] = useState<Record<number, string>>({});
   const [showSummary, setShowSummary] = useState(false);
   const [startTimeOption, setStartTimeOption] = useState("now");
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -396,6 +398,55 @@ export default function SellPage() {
 
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const cleanBackground = async (index: number) => {
+    const imageUrl = images[index];
+    if (!imageUrl) return;
+
+    setCleanErrorByIndex(prev => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+    setCleaningIndex(index);
+
+    try {
+      const res = await authFetch("/api/enhance-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl }),
+      });
+
+      const data = await res.json().catch(() => ({} as any));
+
+      if (!res.ok) {
+        const message =
+          typeof data?.error === "string"
+            ? data.error
+            : (language === "ar" ? "فشل تنظيف الصورة. حاول مرة أخرى." : "شکست لە پاککردنەوەی وێنە. دووبارە هەوڵ بدە.");
+        setCleanErrorByIndex(prev => ({ ...prev, [index]: message }));
+        return;
+      }
+
+      const newUrl = data?.imageUrl;
+      if (typeof newUrl === "string" && newUrl.length > 0) {
+        setImages(prev => prev.map((u, i) => (i === index ? newUrl : u)));
+      } else {
+        setCleanErrorByIndex(prev => ({
+          ...prev,
+          [index]: language === "ar" ? "استجابة غير متوقعة من الخادم" : "وەڵامی نەزانراو لە سێرڤەر",
+        }));
+      }
+    } catch (error) {
+      console.error("[clean-background] Error:", error);
+      setCleanErrorByIndex(prev => ({
+        ...prev,
+        [index]: language === "ar" ? "فشل تنظيف الصورة. حاول مرة أخرى." : "شکست لە پاککردنەوەی وێنە. دووبارە هەوڵ بدە.",
+      }));
+    } finally {
+      setCleaningIndex(null);
+    }
   };
 
   const handleNativeCamera = async () => {
@@ -953,6 +1004,9 @@ export default function SellPage() {
             onImageUpload={handleImageUpload}
             onRemoveImage={removeImage}
             onCameraClick={handleNativeCamera}
+            onCleanBackground={cleanBackground}
+            cleaningIndex={cleaningIndex}
+            cleanErrorByIndex={cleanErrorByIndex}
           />
 
           {/* Basic Info */}

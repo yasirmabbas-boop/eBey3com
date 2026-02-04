@@ -3,10 +3,14 @@ import { validateCsrfToken, generateCsrfToken } from "../middleware/csrf";
 import { z } from "zod";
 import multer from "multer";
 import sharp from "sharp";
+import { randomUUID } from "crypto";
 import { insertListingSchema } from "@shared/schema";
 import { storage } from "../storage";
 import { analyzeImageForSearch } from "../services/gemini-image-search";
 import { analyzeProductImage } from "../services/gemini-service";
+import { cleanListingPhotoWithGemini, UNCLEAR_SUBJECT_TOKEN } from "../services/gemini-photo-cleanup";
+import { processImage } from "../image-processor";
+import { ObjectNotFoundError, ObjectStorageService, objectStorageClient } from "../replit_integrations/object_storage/objectStorage";
 import {
   getUserIdFromRequest,
   setCacheHeaders,
@@ -22,9 +26,14 @@ import {
 
 const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 const imageUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const enhanceImageUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 7 * 1024 * 1024 } });
 
 const OG_IMAGE_WIDTH = 1200;
 const OG_IMAGE_HEIGHT = 630;
+
+const ENHANCE_ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"] as const;
+const BACKGROUND_TOO_COMPLEX_MESSAGE = "Background too complex to clean. Please try a clearer photo.";
+const GENERIC_RETRYABLE_MESSAGE = "Image cleanup failed. Please try again.";
 
 export function registerProductRoutes(app: Express): void {
   // Apply CSRF validation to product mutation routes (middleware already skips GET requests)
@@ -564,6 +573,193 @@ export function registerProductRoutes(app: Express): void {
       
       res.status(500).json({ error: "Failed to analyze image" });
     }
+  });
+
+  async function enhanceImageCore(req: any, res: any) {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY || "";
+    if (!apiKey) {
+      return res.status(500).json({ error: "Configuration error: API key not set" });
+    }
+
+    let inputBuffer: Buffer | null = null;
+    let inputMimeType: string | null = null;
+    let existingObjectPath: string | null = null;
+
+    if (req.file?.buffer) {
+      inputBuffer = req.file.buffer as Buffer;
+      inputMimeType = String(req.file.mimetype || "").toLowerCase();
+    } else if (typeof req.body?.imageUrl === "string") {
+      const imageUrl = req.body.imageUrl.trim();
+      if (!imageUrl.startsWith("/objects/uploads/")) {
+        return res.status(400).json({ error: "Invalid image reference" });
+      }
+
+      existingObjectPath = imageUrl;
+      try {
+        const objectStorageService = new ObjectStorageService();
+        const file = await objectStorageService.getObjectEntityFile(imageUrl);
+        const [metadata] = await file.getMetadata();
+
+        const contentType = String(metadata?.contentType || "").toLowerCase();
+        if (!ENHANCE_ALLOWED_MIME_TYPES.includes(contentType as any)) {
+          return res.status(400).json({ error: "Unsupported file type" });
+        }
+
+        const sizeBytes = typeof metadata?.size === "string" ? parseInt(metadata.size, 10) : Number(metadata?.size);
+        if (Number.isFinite(sizeBytes) && sizeBytes > 7 * 1024 * 1024) {
+          return res.status(413).json({ error: "File too large" });
+        }
+
+        const [downloaded] = await file.download();
+        inputBuffer = downloaded;
+        inputMimeType = contentType;
+      } catch (error) {
+        if (error instanceof ObjectNotFoundError) {
+          return res.status(404).json({ error: "Image not found" });
+        }
+        console.error("[enhance-image] Failed to load image from storage:", error);
+        return res.status(500).json({ error: "Failed to load image" });
+      }
+    } else {
+      return res.status(400).json({ error: "Image input is required" });
+    }
+
+    if (!inputBuffer || !inputMimeType) {
+      return res.status(400).json({ error: "Image input is required" });
+    }
+
+    if (!ENHANCE_ALLOWED_MIME_TYPES.includes(inputMimeType as any)) {
+      return res.status(400).json({ error: "Unsupported file type" });
+    }
+
+    if (inputBuffer.byteLength > 7 * 1024 * 1024) {
+      return res.status(413).json({ error: "File too large" });
+    }
+
+    try {
+      const result = await cleanListingPhotoWithGemini({
+        apiKey,
+        imageBuffer: inputBuffer,
+        mimeType: inputMimeType,
+      });
+
+      if (result.kind === "unclear_subject") {
+        return res.status(422).json({ error: BACKGROUND_TOO_COMPLEX_MESSAGE });
+      }
+
+      const processed = await processImage(result.imageBuffer, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 80,
+        format: "webp",
+        generateThumbnail: true,
+        thumbnailWidth: 400,
+      });
+
+      const privateObjectDir = process.env.PRIVATE_OBJECT_DIR || "";
+      if (!privateObjectDir) {
+        return res.status(500).json({ error: "Object storage not configured" });
+      }
+
+      const { bucketName, objectPrefix } = parsePrivateObjectDir(privateObjectDir);
+      const bucket = objectStorageClient.bucket(bucketName);
+
+      const mainId = randomUUID();
+      const mainEntityId = `uploads/${mainId}.webp`;
+      const mainObjectName = [objectPrefix, mainEntityId].filter(Boolean).join("/");
+      const mainUrl = `/objects/${mainEntityId}`;
+
+      const uploadPromises: Promise<void>[] = [];
+      uploadPromises.push(
+        bucket.file(mainObjectName).save(processed.main.buffer, {
+          contentType: "image/webp",
+          metadata: {
+            processedAt: new Date().toISOString(),
+            enhancedBy: "gemini",
+          },
+        })
+      );
+
+      let thumbnailUrl: string | undefined;
+      if (processed.thumbnail) {
+        const thumbEntityId = `uploads/${mainId}_thumb.webp`;
+        const thumbObjectName = [objectPrefix, thumbEntityId].filter(Boolean).join("/");
+        thumbnailUrl = `/objects/${thumbEntityId}`;
+        uploadPromises.push(
+          bucket.file(thumbObjectName).save(processed.thumbnail.buffer, {
+            contentType: "image/webp",
+            metadata: {
+              processedAt: new Date().toISOString(),
+              enhancedBy: "gemini",
+            },
+          })
+        );
+      }
+
+      await Promise.all(uploadPromises);
+
+      // Best-effort delete old objects after successful upload.
+      if (existingObjectPath) {
+        const objectStorageService = new ObjectStorageService();
+        await deleteObjectIfExists(objectStorageService, existingObjectPath);
+        const thumbPath = existingObjectPath.replace(/\.webp$/i, "_thumb.webp");
+        if (thumbPath !== existingObjectPath) {
+          await deleteObjectIfExists(objectStorageService, thumbPath);
+        }
+      }
+
+      return res.status(200).json({ imageUrl: mainUrl, thumbnailUrl });
+    } catch (error) {
+      console.error("[enhance-image] Error:", error);
+      if (error instanceof Error) {
+        if (error.message.includes("GEMINI_API_KEY")) {
+          return res.status(500).json({ error: "Configuration error: API key not set" });
+        }
+        if (error.message.includes(UNCLEAR_SUBJECT_TOKEN)) {
+          return res.status(422).json({ error: BACKGROUND_TOO_COMPLEX_MESSAGE });
+        }
+      }
+      return res.status(502).json({ error: GENERIC_RETRYABLE_MESSAGE });
+    }
+  }
+
+  // POST /api/enhance-image (preferred, follows API conventions)
+  app.post("/api/enhance-image", validateCsrfToken, (req, res) => {
+    enhanceImageUpload.single("image")(req as any, res as any, async (err: any) => {
+      if (err) {
+        if (err?.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ error: "File too large" });
+        }
+        if (typeof err?.message === "string" && err.message.startsWith("Unsupported file type")) {
+          return res.status(400).json({ error: "Unsupported file type" });
+        }
+        console.error("[enhance-image] Upload error:", err);
+        return res.status(400).json({ error: "Invalid image upload" });
+      }
+      return enhanceImageCore(req, res);
+    });
+  });
+
+  // POST /enhance-image (explicit requirement)
+  app.post("/enhance-image", validateCsrfToken, (req, res) => {
+    enhanceImageUpload.single("image")(req as any, res as any, async (err: any) => {
+      if (err) {
+        if (err?.code === "LIMIT_FILE_SIZE") {
+          return res.status(413).json({ error: "File too large" });
+        }
+        if (typeof err?.message === "string" && err.message.startsWith("Unsupported file type")) {
+          return res.status(400).json({ error: "Unsupported file type" });
+        }
+        console.error("[enhance-image] Upload error:", err);
+        return res.status(400).json({ error: "Invalid image upload" });
+      }
+      return enhanceImageCore(req, res);
+    });
   });
 
   // Update listing
@@ -1162,4 +1358,28 @@ export function registerProductRoutes(app: Express): void {
       res.status(500).json({ error: "Failed to analyze image" });
     }
   });
+}
+
+function parsePrivateObjectDir(privateObjectDir: string): { bucketName: string; objectPrefix: string } {
+  const normalized = privateObjectDir.startsWith("/") ? privateObjectDir.slice(1) : privateObjectDir;
+  const parts = normalized.split("/").filter(Boolean);
+  const bucketName = parts[0] || "";
+  const objectPrefix = parts.slice(1).join("/");
+  if (!bucketName) {
+    throw new Error("Invalid PRIVATE_OBJECT_DIR");
+  }
+  return { bucketName, objectPrefix };
+}
+
+async function deleteObjectIfExists(service: ObjectStorageService, objectPath: string): Promise<void> {
+  try {
+    const file = await service.getObjectEntityFile(objectPath);
+    await file.delete();
+  } catch (error) {
+    if (error instanceof ObjectNotFoundError) {
+      return;
+    }
+    // Best-effort delete: ignore errors but log for debugging.
+    console.warn("[enhance-image] Failed to delete old object:", objectPath, error);
+  }
 }

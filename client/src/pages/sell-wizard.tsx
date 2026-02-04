@@ -79,6 +79,8 @@ export default function SellWizardPage() {
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [wasAIFilled, setWasAIFilled] = useState(false);
+  const [cleaningIndex, setCleaningIndex] = useState<number | null>(null);
+  const [cleanErrorByIndex, setCleanErrorByIndex] = useState<Record<number, string>>({});
   
   const [images, setImages] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
@@ -459,6 +461,51 @@ export default function SellWizardPage() {
     }
   };
 
+  const cleanBackground = async (index: number) => {
+    const imageUrl = images[index];
+    if (!imageUrl) return;
+
+    setCleanErrorByIndex(prev => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+    setCleaningIndex(index);
+
+    try {
+      const res = await apiRequest("POST", "/api/enhance-image", { imageUrl });
+      const data = await res.json().catch(() => ({} as any));
+
+      if (!res.ok) {
+        const message =
+          typeof data?.error === "string"
+            ? data.error
+            : (language === "ar" ? "فشل تنظيف الصورة. حاول مرة أخرى." : "شکست لە پاککردنەوەی وێنە. دووبارە هەوڵ بدە.");
+
+        setCleanErrorByIndex(prev => ({ ...prev, [index]: message }));
+        return;
+      }
+
+      const newUrl = data?.imageUrl;
+      if (typeof newUrl === "string" && newUrl.length > 0) {
+        setImages(prev => prev.map((u, i) => (i === index ? newUrl : u)));
+      } else {
+        setCleanErrorByIndex(prev => ({
+          ...prev,
+          [index]: language === "ar" ? "استجابة غير متوقعة من الخادم" : "وەڵامی نەزانراو لە سێرڤەر",
+        }));
+      }
+    } catch (error) {
+      console.error("[clean-background] Error:", error);
+      setCleanErrorByIndex(prev => ({
+        ...prev,
+        [index]: language === "ar" ? "فشل تنظيف الصورة. حاول مرة أخرى." : "شکست لە پاککردنەوەی وێنە. دووبارە هەوڵ بدە.",
+      }));
+    } finally {
+      setCleaningIndex(null);
+    }
+  };
+
   const stepValidation = [
     images.length > 0,
     formData.title.trim().length >= 5 && formData.description.trim().length >= 10 && !!formData.category && !!formData.condition,
@@ -644,6 +691,9 @@ export default function SellWizardPage() {
               onRemoveImage={removeImage}
               onCameraClick={isNative ? handleNativeCamera : undefined}
               onAIAnalyze={analyzeImageWithAI}
+              onCleanBackground={cleanBackground}
+              cleaningIndex={cleaningIndex}
+              cleanErrorByIndex={cleanErrorByIndex}
             />
             {images.length === 0 && (
               <p className="text-center text-amber-600 text-sm">
