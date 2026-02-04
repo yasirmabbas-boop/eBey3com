@@ -108,13 +108,23 @@ export default function SwipePage() {
     setProcessedItems(sorted);
   }, [listingsData, page, hasUserPreferences, personalizationData]);
 
-  // Reset when filters change
+  // Track filter changes to trigger refetch
+  const [isFiltersChanged, setIsFiltersChanged] = useState(false);
+  
+  // Reset when filters change - but don't clear items immediately to avoid flash
   useEffect(() => {
     setCurrentIndex(0);
     setPage(1);
     setAllItems([]);
-    setProcessedItems([]);
+    setIsFiltersChanged(true);
   }, [filters]);
+  
+  // Clear the filters changed flag when new data arrives
+  useEffect(() => {
+    if (listingsData?.listings && isFiltersChanged) {
+      setIsFiltersChanged(false);
+    }
+  }, [listingsData, isFiltersChanged]);
 
   // Infinite scroll - load more when reaching end
   useEffect(() => {
@@ -246,10 +256,11 @@ export default function SwipePage() {
     }));
   }, [processedItems, currentIndex]);
 
-  // Loading state
-  if (isLoading && processedItems.length === 0) {
+  // Loading state - show when loading OR when filters just changed
+  if ((isLoading || isFiltersChanged) && processedItems.length === 0) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center" style={{ paddingBottom: 'calc(64px + var(--safe-area-bottom, 0px))' }}>
+        <SwipeReelFilters filters={filters} onFiltersChange={setFilters} />
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-white/70">

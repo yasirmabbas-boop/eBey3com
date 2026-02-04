@@ -76,13 +76,53 @@ export function SwipeReelFilters({ filters, onFiltersChange }: SwipeReelFiltersP
     });
   };
 
+  const selectSaleType = (type: 'auction' | 'fixed') => {
+    const isSelected = filters.saleType === type;
+    onFiltersChange({ 
+      ...filters, 
+      saleType: isSelected ? 'all' : type
+    });
+  };
+
   return (
     <div className="absolute top-0 left-0 right-0 z-30">
       <div className="px-2 py-2">
         <div className="flex items-center gap-2">
-          {/* Quick Category Pills - Horizontal Scroll */}
+          {/* Quick Filter Pills - Horizontal Scroll */}
           <div className="flex-1 overflow-x-auto scrollbar-hide">
             <div className="flex gap-2 px-1">
+              {/* Sale Type Pills */}
+              <button
+                onClick={() => selectSaleType('auction')}
+                className={`
+                  flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium
+                  transition-colors whitespace-nowrap
+                  ${filters.saleType === 'auction'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-black/50 text-white hover:bg-black/70'
+                  }
+                `}
+              >
+                {language === "ar" ? "مزاد" : "مزایدە"}
+              </button>
+              <button
+                onClick={() => selectSaleType('fixed')}
+                className={`
+                  flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium
+                  transition-colors whitespace-nowrap
+                  ${filters.saleType === 'fixed'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-black/50 text-white hover:bg-black/70'
+                  }
+                `}
+              >
+                {language === "ar" ? "شراء فوري" : "کڕینی خێرا"}
+              </button>
+              
+              {/* Divider */}
+              <div className="w-px h-6 bg-white/30 flex-shrink-0" />
+              
+              {/* Category Pills */}
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
