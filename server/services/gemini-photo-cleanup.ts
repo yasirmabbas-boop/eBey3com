@@ -9,29 +9,17 @@ export type PhotoCleanupResult =
   | { kind: "unclear_subject" };
 
 function buildSystemInstruction(): string {
-  return `System prompt (Gemini) — background-only, 2 colors, tokenized fail-closed
+  return `You are an e-commerce photo background remover.
 
-You are a professional e-commerce photo editor.
-Your ONLY task is to replace the background of the provided photo. The item must remain exactly the same in appearance.
+CRITICAL RULES (NEVER BREAK):
+1. KEEP EXACT SAME: angle, orientation, size, position, perspective. NO rotation. NO cropping. NO resizing.
+2. ITEM STAYS IDENTICAL: Every scratch, reflection, texture, detail must remain exactly as-is. NO enhancement. NO cleanup. NO modification.
+3. ONLY replace background with SOLID WHITE (#FFFFFF) or LIGHT GRAY (#F2F2F2) - whichever gives better contrast.
+4. NO gradients, shadows, surfaces, props, text, or any added elements.
 
-ALLOWED EDITS (background only):
-Replace the background with a single, solid, uniform color using ONLY ONE of:
-- White #FFFFFF
-- Light gray #F2F2F2
-
-Choose the color that provides clear contrast with the item so the item is easy to see (typically #F2F2F2 for very light/silver items; #FFFFFF for darker items).
-Background must be flat: no gradients, textures, patterns, shadows, vignettes, reflections, or added surfaces.
-
-STRICTLY FORBIDDEN (item must be unchanged):
-Do NOT change the item in ANY way. Do NOT add/remove details. Do NOT alter scratches, patina, dust, texture, sharpness, noise, engraving, logos, dial text, watch hands, indices, bezel, case edges, or reflections on the item.
-Do NOT perform “enhancement” of the item: no denoise, no sharpen, no smoothing, no color correction, no relighting of the item.
-Do NOT crop, rotate, warp, resize, or change perspective.
-Do NOT add text, watermarks, props, or any new elements.
-
-OUTPUT RULES:
-If you can do this safely, output ONLY the edited image.
-If you cannot confidently separate the item from the background without changing the item, output EXACTLY this token and nothing else:
-${UNCLEAR_SUBJECT_TOKEN}`;
+OUTPUT:
+- Success: Return ONLY the edited image (same dimensions as input).
+- Cannot do safely: Return EXACTLY: ${UNCLEAR_SUBJECT_TOKEN}`;
 }
 
 export function parseGeminiPhotoCleanupResponse(json: unknown): PhotoCleanupResult {
@@ -53,7 +41,7 @@ export function parseGeminiPhotoCleanupResponse(json: unknown): PhotoCleanupResu
     const text = typeof part?.text === "string" ? part.text.trim() : "";
     if (
       text === BACKGROUND_TOO_COMPLEX_MESSAGE ||
-      text === `“${BACKGROUND_TOO_COMPLEX_MESSAGE}”`
+      text === `"${BACKGROUND_TOO_COMPLEX_MESSAGE}"`
     ) {
       return { kind: "unclear_subject" };
     }
@@ -80,7 +68,7 @@ export async function cleanListingPhotoWithGemini(opts: {
   timeoutMs?: number;
 }): Promise<PhotoCleanupResult> {
   const { apiKey, imageBuffer, mimeType } = opts;
-  const model = opts.model || process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
+  const model = opts.model || process.env.GEMINI_IMAGE_MODEL || "gemini-2.0-flash-exp";
   const timeoutMs = opts.timeoutMs ?? 60_000;
 
   if (!apiKey) {
@@ -105,7 +93,7 @@ export async function cleanListingPhotoWithGemini(opts: {
           role: "user",
           parts: [
             {
-              text: "Replace ONLY the background per the system rules. Do not modify the item. If unsure, output UNCLEAR_SUBJECT.",
+              text: "Replace ONLY the background. Keep exact same angle, size, position. Output same dimensions. Do not modify the item in any way.",
             },
             { inline_data: { mime_type: mimeType, data: base64Image } },
           ],
@@ -129,7 +117,6 @@ export async function cleanListingPhotoWithGemini(opts: {
 
     const text = await res.text();
     if (!res.ok) {
-      // Caller maps to a generic 502 (don’t expose provider internals).
       throw new Error(`Gemini request failed with status ${res.status}`);
     }
 
