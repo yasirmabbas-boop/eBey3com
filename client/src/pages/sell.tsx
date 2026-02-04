@@ -88,6 +88,7 @@ export default function SellPage() {
   const [internationalShipping, setInternationalShipping] = useState(false);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [images, setImages] = useState<string[]>([]);
+  const [originalImages, setOriginalImages] = useState<(string | null)[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -259,6 +260,7 @@ export default function SellPage() {
         allowedBidderType: sourceListing.allowedBidderType ?? "verified_only",
       });
       setImages(sourceListing.images ?? []);
+      setOriginalImages((sourceListing as any).originalImages ?? []);
       setSaleType((sourceListing.saleType as "auction" | "fixed") ?? "fixed");
       setInternationalShipping(sourceListing.internationalShipping ?? false);
       setSelectedCountries(sourceListing.internationalCountries ?? []);
@@ -398,6 +400,7 @@ export default function SellPage() {
 
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
+    setOriginalImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const cleanBackground = async (index: number) => {
@@ -430,8 +433,17 @@ export default function SellPage() {
       }
 
       const newUrl = data?.imageUrl;
+      const originalUrl = data?.originalImageUrl;
       if (typeof newUrl === "string" && newUrl.length > 0) {
         setImages(prev => prev.map((u, i) => (i === index ? newUrl : u)));
+        if (originalUrl) {
+          setOriginalImages(prev => {
+            const next = [...prev];
+            while (next.length <= index) next.push(null);
+            next[index] = originalUrl;
+            return next;
+          });
+        }
       } else {
         setCleanErrorByIndex(prev => ({
           ...prev,
@@ -633,6 +645,7 @@ export default function SellPage() {
         condition: formData.condition,
         brand: finalBrand || null,
         images: images,
+        originalImages: originalImages.filter(Boolean) as string[],
         saleType: saleType,
         timeLeft: null,
         auctionStartTime: auctionStartTime,
@@ -998,6 +1011,7 @@ export default function SellPage() {
           
           <ImageUploadSection
             images={images}
+            originalImages={originalImages}
             isUploadingImages={isUploadingImages}
             validationErrors={validationErrors}
             language={language}
