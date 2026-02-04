@@ -713,14 +713,15 @@ export function registerProductRoutes(app: Express): void {
         },
       });
 
-      // Best-effort delete old objects after successful upload.
-      if (existingObjectPath) {
-        const objectStorageService = new ObjectStorageService();
-        await deleteObjectIfExists(objectStorageService, existingObjectPath);
-        await deleteObjectIfExists(objectStorageService, thumbPathForObjectPath(existingObjectPath));
-      }
+      // Keep the original image for before/after comparison (don't delete it)
+      // Only return originalImageUrl if we were enhancing an existing stored image
+      const originalImageUrl = existingObjectPath || null;
 
-      return res.status(200).json({ imageUrl: mainUrl, thumbnailUrl });
+      return res.status(200).json({ 
+        imageUrl: mainUrl, 
+        thumbnailUrl,
+        originalImageUrl,
+      });
     } catch (error) {
       console.error("[enhance-image] Error:", error);
       if (error instanceof Error) {
