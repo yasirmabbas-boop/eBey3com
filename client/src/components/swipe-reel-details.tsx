@@ -34,16 +34,8 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
 
         <ScrollArea className="h-[calc(85vh-80px)]">
           <div className="px-4 py-4 space-y-6">
-            {/* Description */}
-            <div>
-              <h3 className="font-bold text-lg mb-2">{t("description")}</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {listing.description || (language === "ar" 
-                  ? "لا يوجد وصف متوفر لهذا المنتج."
-                  : "هیچ وەسفێک بۆ ئەم بەرهەمە بەردەست نییە."
-                )}
-              </p>
-            </div>
+            {/* Comments First */}
+            <ProductComments listingId={listing.id} />
 
             <Separator />
 
@@ -165,9 +157,6 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
                 <Separator />
               </>
             )}
-
-            {/* Comments */}
-            <ProductComments listingId={listing.id} />
 
             {/* View Full Page Button */}
             <Link href={`/product/${listing.id}`}>

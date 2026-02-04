@@ -5,7 +5,14 @@ import { cn } from "@/lib/utils"
 const Textarea = React.forwardRef<
   HTMLTextAreaElement,
   React.ComponentProps<"textarea">
->(({ className, ...props }, ref) => {
+>(({ className, onFocus, ...props }, ref) => {
+  const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+    onFocus?.(e);
+  };
+  
   return (
     <textarea
       className={cn(
@@ -13,6 +20,7 @@ const Textarea = React.forwardRef<
         className
       )}
       ref={ref}
+      onFocus={handleFocus}
       {...props}
     />
   )

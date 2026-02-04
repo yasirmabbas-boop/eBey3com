@@ -119,6 +119,11 @@ export function ProductComments({ listingId }: { listingId: string }) {
             rows={3}
             className="resize-none"
             data-testid="input-comment"
+            onFocus={(e) => {
+              setTimeout(() => {
+                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 300);
+            }}
           />
           <div className="flex justify-end">
             <Button

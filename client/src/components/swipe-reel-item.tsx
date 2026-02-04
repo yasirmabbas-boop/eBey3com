@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Heart, MessageSquare, Share2, Gavel, ShoppingBag, Eye } from "lucide-react";
+import { Heart, MessageSquare, Share2, Gavel, Eye } from "lucide-react";
 import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
 import { AuctionCountdown } from "@/components/auction-countdown";
@@ -229,13 +229,13 @@ export function SwipeReelItem({
         </div>
       </div>
 
-      {/* Action Buttons - Right Side */}
-      <div className="absolute right-4 bottom-32 flex flex-col gap-4 z-20">
+      {/* Action Buttons - Right Side - Moved up above text/price */}
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-20">
         {/* Favorite */}
         <FavoriteButton 
           listingId={listing.id}
           size="lg"
-          className="bg-black/40 backdrop-blur-sm"
+          className="!bg-transparent border border-white/50"
         />
 
         {/* Details/Comments */}
@@ -244,9 +244,9 @@ export function SwipeReelItem({
             e.stopPropagation();
             onDetailsOpen();
           }}
-          className="h-12 w-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+          className="h-10 w-10 rounded-full border border-white/50 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
         >
-          <MessageSquare className="h-6 w-6 text-white" />
+          <MessageSquare className="h-5 w-5 text-white" />
         </button>
 
         {/* Share */}
@@ -255,29 +255,21 @@ export function SwipeReelItem({
             e.stopPropagation();
             onShare();
           }}
-          className="h-12 w-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+          className="h-10 w-10 rounded-full border border-white/50 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
         >
-          <Share2 className="h-6 w-6 text-white" />
+          <Share2 className="h-5 w-5 text-white" />
         </button>
 
-        {/* Action Button (Bid or Buy) */}
-        {!isOwnProduct && !isSoldOut && listing.isActive && (
+        {/* Bid Button - Only for auctions */}
+        {!isOwnProduct && !isSoldOut && listing.isActive && isAuction && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (isAuction) {
-                onBidOpen();
-              } else {
-                onBuyNow();
-              }
+              onBidOpen();
             }}
-            className="h-12 w-12 rounded-full bg-primary backdrop-blur-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-lg"
+            className="h-10 w-10 rounded-full border border-primary bg-primary/20 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
           >
-            {isAuction ? (
-              <Gavel className="h-6 w-6 text-white" />
-            ) : (
-              <ShoppingBag className="h-6 w-6 text-white" />
-            )}
+            <Gavel className="h-5 w-5 text-white" />
           </button>
         )}
       </div>
