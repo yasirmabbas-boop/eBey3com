@@ -755,6 +755,7 @@ export default function SellWizardPage() {
                     <SelectItem value="إلكترونيات">{t("electronics")}</SelectItem>
                     <SelectItem value="ملابس">{t("clothing")}</SelectItem>
                     <SelectItem value="مجوهرات">{t("jewelry")}</SelectItem>
+                    <SelectItem value="مكياج">{t("makeup")}</SelectItem>
                     <SelectItem value="تحف وأثاث">{t("furniture")}</SelectItem>
                     <SelectItem value="مقتنيات">{t("collectibles")}</SelectItem>
                     <SelectItem value="أخرى">{t("other")}</SelectItem>

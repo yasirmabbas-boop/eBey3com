@@ -18,6 +18,7 @@ const CATEGORIES = [
   { id: "ملابس", name: "ملابس", nameEn: "clothing", icon: Tag, color: "purple" },
   { id: "تحف وأثاث", name: "تحف وأثاث", nameEn: "antiques", icon: Sparkles, color: "rose" },
   { id: "مجوهرات", name: "مجوهرات", nameEn: "jewelry", icon: Heart, color: "pink" },
+  { id: "مكياج", name: "مكياج", nameEn: "makeup", icon: Sparkles, color: "fuchsia" },
   { id: "آلات موسيقية", name: "آلات موسيقية", nameEn: "music", icon: Gavel, color: "indigo" },
   { id: "مقتنيات", name: "مقتنيات", nameEn: "collectibles", icon: ShoppingBag, color: "teal" },
   { id: "أخرى", name: "أخرى", nameEn: "other", icon: Tag, color: "gray" },

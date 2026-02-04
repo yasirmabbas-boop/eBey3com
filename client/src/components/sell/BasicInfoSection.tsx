@@ -104,6 +104,7 @@ export function BasicInfoSection({
                 <SelectItem value="تحف وأثاث">{t("furniture")}</SelectItem>
                 <SelectItem value="إلكترونيات">{t("electronics")}</SelectItem>
                 <SelectItem value="مجوهرات">{t("jewelry")}</SelectItem>
+                <SelectItem value="مكياج">{t("makeup")}</SelectItem>
                 <SelectItem value="آلات موسيقية">{t("music")}</SelectItem>
                 <SelectItem value="مقتنيات">{t("collectibles")}</SelectItem>
                 <SelectItem value="أخرى">{t("other")}</SelectItem>

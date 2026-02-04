@@ -332,16 +332,16 @@ export default function SwipePage() {
       >
         {/* Filters Overlay */}
         <SwipeReelFilters filters={filters} onFiltersChange={setFilters} />
-        <AnimatePresence mode="wait">
+        <AnimatePresence initial={false}>
           {visibleItems.map(({ item, actualIndex }) => (
             actualIndex === currentIndex && (
               <motion.div
                 key={item.id}
                 className="absolute inset-0"
-                initial={{ opacity: 0, y: 100 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -100 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.1 }}
               >
                 <SwipeReelItem
                   listing={item}

@@ -135,6 +135,7 @@ export const translations: Translations = {
   clothing: { ar: "ملابس", ku: "جلوبەرگ", en: "Clothing" },
   furniture: { ar: "أثاث", ku: "کەلوپەل", en: "Furniture" },
   jewelry: { ar: "مجوهرات", ku: "خشڵ", en: "Jewelry" },
+  makeup: { ar: "مكياج", ku: "مەیکئەپ", en: "Makeup" },
   collectibles: { ar: "مقتنيات", ku: "کۆکراوەکان", en: "Collectibles" },
   music: { ar: "آلات موسيقية", ku: "ئامێری موسیقا", en: "Musical Instruments" },
   
