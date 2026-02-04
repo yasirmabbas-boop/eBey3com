@@ -644,6 +644,10 @@ export function registerProductRoutes(app: Express): void {
     }
 
     try {
+      const inputMeta = await sharp(inputBuffer).metadata();
+      const inputWidth = inputMeta.width || 0;
+      const inputHeight = inputMeta.height || 0;
+
       const result = await cleanListingPhotoWithGemini({
         apiKey,
         imageBuffer: inputBuffer,
@@ -652,6 +656,20 @@ export function registerProductRoutes(app: Express): void {
 
       if (result.kind === "unclear_subject") {
         return res.status(422).json({ error: BACKGROUND_TOO_COMPLEX_MESSAGE });
+      }
+
+      const outputMeta = await sharp(result.imageBuffer).metadata();
+      const outputWidth = outputMeta.width || 0;
+      const outputHeight = outputMeta.height || 0;
+
+      if (inputWidth > 0 && inputHeight > 0 && outputWidth > 0 && outputHeight > 0) {
+        const inputAspect = inputWidth / inputHeight;
+        const outputAspect = outputWidth / outputHeight;
+        const aspectDiff = Math.abs(inputAspect - outputAspect) / inputAspect;
+        if (aspectDiff > 0.05) {
+          console.warn(`[enhance-image] Aspect ratio changed: input=${inputAspect.toFixed(2)} output=${outputAspect.toFixed(2)}`);
+          return res.status(422).json({ error: "Image cleanup failed - please try again with a different photo." });
+        }
       }
 
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR || "";
