@@ -489,6 +489,13 @@ export default function SellWizardPage() {
       const newUrl = data?.imageUrl;
       if (typeof newUrl === "string" && newUrl.length > 0) {
         setImages(prev => prev.map((u, i) => (i === index ? newUrl : u)));
+        toast({
+          title: language === "ar" ? "تم تنظيف الصورة" : "وێنە پاککرایەوە",
+          description: language === "ar" 
+            ? "الذكاء الاصطناعي قد يخطئ أحياناً. يرجى التحقق من دقة النتيجة." 
+            : "زیرەکی دەستکرد هەندێک جار هەڵە دەکات. تکایە دڵنیابە لە راستی ئەنجامەکە.",
+          variant: "default",
+        });
       } else {
         setCleanErrorByIndex(prev => ({
           ...prev,
