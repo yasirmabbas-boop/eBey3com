@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Heart, MessageSquare, Share2, Gavel, Eye } from "lucide-react";
+import { Heart, MessageSquare, Share2, Gavel, Eye, Star, BadgeCheck } from "lucide-react";
 import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
 import { AuctionCountdown } from "@/components/auction-countdown";
@@ -134,12 +134,6 @@ export function SwipeReelItem({
           ))}
         </div>
 
-        {/* Image Counter */}
-        {images.length > 1 && (
-          <div className="absolute top-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-            {currentImageIndex + 1} / {images.length}
-          </div>
-        )}
 
         {/* Dots Indicator */}
         {images.length > 1 && (
@@ -222,9 +216,20 @@ export function SwipeReelItem({
             <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-xs font-bold">
               {(listing.sellerName || "U").charAt(0).toUpperCase()}
             </div>
-            <span className="text-white/90 text-sm font-medium">
-              {listing.sellerName || (language === "ar" ? "بائع" : "فرۆشیار")}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-white/90 text-sm font-medium">
+                {listing.sellerName || (language === "ar" ? "بائع" : "فرۆشیار")}
+              </span>
+              {(listing as any).sellerIsVerified && (
+                <BadgeCheck className="h-4 w-4 text-blue-400" />
+              )}
+            </div>
+            {(listing as any).sellerRating && (listing as any).sellerRating > 0 && (
+              <div className="flex items-center gap-0.5 text-yellow-400 text-xs">
+                <Star className="h-3 w-3 fill-yellow-400" />
+                <span>{((listing as any).sellerRating / 10).toFixed(1)}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
