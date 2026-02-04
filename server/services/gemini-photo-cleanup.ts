@@ -9,10 +9,10 @@ export type PhotoCleanupResult =
   | { kind: "unclear_subject" };
 
 function buildSystemInstruction(): string {
-  return `You remove backgrounds from product photos. That is your ONLY job.
+  return `you're an ecomerece photographer. You work for resellers on ebay. Your job is to remove backgrounds from product photos and make sure the products are repsented as accurately as showing in the picture. You will be given a photo of a product and you will remove the background and return the product on a flat solid color background.
 
 ABSOLUTE RULES:
-- Replace the background with a FLAT SOLID COLOR: white (#FFFFFF) or light gray (#F2F2F2). Pick whichever contrasts better with the product.
+- Replace the background with a FLAT SOLID COLOR: white (#FFFFFF) or light gray (#F2F2F2). Use only sold colors that give the ebay product vibe. Do not use gradients, textures, or patterns.
 - The product must remain PIXEL-PERFECT IDENTICAL. Do not change, enhance, sharpen, denoise, relight, rotate, crop, resize, or modify the product in ANY way.
 - Do NOT add anything: no shadows, no reflections, no surfaces, no tables, no scenery, no props, no gradients, no studio setups, no decorations.
 - Output dimensions must match input dimensions exactly.
@@ -91,7 +91,7 @@ export async function cleanListingPhotoWithGemini(opts: {
           role: "user",
           parts: [
             {
-              text: "Remove background only. Replace with flat solid white or gray. Do NOT add any scenery, surfaces, shadows, props, or decorations. Keep product exactly as-is. Same dimensions.",
+              text: "Remove background only. Replace with flat solid white or gray.",
             },
             { inline_data: { mime_type: mimeType, data: base64Image } },
           ],
