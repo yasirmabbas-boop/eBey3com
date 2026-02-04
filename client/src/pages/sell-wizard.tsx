@@ -462,7 +462,6 @@ export default function SellWizardPage() {
   };
 
   const cleanBackground = async (index: number) => {
-    if (index !== 0) return; // Only allow enhancing cover photo
     const imageUrl = images[index];
     if (!imageUrl) return;
 
