@@ -103,6 +103,20 @@ export function FullscreenImageViewer({
     };
   }, [isOpen]);
 
+  const goToPrev = useCallback(() => {
+    if (scale > 1) {
+      resetZoom();
+    }
+    onIndexChange(initialIndex === 0 ? images.length - 1 : initialIndex - 1);
+  }, [initialIndex, images.length, onIndexChange, scale, resetZoom]);
+
+  const goToNext = useCallback(() => {
+    if (scale > 1) {
+      resetZoom();
+    }
+    onIndexChange(initialIndex === images.length - 1 ? 0 : initialIndex + 1);
+  }, [initialIndex, images.length, onIndexChange, scale, resetZoom]);
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
     const touches = e.touches;
@@ -228,20 +242,6 @@ export function FullscreenImageViewer({
     setScale(newScale);
     touchStateRef.current.lastScale = newScale;
   }, [scale]);
-
-  const goToPrev = useCallback(() => {
-    if (scale > 1) {
-      resetZoom();
-    }
-    onIndexChange(initialIndex === 0 ? images.length - 1 : initialIndex - 1);
-  }, [initialIndex, images.length, onIndexChange, scale, resetZoom]);
-
-  const goToNext = useCallback(() => {
-    if (scale > 1) {
-      resetZoom();
-    }
-    onIndexChange(initialIndex === images.length - 1 ? 0 : initialIndex + 1);
-  }, [initialIndex, images.length, onIndexChange, scale, resetZoom]);
 
   const handleClose = useCallback(() => {
     resetZoom();
