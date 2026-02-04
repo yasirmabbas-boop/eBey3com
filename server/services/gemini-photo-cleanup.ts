@@ -8,28 +8,26 @@ export type PhotoCleanupResult =
 
 function buildSystemInstruction(): string {
   // User-provided policy. MUST be followed as written.
-  return `ALLOWED EDITS (background only):
-Remove/replace the background with a single, solid, neutral color selected based on the item’s tones so the item is clearly separated. Choose one of: pure white (#FFFFFF), off‑white (#FAFAFA), or light gray (#F2F2F2).
-Pick the shade that provides clean contrast with the item (e.g., use light gray for very light/silver items; use white/off‑white for darker items). The goal is maximum subject readability with a natural look.
-The background must remain uniform and flat (no gradients, textures, shadows, vignettes, or patterns).
+  return `You are a professional e-commerce photo editor.
+Your ONLY task is to replace the background of the provided photo. The item must remain exactly the same in appearance.
+
+ALLOWED EDITS (background only):
+Replace the background with a single, solid, uniform color using ONLY ONE of:
+White #FFFFFF
+Light gray #F2F2F2
+Choose the color that provides clear contrast with the item so the item is easy to see (typically #F2F2F2 for very light/silver items; #FFFFFF for darker items).
+Background must be flat: no gradients, textures, patterns, shadows, vignettes, reflections, or added surfaces.
 
 STRICTLY FORBIDDEN (item must be unchanged):
-Do NOT change the product in ANY way. This includes: adding/removing scratches, altering textures, smoothing, sharpening, denoising the item, changing reflections, changing colors, changing brightness/contrast on the item, altering logos/engraving, modifying watch hands, dial indices, bezel, case edges, or any small details.
-Do NOT “enhance,” “beautify,” “restore,” “retouch,” “repair,” “reconstruct,” or “improve” the item.
-Do NOT crop, rotate, warp, or change perspective.
-Do NOT add text, watermarks, props, shadows, or any new elements.
+Do NOT change the item in ANY way. Do NOT add/remove details. Do NOT alter scratches, patina, dust, texture, sharpness, noise, engraving, logos, dial text, watch hands, indices, bezel, case edges, or reflections on the item.
+Do NOT perform “enhancement” of the item: no denoise, no sharpen, no smoothing, no color correction, no relighting of the item.
+Do NOT crop, rotate, warp, resize, or change perspective.
+Do NOT add text, watermarks, props, or any new elements.
 
-QUALITY REQUIREMENTS:
-Keep the original framing and resolution.
-Preserve natural edges; avoid halos/cutout artifacts.
-
-FAIL-CLOSED RULE:
-If you cannot confidently separate the item from the background without altering the item, respond with exactly:
-“${BACKGROUND_TOO_COMPLEX_MESSAGE}”
-
-Implementation notes:
-- When the FAIL-CLOSED RULE applies, output ONLY that sentence and do NOT output an image.
-- Do not output any other text.`;
+OUTPUT RULES:
+If you can do this safely, output ONLY the edited image.
+If you cannot confidently separate the item from the background without changing the item, output EXACTLY this token and nothing else:
+${UNCLEAR_SUBJECT_TOKEN}`;
 }
 
 export function parseGeminiPhotoCleanupResponse(json: unknown): PhotoCleanupResult {
@@ -90,14 +88,16 @@ export async function cleanListingPhotoWithGemini(opts: {
         {
           role: "user",
           parts: [
-            { text: "Replace background only, following the policy exactly." },
+            {
+              text: "Replace ONLY the background per the system rules. Do not modify the item. If unsure, output UNCLEAR_SUBJECT.",
+            },
             { inline_data: { mime_type: mimeType, data: base64Image } },
           ],
         },
       ],
       generationConfig: {
         responseModalities: ["TEXT", "IMAGE"],
-        temperature: 0.3,
+        temperature: 0.0,
       },
     };
 
