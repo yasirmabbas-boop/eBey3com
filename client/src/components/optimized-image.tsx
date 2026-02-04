@@ -7,6 +7,7 @@ interface OptimizedImageProps {
   className?: string;
   aspectRatio?: "square" | "video" | "auto";
   priority?: boolean;
+  darkMode?: boolean;
 }
 
 export function OptimizedImage({ 
@@ -14,7 +15,8 @@ export function OptimizedImage({
   alt, 
   className,
   aspectRatio = "square",
-  priority = false
+  priority = false,
+  darkMode = false
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
@@ -47,21 +49,27 @@ export function OptimizedImage({
     auto: ""
   };
 
+  const bgColor = darkMode ? "bg-gray-900" : "bg-gray-100";
+  const loadingGradient = darkMode 
+    ? "bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900" 
+    : "bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100";
+
   return (
     <div 
       ref={imgRef}
       className={cn(
-        "relative overflow-hidden bg-gray-100",
+        "relative overflow-hidden",
+        bgColor,
         aspectClasses[aspectRatio],
         className
       )}
     >
       {!isLoaded && !hasError && (
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 bg-[length:200%_100%]" />
+        <div className={cn("absolute inset-0 animate-pulse bg-[length:200%_100%]", loadingGradient)} />
       )}
       
       {hasError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
+        <div className={cn("absolute inset-0 flex items-center justify-center text-gray-400", bgColor)}>
           <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>

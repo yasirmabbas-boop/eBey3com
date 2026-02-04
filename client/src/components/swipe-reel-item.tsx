@@ -129,6 +129,7 @@ export function SwipeReelItem({
                 alt={`${listing.title} - ${idx + 1}`}
                 className="w-full h-full object-contain"
                 priority={isActive && idx === 0}
+                darkMode={true}
               />
             </div>
           ))}

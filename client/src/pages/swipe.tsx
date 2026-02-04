@@ -332,30 +332,43 @@ export default function SwipePage() {
       >
         {/* Filters Overlay */}
         <SwipeReelFilters filters={filters} onFiltersChange={setFilters} />
-        <AnimatePresence initial={false}>
-          {visibleItems.map(({ item, actualIndex }) => (
-            actualIndex === currentIndex && (
-              <motion.div
-                key={item.id}
-                className="absolute inset-0"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.1 }}
-              >
-                <SwipeReelItem
-                  listing={item}
-                  isActive={actualIndex === currentIndex}
-                  onDetailsOpen={() => handleDetailsOpen(item)}
-                  onBidOpen={() => handleBidOpen(item)}
-                  onBuyNow={() => handleBuyNow(item)}
-                  onShare={() => handleShare(item)}
-                  onNavigateToListing={() => navigate(`/product/${item.id}`)}
-                />
-              </motion.div>
-            )
-          ))}
-        </AnimatePresence>
+        {/* Pre-render adjacent items for instant transitions */}
+        {visibleItems.map(({ item, actualIndex }) => {
+          const offset = actualIndex - currentIndex;
+          const isVisible = Math.abs(offset) <= 1;
+          const isCurrent = offset === 0;
+          
+          return (
+            <motion.div
+              key={item.id}
+              className="absolute inset-0"
+              initial={false}
+              animate={{ 
+                y: `${offset * 100}%`,
+                opacity: isVisible ? 1 : 0,
+                scale: isCurrent ? 1 : 0.95,
+              }}
+              transition={{ 
+                duration: 0.2, 
+                ease: [0.32, 0.72, 0, 1],
+              }}
+              style={{ 
+                zIndex: isCurrent ? 10 : 5,
+                willChange: 'transform, opacity',
+              }}
+            >
+              <SwipeReelItem
+                listing={item}
+                isActive={isCurrent}
+                onDetailsOpen={() => handleDetailsOpen(item)}
+                onBidOpen={() => handleBidOpen(item)}
+                onBuyNow={() => handleBuyNow(item)}
+                onShare={() => handleShare(item)}
+                onNavigateToListing={() => navigate(`/product/${item.id}`)}
+              />
+            </motion.div>
+          );
+        })}
 
         {/* Progress Indicator - positioned below the category filters */}
         <div className="absolute top-14 left-4 bg-black/60 text-white text-xs px-3 py-1 rounded-full z-20">
