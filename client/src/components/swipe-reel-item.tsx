@@ -111,7 +111,7 @@ export function SwipeReelItem({
 
   return (
     <div 
-      className="relative h-full w-full flex flex-col bg-black"
+      className="relative h-full w-full flex flex-col"
       onClick={handleTap}
     >
       {/* Image Carousel Area */}
