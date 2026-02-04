@@ -4,15 +4,7 @@ import { Heart, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-
-function getAuthHeaders(): HeadersInit {
-  const headers: HeadersInit = { "Content-Type": "application/json" };
-  const authToken = localStorage.getItem("authToken");
-  if (authToken) {
-    headers["Authorization"] = `Bearer ${authToken}`;
-  }
-  return headers;
-}
+import { apiRequest, getAuthHeaders } from "@/lib/queryClient";
 
 interface FavoriteButtonProps {
   listingId: string;
@@ -53,16 +45,9 @@ export function FavoriteButton({ listingId, className, size = "md" }: FavoriteBu
         ? `/api/watchlist/${user?.id}/${listingId}`
         : `/api/watchlist`;
       
-      const body = shouldRemove ? undefined : JSON.stringify({ userId: user?.id, listingId });
+      const body = shouldRemove ? undefined : { userId: user?.id, listingId };
       
-      const res = await fetch(url, {
-        method,
-        credentials: "include",
-        headers: getAuthHeaders(),
-        body,
-      });
-      
-      if (!res.ok) throw new Error("Failed to toggle favorite");
+      await apiRequest(method, url, body);
       return { shouldRemove };
     },
     onMutate: (shouldRemove) => {
