@@ -90,6 +90,7 @@ export default function ProductPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [showOriginalPhotos, setShowOriginalPhotos] = useState(false);
 
   // Scroll to top on page load
   useEffect(() => {
@@ -288,6 +289,7 @@ export default function ProductPage() {
     totalBids: (listing as any).totalBids || 0,
     image: listing.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
     images: listing.images || [],
+    originalImages: (listing as any).originalImages || [],
     saleType: listing.saleType as "auction" | "fixed",
     timeLeft: listing.timeLeft || undefined,
     auctionEndTime: listing.auctionEndTime,
@@ -657,25 +659,54 @@ export default function ProductPage() {
         
         {/* Image Gallery - Swipeable Carousel */}
         {(() => {
-          const images = product.images && product.images.length > 0 
-            ? product.images 
-            : [product.image];
+          const hasOriginalImages = product.originalImages && product.originalImages.length > 0;
+          const displayImages: string[] = showOriginalPhotos && hasOriginalImages
+            ? product.originalImages
+            : (product.images && product.images.length > 0 ? product.images : [product.image || '']);
 
           return (
             <div className="mb-6">
+              {/* Before/After Toggle for AI Enhanced Photos */}
+              {hasOriginalImages && (
+                <div className="flex justify-center mb-3">
+                  <button
+                    onClick={() => setShowOriginalPhotos(!showOriginalPhotos)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      showOriginalPhotos
+                        ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                        : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    }`}
+                    data-testid="button-toggle-original-photos"
+                  >
+                    {showOriginalPhotos ? (
+                      <>
+                        <span>📷</span>
+                        <span>الصورة الأصلية</span>
+                        <span className="text-xs opacity-70">(اضغط لرؤية المحسنة)</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>✨</span>
+                        <span>صورة محسّنة بالذكاء الاصطناعي</span>
+                        <span className="text-xs opacity-70">(اضغط لرؤية الأصلية)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
               {/* Main Image Carousel with Swipe Support */}
               <Carousel
                 setApi={setCarouselApi}
                 opts={{
                   align: "start",
-                  loop: images.length > 1,
+                  loop: displayImages.length > 1,
                   direction: "rtl",
                   duration: 0,
                 }}
                 className="w-full mb-3"
               >
                 <CarouselContent className="-mr-0">
-                  {images.map((img, index) => (
+                  {displayImages.map((img, index) => (
                     <CarouselItem key={index} className="pr-0">
                       <div 
                         className="relative aspect-[4/3] md:aspect-[16/9] bg-muted/40 rounded-xl overflow-hidden group soft-border elev-1"
@@ -694,18 +725,18 @@ export default function ProductPage() {
                         </div>
 
                         {/* Swipe hint for mobile */}
-                        {images.length > 1 && (
+                        {displayImages.length > 1 && (
                           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full flex items-center gap-2 md:hidden">
                             <span>←</span>
-                            <span>{selectedImageIndex + 1} / {images.length}</span>
+                            <span>{selectedImageIndex + 1} / {displayImages.length}</span>
                             <span>→</span>
                           </div>
                         )}
 
                         {/* Desktop counter */}
-                        {images.length > 1 && (
+                        {displayImages.length > 1 && (
                           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full hidden md:block">
-                            {selectedImageIndex + 1} / {images.length}
+                            {selectedImageIndex + 1} / {displayImages.length}
                           </div>
                         )}
                       </div>
@@ -714,7 +745,7 @@ export default function ProductPage() {
                 </CarouselContent>
                 
                 {/* Navigation Arrows - Desktop only */}
-                {images.length > 1 && (
+                {displayImages.length > 1 && (
                   <>
                     <CarouselPrevious className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2" />
                     <CarouselNext className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2" />
@@ -723,9 +754,9 @@ export default function ProductPage() {
               </Carousel>
 
               {/* Dot Indicators for Mobile */}
-              {images.length > 1 && (
+              {displayImages.length > 1 && (
                 <div className="flex justify-center gap-2 md:hidden mb-3">
-                  {images.map((_, i) => (
+                  {displayImages.map((_, i) => (
                     <button
                       key={i}
                       onClick={() => scrollToImage(i)}
@@ -741,9 +772,9 @@ export default function ProductPage() {
               )}
 
               {/* Thumbnail Strip */}
-              {images.length > 1 && (
+              {displayImages.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-2">
-                  {images.map((img, i) => (
+                  {displayImages.map((img, i) => (
                     <div 
                       key={i} 
                       onClick={() => scrollToImage(i)}
