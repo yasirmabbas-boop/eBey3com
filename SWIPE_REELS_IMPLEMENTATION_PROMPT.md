@@ -35,9 +35,25 @@ Combine personalization with user-selected filters:
 **Algorithm Priority**:
 1. Apply user-selected filters first (mandatory)
 2. Within filtered results, prioritize:
-   - Items in user's preferred categories (40% weight)
-   - Items in user's typical price range (30% weight)
-   - New/trending items user hasn't seen (30% weight)
+   - For NEW USERS (cold start): Show trending/recently listed items
+   - For RETURNING USERS:
+     - Items in user's preferred categories (35% weight)
+     - Items in user's typical price range (25% weight)
+     - New/trending items user hasn't seen (25% weight)
+     - Recency boost: Items listed in last 24h get +15% weight
+
+**Cold Start Handling**:
+```typescript
+const hasUserPreferences = userPreferredCategories.length > 0;
+
+if (!hasUserPreferences) {
+  // New user - show trending items
+  sortedItems = sortByViews(items).slice(0, 20);
+} else {
+  // Returning user - apply personalization
+  sortedItems = applyPersonalizationWeights(items);
+}
+```
 
 ---
 
@@ -113,6 +129,10 @@ Bottom sheet (Radix Dialog/Sheet) containing:
 - Seller profile link
 - Share buttons
 - Report button
+- "View Full Page" button to navigate to /product/:id
+
+// NOTE: This is a quick preview - full product page is still accessible
+// via "View Full Page" button or direct navigation
 ```
 
 #### E. Auction Bidding Sheet: Reuse existing `BiddingWindow`
@@ -166,6 +186,7 @@ Components (from top to bottom):
    - Fixed price: "50,000 د.ع"
    - Auction: "Current Bid: 50,000 د.ع • 12 bids"
 3. Auction countdown (if applicable)
+   - Use WebSocket for real-time updates (reuse existing auction-processor)
 4. Seller mini-card (avatar + name + rating)
 5. Action buttons row
 
@@ -242,15 +263,35 @@ const loadMoreItems = async () => {
 };
 ```
 
-#### C. Item View Tracking
+#### C. Item View Tracking with Debounce
 ```typescript
 // Track view when item becomes active (existing endpoint)
+// IMPORTANT: Debounce to avoid tracking "drive-by" views
+const viewTimer = useRef<NodeJS.Timeout>();
+
 useEffect(() => {
-  if (isActive && listing?.id) {
-    // POST /api/listings/${listing.id}/view
-    // Already implemented in product.tsx
+  // Clear previous timer
+  if (viewTimer.current) {
+    clearTimeout(viewTimer.current);
   }
-}, [isActive, listing?.id]);
+  
+  if (isActive && listing?.id) {
+    // Only track view after 2 seconds on same item
+    viewTimer.current = setTimeout(() => {
+      // POST /api/listings/${listing.id}/view
+      secureRequest(`/api/listings/${listing.id}/view`, {
+        method: "POST",
+        body: JSON.stringify({ viewerId: user?.id || null })
+      }).catch(() => {});
+    }, 2000);
+  }
+  
+  return () => {
+    if (viewTimer.current) {
+      clearTimeout(viewTimer.current);
+    }
+  };
+}, [isActive, listing?.id, user?.id]);
 ```
 
 ---
@@ -335,33 +376,88 @@ useEffect(() => {
 />
 ```
 
-#### C. Gesture Library
+#### C. Gesture Library with Conflict Resolution
 ```typescript
-// Install framer-motion (already in dependencies)
-import { motion, PanInfo, useMotionValue, animate } from "framer-motion";
+// Use native touch events for better performance
+// CRITICAL: Implement dead zone and axis locking to prevent gesture conflicts
 
-// Or use native touch events for better performance
+interface TouchState {
+  startX: number;
+  startY: number;
+  startTime: number;
+  lockedAxis: 'vertical' | 'horizontal' | null;
+  isOnImageArea: boolean;
+}
+
+const DEAD_ZONE = 15; // pixels before determining direction
+const touchState = useRef<TouchState | null>(null);
+
 const handleTouchStart = (e: TouchEvent) => {
-  touchStartY = e.touches[0].clientY;
+  const touch = e.touches[0];
+  const target = e.target as HTMLElement;
+  
+  touchState.current = {
+    startX: touch.clientX,
+    startY: touch.clientY,
+    startTime: Date.now(),
+    lockedAxis: null,
+    isOnImageArea: target.closest('.swipe-image-area') !== null,
+  };
 };
 
 const handleTouchMove = (e: TouchEvent) => {
-  const deltaY = e.touches[0].clientY - touchStartY;
-  // Apply transform for smooth drag
+  if (!touchState.current) return;
+  
+  const touch = e.touches[0];
+  const deltaX = Math.abs(touch.clientX - touchState.current.startX);
+  const deltaY = Math.abs(touch.clientY - touchState.current.startY);
+  
+  // Determine axis lock if past dead zone
+  if (!touchState.current.lockedAxis) {
+    if (deltaX > DEAD_ZONE || deltaY > DEAD_ZONE) {
+      // Lock to dominant axis
+      touchState.current.lockedAxis = deltaX > deltaY ? 'horizontal' : 'vertical';
+    } else {
+      return; // Still in dead zone, don't do anything
+    }
+  }
+  
+  // Handle locked axis
+  if (touchState.current.lockedAxis === 'vertical') {
+    // Vertical item navigation
+    const deltaY = touch.clientY - touchState.current.startY;
+    // Apply transform for smooth drag
+    containerRef.current.style.transform = `translateY(${deltaY}px)`;
+    e.preventDefault(); // Prevent page scroll
+  } else if (touchState.current.lockedAxis === 'horizontal' && touchState.current.isOnImageArea) {
+    // Horizontal image navigation (only on image area)
+    // Let the image carousel handle this
+    // Do NOT prevent default here - let carousel's swipe work
+  }
 };
 
 const handleTouchEnd = (e: TouchEvent) => {
-  const deltaY = e.changedTouches[0].clientY - touchStartY;
-  const velocity = deltaY / (Date.now() - touchStartTime);
+  if (!touchState.current) return;
   
-  if (Math.abs(velocity) > 0.5 || Math.abs(deltaY) > 100) {
-    // Navigate to next/previous
-    if (deltaY > 0) previousItem();
-    else nextItem();
-  } else {
-    // Snap back
-    snapToCurrent();
+  const touch = e.changedTouches[0];
+  const deltaX = touch.clientX - touchState.current.startX;
+  const deltaY = touch.clientY - touchState.current.startY;
+  const duration = Date.now() - touchState.current.startTime;
+  const velocity = Math.abs(deltaY) / duration;
+  
+  // Only handle vertical navigation (horizontal is handled by image carousel)
+  if (touchState.current.lockedAxis === 'vertical') {
+    if (velocity > 0.5 || Math.abs(deltaY) > 100) {
+      // Navigate to next/previous item
+      if (deltaY > 0) previousItem();
+      else nextItem();
+    } else {
+      // Snap back
+      snapToCurrent();
+    }
   }
+  
+  touchState.current = null;
 };
 ```
 
@@ -383,14 +479,17 @@ const handleTouchEnd = (e: TouchEvent) => {
 </motion.div>
 ```
 
-#### B. Double-Tap Favorite Animation
+#### B. Double-Tap Favorite Animation with Haptics
 ```typescript
-// Heart burst animation on double-tap
+// Heart burst animation on double-tap with Despia native haptic feedback
+import { hapticSuccess } from "@/lib/despia";
+
 const [showHeartBurst, setShowHeartBurst] = useState(false);
 
 const handleDoubleTap = () => {
   setShowHeartBurst(true);
   toggleFavorite(listing.id);
+  hapticSuccess(); // Native haptic feedback
   setTimeout(() => setShowHeartBurst(false), 1000);
 };
 
@@ -406,19 +505,43 @@ const handleDoubleTap = () => {
 )}
 ```
 
-#### C. Image Carousel Animation
+#### C. Image Carousel Animation (Performance-Optimized)
 ```typescript
-// Use existing Carousel component from product.tsx
-// Already has smooth swipe transitions
-<Carousel
-  opts={{
-    align: "start",
-    loop: images.length > 1,
-    direction: "rtl",
-  }}
+// PERFORMANCE NOTE: Multiple carousel instances can be heavy
+// Option 1: Simple CSS snap-scroll (recommended for performance)
+<div 
+  className="swipe-image-area flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+  style={{ scrollSnapType: 'x mandatory' }}
 >
-  {/* Images */}
-</Carousel>
+  {images.map((img, idx) => (
+    <div 
+      key={idx}
+      className="flex-shrink-0 w-full snap-center"
+    >
+      <OptimizedImage src={img} alt={`${title} - ${idx + 1}`} />
+    </div>
+  ))}
+</div>
+
+// Option 2: If you need Carousel features, lazy-mount when item is active
+{isActive && (
+  <Carousel
+    opts={{
+      align: "start",
+      loop: images.length > 1,
+      direction: "rtl",
+    }}
+  >
+    {/* Images */}
+  </Carousel>
+)}
+
+// Option 3: Destroy carousel when item leaves viewport
+useEffect(() => {
+  if (!isActive && carouselApi) {
+    carouselApi.destroy();
+  }
+}, [isActive]);
 ```
 
 ---
@@ -510,44 +633,67 @@ navigate(`/search?sellerId=${listing.sellerId}`);
 
 ### 11. Mobile Responsiveness
 
-#### A. Touch Gestures
+#### A. Touch Gestures with Sheet/Modal Passthrough
 ```typescript
 // Prevent page scroll when swiping
+// CRITICAL: Disable swipe gestures when sheets/modals are open
+const [detailsOpen, setDetailsOpen] = useState(false);
+const [biddingOpen, setBiddingOpen] = useState(false);
+
+const isAnySheetOpen = detailsOpen || biddingOpen;
+
 useEffect(() => {
   const preventDefault = (e: TouchEvent) => {
-    if (isSwipeReelsPage) {
-      e.preventDefault();
+    // Don't prevent if sheet is open - let user interact with sheet
+    if (isSwipeReelsPage && !isAnySheetOpen) {
+      const target = e.target as HTMLElement;
+      // Don't prevent if touching a sheet/modal
+      if (!target.closest('[role="dialog"]')) {
+        e.preventDefault();
+      }
     }
   };
   
   document.addEventListener('touchmove', preventDefault, { passive: false });
   return () => document.removeEventListener('touchmove', preventDefault);
-}, []);
+}, [isSwipeReelsPage, isAnySheetOpen]);
+
+// Disable swipe handlers when sheets are open
+const handleVerticalSwipe = (direction: 'up' | 'down') => {
+  if (isAnySheetOpen) return; // Don't navigate when sheet is open
+  direction === 'up' ? nextItem() : previousItem();
+};
 ```
 
-#### B. Safe Areas
+#### B. Safe Areas (Already Implemented)
 ```typescript
-// Account for notch/safe areas
-<div className="pb-safe pt-safe">
-  {/* Content */}
-</div>
+// Good news: Your codebase already handles safe areas via Despia integration
+// Use existing safe area handling from client/src/lib/despia.ts
 
-// In global CSS:
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-.pt-safe {
-  padding-top: env(safe-area-inset-top);
-}
+// The Layout component already handles safe areas
+// No additional work needed - just use Layout as wrapper
+import { Layout } from "@/components/layout";
+
+<Layout>
+  <SwipeReelsContainer />
+</Layout>
 ```
 
-#### C. Performance on Mobile
+#### C. Performance on Mobile with Haptic Feedback
 ```typescript
+import { hapticLight } from "@/lib/despia";
+
 // Use CSS transforms for better performance
 .swipe-item {
   transform: translateZ(0); /* Force GPU acceleration */
   will-change: transform;
 }
+
+// Add haptic feedback on item change
+const navigateToItem = (index: number) => {
+  setCurrentIndex(index);
+  hapticLight(); // Subtle feedback on navigation
+};
 
 // Debounce scroll events
 const debouncedScroll = useMemo(
@@ -558,12 +704,15 @@ const debouncedScroll = useMemo(
 
 ---
 
-### 12. Accessibility
+### 12. Accessibility & Navigation
 
 #### A. Keyboard Navigation
 ```typescript
 useEffect(() => {
   const handleKeyDown = (e: KeyboardEvent) => {
+    // Don't handle keys if sheet/modal is open
+    if (isAnySheetOpen) return;
+    
     if (e.key === 'ArrowUp') previousItem();
     if (e.key === 'ArrowDown') nextItem();
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
@@ -574,7 +723,7 @@ useEffect(() => {
   
   window.addEventListener('keydown', handleKeyDown);
   return () => window.removeEventListener('keydown', handleKeyDown);
-}, [currentIndex]);
+}, [currentIndex, isAnySheetOpen]);
 ```
 
 #### B. Screen Reader Support
@@ -591,6 +740,41 @@ useEffect(() => {
     {/* Content */}
   </article>
 </div>
+```
+
+#### C. Navigation Behavior
+```typescript
+// IMPORTANT: No browser back button interference
+// User navigates using mobile nav bar at bottom
+// Swipe mode doesn't add history entries for each item
+
+// Don't use history.pushState for each item
+// Only navigation actions that should create history:
+// 1. Opening details sheet (if you want sheet closeable via back)
+// 2. Navigating to full product page
+// 3. Navigating to seller profile
+
+// Opening details sheet WITHOUT history entry (preferred):
+<Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+  {/* Sheet doesn't affect browser history */}
+</Sheet>
+
+// Alternative: Add history entry if you want back button to close sheet
+const openDetailsWithHistory = () => {
+  setDetailsOpen(true);
+  window.history.pushState({ sheet: 'details' }, '');
+};
+
+useEffect(() => {
+  const handlePopState = (e: PopStateEvent) => {
+    if (e.state?.sheet === 'details') {
+      setDetailsOpen(false);
+    }
+  };
+  
+  window.addEventListener('popstate', handlePopState);
+  return () => window.removeEventListener('popstate', handlePopState);
+}, []);
 ```
 
 ---
@@ -720,11 +904,13 @@ describe('SwipeReels', () => {
 - [ ] Connect to existing useListings hook
 
 ### Phase 2: Interactions (Week 1)
-- [ ] Implement horizontal image swipe
-- [ ] Add double-tap favorite with animation
+- [ ] Implement horizontal image swipe with conflict resolution
+- [ ] Add double-tap favorite with animation + haptic feedback
 - [ ] Add single-tap interactions
 - [ ] Create action buttons overlay
-- [ ] Integrate FavoriteButton component
+- [ ] Integrate FavoriteButton component (CSRF fixed)
+- [ ] Add Despia haptic feedback for all interactions
+- [ ] Implement gesture dead zone and axis locking
 
 ### Phase 3: Filters (Week 2)
 - [ ] Create SwipeReelFilters component
@@ -732,23 +918,29 @@ describe('SwipeReels', () => {
 - [ ] Implement sale type filter (auction/buy now)
 - [ ] Implement condition filter
 - [ ] Add filter persistence
-- [ ] Implement personalization algorithm
+- [ ] Implement personalization algorithm with cold start handling
+- [ ] Add recency boost for new listings
 
 ### Phase 4: Details & Actions (Week 2)
 - [ ] Create SwipeReelDetails sheet
 - [ ] Integrate ProductComments
-- [ ] Create auction bidding sheet
+- [ ] Create auction bidding sheet with WebSocket countdown
 - [ ] Add buy now functionality
 - [ ] Add share functionality
+- [ ] Implement sheet/modal touch passthrough protection
+- [ ] Add "View Full Page" button in details sheet
 
 ### Phase 5: Polish (Week 3)
 - [ ] Add animations and transitions
 - [ ] Optimize performance (virtual scrolling)
+- [ ] Optimize image carousel performance (CSS snap vs embla)
 - [ ] Add loading states
 - [ ] Add error handling
 - [ ] Implement infinite scroll
 - [ ] Add keyboard navigation
+- [ ] Add view tracking with 2-second debounce
 - [ ] Mobile testing and optimization
+- [ ] Test navigation behavior (no back button conflicts)
 
 ### Phase 6: Testing & Launch (Week 3)
 - [ ] Component testing
@@ -790,6 +982,7 @@ client/src/
 ### 2. Gesture Library
 **Decision**: Native touch events with framer-motion for animations
 **Reason**: Better performance than heavy gesture libraries
+**CRITICAL**: Implement 15px dead zone and axis locking to prevent gesture conflicts
 
 ### 3. State Management
 **Decision**: React Query for server state, useState for UI state
@@ -802,6 +995,27 @@ client/src/
 ### 5. Filtering Strategy
 **Decision**: Client-side personalization, server-side filtering
 **Reason**: Balance between performance and flexibility
+
+### 6. Image Carousel Performance
+**Decision**: CSS snap-scroll for horizontal images (instead of full carousel instances)
+**Reason**: Multiple embla-carousel instances are heavy; CSS snap is lightweight
+**Alternative**: If carousel needed, lazy-mount only when item is active
+
+### 7. Haptic Feedback
+**Decision**: Use existing Despia integration for native haptics
+**Reason**: Already implemented and tested in your codebase
+
+### 8. View Tracking
+**Decision**: 2-second debounce before tracking view
+**Reason**: Avoid tracking "drive-by" views, more accurate engagement metrics
+
+### 9. Auction Countdown
+**Decision**: Reuse existing WebSocket connection from auction-processor
+**Reason**: Real-time updates already implemented, avoid duplicate connections
+
+### 10. Navigation Behavior
+**Decision**: No history entries for item scrolling, only for actual navigation
+**Reason**: Back button should not interfere with swipe experience
 
 ---
 
@@ -864,6 +1078,75 @@ client/src/
 
 ---
 
+## Critical Implementation Notes (READ FIRST!)
+
+### ⚠️ Must-Handle Issues
+
+1. **GESTURE CONFLICT RESOLUTION** (Critical)
+   - Implement 15px dead zone before determining swipe direction
+   - Lock to first detected axis (vertical or horizontal)
+   - Horizontal swipe only works on image area
+   - Vertical swipe for item navigation
+   - Test extensively - this is the #1 UX issue if done wrong
+
+2. **TOUCH PASSTHROUGH PROTECTION** (Critical)
+   - Disable all swipe handlers when sheets/modals are open
+   - User should not accidentally navigate items when interacting with sheets
+   - Check `isAnySheetOpen` before processing touch events
+
+3. **PERFORMANCE OPTIMIZATION** (Critical)
+   - Use CSS snap-scroll for image carousel (not multiple embla instances)
+   - Virtual scrolling: only render 3-5 items at once
+   - Preload next item's images
+   - Destroy/recreate heavy components when items enter/exit viewport
+
+4. **VIEW TRACKING** (Important)
+   - 2-second debounce before tracking view
+   - Avoid tracking rapid scrolling "drive-by" views
+   - Clear timer on item change
+
+5. **COLD START PROBLEM** (Important)
+   - New users have no preference data
+   - Fallback to trending/recently listed for new users
+   - Only apply personalization for users with preference history
+
+6. **HAPTIC FEEDBACK** (Nice to have)
+   - Use existing Despia integration: `hapticLight()`, `hapticSuccess()`
+   - Add feedback on item navigation and favorite
+   - Enhances native app feel
+
+7. **NAVIGATION BEHAVIOR** (Important)
+   - Don't add history entries for each item scroll
+   - Back button should not step through viewed items
+   - Only real navigation (full product page, seller profile) creates history
+
+8. **AUCTION COUNTDOWN** (Important)
+   - Reuse existing WebSocket from auction-processor
+   - Real-time updates for active auctions
+   - Don't create new WebSocket connections
+
+### 📋 Implementation Checklist Priority
+
+**P0 - Must Have (Launch Blockers)**
+- [ ] Gesture conflict resolution (dead zone + axis lock)
+- [ ] Touch passthrough protection for sheets
+- [ ] Virtual scrolling (3-5 items)
+- [ ] View tracking with debounce
+- [ ] Filter integration (category, sale type, condition)
+
+**P1 - Should Have (Critical UX)**
+- [ ] Cold start handling for new users
+- [ ] Image carousel optimization (CSS snap)
+- [ ] Haptic feedback integration
+- [ ] Navigation behavior (no history pollution)
+- [ ] Auction WebSocket integration
+
+**P2 - Nice to Have (Polish)**
+- [ ] Advanced personalization weights
+- [ ] Recency boost for new listings
+- [ ] Keyboard navigation
+- [ ] Analytics tracking
+
 ## Notes for AI Agent Implementation
 
 1. **Start with the basic structure**: Build the container and basic swipe before adding complexity
@@ -875,6 +1158,8 @@ client/src/
 7. **Respect existing auth flows**: Use existing useAuth hook and authentication patterns
 8. **Keep nav bars visible**: Not full-screen immersive mode
 9. **Filter integration**: Use the existing categories and filter structure from search.tsx
+10. **Use existing Despia integration**: Safe areas and haptics already implemented
+11. **FavoriteButton CSRF is fixed**: Latest version handles CSRF properly
 
 ---
 

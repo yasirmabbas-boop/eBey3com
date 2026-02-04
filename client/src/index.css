@@ -360,3 +360,23 @@ img, video, iframe {
   background: hsl(var(--background) / 0.85);
   backdrop-filter: blur(12px);
 }
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Swipe reels specific styles */
+.swipe-image-area {
+  position: relative;
+}
+
+.swipe-item {
+  transform: translateZ(0); /* Force GPU acceleration */
+  will-change: transform;
+}

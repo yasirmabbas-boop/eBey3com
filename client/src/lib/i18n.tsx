@@ -98,6 +98,16 @@ export const translations: Translations = {
   success: { ar: "تم بنجاح", ku: "سەرکەوتوو بوو", en: "Success" },
   noProducts: { ar: "لا توجد منتجات", ku: "هیچ بەرهەمێک نییە", en: "No products" },
   noMatchingProducts: { ar: "لا توجد منتجات مطابقة للفلاتر", ku: "هیچ بەرهەمێک لە فلتەرەکاندا نییە", en: "No products match the filters" },
+  loginRequired: { ar: "يجب تسجيل الدخول", ku: "دەبێت بچیتە ژوورەوە", en: "Login Required" },
+  
+  // Comments
+  comments: { ar: "التعليقات", ku: "سەرنجەکان", en: "Comments" },
+  writeComment: { ar: "اكتب تعليق", ku: "سەرنج بنووسە", en: "Write a comment" },
+  noComments: { ar: "لا توجد تعليقات", ku: "هیچ سەرنجێک نییە", en: "No comments" },
+  beFirstToComment: { ar: "كن أول من يعلق", ku: "یەکەم کەس بە بۆ سەرنج", en: "Be the first to comment" },
+  
+  // Currency
+  iqd: { ar: "د.ع", ku: "د.ع", en: "IQD" },
   resetFilters: { ar: "إعادة تعيين الفلاتر", ku: "ڕیسێتکردنی فلتەرەکان", en: "Reset filters" },
   tryAgain: { ar: "حاول مرة أخرى", ku: "دووبارە هەوڵ بدە", en: "Try again" },
   
