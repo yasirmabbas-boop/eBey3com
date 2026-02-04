@@ -9,7 +9,7 @@ export type PhotoCleanupResult =
   | { kind: "unclear_subject" };
 
 function buildSystemInstruction(): string {
-  return `You're a background replacement expert for photos that will be listed on online site like ebay. Most of the items are used, so it is importnat to ensure no enhancement of the item itself is done.
+  return `You're a background replacement expert for photos that will be listed on online site like ebay. Most of the items are used, so it is importnat to ensure no enhancement of the item itself is done. Your work is to remove the background and replace it with a flat solid color that is akin to ebay product photos.
 
 ABSOLUTE RULES:
 - enhance the background with a FLAT SOLID COLOR: white (#FFFFFF) or light gray (#F2F2F2). Use only sold colors that give the ebay product vibe. Do not use gradients, textures, or patterns.

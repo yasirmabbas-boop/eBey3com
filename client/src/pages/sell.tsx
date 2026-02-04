@@ -404,6 +404,7 @@ export default function SellPage() {
   };
 
   const cleanBackground = async (index: number) => {
+    if (index !== 0) return; // Only allow enhancing cover photo
     const imageUrl = images[index];
     if (!imageUrl) return;
 
@@ -552,7 +553,7 @@ export default function SellPage() {
     if (!formData.sellerName.trim()) errors.sellerName = "اسم البائع مطلوب";
     if (!formData.deliveryWindow) errors.deliveryWindow = "مدة التوصيل مطلوبة";
     if (!formData.returnPolicy) errors.returnPolicy = "سياسة الإرجاع مطلوبة";
-    if (images.length === 0) errors.images = "يجب إضافة صورة واحدة على الأقل";
+    if (images.length < 2) errors.images = "يجب إضافة صورتين على الأقل";
     
     // Quantity validation
     if (!formData.quantityAvailable || parseInt(formData.quantityAvailable) < 1) {

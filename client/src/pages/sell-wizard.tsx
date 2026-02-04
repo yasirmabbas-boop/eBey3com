@@ -462,6 +462,7 @@ export default function SellWizardPage() {
   };
 
   const cleanBackground = async (index: number) => {
+    if (index !== 0) return; // Only allow enhancing cover photo
     const imageUrl = images[index];
     if (!imageUrl) return;
 
@@ -507,7 +508,7 @@ export default function SellWizardPage() {
   };
 
   const stepValidation = [
-    images.length > 0,
+    images.length >= 2,
     formData.title.trim().length >= 5 && formData.description.trim().length >= 10 && !!formData.category && !!formData.condition,
     !!formData.price && parseInt(formData.price) >= 1000 && (saleType === "fixed" || (startTimeOption === "now" || (!!formData.startDate && !!formData.startHour)) && !!formData.endDate && !!formData.endHour),
     !!formData.city && !!formData.deliveryWindow && !!formData.returnPolicy,
@@ -695,9 +696,9 @@ export default function SellWizardPage() {
               cleaningIndex={cleaningIndex}
               cleanErrorByIndex={cleanErrorByIndex}
             />
-            {images.length === 0 && (
+            {images.length < 2 && (
               <p className="text-center text-amber-600 text-sm">
-                {language === "ar" ? "أضف صورة واحدة على الأقل للمتابعة" : "لانیکەم یەک وێنە زیاد بکە بۆ بەردەوامبوون"}
+                {language === "ar" ? "أضف صورتين على الأقل للمتابعة" : "لانیکەم دوو وێنە زیاد بکە بۆ بەردەوامبوون"}
               </p>
             )}
           </div>

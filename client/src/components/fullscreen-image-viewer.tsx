@@ -22,6 +22,8 @@ interface TouchState {
   lastPosition: Position;
   isSingleTouch: boolean;
   touchStartTime: number;
+  swipeStart: Position;
+  swipeLast: Position;
 }
 
 function getDistance(touches: React.TouchList): number {
@@ -59,6 +61,8 @@ export function FullscreenImageViewer({
     lastPosition: { x: 0, y: 0 },
     isSingleTouch: false,
     touchStartTime: 0,
+    swipeStart: { x: 0, y: 0 },
+    swipeLast: { x: 0, y: 0 },
   });
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -114,9 +118,11 @@ export function FullscreenImageViewer({
         y: touches[0].clientY - position.y,
       };
       touchStateRef.current.lastPosition = position;
+      touchStateRef.current.swipeStart = { x: touches[0].clientX, y: touches[0].clientY };
+      touchStateRef.current.swipeLast = { x: touches[0].clientX, y: touches[0].clientY };
       touchStateRef.current.isSingleTouch = true;
     }
-  }, [scale, position]);
+  }, [images.length, goToNext, goToPrev, position, scale]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
@@ -139,6 +145,9 @@ export function FullscreenImageViewer({
       const clampedY = Math.max(-maxOffset, Math.min(maxOffset, newY));
       
       setPosition({ x: clampedX, y: clampedY });
+    } else if (touches.length === 1 && scale === 1) {
+      // Track finger movement for swipe navigation when not zoomed.
+      touchStateRef.current.swipeLast = { x: touches[0].clientX, y: touches[0].clientY };
     }
   }, [scale]);
 
@@ -161,6 +170,36 @@ export function FullscreenImageViewer({
       const remainingTouches = e.touches.length;
       if (remainingTouches === 0) {
         // Could be a tap - but we don't want to close on image tap
+      }
+    }
+
+    // Swipe navigation (only when not zoomed, single touch ended)
+    if (
+      images.length > 1 &&
+      scale === 1 &&
+      touchStateRef.current.isSingleTouch &&
+      e.touches.length === 0
+    ) {
+      const start = touchStateRef.current.swipeStart;
+      const last = touchStateRef.current.swipeLast;
+      const dx = last.x - start.x;
+      const dy = last.y - start.y;
+
+      const SWIPE_X_THRESHOLD = 60;
+      const SWIPE_Y_TOLERANCE = 60;
+      const MAX_SWIPE_DURATION_MS = 900;
+
+      if (
+        Math.abs(dx) >= SWIPE_X_THRESHOLD &&
+        Math.abs(dy) <= SWIPE_Y_TOLERANCE &&
+        touchDuration <= MAX_SWIPE_DURATION_MS
+      ) {
+        // Natural gesture: swipe left -> next, swipe right -> previous.
+        if (dx < 0) {
+          goToNext();
+        } else {
+          goToPrev();
+        }
       }
     }
   }, [scale, position]);

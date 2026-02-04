@@ -83,7 +83,7 @@ export function ImageUploadSection({
                 )}
               </div>
 
-              {onCleanBackground && (
+              {onCleanBackground && index === 0 && (
                 <div className="space-y-1">
                   <Button
                     type="button"

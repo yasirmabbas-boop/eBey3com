@@ -391,6 +391,11 @@ export function registerProductRoutes(app: Express): void {
           });
         }
       }
+
+      // Require at least 2 images for listings
+      if (!Array.isArray(req.body.images) || req.body.images.length < 2) {
+        return res.status(400).json({ error: "يجب إضافة صورتين على الأقل" });
+      }
       
       const listingData = {
         title: req.body.title,
@@ -776,6 +781,13 @@ export function registerProductRoutes(app: Express): void {
       const existingListing = await storage.getListing(req.params.id);
       if (!existingListing) {
         return res.status(404).json({ error: "Listing not found" });
+      }
+
+      // If updating images, require at least 2
+      if (req.body.images !== undefined) {
+        if (!Array.isArray(req.body.images) || req.body.images.length < 2) {
+          return res.status(400).json({ error: "يجب إضافة صورتين على الأقل" });
+        }
       }
       
       const quantitySold = existingListing.quantitySold || 0;

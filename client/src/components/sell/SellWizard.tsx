@@ -89,6 +89,8 @@ export function SellWizard({
 
   const handleNext = () => {
     if (currentStep < steps.length) {
+      // Extra guard: never advance if current step is invalid.
+      if (!stepValidation[currentStep - 1]) return;
       onStepChange(currentStep + 1);
     }
   };

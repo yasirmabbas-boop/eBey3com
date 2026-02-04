@@ -73,9 +73,9 @@ const messages = {
     en: "Please select an option"
   },
   imageRequired: {
-    ar: "يرجى إضافة صورة واحدة على الأقل",
-    ku: "تکایە لانیکەم یەک وێنە زیاد بکە",
-    en: "Please add at least one image"
+    ar: "يرجى إضافة صورتين على الأقل",
+    ku: "تکایە لانیکەم دوو وێنە زیاد بکە",
+    en: "Please add at least two images"
   },
   termsRequired: {
     ar: "يجب الموافقة على الشروط والأحكام",
