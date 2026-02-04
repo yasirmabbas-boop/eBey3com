@@ -8,7 +8,11 @@ import { insertListingSchema } from "@shared/schema";
 import { storage } from "../storage";
 import { analyzeImageForSearch } from "../services/gemini-image-search";
 import { analyzeProductImage } from "../services/gemini-service";
-import { cleanListingPhotoWithGemini, UNCLEAR_SUBJECT_TOKEN } from "../services/gemini-photo-cleanup";
+import {
+  BACKGROUND_TOO_COMPLEX_MESSAGE,
+  cleanListingPhotoWithGemini,
+  UNCLEAR_SUBJECT_TOKEN,
+} from "../services/gemini-photo-cleanup";
 import { processImage } from "../image-processor";
 import { ObjectNotFoundError, ObjectStorageService, objectStorageClient } from "../replit_integrations/object_storage/objectStorage";
 import {
@@ -32,7 +36,6 @@ const OG_IMAGE_WIDTH = 1200;
 const OG_IMAGE_HEIGHT = 630;
 
 const ENHANCE_ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"] as const;
-const BACKGROUND_TOO_COMPLEX_MESSAGE = "Background too complex to clean. Please try a clearer photo.";
 const GENERIC_RETRYABLE_MESSAGE = "Image cleanup failed. Please try again.";
 
 export function registerProductRoutes(app: Express): void {

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import {
+  BACKGROUND_TOO_COMPLEX_MESSAGE,
   parseGeminiPhotoCleanupResponse,
   UNCLEAR_SUBJECT_TOKEN,
 } from "./gemini-photo-cleanup";
@@ -12,6 +13,20 @@ describe("parseGeminiPhotoCleanupResponse", () => {
         {
           content: {
             parts: [{ text: UNCLEAR_SUBJECT_TOKEN }],
+          },
+        },
+      ],
+    };
+
+    expect(parseGeminiPhotoCleanupResponse(json)).toEqual({ kind: "unclear_subject" });
+  });
+
+  it("returns unclear_subject when model outputs the exact fail-closed sentence", () => {
+    const json = {
+      candidates: [
+        {
+          content: {
+            parts: [{ text: BACKGROUND_TOO_COMPLEX_MESSAGE }],
           },
         },
       ],

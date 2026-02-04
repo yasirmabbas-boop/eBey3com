@@ -1,29 +1,35 @@
 export const UNCLEAR_SUBJECT_TOKEN = "UNCLEAR_SUBJECT" as const;
+export const BACKGROUND_TOO_COMPLEX_MESSAGE =
+  "Background too complex to clean. Please try a clearer photo." as const;
 
 export type PhotoCleanupResult =
   | { kind: "image"; imageBuffer: Buffer; mimeType: string }
   | { kind: "unclear_subject" };
 
 function buildSystemInstruction(): string {
-  // Required instruction must appear verbatim. Guardrails appended below.
-  const required = `You are a professional e-commerce image editor. Your task is to perform background removal and lighting enhancement.
+  // User-provided policy. MUST be followed as written.
+  return `ALLOWED EDITS (background only):
+Remove/replace the background with a single, solid, neutral color selected based on the item’s tones so the item is clearly separated. Choose one of: pure white (#FFFFFF), off‑white (#FAFAFA), or light gray (#F2F2F2).
+Pick the shade that provides clean contrast with the item (e.g., use light gray for very light/silver items; use white/off‑white for darker items). The goal is maximum subject readability with a natural look.
+The background must remain uniform and flat (no gradients, textures, shadows, vignettes, or patterns).
 
-REPLACE the background with a simple, solid neutral color (white, light grey, or off-white) that best fits the item context.
-IMPROVE the overall lighting and clarity of the photo.
-CRITICAL: Do not modify the item itself. Preserve all original scratches, textures, and signs of wear to ensure the listing remains authentic and honest.`;
+STRICTLY FORBIDDEN (item must be unchanged):
+Do NOT change the product in ANY way. This includes: adding/removing scratches, altering textures, smoothing, sharpening, denoising the item, changing reflections, changing colors, changing brightness/contrast on the item, altering logos/engraving, modifying watch hands, dial indices, bezel, case edges, or any small details.
+Do NOT “enhance,” “beautify,” “restore,” “retouch,” “repair,” “reconstruct,” or “improve” the item.
+Do NOT crop, rotate, warp, or change perspective.
+Do NOT add text, watermarks, props, shadows, or any new elements.
 
-  const guardrails = `
+QUALITY REQUIREMENTS:
+Keep the original framing and resolution.
+Preserve natural edges; avoid halos/cutout artifacts.
 
-Additional required model guardrails:
-- No cropping unless required to remove transparent borders; keep the original framing as much as possible.
-- No logos/watermarks/text added.
-- Output should be photorealistic and suitable for a marketplace listing.
+FAIL-CLOSED RULE:
+If you cannot confidently separate the item from the background without altering the item, respond with exactly:
+“${BACKGROUND_TOO_COMPLEX_MESSAGE}”
 
-Important behavior:
-- If you cannot confidently identify the main subject, output ONLY the exact text "${UNCLEAR_SUBJECT_TOKEN}" and DO NOT output an image.
-- Do not output any other text besides that token when you choose it.`;
-
-  return `${required}${guardrails}`;
+Implementation notes:
+- When the FAIL-CLOSED RULE applies, output ONLY that sentence and do NOT output an image.
+- Do not output any other text.`;
 }
 
 export function parseGeminiPhotoCleanupResponse(json: unknown): PhotoCleanupResult {
@@ -32,6 +38,7 @@ export function parseGeminiPhotoCleanupResponse(json: unknown): PhotoCleanupResu
   const parts = candidates?.[0]?.content?.parts;
   const safeParts = Array.isArray(parts) ? parts : [];
 
+  // If an image is present, we treat it as the output and ignore any accompanying text.
   for (const part of safeParts) {
     const inline = part?.inline_data ?? part?.inlineData;
     const data = inline?.data;
@@ -43,6 +50,9 @@ export function parseGeminiPhotoCleanupResponse(json: unknown): PhotoCleanupResu
 
   for (const part of safeParts) {
     const text = typeof part?.text === "string" ? part.text.trim() : "";
+    if (text === BACKGROUND_TOO_COMPLEX_MESSAGE || text === `“${BACKGROUND_TOO_COMPLEX_MESSAGE}”`) {
+      return { kind: "unclear_subject" };
+    }
     if (text === UNCLEAR_SUBJECT_TOKEN) {
       return { kind: "unclear_subject" };
     }
@@ -80,7 +90,7 @@ export async function cleanListingPhotoWithGemini(opts: {
         {
           role: "user",
           parts: [
-            { text: "Clean the background and enhance lighting as instructed." },
+            { text: "Replace background only, following the policy exactly." },
             { inline_data: { mime_type: mimeType, data: base64Image } },
           ],
         },
