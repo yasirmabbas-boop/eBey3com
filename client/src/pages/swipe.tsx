@@ -106,16 +106,6 @@ export default function SwipePage() {
     }
 
     setProcessedItems(sorted);
-
-    // Preload first 4 items immediately when data arrives
-    if (page === 1 && sorted.length > 0) {
-      sorted.slice(0, 4).forEach(item => {
-        if (item.images?.length > 0) {
-          const img = new Image();
-          img.src = item.images[0];
-        }
-      });
-    }
   }, [listingsData, page, hasUserPreferences, personalizationData]);
 
   // Track filter changes to trigger refetch
@@ -147,32 +137,6 @@ export default function SwipePage() {
       }
     }
   }, [currentIndex, processedItems.length, isLoading, listingsData]);
-
-  // Preload images for adjacent items to eliminate black screens during swipe
-  useEffect(() => {
-    if (processedItems.length === 0) return;
-
-    const preloadImage = (src: string) => {
-      const img = new Image();
-      img.src = src;
-    };
-
-    // Preload 3 items ahead and 1 behind
-    const indicesToPreload = [
-      currentIndex - 1,
-      currentIndex + 1,
-      currentIndex + 2,
-      currentIndex + 3,
-    ].filter(i => i >= 0 && i < processedItems.length);
-
-    indicesToPreload.forEach(idx => {
-      const item = processedItems[idx];
-      if (item?.images?.length > 0) {
-        // Preload first image of each item
-        preloadImage(item.images[0]);
-      }
-    });
-  }, [currentIndex, processedItems]);
 
   // Track viewed item
   useEffect(() => {

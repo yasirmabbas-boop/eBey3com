@@ -9,6 +9,7 @@ interface OptimizedImageProps {
   priority?: boolean;
   darkMode?: boolean;
   objectFit?: "cover" | "contain";
+  onLoad?: () => void;
 }
 
 export function OptimizedImage({ 
@@ -18,7 +19,8 @@ export function OptimizedImage({
   aspectRatio = "square",
   priority = false,
   darkMode = false,
-  objectFit = "cover"
+  objectFit = "cover",
+  onLoad
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
@@ -74,7 +76,10 @@ export function OptimizedImage({
           alt={alt}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
-          onLoad={() => setIsLoaded(true)}
+          onLoad={() => {
+            setIsLoaded(true);
+            onLoad?.();
+          }}
           onError={() => setHasError(true)}
           className={cn(
             "absolute inset-0 h-full w-full",
