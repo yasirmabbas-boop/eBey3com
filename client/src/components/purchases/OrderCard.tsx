@@ -224,6 +224,19 @@ export function OrderCard({
                 </Button>
               )}
 
+              {/* Return button - visible for delivered orders */}
+              {isDelivered && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 sm:h-7 w-8 sm:w-auto p-0 sm:px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
+                  onClick={() => onRequestReturn(purchase)}
+                >
+                  <RotateCcw className="h-4 w-4 sm:h-3 sm:w-3 sm:ml-1" />
+                  <span className="hidden sm:inline">إرجاع</span>
+                </Button>
+              )}
+
               {isDelivered && purchase.hasReview && (
                 <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] sm:text-xs hidden sm:flex">
                   <CheckCircle className="h-3 w-3 ml-1" />

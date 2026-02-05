@@ -2091,21 +2091,25 @@ export default function AdminPage() {
       )}
 
       {/* Return Detail Dialog */}
-      <ReturnDetailDialog
-        returnRequest={selectedReturn}
-        open={showReturnDetail}
-        onOpenChange={setShowReturnDetail}
-        onRefundProcess={() => {
-          setShowReturnDetail(false);
-          setSelectedReturn(null);
-        }}
-      />
+      {showReturnDetail && selectedReturn && (
+        <ReturnDetailDialog
+          returnRequest={selectedReturn}
+          open={showReturnDetail}
+          onOpenChange={setShowReturnDetail}
+          onRefundProcess={() => {
+            setShowReturnDetail(false);
+            setSelectedReturn(null);
+          }}
+        />
+      )}
 
       {/* Create Return Dialog */}
-      <CreateReturnDialog
-        open={showCreateReturn}
-        onOpenChange={setShowCreateReturn}
-      />
+      {showCreateReturn && (
+        <CreateReturnDialog
+          open={showCreateReturn}
+          onOpenChange={setShowCreateReturn}
+        />
+      )}
     </Layout>
   );
 }

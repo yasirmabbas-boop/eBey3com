@@ -311,6 +311,7 @@ export default function SellerDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [salesFilter, setSalesFilter] = useState("all");
+  const [offerFilter, setOfferFilter] = useState<"all" | "pending" | "accepted" | "rejected" | "expired">("all");
   const [timePeriod, setTimePeriod] = useState<"7" | "30" | "all">("30");
   const [quickFilter, setQuickFilter] = useState<"pending_shipment" | "needs_reply" | "ending_soon" | "none">("none");
   const [showShippingLabel, setShowShippingLabel] = useState(false);

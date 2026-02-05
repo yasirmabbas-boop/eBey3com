@@ -549,6 +549,12 @@ export function registerTransactionsRoutes(app: Express): void {
         return res.status(404).json({ error: "الطلب غير موجود" });
       }
 
+      // Only allow cancellation of pending/processing/shipped orders
+      const cancellableStatuses = ["pending", "pending_payment", "processing", "shipped"];
+      if (!cancellableStatuses.includes(transaction.status)) {
+        return res.status(400).json({ error: "لا يمكن إلغاء هذا الطلب في حالته الحالية" });
+      }
+
       // Get listing for notification
       const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
 

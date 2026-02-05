@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { secureRequest } from "@/lib/queryClient";
 import { MessageSquare, Send, AlertTriangle, Shield, Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -114,10 +115,9 @@ export function ContactSeller({ sellerName, sellerId, listingId, productTitle, p
     setIsSending(true);
     
     try {
-      const res = await fetch("/api/messages", {
+      const res = await secureRequest("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           senderId: user.id,
           receiverId: sellerId,
