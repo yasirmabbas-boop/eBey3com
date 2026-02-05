@@ -7,6 +7,7 @@ import { SwipeReelFilters, SwipeFilters } from "@/components/swipe-reel-filters"
 import { SwipeReelDetails } from "@/components/swipe-reel-details";
 import { BiddingWindow } from "@/components/bidding-window";
 import { MakeOfferDialog } from "@/components/make-offer-dialog";
+import { ShareMenuDialog } from "@/components/share-menu-dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n";
@@ -71,7 +72,9 @@ export default function SwipePage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [biddingOpen, setBiddingOpen] = useState(false);
   const [offerOpen, setOfferOpen] = useState(false);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [shareListing, setShareListing] = useState<Listing | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isAnySheetOpen = detailsOpen || biddingOpen || offerOpen;
@@ -284,18 +287,8 @@ export default function SwipePage() {
   };
 
   const handleShare = (listing: Listing) => {
-    const url = `${window.location.origin}/product/${listing.id}`;
-    const text = `${listing.title} - ${listing.price.toLocaleString()} د.ع`;
-
-    if (navigator.share) {
-      navigator.share({ title: listing.title, text, url }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(url);
-      toast({
-        title: language === "ar" ? "تم النسخ" : "کۆپی کرا",
-        description: language === "ar" ? "تم نسخ رابط المنتج" : "لینکی بەرهەم کۆپی کرا",
-      });
-    }
+    setShareListing(listing);
+    setShareMenuOpen(true);
   };
 
   // Virtual scrolling - render only visible items
@@ -423,10 +416,6 @@ export default function SwipePage() {
           );
         })}
 
-        {/* Progress Indicator - positioned below the category filters */}
-        <div className="absolute top-14 left-4 bg-black/60 text-white text-xs px-3 py-1 rounded-full z-20">
-          {currentIndex + 1} / {processedItems.length}
-        </div>
       </div>
 
       {/* Details Sheet */}
@@ -490,6 +479,17 @@ export default function SwipePage() {
         listingId={selectedListing?.id || ""}
         defaultOfferAmount={selectedListing?.price}
       />
+
+      {/* Share Menu Dialog */}
+      {shareListing && (
+        <ShareMenuDialog
+          open={shareMenuOpen}
+          onOpenChange={setShareMenuOpen}
+          url={`${window.location.origin}/product/${shareListing.id}`}
+          title={shareListing.title}
+          text={`${shareListing.title} - ${shareListing.price.toLocaleString()} د.ع`}
+        />
+      )}
     </div>
   );
 }

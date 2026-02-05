@@ -1,13 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Heart, MessageSquare, Share2, Gavel, Eye, Star, BadgeCheck } from "lucide-react";
+import { MessageSquare, Share2, Star, BadgeCheck } from "lucide-react";
 import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
-import { hapticSuccess } from "@/lib/despia";
 import { secureRequest } from "@/lib/queryClient";
 import type { Listing } from "@shared/schema";
 
@@ -35,9 +34,7 @@ export function SwipeReelItem({
   const { language } = useLanguage();
   const { user } = useAuth();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showHeartBurst, setShowHeartBurst] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState<Set<number>>(new Set());
-  const lastTapRef = useRef<number>(0);
   const viewTrackedRef = useRef(false);
   const viewTimerRef = useRef<NodeJS.Timeout>();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -110,31 +107,6 @@ export function SwipeReelItem({
     viewTrackedRef.current = false;
   }, [listing?.id]);
 
-  const singleTapTimerRef = useRef<NodeJS.Timeout>();
-  
-  // Handle tap - single tap navigates, double tap favorites
-  const handleTap = () => {
-    const now = Date.now();
-    const timeSinceLastTap = now - lastTapRef.current;
-
-    if (timeSinceLastTap < 300) {
-      // Double tap detected - cancel single tap navigation and show heart
-      if (singleTapTimerRef.current) {
-        clearTimeout(singleTapTimerRef.current);
-      }
-      setShowHeartBurst(true);
-      hapticSuccess();
-      setTimeout(() => setShowHeartBurst(false), 1000);
-    } else {
-      // Single tap - wait briefly to see if it's a double tap
-      singleTapTimerRef.current = setTimeout(() => {
-        onNavigateToListing();
-      }, 300);
-    }
-
-    lastTapRef.current = now;
-  };
-
   const formatPrice = (price: number) => {
     return price.toLocaleString("ar-IQ") + " د.ع";
   };
@@ -147,7 +119,7 @@ export function SwipeReelItem({
   return (
     <div 
       className="relative h-full w-full flex flex-col"
-      onClick={handleTap}
+      onClick={onDetailsOpen}
     >
       {/* Image Carousel Area */}
       <div className="swipe-image-area relative flex-1 overflow-hidden">
@@ -197,18 +169,6 @@ export function SwipeReelItem({
             {language === "ar" ? "مزاد" : "مزایدە"}
           </Badge>
         )}
-
-        {/* Double-tap Heart Animation */}
-        {showHeartBurst && (
-          <motion.div
-            className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
-            initial={{ scale: 0, opacity: 1 }}
-            animate={{ scale: 2, opacity: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <Heart className="w-32 h-32 fill-red-500 text-red-500" />
-          </motion.div>
-        )}
       </div>
 
       {/* Bottom Overlay with Product Info */}
@@ -218,37 +178,29 @@ export function SwipeReelItem({
           background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, transparent 100%)'
         }}
       >
-        <div className="space-y-3 pointer-events-auto">
-          {/* Title */}
-          <h2 className="text-white font-bold text-lg leading-tight line-clamp-2">
-            {listing.title}
-          </h2>
-
+        <div className="space-y-2 pointer-events-auto">
           {/* Price/Bid Info */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-white text-2xl font-bold">
-                {formatPrice(listing.currentBid || listing.price)}
+          <div>
+            <p className="text-white text-3xl font-extrabold">
+              {formatPrice(listing.currentBid || listing.price)}
+            </p>
+            {isAuction && (listing as any).totalBids > 0 && (
+              <p className="text-white/80 text-sm mt-0.5">
+                {(listing as any).totalBids} {language === "ar" ? "مزايدة" : "مزایدە"}
               </p>
-              {isAuction && (listing as any).totalBids > 0 && (
-                <p className="text-white/80 text-sm">
-                  {(listing as any).totalBids} {language === "ar" ? "مزايدة" : "مزایدە"}
-                </p>
-              )}
-            </div>
-
-            {/* Views - Hidden */}
-            {/* <div className="flex items-center gap-1 text-white/80 text-sm">
-              <Eye className="h-4 w-4" />
-              {(listing as any).views || 0}
-            </div> */}
+            )}
           </div>
 
-          {/* Auction Countdown */}
+          {/* Description */}
+          {listing.description && (
+            <p className="text-white/80 text-sm line-clamp-2">
+              {listing.description}
+            </p>
+          )}
+
+          {/* Auction Countdown - Simplified */}
           {isAuction && listing.auctionEndTime && listing.isActive && (
-            <div className="bg-orange-500/20 backdrop-blur-sm border border-orange-500/30 rounded-lg p-2">
-              <AuctionCountdown endTime={listing.auctionEndTime} />
-            </div>
+            <AuctionCountdown endTime={listing.auctionEndTime} simple />
           )}
 
           {/* Seller Info */}
@@ -274,7 +226,7 @@ export function SwipeReelItem({
         </div>
       </div>
 
-      {/* Action Buttons - Instagram-style, Right Side */}
+      {/* Action Buttons - TikTok-style outline, Right Side */}
       <div 
         className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4"
         style={{ 
@@ -285,13 +237,11 @@ export function SwipeReelItem({
         }}
       >
         {/* Favorite Button */}
-        <div className="backdrop-blur-md bg-black/30 rounded-full p-1">
-          <FavoriteButton 
-            listingId={listing.id}
-            size="lg"
-            className="!bg-transparent"
-          />
-        </div>
+        <FavoriteButton 
+          listingId={listing.id}
+          size="lg"
+          className="!bg-transparent"
+        />
 
         {/* Details/Comments Button */}
         <button
@@ -299,9 +249,10 @@ export function SwipeReelItem({
             e.stopPropagation();
             onDetailsOpen();
           }}
-          className="h-12 w-12 rounded-full backdrop-blur-md bg-black/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+          className="h-12 w-12 rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+          style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
         >
-          <MessageSquare className="h-6 w-6 text-white" />
+          <MessageSquare className="h-6 w-6 text-white stroke-2" />
         </button>
 
         {/* Share Button */}
@@ -310,37 +261,54 @@ export function SwipeReelItem({
             e.stopPropagation();
             onShare();
           }}
-          className="h-12 w-12 rounded-full backdrop-blur-md bg-black/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+          className="h-12 w-12 rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+          style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
         >
-          <Share2 className="h-6 w-6 text-white" />
+          <Share2 className="h-6 w-6 text-white stroke-2" />
         </button>
 
         {/* Bid Button - Only for auctions */}
         {!isSoldOut && listing.isActive && isAuction && (
-          <button
+          <motion.button
             onClick={(e) => {
               e.stopPropagation();
               onBidOpen();
             }}
-            className="h-14 w-14 rounded-full backdrop-blur-md bg-primary/90 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg border-2 border-white/20"
-            aria-label={language === "ar" ? "مزايدة" : "مزایدە"}
+            animate={{
+              scale: [1, 1.05, 1],
+            }}
+            transition={{
+              duration: 1.8,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="h-14 px-4 rounded-full bg-orange-500 text-white text-sm font-medium flex items-center justify-center shadow-lg border-2 border-white/20"
+            aria-label={language === "ar" ? "زاود" : "Add your bid"}
           >
-            <Gavel className="h-7 w-7 text-white" />
-          </button>
+            {language === "ar" ? "زاود" : "Add your bid"}
+          </motion.button>
         )}
 
         {/* Make Offer Button - Only for fixed-price negotiable items */}
         {!isSoldOut && listing.isActive && !isAuction && listing.isNegotiable && (
-          <button
+          <motion.button
             onClick={(e) => {
               e.stopPropagation();
               onMakeOffer();
             }}
-            className="h-14 w-14 rounded-full backdrop-blur-md bg-blue-500/90 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg border-2 border-white/20"
-            aria-label={language === "ar" ? "قدم عرضاً" : "پێشکەشکردنی عەرز"}
+            animate={{
+              scale: [1, 1.05, 1],
+            }}
+            transition={{
+              duration: 1.8,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="h-14 px-4 rounded-full bg-blue-500/90 text-white text-sm font-medium flex items-center justify-center shadow-lg border-2 border-white/20"
+            aria-label={language === "ar" ? "فاوض" : "پێشکەشکردنی عەرز"}
           >
-            <span className="text-white font-bold text-xl">💰</span>
-          </button>
+            {language === "ar" ? "فاوض" : "پێشکەشکردنی عەرز"}
+          </motion.button>
         )}
       </div>
     </div>

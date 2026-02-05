@@ -1,12 +1,15 @@
 import { useState, useEffect, memo } from "react";
 import { Clock } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 
 interface AuctionCountdownProps {
   endTime: Date | string | null | undefined;
   onExpired?: () => void;
+  simple?: boolean;
 }
 
-export const AuctionCountdown = memo(function AuctionCountdown({ endTime, onExpired }: AuctionCountdownProps) {
+export const AuctionCountdown = memo(function AuctionCountdown({ endTime, onExpired, simple = false }: AuctionCountdownProps) {
+  const { language } = useLanguage();
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -70,6 +73,19 @@ export const AuctionCountdown = memo(function AuctionCountdown({ endTime, onExpi
         <Clock className="h-4 w-4" />
         <span>مزاد مفتوح</span>
       </div>
+    );
+  }
+
+  // Simple mode: just show total hours
+  if (simple) {
+    const totalHours = timeLeft.days * 24 + timeLeft.hours;
+    return (
+      <p className="text-white/90 text-sm" data-testid="auction-countdown-simple">
+        {totalHours > 0 
+          ? (language === "ar" ? `ينتهي خلال ${totalHours} ساعة` : `Ends in ${totalHours} hours`)
+          : (language === "ar" ? "انتهى المزاد" : "Auction ended")
+        }
+      </p>
     );
   }
 

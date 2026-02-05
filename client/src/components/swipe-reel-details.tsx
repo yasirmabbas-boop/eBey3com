@@ -1,11 +1,14 @@
 import { Link } from "wouter";
-import { ExternalLink, MapPin, Truck, RotateCcw, Tag, Eye } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ExternalLink, MapPin, Truck, RotateCcw, Tag, Star, BadgeCheck } from "lucide-react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ProductComments } from "@/components/product-comments";
 import { useLanguage } from "@/lib/i18n";
+import { useQuery } from "@tanstack/react-query";
+import { VerifiedBadge } from "@/components/verified-badge";
+import { AuctionCountdown } from "@/components/auction-countdown";
 import type { Listing } from "@shared/schema";
 
 interface SwipeReelDetailsProps {
@@ -17,27 +20,121 @@ interface SwipeReelDetailsProps {
 export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetailsProps) {
   const { language, t } = useLanguage();
 
+  // Fetch seller data
+  const { data: sellerData } = useQuery({
+    queryKey: ["/api/users", listing?.sellerId, "public"],
+    queryFn: async () => {
+      if (!listing?.sellerId) return null;
+      const res = await fetch(`/api/users/${listing.sellerId}/public`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!listing?.sellerId && open,
+  });
+
+  const formatPrice = (price: number) => {
+    return price.toLocaleString("ar-IQ") + " د.ع";
+  };
+
   if (!listing) return null;
 
+  const isAuction = listing.saleType?.toLowerCase() === "auction";
+  const isSoldOut = (listing.quantityAvailable || 1) - (listing.quantitySold || 0) <= 0;
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent 
-        side="bottom" 
-        className="h-[85vh] p-0"
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent 
+        className="h-[95vh] p-0 max-h-[95vh]"
         dir="rtl"
       >
-        <SheetHeader className="px-4 pt-6 pb-4 border-b">
-          <SheetTitle className="text-right">
+        <DrawerHeader className="px-4 pt-6 pb-4 border-b">
+          <DrawerTitle className="text-right">
             {language === "ar" ? "تفاصيل المنتج" : "وردەکارییەکانی بەرهەم"}
-          </SheetTitle>
-        </SheetHeader>
+          </DrawerTitle>
+        </DrawerHeader>
 
-        <ScrollArea className="h-[calc(85vh-80px)]">
-          <div className="px-4 py-4 space-y-6">
-            {/* Comments First */}
-            <ProductComments listingId={listing.id} />
+        <ScrollArea className="h-[calc(95vh-140px)] flex-1">
+          <div className="px-4 py-4 pb-24 space-y-6">
+            {/* Title */}
+            <h1 className="text-xl font-bold leading-tight">
+              {listing.title}
+            </h1>
 
-            <Separator />
+            {/* Price Section */}
+            <div className="py-2 border-b">
+              {isAuction ? (
+                <>
+                  <p className="text-3xl font-bold">
+                    {formatPrice(listing.currentBid || listing.price)}
+                  </p>
+                  {(listing as any).totalBids > 0 && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {(listing as any).totalBids} {language === "ar" ? "مزايدة" : "مزایدە"}
+                    </p>
+                  )}
+                  {listing.auctionEndTime && listing.isActive && (
+                    <div className="mt-2">
+                      <AuctionCountdown endTime={listing.auctionEndTime} simple />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold">{formatPrice(listing.price)}</p>
+                  {listing.isNegotiable && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {language === "ar" ? "أو أفضل عرض" : "یان باشترین پێشنیار"}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Seller Info */}
+            <Link 
+              href={`/search?sellerId=${listing.sellerId}`}
+              className="flex items-center gap-3 py-3 border-b hover:bg-gray-50 transition-colors"
+            >
+              {sellerData?.avatar ? (
+                <img 
+                  src={sellerData.avatar} 
+                  alt={listing.sellerName || "البائع"}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold text-sm">
+                  {(listing.sellerName || "ب").charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm">{listing.sellerName || (language === "ar" ? "بائع" : "فرۆشیار")}</span>
+                  {sellerData?.isVerified && <VerifiedBadge size="sm" />}
+                  {(sellerData?.totalSales || 0) > 0 && (
+                    <span className="text-xs text-muted-foreground">({sellerData?.totalSales})</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  {(sellerData?.ratingCount || 0) > 0 ? (
+                    <span className="text-green-600 font-medium">
+                      {Math.round((sellerData?.rating || 0) * 20)}% {language === "ar" ? "تقييم إيجابي" : "هەڵسەنگاندنی ئەرێنی"}
+                    </span>
+                  ) : (
+                    <span>{language === "ar" ? "بائع جديد" : "فرۆشیاری نوێ"}</span>
+                  )}
+                </div>
+              </div>
+            </Link>
+
+            {/* Description */}
+            {listing.description && (
+              <div className="py-2 border-b">
+                <h2 className="font-bold text-lg mb-2">{t("description")}</h2>
+                <p className="text-muted-foreground leading-relaxed text-sm whitespace-pre-wrap">
+                  {listing.description}
+                </p>
+              </div>
+            )}
 
             {/* Specifications */}
             <div>
@@ -64,14 +161,12 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
                   <span className="font-medium">{listing.category}</span>
                 </div>
 
-                {/* Views - Hidden */}
-                {/* <div className="flex justify-between py-2">
-                  <span className="text-muted-foreground flex items-center gap-1">
-                    <Eye className="h-4 w-4" />
-                    {t("views")}
-                  </span>
-                  <span className="font-medium">{(listing as any).views || 0}</span>
-                </div> */}
+                {(listing as any).productCode && (
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-muted-foreground">{t("productCode")}</span>
+                    <span className="font-medium text-xs">{(listing as any).productCode}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -125,10 +220,7 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
                 <div>
                   <p className="font-semibold text-amber-800 mb-1">{t("returnPolicy")}</p>
                   <p className="text-sm text-amber-700">
-                    {listing.returnPolicy || (language === "ar"
-                      ? "يرجى التواصل مع البائع لمعرفة سياسة الإرجاع"
-                      : "تکایە پەیوەندی بکە بە فرۆشیار بۆ زانینی سیاسەتی گەڕاندنەوە"
-                    )}
+                    {listing.returnPolicy || (language === "ar" ? "لا يوجد إرجاع" : "گەڕاندنەوە نییە")}
                   </p>
                 </div>
               </div>
@@ -138,26 +230,29 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
 
             {/* Tags */}
             {listing.tags && listing.tags.length > 0 && (
-              <>
-                <div>
-                  <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                    <Tag className="h-5 w-5 text-primary" />
-                    {language === "ar" ? "الكلمات المفتاحية" : "ووشە سەرەکییەکان"}
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {listing.tags.map((tag: string, index: number) => (
-                      <span
-                        key={index}
-                        className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
+              <div>
+                <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                  <Tag className="h-5 w-5 text-primary" />
+                  {language === "ar" ? "الكلمات المفتاحية" : "ووشە سەرەکییەکان"}
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {listing.tags.map((tag: string, index: number) => (
+                    <Link
+                      key={index}
+                      href={`/search?q=${encodeURIComponent(tag)}`}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full text-sm transition-colors"
+                    >
+                      #{tag}
+                    </Link>
+                  ))}
                 </div>
-                <Separator />
-              </>
+              </div>
             )}
+
+            <Separator />
+
+            {/* Comments - Without Composer */}
+            <ProductComments listingId={listing.id} hideComposer />
 
             {/* View Full Page Button */}
             <Link href={`/product/${listing.id}`}>
@@ -172,7 +267,7 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
             </Link>
           </div>
         </ScrollArea>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 }

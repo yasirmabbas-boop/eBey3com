@@ -102,15 +102,17 @@ export function FavoriteButton({ listingId, className, size = "md" }: FavoriteBu
       aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
     >
       {toggleMutation.isPending ? (
-        <Loader2 className={cn(iconSize, "animate-spin text-white")} style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.3))" }} />
+        <Loader2 className={cn(iconSize, "animate-spin text-white stroke-2")} style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.3))" }} />
       ) : (
         <Heart
           className={cn(
             iconSize,
-            "transition-colors",
-            isFavorite ? "fill-red-500 text-red-500" : "text-white hover:text-red-400"
+            "transition-colors stroke-2",
+            isFavorite 
+              ? "fill-red-500 stroke-red-500 text-red-500" 
+              : "stroke-white text-white fill-none hover:stroke-red-400 hover:text-red-400"
           )}
-          style={{ filter: isFavorite ? "none" : "drop-shadow(0 1px 1px rgba(0,0,0,0.3))" }}
+          style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.3))" }}
         />
       )}
     </button>

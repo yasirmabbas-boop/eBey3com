@@ -27,7 +27,7 @@ function formatTimestamp(createdAt: string | Date, language: string): string {
   return d.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
 }
 
-export function ProductComments({ listingId }: { listingId: string }) {
+export function ProductComments({ listingId, hideComposer = false }: { listingId: string; hideComposer?: boolean }) {
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   const { language, t } = useLanguage();
@@ -110,7 +110,7 @@ export function ProductComments({ listingId }: { listingId: string }) {
       </div>
 
       {/* Composer */}
-      {isAuthenticated ? (
+      {!hideComposer && isAuthenticated ? (
         <div className="space-y-2 mb-4">
           <Textarea
             value={draft}
@@ -139,7 +139,7 @@ export function ProductComments({ listingId }: { listingId: string }) {
             </Button>
           </div>
         </div>
-      ) : (
+      ) : !hideComposer ? (
         <div className="bg-muted/40 border rounded-lg p-3 mb-4 flex items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
             {language === "ar"
@@ -154,7 +154,7 @@ export function ProductComments({ listingId }: { listingId: string }) {
             </Button>
           </Link>
         </div>
-      )}
+      ) : null}
 
       {/* List */}
       {isLoading ? (
