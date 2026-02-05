@@ -506,10 +506,11 @@ export default function MySales() {
                             </p>
                             <div className="mt-2 flex items-center gap-2 flex-wrap">
                               {getStatusBadge(sale.status)}
-                              <span className="text-xs text-gray-500 flex items-center gap-1">
+                              {/* Views - Hidden */}
+                              {/* <span className="text-xs text-gray-500 flex items-center gap-1">
                                 <Eye className="h-3 w-3" />
                                 {(sale.listing as any)?.views || 0}
-                              </span>
+                              </span> */}
                             </div>
                             {["pending", "pending_payment", "pending_shipping"].includes(sale.status) && (
                               <Button
@@ -595,13 +596,14 @@ export default function MySales() {
                             <p className="text-xs text-gray-600 mb-1">طريقة الدفع</p>
                             <p className="font-semibold text-sm">{selectedSale.paymentMethod || "نقداً"}</p>
                           </div>
-                          <div>
+                          {/* Views - Hidden */}
+                          {/* <div>
                             <p className="text-xs text-gray-600 mb-1">المشاهدات</p>
                             <p className="font-semibold text-sm flex items-center gap-1">
                               <Eye className="h-4 w-4" />
                               {(selectedSale.listing as any)?.views || 0}
                             </p>
-                          </div>
+                          </div> */}
                           <div>
                             <Link href={`/product/${selectedSale.listingId}`}>
                               <Button variant="outline" size="sm" className="w-full">

@@ -158,10 +158,11 @@ export default function FavoritesPage() {
                     <p className="font-bold text-primary text-sm">
                       {formatPrice(listing.currentBid || listing.price)}
                     </p>
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                    {/* Views - Hidden */}
+                    {/* <span className="text-xs text-gray-400 flex items-center gap-1">
                       <Eye className="h-3 w-3" />
                       {(listing as any).views || 0}
-                    </span>
+                    </span> */}
                   </div>
                   {listing.saleType === "auction" && listing.auctionEndTime && (
                     <div className="mb-2">

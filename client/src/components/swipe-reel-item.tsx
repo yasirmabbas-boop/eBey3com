@@ -146,11 +146,11 @@ export function SwipeReelItem({
 
   return (
     <div 
-      className="relative h-full w-full flex flex-col bg-zinc-950"
+      className="relative h-full w-full flex flex-col"
       onClick={handleTap}
     >
       {/* Image Carousel Area */}
-      <div className="swipe-image-area relative flex-1 overflow-hidden bg-zinc-950">
+      <div className="swipe-image-area relative flex-1 overflow-hidden">
         {/* CSS Snap Scroll for Performance */}
         <div 
           ref={scrollContainerRef}
@@ -237,11 +237,11 @@ export function SwipeReelItem({
               )}
             </div>
 
-            {/* Views */}
-            <div className="flex items-center gap-1 text-white/80 text-sm">
+            {/* Views - Hidden */}
+            {/* <div className="flex items-center gap-1 text-white/80 text-sm">
               <Eye className="h-4 w-4" />
               {(listing as any).views || 0}
-            </div>
+            </div> */}
           </div>
 
           {/* Auction Countdown */}

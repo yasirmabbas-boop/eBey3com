@@ -925,13 +925,14 @@ export default function ProductPage() {
               </div>
             </div>
           )}
-          <div className="flex items-center justify-between">
+          {/* Views - Hidden */}
+          {/* <div className="flex items-center justify-between">
             <span className="text-gray-500 text-sm">{t("views")}</span>
             <span className="text-sm font-medium flex items-center gap-1">
               <Eye className="h-4 w-4" />
               {(listing as any)?.views || 0}
             </span>
-          </div>
+          </div> */}
         </div>
 
         {/* Return Policy Section */}

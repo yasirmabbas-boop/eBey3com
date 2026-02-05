@@ -64,13 +64,14 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
                   <span className="font-medium">{listing.category}</span>
                 </div>
 
-                <div className="flex justify-between py-2">
+                {/* Views - Hidden */}
+                {/* <div className="flex justify-between py-2">
                   <span className="text-muted-foreground flex items-center gap-1">
                     <Eye className="h-4 w-4" />
                     {t("views")}
                   </span>
                   <span className="font-medium">{(listing as any).views || 0}</span>
-                </div>
+                </div> */}
               </div>
             </div>
 

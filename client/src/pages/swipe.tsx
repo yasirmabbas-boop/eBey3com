@@ -327,7 +327,7 @@ export default function SwipePage() {
       {/* Swipe Container */}
       <div
         ref={containerRef}
-        className="relative h-full w-full overflow-hidden bg-black"
+        className="relative h-full w-full overflow-hidden"
         style={{ touchAction: 'none' }}
       >
         {/* Filters Overlay */}

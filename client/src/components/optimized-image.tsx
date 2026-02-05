@@ -70,7 +70,7 @@ export function OptimizedImage({
         </div>
       )}
 
-      {isInView && !hasError && (
+      {!hasError && (
         <img
           src={src}
           alt={alt}

@@ -1490,10 +1490,11 @@ export default function SellerDashboard() {
                       </div>
 
                       <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
-                        <span className="flex items-center gap-1">
+                        {/* Views - Hidden */}
+                        {/* <span className="flex items-center gap-1">
                           <Eye className="h-4 w-4" />
                           {product.views} {language === "ar" ? "مشاهدة" : "بینین"}
-                        </span>
+                        </span> */}
                         {product.type === "auction" && product.bids && (
                           <span className="flex items-center gap-1">
                             <Gavel className="h-4 w-4" />

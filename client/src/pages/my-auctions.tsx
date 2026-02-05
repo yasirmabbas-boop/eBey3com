@@ -189,10 +189,11 @@ function AuctionCard({
             <Gavel className="h-3 w-3" />
             {bidCount} سوم
           </span>
-          <span className="flex items-center gap-1">
+          {/* Views - Hidden */}
+          {/* <span className="flex items-center gap-1">
             <Eye className="h-3 w-3" />
             {listing.views || 0}
-          </span>
+          </span> */}
         </div>
 
         <div className="space-y-2 pt-2 border-t border-border/60">

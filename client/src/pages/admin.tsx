@@ -1330,12 +1330,13 @@ export default function AdminPage() {
                                   <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">سعر ثابت</Badge>
                                 )}
                               </TableCell>
-                              <TableCell>
+                              {/* Views - Hidden */}
+                              {/* <TableCell>
                                 <div className="flex items-center gap-1 text-muted-foreground">
                                   <Eye className="h-3.5 w-3.5" />
                                   <span className="text-sm">{(listing.views || 0).toLocaleString()}</span>
                                 </div>
-                              </TableCell>
+                              </TableCell> */}
                               <TableCell>
                                 <div className="flex gap-1">
                                   {!listing.isActive ? (
