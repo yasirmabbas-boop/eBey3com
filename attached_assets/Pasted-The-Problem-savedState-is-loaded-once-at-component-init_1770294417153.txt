@@ -1,0 +1,26 @@
+The Problem
+savedState is loaded once at component initialization (line 57), so after navigating back it may be stale.
+The condition savedState.currentIndex > 0 excludes index 0.
+The restoration runs inside the data processing effect, which can cause timing issues.
+Missing dependencies in the effect can prevent it from running correctly.
+The Fix
+Make these changes to /home/runner/workspace/client/src/pages/swipe.tsx:
+Add a ref to track if restoration has happened (after line 76):
+const hasRestoredRef = useRef(false);
+Remove the broken restoration logic (lines 138-145) — delete these lines:
+if (savedState && savedState.currentIndex > 0 && sorted.length > 0) {
+      // Clamp index to valid range
+      const validIndex = Math.min(savedState.currentIndex, sorted.length - 1);
+      if (validIndex !== currentIndex) {
+        setCurrentIndex(validIndex);
+    // If returning with saved state, ensure index is valid    if (savedState && savedState.currentIndex > 0 && sorted.length > 0) {      // Clamp index to valid range      const validIndex = Math.min(savedState.currentIndex, sorted.length - 1);      if (validIndex !== currentIndex) {        setCurrentIndex(validIndex);      }    }
+Add a new effect after line 146 (after the data processing effect) that properly restores the position:
+  // Restore swipe position from sessionStorage when returning from navigation  useEffect(() => {    // Only restore once when component mounts and we have items    if (hasRestoredRef.current || processedItems.length === 0) return;        // Load fresh state from sessionStorage    const freshSavedState = loadSavedState();        if (freshSavedState && freshSavedState.currentIndex !== undefined) {      // Restore index (including 0)      const validIndex = Math.min(freshSavedState.currentIndex, processedItems.length - 1);      if (validIndex >= 0 && validIndex !== currentIndex) {        setCurrentIndex(validIndex);        hasRestoredRef.current = true;      }    }  }, [processedItems.length, currentIndex]);
+Reset the ref when filters change (in the filter change effect around line 152):
+  useEffect(() => {    setCurrentIndex(0);    setPage(1);    setAllItems([]);    setIsFiltersChanged(true);    hasRestoredRef.current = false; // Reset restoration flag    sessionStorage.removeItem(SWIPE_STATE_KEY);  }, [filters]);
+This ensures:
+Fresh state is loaded from sessionStorage when returning
+Index 0 can be restored
+Restoration happens only once after data loads
+The position is restored correctly when navigating back from a product page
+Should I switch to Agent mode to implement these changes?

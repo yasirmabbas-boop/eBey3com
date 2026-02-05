@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -135,6 +136,8 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "deleted-listings" | "messages" | "cancellations" | "payouts">("stats");
   const [listingSearch, setListingSearch] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [highlightedReportId, setHighlightedReportId] = useState<string | null>(null);
+  const highlightedReportRef = useRef<HTMLTableRowElement>(null);
   
   // Pagination state for each tab
   const [reportsPage, setReportsPage] = useState(1);
@@ -153,6 +156,23 @@ export default function AdminPage() {
     adminNotes: string;
     targetLabel: string;
   } | null>(null);
+
+  // Handle deep linking from notifications
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    const reportId = params.get("reportId");
+    
+    if (tab && ["stats", "reports", "users", "seller-requests", "listings", "deleted-listings", "messages", "cancellations", "payouts"].includes(tab)) {
+      setActiveTab(tab as typeof activeTab);
+    }
+    
+    if (reportId) {
+      setHighlightedReportId(reportId);
+      // Clear highlight after 5 seconds
+      setTimeout(() => setHighlightedReportId(null), 5000);
+    }
+  }, []);
 
   useEffect(() => {
     if (!authLoading && (!user || !(user as any).isAdmin)) {
@@ -181,6 +201,18 @@ export default function AdminPage() {
   });
   const reports = reportsData?.reports || [];
   const reportsPagination = reportsData?.pagination;
+
+  // Scroll to highlighted report when data loads
+  useEffect(() => {
+    if (highlightedReportId && highlightedReportRef.current && reports.length > 0) {
+      setTimeout(() => {
+        highlightedReportRef.current?.scrollIntoView({ 
+          behavior: "smooth", 
+          block: "center" 
+        });
+      }, 300);
+    }
+  }, [highlightedReportId, reports]);
 
   const { data: usersData, isLoading: usersLoading } = useQuery<{ users: User[]; pagination: { page: number; limit: number; total: number; hasMore: boolean; totalPages: number } }>({
     queryKey: ["/api/admin/users", usersPage],
@@ -772,7 +804,15 @@ export default function AdminPage() {
                         </TableHeader>
                         <TableBody>
                           {reports.map((report) => (
-                            <TableRow key={report.id} data-testid={`row-report-${report.id}`} className={report.pendingReportsOnTarget >= 3 ? "bg-red-50" : ""}>
+                            <TableRow 
+                              key={report.id} 
+                              ref={highlightedReportId === report.id ? highlightedReportRef : null}
+                              data-testid={`row-report-${report.id}`} 
+                              className={cn(
+                                report.pendingReportsOnTarget >= 3 && "bg-red-50",
+                                highlightedReportId === report.id && "bg-yellow-100 border-2 border-yellow-400 animate-pulse"
+                              )}
+                            >
                               <TableCell>
                                 {report.targetType === "listing" && report.listingTitle ? (
                                   <Link href={`/product/${report.targetId}`}>

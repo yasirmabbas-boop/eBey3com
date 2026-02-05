@@ -17,7 +17,6 @@ ABSOLUTE RULES:
 - Do NOT add anything: no shadows, no reflections, no surfaces, no tables, no scenery, no props, no gradients, no studio setups, no decorations.
 - Output dimensions must match input dimensions exactly.
 - keep the images background solid color that maintain the ebay vibe and style.
-- if the item is a watch or a jewelry that has small details, reject the image generation. 
 
 
 If you cannot cleanly separate the product from the background, return the text: ${UNCLEAR_SUBJECT_TOKEN}`;

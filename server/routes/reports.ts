@@ -141,6 +141,25 @@ export function registerReportsRoutes(app: Express): void {
         status: report.status,
       });
 
+      // Notify all admin users
+      try {
+        const adminUsers = await storage.getAdminUsers();
+        for (const admin of adminUsers) {
+          await storage.createNotification({
+            userId: admin.id,
+            type: "admin_new_report",
+            title: "بلاغ جديد",
+            message: `بلاغ جديد من نوع "${report.reportType}" - ${report.reason}`,
+            linkUrl: `/admin?tab=reports&reportId=${report.id}`,
+            relatedId: report.id,
+          });
+        }
+        console.log(`[Reports] Notified ${adminUsers.length} admin(s) about new report ${report.id}`);
+      } catch (notifError) {
+        console.error("[Reports] Error sending admin notifications:", notifError);
+        // Don't fail the request if notifications fail
+      }
+
       res.status(201).json({
         success: true,
         message: "تم إرسال البلاغ بنجاح",

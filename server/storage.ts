@@ -62,6 +62,7 @@ export interface IStorage {
   getUserByPhone(phone: string): Promise<User | undefined>;
   getUserByAccountCode(accountCode: string): Promise<User | undefined>;
   getUserByAuthToken(token: string): Promise<User | undefined>;
+  getAdminUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   upsertFacebookUser(data: { facebookId: string; email: string | null; displayName: string; photoUrl: string | null }): Promise<User>;
@@ -229,6 +230,26 @@ export interface IStorage {
   getReturnRequestsForBuyer(buyerId: string): Promise<ReturnRequest[]>;
   getReturnRequestsForSeller(sellerId: string): Promise<ReturnRequest[]>;
   updateReturnRequestStatus(id: string, status: string, sellerResponse?: string): Promise<ReturnRequest | undefined>;
+  markReturnAsProcessed(returnRequestId: string, refundAmount: number, processedBy: string, adminNotes?: string): Promise<ReturnRequest | undefined>;
+  getAllReturnRequests(): Promise<ReturnRequest[]>;
+  getReturnRequestsWithDetails(options?: { limit?: number; offset?: number; status?: string }): Promise<{ returns: ReturnRequest[]; total: number }>;
+  updateReturnRequestByAdmin(id: string, updates: Partial<ReturnRequest>): Promise<ReturnRequest | undefined>;
+  
+  // Search by code
+  searchByCode(code: string): Promise<{ products?: Listing[]; users?: User[]; transactions?: Transaction[] }>;
+  searchProductByCode(code: string): Promise<Listing | undefined>;
+  searchUserByAccountCode(code: string): Promise<User | undefined>;
+  searchTransactionById(id: string): Promise<Transaction | undefined>;
+  
+  // Return templates
+  createReturnTemplate(template: any): Promise<any>;
+  getReturnTemplates(activeOnly?: boolean): Promise<any[]>;
+  updateReturnTemplate(id: string, updates: Partial<any>): Promise<any | undefined>;
+  
+  // Return approval rules
+  createReturnRule(rule: any): Promise<any>;
+  getReturnRules(activeOnly?: boolean): Promise<any[]>;
+  updateReturnRule(id: string, updates: Partial<any>): Promise<any | undefined>;
   
   // Contact messages
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
@@ -308,6 +329,11 @@ export class DatabaseStorage implements IStorage {
   async getUserByAuthToken(token: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.authToken, token));
     return this.normalizeUser(user);
+  }
+
+  async getAdminUsers(): Promise<User[]> {
+    const adminUsers = await db.select().from(users).where(eq(users.isAdmin, true));
+    return adminUsers.map(user => this.normalizeUser(user)).filter(Boolean) as User[];
   }
 
   private async generateAccountCode(): Promise<string> {
@@ -540,6 +566,7 @@ export class DatabaseStorage implements IStorage {
       tags: listings.tags,
       sellerId: listings.sellerId,
       isActive: listings.isActive,
+      isNegotiable: listings.isNegotiable,
       createdAt: listings.createdAt,
       views: listings.views,
       sellerName: listings.sellerName,
@@ -1675,7 +1702,9 @@ export class DatabaseStorage implements IStorage {
       eq(reports.targetType, 'listing')
     ))
     .leftJoin(sql`users as seller`, sql`seller.id = ${listings.sellerId}`)
-    .orderBy(desc(reports.createdAt));
+    .orderBy(desc(reports.createdAt))
+    .limit(limit)
+    .offset(offset);
 
     // Get report counts for each target to help prioritize
     const pendingReportCounts = await db.select({
@@ -1696,11 +1725,13 @@ export class DatabaseStorage implements IStorage {
     const pendingMap = new Map(pendingReportCounts.map(r => [r.targetId, r.count]));
     const totalMap = new Map(totalReportCounts.map(r => [r.targetId, r.count]));
 
-    return results.map(r => ({
+    const reportsWithDetails = results.map(r => ({
       ...r,
       totalReportsOnTarget: totalMap.get(r.targetId) || 1,
       pendingReportsOnTarget: pendingMap.get(r.targetId) || 0,
     }));
+
+    return { reports: reportsWithDetails, total };
   }
 
   async updateReportStatus(id: string, status: string, adminNotes?: string, resolvedBy?: string): Promise<Report | undefined> {
@@ -1881,6 +1912,144 @@ export class DatabaseStorage implements IStorage {
         respondedAt: new Date()
       })
       .where(eq(returnRequests.id, id))
+      .returning();
+    return result;
+  }
+
+  async markReturnAsProcessed(returnRequestId: string, refundAmount: number, processedBy: string, adminNotes?: string): Promise<ReturnRequest | undefined> {
+    const [result] = await db.update(returnRequests)
+      .set({
+        refundProcessed: true,
+        refundAmount,
+        processedBy,
+        processedAt: new Date(),
+        adminNotes,
+      })
+      .where(eq(returnRequests.id, returnRequestId))
+      .returning();
+    return result;
+  }
+
+  async getAllReturnRequests(): Promise<ReturnRequest[]> {
+    return db.select().from(returnRequests)
+      .orderBy(desc(returnRequests.createdAt));
+  }
+
+  async getReturnRequestsWithDetails(options?: { limit?: number; offset?: number; status?: string }): Promise<{ returns: ReturnRequest[]; total: number }> {
+    const limit = options?.limit || 50;
+    const offset = options?.offset || 0;
+    
+    let query = db.select().from(returnRequests);
+    if (options?.status) {
+      query = query.where(eq(returnRequests.status, options.status)) as any;
+    }
+    
+    const returns = await query
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(returnRequests.createdAt));
+    
+    const totalResult = await db.select({ count: sql<number>`count(*)` }).from(returnRequests);
+    const total = Number(totalResult[0]?.count || 0);
+    
+    return { returns, total };
+  }
+
+  async updateReturnRequestByAdmin(id: string, updates: Partial<ReturnRequest>): Promise<ReturnRequest | undefined> {
+    const [result] = await db.update(returnRequests)
+      .set(updates)
+      .where(eq(returnRequests.id, id))
+      .returning();
+    return result;
+  }
+
+  async searchByCode(code: string): Promise<{ products?: Listing[]; users?: User[]; transactions?: Transaction[] }> {
+    const results: { products?: Listing[]; users?: User[]; transactions?: Transaction[] } = {};
+    const searchTerm = `%${code}%`;
+    
+    // Search products by productCode
+    const products = await db.select().from(listings)
+      .where(sql`LOWER(COALESCE(${listings.productCode}, '')) LIKE LOWER(${searchTerm})`)
+      .limit(10);
+    if (products.length > 0) {
+      results.products = products;
+    }
+    
+    // Search users by accountCode
+    const userResults = await db.select().from(users)
+      .where(sql`LOWER(COALESCE(${users.accountCode}, '')) LIKE LOWER(${searchTerm})`)
+      .limit(10);
+    if (userResults.length > 0) {
+      results.users = userResults;
+    }
+    
+    // Search transactions by ID
+    const transactionResults = await db.select().from(transactions)
+      .where(sql`${transactions.id}::text LIKE ${searchTerm}`)
+      .limit(10);
+    if (transactionResults.length > 0) {
+      results.transactions = transactionResults;
+    }
+    
+    return results;
+  }
+
+  async searchProductByCode(code: string): Promise<Listing | undefined> {
+    const [result] = await db.select().from(listings)
+      .where(eq(listings.productCode, code));
+    return result;
+  }
+
+  async searchUserByAccountCode(code: string): Promise<User | undefined> {
+    const [result] = await db.select().from(users)
+      .where(eq(users.accountCode, code));
+    return result;
+  }
+
+  async searchTransactionById(id: string): Promise<Transaction | undefined> {
+    const [result] = await db.select().from(transactions)
+      .where(eq(transactions.id, id));
+    return result;
+  }
+
+  async createReturnTemplate(template: InsertReturnTemplate): Promise<ReturnTemplate> {
+    const [result] = await db.insert(returnTemplates).values(template).returning();
+    return result;
+  }
+
+  async getReturnTemplates(activeOnly = false): Promise<ReturnTemplate[]> {
+    let query = db.select().from(returnTemplates);
+    if (activeOnly) {
+      query = query.where(eq(returnTemplates.isActive, true)) as any;
+    }
+    return query.orderBy(desc(returnTemplates.createdAt));
+  }
+
+  async updateReturnTemplate(id: string, updates: Partial<ReturnTemplate>): Promise<ReturnTemplate | undefined> {
+    const [result] = await db.update(returnTemplates)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(returnTemplates.id, id))
+      .returning();
+    return result;
+  }
+
+  async createReturnRule(rule: InsertReturnRule): Promise<ReturnRule> {
+    const [result] = await db.insert(returnApprovalRules).values(rule).returning();
+    return result;
+  }
+
+  async getReturnRules(activeOnly = false): Promise<ReturnRule[]> {
+    let query = db.select().from(returnApprovalRules);
+    if (activeOnly) {
+      query = query.where(eq(returnApprovalRules.isActive, true)) as any;
+    }
+    return query.orderBy(desc(returnApprovalRules.priority));
+  }
+
+  async updateReturnRule(id: string, updates: Partial<ReturnRule>): Promise<ReturnRule | undefined> {
+    const [result] = await db.update(returnApprovalRules)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(returnApprovalRules.id, id))
       .returning();
     return result;
   }

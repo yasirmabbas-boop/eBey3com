@@ -1,0 +1,45 @@
+Let me investigate where profile images are displayed and check for any permission or visibility issues.
+Based on my investigation of the code, I can now explain the profile image issue and provide guidance on how to fix it:
+Problem Analysis
+The issue is not with the current code logic - the architecture is sound. Here's what's happening:
+How It Currently Works
+Avatar Storage: Avatars are stored as relative paths like /objects/uploads/abc123.webp in the database
+Backend Processing:
+normalizeAvatar() in storage.ts extracts pathnames from full URLs
+The API endpoint /api/users/:userId/public returns the avatar field
+The /objects/:objectPath(*) route serves the actual image files
+Frontend Display:
+Current user's avatar: Uses getUserAvatarSrc() helper which handles Facebook IDs gracefully
+Other users' avatars: Directly uses the avatar field from API responses
+Why Users See Their Own but Not Others
+The most likely causes are:
+Database Data Inconsistency: Some user avatars in the database may be:
+Empty/null values
+Malformed paths (not starting with /objects/)
+Full URLs that aren't being properly normalized
+Paths to objects that don't exist in storage
+Facebook Profile Pictures: Users who signed up with Facebook get avatars from graph.facebook.com, which works for the current user (via getUserAvatarSrc()) but may not be handled correctly for other users' avatars displayed elsewhere.
+Recommended Fix
+You need to apply the same getUserAvatarSrc() helper (or equivalent logic) when displaying any user's avatar, not just the current user's:
+Option 1: Use the Helper Everywhere
+Update these files to use getUserAvatarSrc():
+client/src/pages/product.tsx (around line 799):
+// Instead of:src={sellerData.avatar}// Use:src={getUserAvatarSrc(sellerData) || ''}
+client/src/pages/seller-profile.tsx (around line 160):
+// Instead of:src={seller.avatar}// Use:src={getUserAvatarSrc(seller) || ''}
+client/src/components/product-comments.tsx (around line 177):
+// Create avatar object and use helper:src={getUserAvatarSrc({ avatar: c.userAvatar, facebookId: c.userFacebookId }) || ''}
+Option 2: Enhance the Backend
+Modify the backend to return full URLs instead of relative paths:
+In server/storage.ts, update normalizeAvatar() to construct absolute URLs:
+private normalizeAvatar(avatar: string | null | undefined): string | null {  if (!avatar) return null;    // If it's already a full URL (Facebook, etc.), return as-is  if (avatar.startsWith("http://") || avatar.startsWith("https://")) {    return avatar;  }    // If it's a relative path, construct full URL  if (avatar.startsWith("/objects/")) {    const baseUrl = process.env.PUBLIC_URL || "";    return baseUrl + avatar;  }    return avatar;}
+Option 3: Database Audit (Recommended First Step)
+Before making code changes, check what's actually in the database. Run this query to see avatar patterns:
+SELECT   id,   avatar,   facebook_id,  CASE     WHEN avatar IS NULL THEN 'null'    WHEN avatar LIKE '/objects/%' THEN 'relative_path'    WHEN avatar LIKE 'http%' THEN 'full_url'    ELSE 'other'  END as avatar_typeFROM users WHERE avatar IS NOT NULL OR facebook_id IS NOT NULLLIMIT 50;
+This will tell you exactly what formats exist in your database and help determine the best fix strategy.
+Summary
+The code structure is correct, but there's likely a data consistency issue or missing logic to handle Facebook profile pictures for other users. I recommend:
+First, audit the database to see what avatar data actually exists
+Then apply getUserAvatarSrc() or equivalent logic consistently across all avatar displays
+Ensure the public user API returns facebookId if needed for the helper function to work
+Would you like me to check the database or examine any specific part of the code more closely?

@@ -1,0 +1,960 @@
+Migration Strategy
+
+Step 1: Create new structure (preserve old file)
+
+
+
+
+
+Create client/src/pages/admin/ folder
+
+
+
+Move admin.tsx to admin.tsx.backup
+
+Step 2: Extract hooks (1 hour)
+
+
+
+
+
+use-admin-data.ts: Extract all useQuery hooks
+
+
+
+use-admin-mutations.ts: Extract all useMutation hooks
+
+Step 3: Extract shared components (1-2 hours)
+
+
+
+
+
+Create reusable table components
+
+
+
+Extract dialog components
+
+
+
+Create shared UI elements
+
+Step 4: Split tabs (2-3 hours)
+
+
+
+
+
+Create individual tab files
+
+
+
+Each tab receives props: { data, loading, mutations, toast }
+
+
+
+Move tab-specific logic and JSX
+
+Step 5: Create main container (1 hour)
+
+
+
+
+
+index.tsx: Route between tabs based on activeTab
+
+
+
+Import and use hooks
+
+
+
+Handle shared state (search, pagination, dialogs)
+
+Step 6: Create layout components (1 hour)
+
+
+
+
+
+admin-layout.tsx: Main wrapper
+
+
+
+admin-sidebar.tsx: Navigation with active state
+
+
+
+admin-header.tsx: Breadcrumbs and quick actions
+
+Step 7: Testing (1 hour)
+
+
+
+
+
+Verify all tabs work identically
+
+
+
+Test navigation and state persistence
+
+
+
+Check all mutations still function
+
+Benefits
+
+
+
+
+
+Maintainability: Each file 150-300 lines instead of 2000+
+
+
+
+Performance: Lazy loading for tabs (code splitting)
+
+
+
+Testability: Easier to test isolated components
+
+
+
+Collaboration: Multiple developers can work on different tabs
+
+
+
+Reusability: Shared components across tabs
+
+
+
+Future-proof: Easy to add new tabs (like Returns)
+
+Implementation Priority
+
+Do this BEFORE implementing new features to:
+
+
+
+
+
+Avoid refactoring 2500+ lines later
+
+
+
+Make new feature implementation cleaner
+
+
+
+Establish pattern for returns tab
+
+Phase 1: Database Schema Extensions
+
+New Tables
+
+1.1 Return Templates Table (shared/schema.ts)
+
+export const returnTemplates = pgTable("return_templates", {
+  id: varchar("id").primaryKey(),
+  name: text("name").notNull(),
+  reason: text("reason").notNull(),
+  description: text("description"),
+  autoApprove: boolean("auto_approve").default(false),
+  requiresPhotos: boolean("requires_photos").default(false),
+  notifyBuyer: boolean("notify_buyer").default(true),
+  createdBy: varchar("created_by"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at"),
+});
+
+1.2 Return Approval Rules Table (shared/schema.ts)
+
+export const returnApprovalRules = pgTable("return_approval_rules", {
+  id: varchar("id").primaryKey(),
+  name: text("name").notNull(),
+  priority: integer("priority").default(0),
+  conditions: jsonb("conditions").notNull(), // {reason, priceRange, sellerRating, etc}
+  action: text("action").notNull(), // 'auto_approve', 'auto_reject', 'require_review'
+  isActive: boolean("is_active").default(true),
+  createdBy: varchar("created_by"),
+  createdAt: timestamp("created_at"),
+});
+
+1.3 Return Analytics Table (shared/schema.ts)
+
+export const returnAnalytics = pgTable("return_analytics", {
+  id: varchar("id").primaryKey(),
+  returnRequestId: varchar("return_request_id").notNull(),
+  reason: text("reason").notNull(),
+  category: text("category"),
+  amount: integer("amount"),
+  processingTime: integer("processing_time_hours"),
+  autoApproved: boolean("auto_approved").default(false),
+  recordedAt: timestamp("recorded_at"),
+});
+
+1.4 Migration File: migrations/0030_add_return_management_system.sql
+
+Phase 2: Backend - Enhanced Search System
+
+2.1 Universal Search by Code Endpoint
+
+File: server/routes/admin.ts
+
+Add endpoint: GET /api/admin/search/by-code
+
+app.get("/api/admin/search/by-code", requireAdmin, async (req, res) => {
+  const { code, type } = req.query; // type: 'product'|'user'|'transaction'|'return'
+  // Search across productCode, accountCode, transaction IDs
+  // Return structured results with entity type and metadata
+});
+
+2.2 Storage Methods
+
+File: server/storage.ts
+
+Add methods:
+
+
+
+
+
+searchByCode(code: string): Promise<SearchResults>
+
+
+
+searchProductByCode(code: string): Promise<Listing | undefined>
+
+
+
+searchUserByAccountCode(code: string): Promise<User | undefined>
+
+
+
+searchTransactionById(id: string): Promise<Transaction | undefined>
+
+Phase 3: Backend - Admin Return Initiation
+
+3.1 Admin Return Endpoints
+
+File: server/routes/admin.ts
+
+Create Return Request: POST /api/admin/return-requests/create
+
+// Allow admin to create returns on behalf of buyers
+// Bypass time limit checks with override flag
+// Add admin notes and template selection
+
+List All Returns: GET /api/admin/return-requests
+
+// Paginated list with filters (status, seller, buyer, date range)
+// Include transaction, listing, and user details
+
+Update Return Status: PATCH /api/admin/return-requests/:id/status
+
+// Update status with admin notes
+// Trigger notifications and analytics recording
+
+3.2 Storage Methods
+
+File: server/storage.ts
+
+Add to IStorage interface and implement:
+
+
+
+
+
+getAllReturnRequests(options: PaginationOptions): Promise<{requests, total}>
+
+
+
+createAdminReturnRequest(request: AdminInsertReturnRequest): Promise<ReturnRequest>
+
+
+
+getReturnRequestsWithDetails(options): Promise<ReturnRequestWithDetails[]>
+
+
+
+updateReturnRequestByAdmin(id, updates): Promise<ReturnRequest>
+
+Phase 4: Backend - Return Templates System
+
+4.1 Templates API
+
+File: server/routes/admin.ts
+
+
+
+
+
+GET /api/admin/return-templates - List all templates
+
+
+
+POST /api/admin/return-templates - Create template
+
+
+
+PATCH /api/admin/return-templates/:id - Update template
+
+
+
+DELETE /api/admin/return-templates/:id - Deactivate template
+
+4.2 Template Application Logic
+
+File: server/services/return-template-service.ts (NEW)
+
+export class ReturnTemplateService {
+  async applyTemplate(templateId: string, returnData): Promise<ReturnRequest>
+  async getActiveTemplates(): Promise<ReturnTemplate[]>
+  async validateTemplate(template): Promise<ValidationResult>
+}
+
+Phase 5: Backend - Automated Approval Rules
+
+5.1 Rules Engine API
+
+File: server/routes/admin.ts
+
+
+
+
+
+GET /api/admin/return-rules - List all rules
+
+
+
+POST /api/admin/return-rules - Create rule
+
+
+
+PATCH /api/admin/return-rules/:id - Update rule
+
+
+
+DELETE /api/admin/return-rules/:id - Deactivate rule
+
+
+
+POST /api/admin/return-rules/test - Test rule against sample data
+
+5.2 Rules Engine Service
+
+File: server/services/return-rules-engine.ts (NEW)
+
+export class ReturnRulesEngine {
+  async evaluateReturn(returnRequest): Promise<{action, rule, confidence}>
+  async testRule(rule, testData): Promise<TestResult>
+  private matchesConditions(request, conditions): boolean
+  private getPrioritizedRules(): Promise<ReturnRule[]>
+}
+
+Rule Condition Examples:
+
+
+
+
+
+Reason-based: Auto-approve if reason is "damaged" or "missing_parts"
+
+
+
+Price-based: Require review for items over 500,000 IQD
+
+
+
+Seller rating: Auto-approve for sellers with rating > 4.5
+
+
+
+Time-based: Auto-reject if beyond return period unless quality issue
+
+5.3 Integration with Return Creation
+
+File: server/routes/transactions.ts
+
+Modify existing POST /api/return-requests to:
+
+// After creating return request, evaluate against rules
+const evaluation = await rulesEngine.evaluateReturn(returnRequest);
+if (evaluation.action === 'auto_approve') {
+  await storage.updateReturnRequestStatus(returnRequest.id, 'approved', 
+    `Auto-approved by rule: ${evaluation.rule.name}`);
+}
+
+Phase 6: Backend - Return Analytics
+
+6.1 Analytics API
+
+File: server/routes/admin.ts
+
+
+
+
+
+GET /api/admin/return-analytics/summary - Overview stats
+
+
+
+GET /api/admin/return-analytics/reasons - Breakdown by reason
+
+
+
+GET /api/admin/return-analytics/trends - Time-based trends
+
+
+
+GET /api/admin/return-analytics/sellers - Seller-specific metrics
+
+6.2 Analytics Service
+
+File: server/services/return-analytics-service.ts (NEW)
+
+export class ReturnAnalyticsService {
+  async recordReturn(returnRequest): Promise<void>
+  async getSummaryStats(dateRange): Promise<SummaryStats>
+  async getReasonBreakdown(dateRange): Promise<ReasonStats[]>
+  async getTrends(period): Promise<TrendData[]>
+  async getSellerMetrics(sellerId): Promise<SellerReturnMetrics>
+}
+
+Phase 7: Frontend - Enhanced Global Search
+
+7.1 Admin Header Search Bar
+
+File: client/src/components/admin-search-bar.tsx (NEW)
+
+Create quick search component:
+
+- Search input with code/ID
+- Dropdown for search type (Product, User, Transaction, Return)
+- Auto-search on Enter or button click
+- Display results in dropdown with entity icons
+- Navigate to relevant tab with highlighted result
+
+7.2 Integration
+
+File: client/src/pages/admin.tsx
+
+Add search bar to admin header:
+
+<div className="admin-header">
+  <AdminSearchBar onNavigate={(tab, id) => {
+    setActiveTab(tab);
+    setHighlightedItemId(id);
+  }} />
+</div>
+
+Phase 8: Frontend - Returns Management Tab
+
+8.1 New Returns Tab
+
+File: client/src/pages/admin.tsx
+
+Update activeTab type:
+
+const [activeTab, setActiveTab] = useState<
+  "stats" | "reports" | "users" | "seller-requests" | 
+  "listings" | "deleted-listings" | "messages" | "cancellations" | 
+  "payouts" | "returns" // NEW
+>("stats");
+
+8.2 Returns List Component
+
+File: client/src/components/admin/returns-table.tsx (NEW)
+
+Features:
+
+
+
+
+
+Paginated returns table with columns: ID, Transaction, Buyer, Seller, Reason, Status, Amount, Date, Actions
+
+
+
+Status badges (pending, approved, rejected, processed)
+
+
+
+Filter controls (status, date range, seller, buyer)
+
+
+
+Search by transaction ID or return ID
+
+
+
+Bulk actions (approve, reject, process)
+
+
+
+Click row to view details
+
+8.3 Return Detail Dialog
+
+File: client/src/components/admin/return-detail-dialog.tsx (NEW)
+
+Features:
+
+
+
+
+
+Full return request details
+
+
+
+Transaction and listing information
+
+
+
+Timeline of status changes
+
+
+
+Admin notes section
+
+
+
+Action buttons (Approve, Reject, Process Refund)
+
+
+
+Apply template button
+
+
+
+Override options
+
+8.4 Create Return Dialog
+
+File: client/src/components/admin/create-return-dialog.tsx (NEW)
+
+Features:
+
+
+
+
+
+Transaction lookup (by ID or search)
+
+
+
+Template selection dropdown
+
+
+
+Reason selection with custom input
+
+
+
+Details textarea
+
+
+
+Admin notes field
+
+
+
+Override checkboxes (bypass time limit, bypass existing return check)
+
+
+
+Preview before creating
+
+Phase 9: Frontend - Return Templates UI
+
+9.1 Templates Management
+
+File: client/src/components/admin/return-templates.tsx (NEW)
+
+Features:
+
+
+
+
+
+List of templates with name, reason, auto-approve status
+
+
+
+Create template dialog
+
+
+
+Edit template dialog
+
+
+
+Toggle active/inactive
+
+
+
+Delete confirmation
+
+9.2 Template Form
+
+File: client/src/components/admin/return-template-form.tsx (NEW)
+
+Fields:
+
+
+
+
+
+Template name
+
+
+
+Reason (dropdown + custom)
+
+
+
+Description
+
+
+
+Auto-approve toggle
+
+
+
+Requires photos toggle
+
+
+
+Notify buyer toggle
+
+Phase 10: Frontend - Automated Rules UI
+
+10.1 Rules Management
+
+File: client/src/components/admin/return-rules.tsx (NEW)
+
+Features:
+
+
+
+
+
+List of rules sorted by priority
+
+
+
+Drag-to-reorder priority
+
+
+
+Create rule dialog
+
+
+
+Edit rule dialog
+
+
+
+Toggle active/inactive
+
+
+
+Test rule with sample data
+
+
+
+Rule impact preview
+
+10.2 Rule Builder
+
+File: client/src/components/admin/return-rule-builder.tsx (NEW)
+
+Visual rule builder:
+
+
+
+
+
+Condition builder (reason, price range, seller rating, buyer history)
+
+
+
+Logical operators (AND/OR)
+
+
+
+Action selector (auto-approve, auto-reject, require review)
+
+
+
+Priority slider
+
+
+
+Test panel with sample inputs
+
+Phase 11: Frontend - Return Analytics Dashboard
+
+11.1 Analytics Tab Component
+
+File: client/src/components/admin/return-analytics.tsx (NEW)
+
+Sections:
+
+
+
+
+
+Summary Cards
+
+
+
+
+
+Total returns (current period)
+
+
+
+Approval rate
+
+
+
+Average processing time
+
+
+
+Auto-approval rate
+
+
+
+Reason Breakdown Chart
+
+
+
+
+
+Pie chart or bar chart of return reasons
+
+
+
+Clickable segments to filter
+
+
+
+Trends Chart
+
+
+
+
+
+Line chart showing returns over time
+
+
+
+Filterable by status
+
+
+
+Seller Metrics Table
+
+
+
+
+
+Top sellers by return rate
+
+
+
+Return reasons by seller
+
+
+
+Action needed indicators
+
+
+
+Time Range Selector
+
+
+
+
+
+Last 7 days, 30 days, 90 days, custom range
+
+Phase 12: Testing & Documentation
+
+12.1 Unit Tests
+
+
+
+
+
+Template service tests
+
+
+
+Rules engine tests with various conditions
+
+
+
+Analytics calculations
+
+
+
+Search functionality tests
+
+12.2 Integration Tests
+
+
+
+
+
+Admin return creation workflow
+
+
+
+Template application
+
+
+
+Rule evaluation and auto-approval
+
+
+
+Analytics data recording
+
+12.3 E2E Tests
+
+
+
+
+
+Complete return initiation flow
+
+
+
+Rule configuration and testing
+
+
+
+Template usage
+
+
+
+Search navigation
+
+12.4 Documentation
+
+Create docs/ADMIN_RETURNS_SYSTEM.md:
+
+
+
+
+
+System architecture
+
+
+
+API endpoints reference
+
+
+
+Rule condition syntax
+
+
+
+Template usage guide
+
+
+
+Analytics metrics definitions
+
+
+
+Admin workflows
+
+Implementation Order
+
+
+
+
+
+Phase 0: Admin panel refactoring (7-9 hours) - DO THIS FIRST
+
+
+
+Phase 1: Database schema (1-2 hours)
+
+
+
+Phase 2: Enhanced search (2-3 hours)
+
+
+
+Phase 3: Admin return initiation (3-4 hours)
+
+
+
+Phase 4: Templates backend (2-3 hours)
+
+
+
+Phase 5: Rules engine backend (4-5 hours)
+
+
+
+Phase 6: Analytics backend (2-3 hours)
+
+
+
+Phase 7: Frontend search bar (1-2 hours)
+
+
+
+Phase 8: Returns tab frontend (4-5 hours)
+
+
+
+Phase 9: Templates UI (2-3 hours)
+
+
+
+Phase 10: Rules UI (3-4 hours)
+
+
+
+Phase 11: Analytics dashboard (3-4 hours)
+
+
+
+Phase 12: Testing & docs (3-4 hours)
+
+Total Estimated Time: 37-49 hours (5-6 days)
+
+Key Technical Decisions
+
+
+
+
+
+Rules Engine: Priority-based evaluation with condition matching
+
+
+
+Analytics: Real-time recording with aggregated views
+
+
+
+Search: Multi-entity search with type filtering
+
+
+
+Templates: Reusable configurations for common scenarios
+
+
+
+UI/UX: Tab-based navigation with modal dialogs for actions
+

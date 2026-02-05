@@ -6,6 +6,7 @@ import { SwipeReelItem } from "@/components/swipe-reel-item";
 import { SwipeReelFilters, SwipeFilters } from "@/components/swipe-reel-filters";
 import { SwipeReelDetails } from "@/components/swipe-reel-details";
 import { BiddingWindow } from "@/components/bidding-window";
+import { MakeOfferDialog } from "@/components/make-offer-dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n";
@@ -13,7 +14,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useListings } from "@/hooks/use-listings";
 import { useSwipeGesture } from "@/hooks/use-swipe-gesture";
 import { useToast } from "@/hooks/use-toast";
-import { useCart } from "@/hooks/use-cart";
 import {
   applyPersonalizationWeights,
   getTrendingItems,
@@ -24,29 +24,57 @@ import type { Listing } from "@shared/schema";
 
 const ITEMS_PER_PAGE = 20;
 
+const SWIPE_STATE_KEY = 'swipe_position_state';
+
 export default function SwipePage() {
   const { language, t } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { addToCart } = useCart();
   const [, navigate] = useLocation();
 
+  // Load saved swipe position and filters from sessionStorage
+  const loadSavedState = () => {
+    try {
+      const saved = sessionStorage.getItem(SWIPE_STATE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        
+        // Check if saved state is recent (within last 30 minutes)
+        const thirtyMinutes = 30 * 60 * 1000;
+        if (parsed.timestamp && Date.now() - parsed.timestamp < thirtyMinutes) {
+          return parsed;
+        } else {
+          // Clear stale state
+          sessionStorage.removeItem(SWIPE_STATE_KEY);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load swipe state:', error);
+    }
+    return null;
+  };
+
+  const savedState = loadSavedState();
+
   // State
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [filters, setFilters] = useState<SwipeFilters>({
-    categories: [],
-    saleType: 'all',
-    conditions: [],
-  });
+  const [currentIndex, setCurrentIndex] = useState(savedState?.currentIndex || 0);
+  const [filters, setFilters] = useState<SwipeFilters>(
+    savedState?.filters || {
+      categories: [],
+      saleType: 'all',
+      conditions: [],
+    }
+  );
   const [page, setPage] = useState(1);
   const [allItems, setAllItems] = useState<Listing[]>([]);
   const [processedItems, setProcessedItems] = useState<Listing[]>([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [biddingOpen, setBiddingOpen] = useState(false);
+  const [offerOpen, setOfferOpen] = useState(false);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const isAnySheetOpen = detailsOpen || biddingOpen;
+  const isAnySheetOpen = detailsOpen || biddingOpen || offerOpen;
 
   // Load personalization data
   const personalizationData = useMemo(() => loadPersonalizationData(), []);
@@ -106,6 +134,15 @@ export default function SwipePage() {
     }
 
     setProcessedItems(sorted);
+
+    // If returning with saved state, ensure index is valid
+    if (savedState && savedState.currentIndex > 0 && sorted.length > 0) {
+      // Clamp index to valid range
+      const validIndex = Math.min(savedState.currentIndex, sorted.length - 1);
+      if (validIndex !== currentIndex) {
+        setCurrentIndex(validIndex);
+      }
+    }
   }, [listingsData, page, hasUserPreferences, personalizationData]);
 
   // Track filter changes to trigger refetch
@@ -117,6 +154,9 @@ export default function SwipePage() {
     setPage(1);
     setAllItems([]);
     setIsFiltersChanged(true);
+    
+    // Clear saved state when filters change
+    sessionStorage.removeItem(SWIPE_STATE_KEY);
   }, [filters]);
   
   // Clear the filters changed flag when new data arrives
@@ -178,6 +218,33 @@ export default function SwipePage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isAnySheetOpen, currentIndex]);
 
+  // Save swipe position to sessionStorage whenever it changes
+  useEffect(() => {
+    const stateToSave = {
+      currentIndex,
+      filters,
+      timestamp: Date.now(),
+    };
+    
+    try {
+      sessionStorage.setItem(SWIPE_STATE_KEY, JSON.stringify(stateToSave));
+    } catch (error) {
+      console.error('Failed to save swipe state:', error);
+    }
+  }, [currentIndex, filters]);
+
+  // Cleanup: Clear saved state when component unmounts (user navigates away from swipe)
+  // But keep it if they're just opening sheets/dialogs
+  useEffect(() => {
+    return () => {
+      // Only clear if sheets are not open (meaning user is leaving swipe page)
+      if (!isAnySheetOpen) {
+        // Note: We DON'T clear here - we want state to persist for back navigation
+        // State will auto-expire after 30 minutes
+      }
+    };
+  }, [isAnySheetOpen]);
+
   // Handlers
   const handleDetailsOpen = (listing: Listing) => {
     setSelectedListing(listing);
@@ -200,35 +267,20 @@ export default function SwipePage() {
     setBiddingOpen(true);
   };
 
-  const handleBuyNow = async (listing: Listing) => {
+  const handleMakeOffer = (listing: Listing) => {
     if (!user) {
       toast({
         title: t("loginRequired"),
         description: language === "ar"
-          ? "يجب عليك تسجيل الدخول للشراء"
-          : "دەبێت بچیتە ژوورەوە بۆ کڕین",
+          ? "يجب عليك تسجيل الدخول لتقديم عرض"
+          : "دەبێت بچیتە ژوورەوە بۆ پێشکەشکردنی عەرز",
         variant: "destructive",
       });
       navigate(`/signin?redirect=/swipe`);
       return;
     }
-
-    try {
-      await addToCart({ listingId: listing.id, quantity: 1 });
-      toast({
-        title: language === "ar" ? "تم إضافة المنتج للسلة" : "بەرهەم زیادکرا بۆ سەبەتە",
-        description: language === "ar" 
-          ? "سيتم توجيهك لإتمام الشراء..." 
-          : "دەگوازرێیتەوە بۆ تەواوکردنی کڕین...",
-      });
-      navigate("/checkout");
-    } catch (error: any) {
-      toast({
-        title: t("error"),
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+    setSelectedListing(listing);
+    setOfferOpen(true);
   };
 
   const handleShare = (listing: Listing) => {
@@ -363,7 +415,7 @@ export default function SwipePage() {
                 shouldPreload={isVisible}
                 onDetailsOpen={() => handleDetailsOpen(item)}
                 onBidOpen={() => handleBidOpen(item)}
-                onBuyNow={() => handleBuyNow(item)}
+                onMakeOffer={() => handleMakeOffer(item)}
                 onShare={() => handleShare(item)}
                 onNavigateToListing={() => navigate(`/product/${item.id}`)}
               />
@@ -430,6 +482,14 @@ export default function SwipePage() {
           </SheetContent>
         </Sheet>
       )}
+
+      {/* Make Offer Dialog */}
+      <MakeOfferDialog
+        open={offerOpen}
+        onOpenChange={setOfferOpen}
+        listingId={selectedListing?.id || ""}
+        defaultOfferAmount={selectedListing?.price}
+      />
     </div>
   );
 }

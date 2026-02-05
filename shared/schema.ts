@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, real, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, real, index, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -399,6 +399,48 @@ export const insertReportSchema = createInsertSchema(reports).omit({
 export type InsertReport = z.infer<typeof insertReportSchema>;
 export type Report = typeof reports.$inferSelect;
 
+// Return Rule Conditions Schema (for JSONB type safety)
+export const returnRuleConditionsSchema = z.object({
+  // Which return reasons to match (empty = all reasons)
+  reasons: z.array(z.enum([
+    'damaged',
+    'different_from_description', 
+    'missing_parts',
+    'changed_mind',
+    'found_cheaper',
+    'quality_issue',
+    'wrong_item',
+    'defective',
+    'other'
+  ])).optional(),
+  
+  // Price range filter
+  priceRange: z.object({
+    min: z.number().int().min(0).optional(),
+    max: z.number().int().min(0).optional(),
+  }).optional(),
+  
+  // Seller criteria
+  sellerRatingMin: z.number().min(0).max(5).optional(),
+  sellerRatingMax: z.number().min(0).max(5).optional(),
+  
+  // Time-based criteria (days after delivery)
+  daysAfterDeliveryMin: z.number().int().min(0).optional(),
+  daysAfterDeliveryMax: z.number().int().min(0).optional(),
+  
+  // Category filter (empty = all categories)
+  categories: z.array(z.string()).optional(),
+  
+  // Buyer criteria
+  buyerMinPurchases: z.number().int().min(0).optional(),
+  buyerMinRating: z.number().min(0).max(5).optional(),
+  
+  // Logical operator for combining conditions
+  operator: z.enum(['AND', 'OR']).default('AND'),
+}).strict(); // Reject unknown properties for safety
+
+export type ReturnRuleConditions = z.infer<typeof returnRuleConditionsSchema>;
+
 // Return requests
 export const returnRequests = pgTable("return_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -412,6 +454,19 @@ export const returnRequests = pgTable("return_requests", {
   sellerResponse: text("seller_response"),
   respondedAt: timestamp("responded_at"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  // Extended fields for admin return management
+  adminNotes: text("admin_notes"),
+  adminInitiatedBy: varchar("admin_initiated_by"),
+  templateId: varchar("template_id"),
+  processedBy: varchar("processed_by"),
+  processedAt: timestamp("processed_at"),
+  autoApproved: boolean("auto_approved").default(false),
+  approvalRuleId: varchar("approval_rule_id"),
+  autoApprovedAt: timestamp("auto_approved_at"),
+  refundAmount: integer("refund_amount"),
+  refundProcessed: boolean("refund_processed").default(false),
+  category: text("category"),
+  listingPrice: integer("listing_price"),
 });
 
 export const insertReturnRequestSchema = createInsertSchema(returnRequests).omit({
@@ -425,6 +480,56 @@ export const insertReturnRequestSchema = createInsertSchema(returnRequests).omit
 export type InsertReturnRequest = z.infer<typeof insertReturnRequestSchema>;
 export type ReturnRequest = typeof returnRequests.$inferSelect;
 
+// Return Templates
+export const returnTemplates = pgTable("return_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  reason: text("reason").notNull(),
+  description: text("description"),
+  autoApprove: boolean("auto_approve").default(false),
+  requiresPhotos: boolean("requires_photos").default(false),
+  notifyBuyer: boolean("notify_buyer").default(true),
+  createdBy: varchar("created_by"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+}, (table) => ({
+  returnTemplatesActiveIdx: index("return_templates_active_idx").on(table.isActive),
+}));
+
+export const insertReturnTemplateSchema = createInsertSchema(returnTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertReturnTemplate = z.infer<typeof insertReturnTemplateSchema>;
+export type ReturnTemplate = typeof returnTemplates.$inferSelect;
+
+// Return Approval Rules
+export const returnApprovalRules = pgTable("return_approval_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  priority: integer("priority").default(0).notNull(),
+  conditions: jsonb("conditions").$type<ReturnRuleConditions>().notNull(),
+  action: text("action").notNull(), // 'auto_approve', 'auto_reject', 'require_review'
+  isActive: boolean("is_active").default(true).notNull(),
+  createdBy: varchar("created_by"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+}, (table) => ({
+  returnRulesPriorityActiveIdx: index("return_rules_priority_active_idx").on(table.priority, table.isActive),
+}));
+
+export const insertReturnRuleSchema = createInsertSchema(returnApprovalRules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertReturnRule = z.infer<typeof insertReturnRuleSchema>;
+export type ReturnRule = typeof returnApprovalRules.$inferSelect;
 
 // Notifications system
 export const notifications = pgTable("notifications", {

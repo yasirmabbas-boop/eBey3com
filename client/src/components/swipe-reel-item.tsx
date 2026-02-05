@@ -17,7 +17,7 @@ interface SwipeReelItemProps {
   shouldPreload?: boolean;
   onDetailsOpen: () => void;
   onBidOpen: () => void;
-  onBuyNow: () => void;
+  onMakeOffer: () => void;
   onShare: () => void;
   onNavigateToListing: () => void;
 }
@@ -28,7 +28,7 @@ export function SwipeReelItem({
   shouldPreload = false,
   onDetailsOpen,
   onBidOpen,
-  onBuyNow,
+  onMakeOffer,
   onShare,
   onNavigateToListing,
 }: SwipeReelItemProps) {
@@ -315,33 +315,32 @@ export function SwipeReelItem({
           <Share2 className="h-6 w-6 text-white" />
         </button>
 
-        {/* Bid/Buy Button - Show for ALL listings (temp: removed isOwnProduct check) */}
-        {!isSoldOut && listing.isActive && (
-          <>
-            {isAuction ? (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onBidOpen();
-                }}
-                className="h-14 w-14 rounded-full backdrop-blur-md bg-primary/90 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg border-2 border-white/20"
-                aria-label={language === "ar" ? "مزايدة" : "مزایدە"}
-              >
-                <Gavel className="h-7 w-7 text-white" />
-              </button>
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onBuyNow();
-                }}
-                className="h-14 w-14 rounded-full backdrop-blur-md bg-green-500/90 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg border-2 border-white/20"
-                aria-label={language === "ar" ? "اشتري الآن" : "ئێستا بکڕە"}
-              >
-                <span className="text-white font-bold text-xl">$</span>
-              </button>
-            )}
-          </>
+        {/* Bid Button - Only for auctions */}
+        {!isSoldOut && listing.isActive && isAuction && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onBidOpen();
+            }}
+            className="h-14 w-14 rounded-full backdrop-blur-md bg-primary/90 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg border-2 border-white/20"
+            aria-label={language === "ar" ? "مزايدة" : "مزایدە"}
+          >
+            <Gavel className="h-7 w-7 text-white" />
+          </button>
+        )}
+
+        {/* Make Offer Button - Only for fixed-price negotiable items */}
+        {!isSoldOut && listing.isActive && !isAuction && listing.isNegotiable && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onMakeOffer();
+            }}
+            className="h-14 w-14 rounded-full backdrop-blur-md bg-blue-500/90 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg border-2 border-white/20"
+            aria-label={language === "ar" ? "قدم عرضاً" : "پێشکەشکردنی عەرز"}
+          >
+            <span className="text-white font-bold text-xl">💰</span>
+          </button>
         )}
       </div>
     </div>
