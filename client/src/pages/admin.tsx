@@ -15,8 +15,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy, BadgeCheck, Award, Star, StarOff, Wallet, BanknoteIcon, Clock, Calendar } from "lucide-react";
+import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy, BadgeCheck, Award, Star, StarOff, Wallet, BanknoteIcon, Clock, Calendar, RotateCcw, Plus } from "lucide-react";
 import { AdminSearchBar } from "@/components/admin/admin-search-bar";
+import { ReturnsTable } from "@/components/admin/returns-table";
+import { ReturnDetailDialog } from "@/components/admin/return-detail-dialog";
+import { CreateReturnDialog } from "@/components/admin/create-return-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -134,7 +137,7 @@ export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "deleted-listings" | "messages" | "cancellations" | "payouts">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "reports" | "users" | "seller-requests" | "listings" | "deleted-listings" | "messages" | "cancellations" | "payouts" | "returns">("stats");
   const [listingSearch, setListingSearch] = useState("");
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [highlightedReportId, setHighlightedReportId] = useState<string | null>(null);
@@ -157,6 +160,9 @@ export default function AdminPage() {
     adminNotes: string;
     targetLabel: string;
   } | null>(null);
+  const [selectedReturn, setSelectedReturn] = useState<any>(null);
+  const [showReturnDetail, setShowReturnDetail] = useState(false);
+  const [showCreateReturn, setShowCreateReturn] = useState(false);
 
   // Handle deep linking from notifications
   useEffect(() => {
@@ -164,7 +170,7 @@ export default function AdminPage() {
     const tab = params.get("tab");
     const reportId = params.get("reportId");
     
-    if (tab && ["stats", "reports", "users", "seller-requests", "listings", "deleted-listings", "messages", "cancellations", "payouts"].includes(tab)) {
+    if (tab && ["stats", "reports", "users", "seller-requests", "listings", "deleted-listings", "messages", "cancellations", "payouts", "returns"].includes(tab)) {
       setActiveTab(tab as typeof activeTab);
     }
     
@@ -709,6 +715,14 @@ export default function AdminPage() {
                         {pendingPayouts.filter(p => p.status === "pending").length}
                       </Badge>
                     ) : null}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("returns")}
+                    className={`flex items-center gap-3 px-4 py-3 text-right hover:bg-muted transition-colors ${activeTab === "returns" ? "bg-muted font-semibold border-r-4 border-primary" : ""}`}
+                    data-testid="button-tab-returns"
+                  >
+                    <RotateCcw className="h-5 w-5" />
+                    طلبات الإرجاع
                   </button>
                 </nav>
               </CardContent>
@@ -1946,6 +1960,25 @@ export default function AdminPage() {
                 )}
               </div>
             )}
+
+            {/* Returns Tab */}
+            {activeTab === "returns" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">إدارة طلبات الإرجاع</h2>
+                  <Button onClick={() => setShowCreateReturn(true)}>
+                    <Plus className="h-4 w-4 ml-2" />
+                    إنشاء طلب إرجاع
+                  </Button>
+                </div>
+                <ReturnsTable
+                  onViewDetail={(returnReq) => {
+                    setSelectedReturn(returnReq);
+                    setShowReturnDetail(true);
+                  }}
+                />
+              </div>
+            )}
           </main>
         </div>
       </div>
@@ -2037,6 +2070,42 @@ export default function AdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Returns Tab */}
+      {activeTab === "returns" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">إدارة طلبات الإرجاع</h2>
+            <Button onClick={() => setShowCreateReturn(true)}>
+              <Plus className="h-4 w-4 ml-2" />
+              إنشاء طلب إرجاع
+            </Button>
+          </div>
+          <ReturnsTable
+            onViewDetail={(returnReq) => {
+              setSelectedReturn(returnReq);
+              setShowReturnDetail(true);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Return Detail Dialog */}
+      <ReturnDetailDialog
+        returnRequest={selectedReturn}
+        open={showReturnDetail}
+        onOpenChange={setShowReturnDetail}
+        onRefundProcess={() => {
+          setShowReturnDetail(false);
+          setSelectedReturn(null);
+        }}
+      />
+
+      {/* Create Return Dialog */}
+      <CreateReturnDialog
+        open={showCreateReturn}
+        onOpenChange={setShowCreateReturn}
+      />
     </Layout>
   );
 }
