@@ -197,12 +197,33 @@ export function registerProductRoutes(app: Express): void {
         }
       }
       
+      // Filter out user's own listings and purchased items (unless viewing own profile)
+      let filteredListings = paginatedListings;
+      let filteredTotal = total;
+      
+      if (viewerId && !sellerIdStr) {
+        // Get user's purchased listing IDs
+        const userPurchases = await storage.getPurchasesForBuyer(viewerId);
+        const purchasedListingIds = new Set(userPurchases.map(t => t.listingId));
+        
+        // Filter out own listings and purchased items
+        filteredListings = paginatedListings.filter(listing => {
+          const isOwnListing = listing.sellerId === viewerId;
+          const alreadyPurchased = purchasedListingIds.has(listing.id);
+          return !isOwnListing && !alreadyPurchased;
+        });
+        
+        // Adjust total count (approximate - actual count would need SQL modification)
+        const removedCount = paginatedListings.length - filteredListings.length;
+        filteredTotal = Math.max(0, total - removedCount);
+      }
+      
       // Get favorites count for all listings
-      const listingIds = paginatedListings.map(l => l.id);
+      const listingIds = filteredListings.map(l => l.id);
       const favoritesCounts = await storage.getWatchlistCountsForListings(listingIds);
       
       // Add favorites count to each listing
-      const listingsWithFavorites = paginatedListings.map(listing => ({
+      const listingsWithFavorites = filteredListings.map(listing => ({
         ...listing,
         favoritesCount: favoritesCounts.get(listing.id) || 0
       }));
@@ -215,9 +236,9 @@ export function registerProductRoutes(app: Express): void {
         pagination: {
           page: pageNum,
           limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-          hasMore: offset + limit < total
+          total: filteredTotal,
+          totalPages: Math.ceil(filteredTotal / limit),
+          hasMore: offset + limit < filteredTotal
         }
       });
     } catch (error) {

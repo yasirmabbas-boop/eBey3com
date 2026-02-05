@@ -59,8 +59,26 @@ export function registerOffersRoutes(app: Express): void {
         return res.status(404).json({ error: "Listing not found" });
       }
 
+      // Check if listing is active
+      if (!(listing as any).isActive) {
+        return res.status(400).json({ error: "This listing is no longer active" });
+      }
+
+      // Check if item is sold out
+      const quantitySold = (listing as any).quantitySold || 0;
+      const quantityAvailable = (listing as any).quantityAvailable || 1;
+      if (quantitySold >= quantityAvailable) {
+        return res.status(400).json({ error: "This item is sold out" });
+      }
+
       if ((listing as any).sellerId && (listing as any).sellerId === userId) {
         return res.status(400).json({ error: "Cannot make an offer on your own listing" });
+      }
+
+      // Check if user has already purchased this item
+      const existingPurchase = await storage.getUserTransactionForListing(userId, parsed.listingId);
+      if (existingPurchase) {
+        return res.status(400).json({ error: "You have already purchased this item" });
       }
 
       // If listing has explicit negotiable flag, enforce it when present
