@@ -295,7 +295,7 @@ export default function SwipePage() {
   // Loading state - show when loading OR when filters just changed
   if ((isLoading || isFiltersChanged) && processedItems.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center" style={{ paddingBottom: 'calc(64px + var(--safe-area-bottom, 0px))' }}>
+      <div className="fixed inset-0 bg-black flex items-center justify-center" style={{ height: '100dvh' }}>
         <SwipeReelFilters filters={filters} onFiltersChange={setFilters} />
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
@@ -310,7 +310,7 @@ export default function SwipePage() {
   // Error state
   if (error) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center px-4" style={{ paddingBottom: 'calc(64px + var(--safe-area-bottom, 0px))' }}>
+      <div className="fixed inset-0 bg-black flex items-center justify-center px-4" style={{ height: '100dvh' }}>
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2 text-white">
@@ -333,7 +333,7 @@ export default function SwipePage() {
   // Empty state
   if (processedItems.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black" style={{ paddingBottom: 'calc(64px + var(--safe-area-bottom, 0px))' }}>
+      <div className="fixed inset-0 bg-black" style={{ height: '100dvh' }}>
         <SwipeReelFilters filters={filters} onFiltersChange={setFilters} />
         <div className="flex items-center justify-center h-full px-4">
           <div className="text-center">
@@ -359,7 +359,7 @@ export default function SwipePage() {
   const currentListing = processedItems[currentIndex];
 
   return (
-    <div className="fixed inset-0 bg-black" style={{ paddingBottom: 'calc(64px + var(--safe-area-bottom, 0px))' }}>
+    <div className="fixed inset-0 bg-black" style={{ height: '100dvh' }}>
       {/* Swipe Container */}
       <div
         ref={containerRef}
@@ -385,8 +385,8 @@ export default function SwipePage() {
                 scale: isCurrent ? 1 : 0.95,
               }}
               transition={{ 
-                duration: 0.2, 
-                ease: [0.32, 0.72, 0, 1],
+                duration: 0.35, 
+                ease: [0.25, 0.1, 0.25, 1],
               }}
               style={{ 
                 zIndex: isCurrent ? 10 : 5,

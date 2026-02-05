@@ -5,7 +5,6 @@ import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
 import { hapticSuccess } from "@/lib/despia";
@@ -37,13 +36,48 @@ export function SwipeReelItem({
   const { user } = useAuth();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showHeartBurst, setShowHeartBurst] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState<Set<number>>(new Set());
   const lastTapRef = useRef<number>(0);
   const viewTrackedRef = useRef(false);
   const viewTimerRef = useRef<NodeJS.Timeout>();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const images = listing.images && listing.images.length > 0
     ? listing.images
     : ["https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop"];
+
+  // Aggressive image preloading to prevent white flashes
+  useEffect(() => {
+    if (!shouldPreload && !isActive) return;
+
+    const preloadImages = async () => {
+      images.forEach((src, idx) => {
+        const img = new Image();
+        img.onload = () => {
+          setImagesLoaded(prev => new Set(prev).add(idx));
+        };
+        img.src = src;
+      });
+    };
+
+    preloadImages();
+  }, [shouldPreload, isActive, images]);
+
+  // Track image carousel scroll position for dots indicator
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || images.length <= 1) return;
+
+    const handleScroll = () => {
+      const scrollLeft = container.scrollLeft;
+      const itemWidth = container.clientWidth;
+      const index = Math.round(scrollLeft / itemWidth);
+      setCurrentImageIndex(index);
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [images.length]);
 
   // Track view after 2 seconds on same item
   useEffect(() => {
@@ -105,19 +139,21 @@ export function SwipeReelItem({
     return price.toLocaleString("ar-IQ") + " د.ع";
   };
 
-  const isAuction = listing.saleType === "auction";
+  // Case-insensitive check for saleType
+  const isAuction = listing.saleType?.toLowerCase() === "auction";
   const isSoldOut = (listing.quantityAvailable || 1) - (listing.quantitySold || 0) <= 0;
   const isOwnProduct = user?.id && listing.sellerId === user.id;
 
   return (
     <div 
-      className="relative h-full w-full flex flex-col"
+      className="relative h-full w-full flex flex-col bg-zinc-950"
       onClick={handleTap}
     >
       {/* Image Carousel Area */}
-      <div className="swipe-image-area relative flex-1 overflow-hidden z-10">
+      <div className="swipe-image-area relative flex-1 overflow-hidden bg-zinc-950">
         {/* CSS Snap Scroll for Performance */}
         <div 
+          ref={scrollContainerRef}
           className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
           style={{ scrollSnapType: 'x mandatory' }}
         >
@@ -129,9 +165,10 @@ export function SwipeReelItem({
               <OptimizedImage
                 src={img}
                 alt={`${listing.title} - ${idx + 1}`}
-                className="w-full h-full object-contain z-10"
+                className="w-full h-full"
                 priority={(shouldPreload || isActive) && idx === 0}
                 darkMode={true}
+                objectFit="contain"
               />
             </div>
           ))}
@@ -156,7 +193,7 @@ export function SwipeReelItem({
 
         {/* Sale Type Badge */}
         {isAuction && (
-          <Badge className="absolute top-4 left-4 bg-primary text-white">
+          <Badge className="absolute top-4 left-4 bg-primary text-white z-20 shadow-lg">
             {language === "ar" ? "مزاد" : "مزایدە"}
           </Badge>
         )}
@@ -176,12 +213,12 @@ export function SwipeReelItem({
 
       {/* Bottom Overlay with Product Info */}
       <div 
-        className="absolute bottom-0 left-0 right-0 pb-6 px-4"
+        className="absolute bottom-0 left-0 right-0 pb-6 px-4 z-10 pointer-events-none"
         style={{
           background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, transparent 100%)'
         }}
       >
-        <div className="space-y-3">
+        <div className="space-y-3 pointer-events-auto">
           {/* Title */}
           <h2 className="text-white font-bold text-lg leading-tight line-clamp-2">
             {listing.title}
@@ -237,48 +274,74 @@ export function SwipeReelItem({
         </div>
       </div>
 
-      {/* Action Buttons - Right Side - Moved up above text/price */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-20">
-        {/* Favorite */}
-        <FavoriteButton 
-          listingId={listing.id}
-          size="lg"
-          className="!bg-transparent border border-white/50"
-        />
+      {/* Action Buttons - Instagram-style, Right Side */}
+      <div 
+        className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4"
+        style={{ 
+          zIndex: 9999,
+          position: 'fixed',
+          pointerEvents: 'auto',
+          isolation: 'isolate'
+        }}
+      >
+        {/* Favorite Button */}
+        <div className="backdrop-blur-md bg-black/30 rounded-full p-1">
+          <FavoriteButton 
+            listingId={listing.id}
+            size="lg"
+            className="!bg-transparent"
+          />
+        </div>
 
-        {/* Details/Comments */}
+        {/* Details/Comments Button */}
         <button
           onClick={(e) => {
             e.stopPropagation();
             onDetailsOpen();
           }}
-          className="h-10 w-10 rounded-full border border-white/50 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+          className="h-12 w-12 rounded-full backdrop-blur-md bg-black/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
         >
-          <MessageSquare className="h-5 w-5 text-white" />
+          <MessageSquare className="h-6 w-6 text-white" />
         </button>
 
-        {/* Share */}
+        {/* Share Button */}
         <button
           onClick={(e) => {
             e.stopPropagation();
             onShare();
           }}
-          className="h-10 w-10 rounded-full border border-white/50 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+          className="h-12 w-12 rounded-full backdrop-blur-md bg-black/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
         >
-          <Share2 className="h-5 w-5 text-white" />
+          <Share2 className="h-6 w-6 text-white" />
         </button>
 
-        {/* Bid Button - Only for auctions */}
-        {!isOwnProduct && !isSoldOut && listing.isActive && isAuction && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onBidOpen();
-            }}
-            className="h-10 w-10 rounded-full border border-primary bg-primary/20 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
-          >
-            <Gavel className="h-5 w-5 text-white" />
-          </button>
+        {/* Bid/Buy Button - Show for ALL listings (temp: removed isOwnProduct check) */}
+        {!isSoldOut && listing.isActive && (
+          <>
+            {isAuction ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onBidOpen();
+                }}
+                className="h-14 w-14 rounded-full backdrop-blur-md bg-primary/90 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg border-2 border-white/20"
+                aria-label={language === "ar" ? "مزايدة" : "مزایدە"}
+              >
+                <Gavel className="h-7 w-7 text-white" />
+              </button>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onBuyNow();
+                }}
+                className="h-14 w-14 rounded-full backdrop-blur-md bg-green-500/90 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg border-2 border-white/20"
+                aria-label={language === "ar" ? "اشتري الآن" : "ئێستا بکڕە"}
+              >
+                <span className="text-white font-bold text-xl">$</span>
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -8,6 +8,7 @@ interface OptimizedImageProps {
   aspectRatio?: "square" | "video" | "auto";
   priority?: boolean;
   darkMode?: boolean;
+  objectFit?: "cover" | "contain";
 }
 
 export function OptimizedImage({ 
@@ -16,7 +17,8 @@ export function OptimizedImage({
   className,
   aspectRatio = "square",
   priority = false,
-  darkMode = false
+  darkMode = false,
+  objectFit = "cover"
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
@@ -74,7 +76,11 @@ export function OptimizedImage({
           decoding="async"
           onLoad={() => setIsLoaded(true)}
           onError={() => setHasError(true)}
-          className="absolute inset-0 h-full w-full object-cover"
+          className={cn(
+            "absolute inset-0 h-full w-full",
+            objectFit === "contain" ? "object-contain" : "object-cover"
+          )}
+          style={darkMode ? { backgroundColor: 'transparent' } : undefined}
         />
       )}
     </div>

@@ -25,9 +25,11 @@ export function useSwipeGesture(
   config: SwipeGestureConfig
 ) {
   const touchState = useRef<TouchState | null>(null);
+  const wheelCooldownRef = useRef<boolean>(false);
   const DEAD_ZONE = config.deadZone ?? 15; // pixels before determining direction
   const VELOCITY_THRESHOLD = config.velocityThreshold ?? 0.5;
   const DISTANCE_THRESHOLD = config.distanceThreshold ?? 100;
+  const WHEEL_COOLDOWN_MS = 800; // Smooth scroll - prevent rapid wheel scrolling
 
   useEffect(() => {
     const element = elementRef.current;
@@ -108,14 +110,43 @@ export function useSwipeGesture(
       touchState.current = null;
     };
 
+    // Desktop mouse wheel support - smooth scrolling with cooldown
+    const handleWheel = (e: WheelEvent) => {
+      // Prevent multiple rapid wheel events
+      if (wheelCooldownRef.current) return;
+
+      // Only handle vertical scrolling
+      if (Math.abs(e.deltaY) < 10) return; // Ignore tiny movements
+
+      e.preventDefault();
+      wheelCooldownRef.current = true;
+
+      hapticLight(); // Haptic feedback on navigation
+
+      if (e.deltaY > 0) {
+        // Scrolling down - go to next item
+        config.onSwipeUp();
+      } else {
+        // Scrolling up - go to previous item
+        config.onSwipeDown();
+      }
+
+      // Reset cooldown after smooth transition
+      setTimeout(() => {
+        wheelCooldownRef.current = false;
+      }, WHEEL_COOLDOWN_MS);
+    };
+
     element.addEventListener('touchstart', handleTouchStart, { passive: true });
     element.addEventListener('touchmove', handleTouchMove, { passive: false });
     element.addEventListener('touchend', handleTouchEnd, { passive: true });
+    element.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
       element.removeEventListener('touchstart', handleTouchStart);
       element.removeEventListener('touchmove', handleTouchMove);
       element.removeEventListener('touchend', handleTouchEnd);
+      element.removeEventListener('wheel', handleWheel);
     };
   }, [
     elementRef,
