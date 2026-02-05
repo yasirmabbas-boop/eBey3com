@@ -11,7 +11,8 @@ import { getAuthHeaders } from "@/lib/queryClient";
 import { useNavBarSwipe } from "@/hooks/use-nav-bar-swipe";
 import { useEffect, useRef } from "react";
 
-const HIDDEN_NAV_PATHS: string[] = [];
+// TikTok-style: Hide nav bar completely on immersive swipe/reels experience
+const HIDDEN_NAV_PATHS: string[] = ["/swipe"];
 
 export function MobileNavBar() {
   const [location] = useLocation();

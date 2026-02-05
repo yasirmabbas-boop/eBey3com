@@ -75,6 +75,7 @@ export default function SwipePage() {
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [shareListing, setShareListing] = useState<Listing | null>(null);
+  const [clearMode, setClearMode] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isAnySheetOpen = detailsOpen || biddingOpen || offerOpen;
@@ -368,15 +369,31 @@ export default function SwipePage() {
   const currentListing = processedItems[currentIndex];
 
   return (
-    <div className="fixed inset-0 bg-black" style={{ height: '100dvh' }}>
-      {/* Swipe Container */}
+    <div 
+      className="fixed inset-0 bg-black" 
+      style={{ 
+        height: '100dvh',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 50
+      }}
+    >
+      {/* Swipe Container - Full screen edge-to-edge */}
       <div
         ref={containerRef}
-        className="relative h-full w-full overflow-hidden"
-        style={{ touchAction: 'none' }}
+        className="relative w-full h-full overflow-hidden"
+        style={{ 
+          touchAction: 'none',
+        }}
       >
         {/* Filters Overlay */}
-        <SwipeReelFilters filters={filters} onFiltersChange={setFilters} />
+        <SwipeReelFilters 
+          filters={filters} 
+          onFiltersChange={setFilters}
+          hidden={clearMode}
+        />
         {/* Pre-render adjacent items for instant transitions */}
         {visibleItems.map(({ item, actualIndex }) => {
           const offset = actualIndex - currentIndex;
@@ -406,6 +423,8 @@ export default function SwipePage() {
                 listing={item}
                 isActive={isCurrent}
                 shouldPreload={isVisible}
+                clearMode={clearMode}
+                onToggleClearMode={() => setClearMode(!clearMode)}
                 onDetailsOpen={() => handleDetailsOpen(item)}
                 onBidOpen={() => handleBidOpen(item)}
                 onMakeOffer={() => handleMakeOffer(item)}

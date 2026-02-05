@@ -16,6 +16,7 @@ export interface SwipeFilters {
 interface SwipeReelFiltersProps {
   filters: SwipeFilters;
   onFiltersChange: (filters: SwipeFilters) => void;
+  hidden?: boolean;
 }
 
 const CATEGORIES = [
@@ -36,7 +37,7 @@ const CONDITIONS = [
   { id: "Vintage", labelAr: "فينتاج", labelKu: "ڤینتەیج" },
 ];
 
-export function SwipeReelFilters({ filters, onFiltersChange }: SwipeReelFiltersProps) {
+export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: SwipeReelFiltersProps) {
   const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -86,7 +87,10 @@ export function SwipeReelFilters({ filters, onFiltersChange }: SwipeReelFiltersP
   };
 
   return (
-    <div className="absolute top-0 left-0 right-0 z-30">
+    <div 
+      className={`absolute top-0 left-0 right-0 z-30 transition-opacity duration-300 ${hidden ? 'opacity-0 pointer-events-none' : ''}`}
+      style={{ paddingTop: 'max(env(safe-area-inset-top, 8px), 8px)' }}
+    >
       <div className="px-2 py-2">
         <div className="flex items-center gap-2">
           {/* Quick Filter Pills - Horizontal Scroll */}
@@ -97,10 +101,10 @@ export function SwipeReelFilters({ filters, onFiltersChange }: SwipeReelFiltersP
                 onClick={() => selectSaleType('auction')}
                 className={`
                   flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium
-                  transition-colors whitespace-nowrap
+                  transition-all whitespace-nowrap backdrop-blur-sm
                   ${filters.saleType === 'auction'
                     ? 'bg-orange-500 text-white'
-                    : 'bg-black/50 text-white hover:bg-black/70'
+                    : 'bg-black/30 text-white hover:bg-black/40'
                   }
                 `}
               >
@@ -110,10 +114,10 @@ export function SwipeReelFilters({ filters, onFiltersChange }: SwipeReelFiltersP
                 onClick={() => selectSaleType('fixed')}
                 className={`
                   flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium
-                  transition-colors whitespace-nowrap
+                  transition-all whitespace-nowrap backdrop-blur-sm
                   ${filters.saleType === 'fixed'
                     ? 'bg-green-500 text-white'
-                    : 'bg-black/50 text-white hover:bg-black/70'
+                    : 'bg-black/30 text-white hover:bg-black/40'
                   }
                 `}
               >
@@ -130,10 +134,10 @@ export function SwipeReelFilters({ filters, onFiltersChange }: SwipeReelFiltersP
                   onClick={() => selectCategory(cat.id)}
                   className={`
                     flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium
-                    transition-colors whitespace-nowrap
+                    transition-all whitespace-nowrap backdrop-blur-sm
                     ${filters.categories.includes(cat.id)
                       ? 'bg-primary text-primary-foreground'
-                      : 'bg-black/50 text-white hover:bg-black/70'
+                      : 'bg-black/30 text-white hover:bg-black/40'
                     }
                   `}
                 >
@@ -146,7 +150,11 @@ export function SwipeReelFilters({ filters, onFiltersChange }: SwipeReelFiltersP
           {/* Filter Sheet Trigger */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="relative bg-black/50 border-0 text-white hover:bg-black/70">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="relative bg-black/30 backdrop-blur-sm border-0 text-white hover:bg-black/40"
+              >
                 <SlidersHorizontal className="h-4 w-4" />
                 {activeFilterCount > 0 && (
                   <Badge 

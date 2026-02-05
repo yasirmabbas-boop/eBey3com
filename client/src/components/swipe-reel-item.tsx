@@ -14,6 +14,8 @@ interface SwipeReelItemProps {
   listing: Listing;
   isActive: boolean;
   shouldPreload?: boolean;
+  clearMode?: boolean;
+  onToggleClearMode?: () => void;
   onDetailsOpen: () => void;
   onBidOpen: () => void;
   onMakeOffer: () => void;
@@ -25,6 +27,8 @@ export function SwipeReelItem({
   listing,
   isActive,
   shouldPreload = false,
+  clearMode = false,
+  onToggleClearMode,
   onDetailsOpen,
   onBidOpen,
   onMakeOffer,
@@ -116,10 +120,24 @@ export function SwipeReelItem({
   const isSoldOut = (listing.quantityAvailable || 1) - (listing.quantitySold || 0) <= 0;
   const isOwnProduct = user?.id && listing.sellerId === user.id;
 
+  // Handle tap to toggle clear mode (only when tapping empty areas)
+  const handleContainerClick = (e: React.MouseEvent) => {
+    // If tapping the container itself (not buttons), toggle clear mode
+    if (e.target === e.currentTarget) {
+      onToggleClearMode?.();
+    } else if (!clearMode) {
+      // Only open details when not in clear mode
+      onDetailsOpen();
+    } else {
+      // In clear mode, any tap exits clear mode
+      onToggleClearMode?.();
+    }
+  };
+
   return (
     <div 
       className="relative h-full w-full flex flex-col"
-      onClick={onDetailsOpen}
+      onClick={handleContainerClick}
     >
       {/* Image Carousel Area */}
       <div className="swipe-image-area relative flex-1 overflow-hidden">
@@ -140,42 +158,35 @@ export function SwipeReelItem({
                 className="w-full h-full"
                 priority={(shouldPreload || isActive) && idx === 0}
                 darkMode={true}
-                objectFit="contain"
+                objectFit="cover"
               />
             </div>
           ))}
         </div>
-
-
-        {/* Dots Indicator */}
-        {images.length > 1 && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-30">
-            {images.map((_, idx) => (
-              <div
-                key={idx}
-                className={`h-2 rounded-full transition-all ${
-                  idx === currentImageIndex
-                    ? 'bg-white w-6'
-                    : 'bg-white/50 w-2'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Sale Type Badge */}
-        {isAuction && (
-          <Badge className="absolute top-4 left-4 bg-primary text-white z-20 shadow-lg">
-            {language === "ar" ? "مزاد" : "مزایدە"}
-          </Badge>
-        )}
       </div>
 
-      {/* Bottom Overlay with Product Info */}
+      {/* Dots Indicator - Above product info */}
+      {images.length > 1 && !clearMode && (
+        <div className="absolute bottom-[140px] left-0 right-0 flex justify-center gap-1.5 py-2 z-30 transition-opacity duration-300">
+          {images.map((_, idx) => (
+            <div
+              key={idx}
+              className="h-2 w-2 rounded-full transition-all"
+              style={{
+                backgroundColor: idx === currentImageIndex ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)'
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Bottom Overlay with Product Info - TikTok-style subtle gradient */}
+      {!clearMode && (
       <div 
-        className="absolute bottom-0 left-0 right-0 pb-6 px-4 z-10 pointer-events-none"
+        className="absolute bottom-0 left-0 right-0 px-4 z-10 pointer-events-none transition-opacity duration-300"
         style={{
-          background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, transparent 100%)'
+          background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 40%, transparent 100%)',
+          paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)'
         }}
       >
         <div className="space-y-2 pointer-events-auto">
@@ -191,14 +202,7 @@ export function SwipeReelItem({
             )}
           </div>
 
-          {/* Description */}
-          {listing.description && (
-            <p className="text-white/80 text-sm line-clamp-2">
-              {listing.description}
-            </p>
-          )}
-
-          {/* Auction Countdown - Simplified */}
+          {/* Auction Countdown - Right under price */}
           {isAuction && listing.auctionEndTime && listing.isActive && (
             <AuctionCountdown endTime={listing.auctionEndTime} simple />
           )}
@@ -223,17 +227,24 @@ export function SwipeReelItem({
               </div>
             )}
           </div>
+
+          {/* Description - Below seller info */}
+          {listing.description && (
+            <p className="text-white/80 text-sm line-clamp-2">
+              {listing.description}
+            </p>
+          )}
         </div>
       </div>
+      )}
 
-      {/* Action Buttons - TikTok-style outline, Right Side */}
+      {/* Action Buttons - TikTok-style, Middle Right Side */}
+      {!clearMode && (
       <div 
-        className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4"
+        className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 transition-opacity duration-300"
         style={{ 
-          zIndex: 9999,
-          position: 'fixed',
+          zIndex: 20,
           pointerEvents: 'auto',
-          isolation: 'isolate'
         }}
       >
         {/* Favorite Button */}
@@ -243,11 +254,11 @@ export function SwipeReelItem({
           className="!bg-transparent"
         />
 
-        {/* Details/Comments Button */}
+        {/* Comments Button - Navigate to product page */}
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onDetailsOpen();
+            onNavigateToListing();
           }}
           className="h-12 w-12 rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
           style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
@@ -282,7 +293,7 @@ export function SwipeReelItem({
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            className="h-14 px-4 rounded-full bg-orange-500 text-white text-sm font-medium flex items-center justify-center shadow-lg border-2 border-white/20"
+            className="h-8 px-2 rounded-full bg-orange-500 text-white text-sm font-medium flex items-center justify-center shadow-lg border-2 border-white/20"
             aria-label={language === "ar" ? "زاود" : "Add your bid"}
           >
             {language === "ar" ? "زاود" : "Add your bid"}
@@ -304,13 +315,36 @@ export function SwipeReelItem({
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            className="h-14 px-4 rounded-full bg-blue-500/90 text-white text-sm font-medium flex items-center justify-center shadow-lg border-2 border-white/20"
+            className="h-8 px-2 rounded-full bg-blue-500/90 text-white text-sm font-medium flex items-center justify-center shadow-lg border-2 border-white/20"
             aria-label={language === "ar" ? "فاوض" : "پێشکەشکردنی عەرز"}
           >
             {language === "ar" ? "فاوض" : "پێشکەشکردنی عەرز"}
           </motion.button>
         )}
+
+        {/* Buy Now Button - Only for fixed-price non-negotiable items */}
+        {!isSoldOut && listing.isActive && !isAuction && !listing.isNegotiable && (
+          <motion.button
+            onClick={(e) => {
+              e.stopPropagation();
+              onNavigateToListing();
+            }}
+            animate={{
+              scale: [1, 1.05, 1],
+            }}
+            transition={{
+              duration: 1.8,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="h-8 px-2 rounded-full bg-green-500 text-white text-sm font-medium flex items-center justify-center shadow-lg border-2 border-white/20"
+            aria-label={language === "ar" ? "اشتري" : "بکڕە"}
+          >
+            {language === "ar" ? "اشتري" : "بکڕە"}
+          </motion.button>
+        )}
       </div>
+      )}
     </div>
   );
 }
