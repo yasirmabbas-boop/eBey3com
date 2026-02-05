@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route } from "wouter";
 import { useEffect, Suspense, lazy } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -88,12 +88,38 @@ function SocketNotificationsWrapper() {
 }
 
 function ScrollToTop() {
-  const [location] = useLocation();
-  
   useEffect(() => {
+    // Listen to popstate events (browser back/forward)
+    const handlePopState = () => {
+      window.scrollTo(0, 0);
+    };
+
+    // Intercept pushState and replaceState to scroll on navigation
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = function(...args) {
+      originalPushState.apply(history, args);
+      setTimeout(() => window.scrollTo(0, 0), 0);
+    };
+
+    history.replaceState = function(...args) {
+      originalReplaceState.apply(history, args);
+      setTimeout(() => window.scrollTo(0, 0), 0);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Scroll to top on initial load
     window.scrollTo(0, 0);
-  }, [location]);
-  
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
+    };
+  }, []);
+
   return null;
 }
 
