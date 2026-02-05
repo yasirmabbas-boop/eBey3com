@@ -3,7 +3,7 @@ import { storage } from "../../storage";
 import { requireAdmin } from "./middleware";
 import { returnTemplateService } from "../../services/return-template-service";
 import { returnRuleConditionsSchema } from "@shared/schema";
-import type { InsertReturnTemplate } from "@shared/schema";
+import { z } from "zod";
 
 const router = Router();
 
@@ -40,27 +40,33 @@ router.get("/return-templates/:id", requireAdmin, async (req, res) => {
 router.post("/return-templates", requireAdmin, async (req, res) => {
   try {
     const adminUser = (req as any).adminUser;
-    const templateData: InsertReturnTemplate = {
-      name: req.body.name,
-      reason: req.body.reason,
-      description: req.body.description || null,
-      autoApprove: req.body.autoApprove || false,
-      requiresPhotos: req.body.requiresPhotos || false,
-      notifyBuyer: req.body.notifyBuyer !== false, // Default to true
-      createdBy: adminUser.id,
-      isActive: req.body.isActive !== false, // Default to true
-    };
+    const { name, reason, description, autoApprove, requiresPhotos, notifyBuyer, isActive } = req.body;
     
-    // Validate template
-    const validation = returnTemplateService.validateTemplate(templateData);
+    // Validate
+    const validation = returnTemplateService.validateTemplate({
+      name,
+      reason,
+      description,
+      autoApprove,
+      requiresPhotos,
+      notifyBuyer,
+    });
+    
     if (!validation.valid) {
-      return res.status(400).json({ 
-        error: "Invalid template data",
-        errors: validation.errors,
-      });
+      return res.status(400).json({ error: "Validation failed", details: validation.errors });
     }
     
-    const template = await storage.createReturnTemplate(templateData);
+    const template = await storage.createReturnTemplate({
+      name,
+      reason,
+      description: description || null,
+      autoApprove: autoApprove || false,
+      requiresPhotos: requiresPhotos || false,
+      notifyBuyer: notifyBuyer !== false, // Default true
+      createdBy: adminUser.id,
+      isActive: isActive !== false, // Default true
+    });
+    
     res.status(201).json(template);
   } catch (error) {
     console.error("[AdminTemplates] Error creating template:", error);
@@ -71,56 +77,38 @@ router.post("/return-templates", requireAdmin, async (req, res) => {
 // Update template
 router.patch("/return-templates/:id", requireAdmin, async (req, res) => {
   try {
-    const templateId = req.params.id;
-    const templates = await storage.getReturnTemplates(false);
-    const existingTemplate = templates.find(t => t.id === templateId);
+    const { name, reason, description, autoApprove, requiresPhotos, notifyBuyer, isActive } = req.body;
     
-    if (!existingTemplate) {
-      return res.status(404).json({ error: "Template not found" });
-    }
-    
-    const updates: Partial<InsertReturnTemplate> = {};
-    if (req.body.name !== undefined) updates.name = req.body.name;
-    if (req.body.reason !== undefined) updates.reason = req.body.reason;
-    if (req.body.description !== undefined) updates.description = req.body.description;
-    if (req.body.autoApprove !== undefined) updates.autoApprove = req.body.autoApprove;
-    if (req.body.requiresPhotos !== undefined) updates.requiresPhotos = req.body.requiresPhotos;
-    if (req.body.notifyBuyer !== undefined) updates.notifyBuyer = req.body.notifyBuyer;
-    if (req.body.isActive !== undefined) updates.isActive = req.body.isActive;
-    
-    // Validate if reason is being updated
-    if (updates.reason) {
-      const validation = returnTemplateService.validateTemplate(updates);
+    // Validate if name/reason are being updated
+    if (name || reason) {
+      const validation = returnTemplateService.validateTemplate({
+        name: name || undefined,
+        reason: reason || undefined,
+      });
+      
       if (!validation.valid) {
-        return res.status(400).json({ 
-          error: "Invalid template data",
-          errors: validation.errors,
-        });
+        return res.status(400).json({ error: "Validation failed", details: validation.errors });
       }
     }
     
-    const updatedTemplate = await storage.updateReturnTemplate(templateId, updates);
-    res.json(updatedTemplate);
-  } catch (error) {
-    console.error("[AdminTemplates] Error updating template:", error);
-    res.status(500).json({ error: "Failed to update template" });
-  }
-});
-
-// Delete template (soft delete by setting isActive to false)
-router.delete("/return-templates/:id", requireAdmin, async (req, res) => {
-  try {
-    const templateId = req.params.id;
-    const updatedTemplate = await storage.updateReturnTemplate(templateId, { isActive: false });
+    const updated = await storage.updateReturnTemplate(req.params.id, {
+      name,
+      reason,
+      description,
+      autoApprove,
+      requiresPhotos,
+      notifyBuyer,
+      isActive,
+    });
     
-    if (!updatedTemplate) {
+    if (!updated) {
       return res.status(404).json({ error: "Template not found" });
     }
     
-    res.json({ success: true, template: updatedTemplate });
+    res.json(updated);
   } catch (error) {
-    console.error("[AdminTemplates] Error deleting template:", error);
-    res.status(500).json({ error: "Failed to delete template" });
+    console.error("[AdminTemplates] Error updating template:", error);
+    res.status(500).json({ error: "Failed to update template" });
   }
 });
 

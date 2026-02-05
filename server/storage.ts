@@ -15,10 +15,12 @@ import {
   type Report, type InsertReport,
   type VerificationCode,
   type ReturnRequest, type InsertReturnRequest,
+  type ReturnTemplate, type InsertReturnTemplate,
+  type ReturnRule, type InsertReturnRule,
   type ContactMessage, type InsertContactMessage,
   type ProductComment, type InsertProductComment,
   type PushSubscription, type InsertPushSubscription,
-  users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, contactMessages, productComments, pushSubscriptions
+  users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, returnTemplates, returnApprovalRules, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, lt, inArray, ne, isNotNull } from "drizzle-orm";

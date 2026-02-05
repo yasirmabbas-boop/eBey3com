@@ -9,11 +9,9 @@ export interface ReturnEvaluationContext {
   sellerId: string;
   listingId: string;
   reason: string;
-  details?: string | null;
-  transactionAmount: number;
+  transactionAmount?: number;
   listingCategory?: string | null;
   sellerRating?: number;
-  buyerRating?: number;
   daysAfterDelivery?: number;
 }
 
@@ -27,39 +25,36 @@ export interface RuleEvaluationResult {
 export class ReturnRulesEngine {
   /**
    * Evaluate a return request against all active rules
-   * Returns the first matching rule (highest priority)
+   * Returns the highest priority matching rule's action
    */
   async evaluateReturn(context: ReturnEvaluationContext): Promise<RuleEvaluationResult | null> {
     try {
-      // Get prioritized active rules
+      // Get all active rules sorted by priority (highest first)
       const rules = await this.getPrioritizedRules();
       
       if (rules.length === 0) {
-        console.log("[RulesEngine] No active rules found");
-        return null;
+        return null; // No rules configured
       }
       
-      // Evaluate against each rule (in priority order)
+      // Evaluate each rule in priority order
       for (const rule of rules) {
         const matches = this.matchesConditions(context, rule.conditions);
         
-        if (matches.matched) {
-          console.log(`[RulesEngine] Rule "${rule.name}" matched for return ${context.id}`);
-          
+        if (matches) {
           return {
             action: rule.action as 'auto_approve' | 'auto_reject' | 'require_review',
             rule,
-            confidence: matches.confidence,
-            matchedConditions: matches.matchedConditions,
+            confidence: 1.0,
+            matchedConditions: this.getMatchedConditionNames(context, rule.conditions),
           };
         }
       }
       
-      console.log("[RulesEngine] No rules matched for return", context.id);
+      // No rules matched - require review
       return null;
     } catch (error) {
-      console.error("[RulesEngine] Error evaluating return:", error);
-      // Return null on error - fail-safe
+      console.error("[ReturnRulesEngine] Error evaluating return:", error);
+      // Fail-safe: return null to require manual review
       return null;
     }
   }
@@ -68,8 +63,7 @@ export class ReturnRulesEngine {
    * Test a rule against sample data
    */
   async testRule(ruleId: string, testData: ReturnEvaluationContext): Promise<{
-    matched: boolean;
-    confidence: number;
+    matches: boolean;
     matchedConditions: string[];
   }> {
     const rules = await storage.getReturnRules(false);
@@ -79,110 +73,118 @@ export class ReturnRulesEngine {
       throw new Error(`Rule ${ruleId} not found`);
     }
     
-    return this.matchesConditions(testData, rule.conditions);
+    const matches = this.matchesConditions(testData, rule.conditions);
+    return {
+      matches,
+      matchedConditions: matches ? this.getMatchedConditionNames(testData, rule.conditions) : [],
+    };
   }
   
   /**
    * Check if return request matches rule conditions
    */
-  private matchesConditions(
-    context: ReturnEvaluationContext,
-    conditions: ReturnRuleConditions
-  ): {
-    matched: boolean;
-    confidence: number;
-    matchedConditions: string[];
-  } {
-    const matchedConditions: string[] = [];
-    let confidence = 0;
+  private matchesConditions(context: ReturnEvaluationContext, conditions: ReturnRuleConditions): boolean {
     const operator = conditions.operator || 'AND';
+    const checks: boolean[] = [];
     
-    // Reason matching
+    // Reason check
     if (conditions.reasons && conditions.reasons.length > 0) {
-      if (conditions.reasons.includes(context.reason as any)) {
-        matchedConditions.push(`reason:${context.reason}`);
-        confidence += 20;
-      } else if (operator === 'AND') {
-        return { matched: false, confidence: 0, matchedConditions: [] };
-      }
+      checks.push(conditions.reasons.includes(context.reason as any));
     }
     
-    // Price range matching
+    // Price range check
     if (conditions.priceRange) {
-      const { min, max } = conditions.priceRange;
-      if (min !== undefined && context.transactionAmount < min) {
-        if (operator === 'AND') return { matched: false, confidence: 0, matchedConditions: [] };
-      } else if (max !== undefined && context.transactionAmount > max) {
-        if (operator === 'AND') return { matched: false, confidence: 0, matchedConditions: [] };
-      } else {
-        matchedConditions.push(`price:${context.transactionAmount}`);
-        confidence += 15;
-      }
+      const amount = context.transactionAmount || 0;
+      const min = conditions.priceRange.min ?? 0;
+      const max = conditions.priceRange.max ?? Infinity;
+      checks.push(amount >= min && amount <= max);
     }
     
-    // Seller rating matching
+    // Seller rating check
     if (conditions.sellerRatingMin !== undefined || conditions.sellerRatingMax !== undefined) {
-      const sellerRating = context.sellerRating || 0;
-      if (conditions.sellerRatingMin !== undefined && sellerRating < conditions.sellerRatingMin) {
-        if (operator === 'AND') return { matched: false, confidence: 0, matchedConditions: [] };
-      } else if (conditions.sellerRatingMax !== undefined && sellerRating > conditions.sellerRatingMax) {
-        if (operator === 'AND') return { matched: false, confidence: 0, matchedConditions: [] };
-      } else {
-        matchedConditions.push(`sellerRating:${sellerRating}`);
-        confidence += 15;
-      }
+      const rating = context.sellerRating || 0;
+      const min = conditions.sellerRatingMin ?? 0;
+      const max = conditions.sellerRatingMax ?? 5;
+      checks.push(rating >= min && rating <= max);
     }
     
-    // Days after delivery matching
+    // Days after delivery check
     if (conditions.daysAfterDeliveryMin !== undefined || conditions.daysAfterDeliveryMax !== undefined) {
-      const daysAfterDelivery = context.daysAfterDelivery || 0;
-      if (conditions.daysAfterDeliveryMin !== undefined && daysAfterDelivery < conditions.daysAfterDeliveryMin) {
-        if (operator === 'AND') return { matched: false, confidence: 0, matchedConditions: [] };
-      } else if (conditions.daysAfterDeliveryMax !== undefined && daysAfterDelivery > conditions.daysAfterDeliveryMax) {
-        if (operator === 'AND') return { matched: false, confidence: 0, matchedConditions: [] };
-      } else {
-        matchedConditions.push(`daysAfterDelivery:${daysAfterDelivery}`);
-        confidence += 15;
-      }
+      const days = context.daysAfterDelivery || 0;
+      const min = conditions.daysAfterDeliveryMin ?? 0;
+      const max = conditions.daysAfterDeliveryMax ?? Infinity;
+      checks.push(days >= min && days <= max);
     }
     
-    // Category matching
-    if (conditions.categories && conditions.categories.length > 0 && context.listingCategory) {
-      if (conditions.categories.includes(context.listingCategory)) {
-        matchedConditions.push(`category:${context.listingCategory}`);
-        confidence += 10;
-      } else if (operator === 'AND') {
-        return { matched: false, confidence: 0, matchedConditions: [] };
-      }
+    // Category check
+    if (conditions.categories && conditions.categories.length > 0) {
+      const category = context.listingCategory || '';
+      checks.push(conditions.categories.includes(category));
     }
     
-    // Buyer criteria
-    if (conditions.buyerMinPurchases !== undefined || conditions.buyerMinRating !== undefined) {
-      // Note: These would require additional context data
-      // For now, we'll skip these checks or add them later
-      matchedConditions.push('buyerCriteria:skipped');
+    // Buyer criteria (if we have buyer data)
+    // Note: buyerMinPurchases and buyerMinRating would require additional context
+    
+    // Apply operator
+    if (operator === 'AND') {
+      return checks.length > 0 && checks.every(check => check === true);
+    } else {
+      return checks.some(check => check === true);
     }
-    
-    // Determine if matched based on operator
-    const hasMatches = matchedConditions.length > 0;
-    const matched = operator === 'OR' 
-      ? hasMatches 
-      : matchedConditions.length >= (conditions.reasons?.length || 0) + (conditions.categories?.length || 0);
-    
-    return {
-      matched,
-      confidence: Math.min(confidence, 100),
-      matchedConditions,
-    };
   }
   
   /**
    * Get prioritized active rules
-   * CRITICAL: Filter by isActive to respect soft-deletes
    */
   private async getPrioritizedRules(): Promise<ReturnRule[]> {
     const rules = await storage.getReturnRules(true); // activeOnly = true
     return rules.sort((a, b) => b.priority - a.priority);
+  }
+  
+  /**
+   * Get names of matched conditions for logging
+   */
+  private getMatchedConditionNames(context: ReturnEvaluationContext, conditions: ReturnRuleConditions): string[] {
+    const matched: string[] = [];
+    
+    if (conditions.reasons && conditions.reasons.includes(context.reason as any)) {
+      matched.push(`reason:${context.reason}`);
+    }
+    
+    if (conditions.priceRange && context.transactionAmount) {
+      const amount = context.transactionAmount;
+      const min = conditions.priceRange.min ?? 0;
+      const max = conditions.priceRange.max ?? Infinity;
+      if (amount >= min && amount <= max) {
+        matched.push(`price:${amount}`);
+      }
+    }
+    
+    if (conditions.sellerRatingMin !== undefined || conditions.sellerRatingMax !== undefined) {
+      const rating = context.sellerRating || 0;
+      const min = conditions.sellerRatingMin ?? 0;
+      const max = conditions.sellerRatingMax ?? 5;
+      if (rating >= min && rating <= max) {
+        matched.push(`sellerRating:${rating}`);
+      }
+    }
+    
+    if (conditions.daysAfterDeliveryMin !== undefined || conditions.daysAfterDeliveryMax !== undefined) {
+      const days = context.daysAfterDelivery || 0;
+      const min = conditions.daysAfterDeliveryMin ?? 0;
+      const max = conditions.daysAfterDeliveryMax ?? Infinity;
+      if (days >= min && days <= max) {
+        matched.push(`daysAfterDelivery:${days}`);
+      }
+    }
+    
+    if (conditions.categories && context.listingCategory) {
+      if (conditions.categories.includes(context.listingCategory)) {
+        matched.push(`category:${context.listingCategory}`);
+      }
+    }
+    
+    return matched;
   }
 }
 

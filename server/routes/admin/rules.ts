@@ -3,7 +3,6 @@ import { storage } from "../../storage";
 import { requireAdmin } from "./middleware";
 import { returnRulesEngine } from "../../services/return-rules-engine";
 import { returnRuleConditionsSchema } from "@shared/schema";
-import type { InsertReturnRule } from "@shared/schema";
 
 const router = Router();
 
@@ -40,36 +39,32 @@ router.get("/return-rules/:id", requireAdmin, async (req, res) => {
 router.post("/return-rules", requireAdmin, async (req, res) => {
   try {
     const adminUser = (req as any).adminUser;
-    const { conditions, action, name, description, priority } = req.body;
+    const { name, description, priority, conditions, action, isActive } = req.body;
     
-    // VALIDATE CONDITIONS BEFORE SAVING
+    // Validate conditions with Zod schema
     const validationResult = returnRuleConditionsSchema.safeParse(conditions);
     if (!validationResult.success) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Invalid rule conditions format",
         details: validationResult.error.errors,
       });
     }
     
-    const ruleData: InsertReturnRule = {
-      name: name || `Rule ${Date.now()}`,
-      description: description || null,
-      priority: priority || 0,
-      conditions: validationResult.data, // Type-safe validated data
-      action: action || 'require_review',
-      isActive: req.body.isActive !== false, // Default to true
-      createdBy: adminUser.id,
-    };
-    
     // Validate action
-    const validActions = ['auto_approve', 'auto_reject', 'require_review'];
-    if (!validActions.includes(ruleData.action)) {
-      return res.status(400).json({ 
-        error: `Invalid action. Must be one of: ${validActions.join(', ')}`,
-      });
+    if (!['auto_approve', 'auto_reject', 'require_review'].includes(action)) {
+      return res.status(400).json({ error: "Invalid action. Must be: auto_approve, auto_reject, or require_review" });
     }
     
-    const rule = await storage.createReturnRule(ruleData);
+    const rule = await storage.createReturnRule({
+      name,
+      description: description || null,
+      priority: priority || 0,
+      conditions: validationResult.data,
+      action,
+      isActive: isActive !== false, // Default true
+      createdBy: adminUser.id,
+    });
+    
     res.status(201).json(rule);
   } catch (error) {
     console.error("[AdminRules] Error creating rule:", error);
@@ -80,77 +75,65 @@ router.post("/return-rules", requireAdmin, async (req, res) => {
 // Update rule
 router.patch("/return-rules/:id", requireAdmin, async (req, res) => {
   try {
-    const ruleId = req.params.id;
-    const rules = await storage.getReturnRules(false);
-    const existingRule = rules.find(r => r.id === ruleId);
+    const { name, description, priority, conditions, action, isActive } = req.body;
     
-    if (!existingRule) {
-      return res.status(404).json({ error: "Rule not found" });
-    }
-    
-    const updates: Partial<InsertReturnRule> = {};
-    if (req.body.name !== undefined) updates.name = req.body.name;
-    if (req.body.description !== undefined) updates.description = req.body.description;
-    if (req.body.priority !== undefined) updates.priority = req.body.priority;
-    if (req.body.action !== undefined) {
-      const validActions = ['auto_approve', 'auto_reject', 'require_review'];
-      if (!validActions.includes(req.body.action)) {
-        return res.status(400).json({ 
-          error: `Invalid action. Must be one of: ${validActions.join(', ')}`,
-        });
-      }
-      updates.action = req.body.action;
-    }
-    if (req.body.isActive !== undefined) updates.isActive = req.body.isActive;
-    
-    // Validate conditions if being updated
-    if (req.body.conditions !== undefined) {
-      const validationResult = returnRuleConditionsSchema.safeParse(req.body.conditions);
+    // Validate conditions if provided
+    if (conditions) {
+      const validationResult = returnRuleConditionsSchema.safeParse(conditions);
       if (!validationResult.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "Invalid rule conditions format",
           details: validationResult.error.errors,
         });
       }
-      updates.conditions = validationResult.data;
+      
+      // Update with validated conditions
+      const updated = await storage.updateReturnRule(req.params.id, {
+        name,
+        description,
+        priority,
+        conditions: validationResult.data,
+        action,
+        isActive,
+      });
+      
+      if (!updated) {
+        return res.status(404).json({ error: "Rule not found" });
+      }
+      
+      return res.json(updated);
     }
     
-    const updatedRule = await storage.updateReturnRule(ruleId, updates);
-    res.json(updatedRule);
+    // Update without conditions
+    const updated = await storage.updateReturnRule(req.params.id, {
+      name,
+      description,
+      priority,
+      action,
+      isActive,
+    });
+    
+    if (!updated) {
+      return res.status(404).json({ error: "Rule not found" });
+    }
+    
+    res.json(updated);
   } catch (error) {
     console.error("[AdminRules] Error updating rule:", error);
     res.status(500).json({ error: "Failed to update rule" });
   }
 });
 
-// Test rule with sample data
+// Test rule
 router.post("/return-rules/:id/test", requireAdmin, async (req, res) => {
   try {
-    const ruleId = req.params.id;
-    const testData = req.body;
+    const { testData } = req.body;
     
-    const result = await returnRulesEngine.testRule(ruleId, testData);
+    const result = await returnRulesEngine.testRule(req.params.id, testData);
     res.json(result);
   } catch (error) {
     console.error("[AdminRules] Error testing rule:", error);
     res.status(500).json({ error: "Failed to test rule" });
-  }
-});
-
-// Delete rule (soft delete by setting isActive to false)
-router.delete("/return-rules/:id", requireAdmin, async (req, res) => {
-  try {
-    const ruleId = req.params.id;
-    const updatedRule = await storage.updateReturnRule(ruleId, { isActive: false });
-    
-    if (!updatedRule) {
-      return res.status(404).json({ error: "Rule not found" });
-    }
-    
-    res.json({ success: true, rule: updatedRule });
-  } catch (error) {
-    console.error("[AdminRules] Error deleting rule:", error);
-    res.status(500).json({ error: "Failed to delete rule" });
   }
 });
 
