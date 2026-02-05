@@ -12,6 +12,7 @@ import {
   type Purchase,
   type DateRange,
   type StatusFilter,
+  type ModalAction,
 } from "@/components/purchases";
 import {
   Loader2,
@@ -31,6 +32,7 @@ export default function MyPurchases() {
   // Modal state
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [modalAction, setModalAction] = useState<ModalAction>("view");
 
   const { data: purchases = [], isLoading: purchasesLoading } = useQuery<Purchase[]>({
     queryKey: ["/api/account/purchases"],
@@ -101,11 +103,13 @@ export default function MyPurchases() {
   // Handlers
   const handleViewDetails = (purchase: Purchase) => {
     setSelectedPurchase(purchase);
+    setModalAction("view");
     setIsDetailModalOpen(true);
   };
 
   const handleTrackPackage = (purchase: Purchase) => {
     setSelectedPurchase(purchase);
+    setModalAction("view");
     setIsDetailModalOpen(true);
   };
 
@@ -117,22 +121,26 @@ export default function MyPurchases() {
 
   const handleRateSeller = (purchase: Purchase) => {
     setSelectedPurchase(purchase);
+    setModalAction("rate");
     setIsDetailModalOpen(true);
   };
 
   const handleRequestReturn = (purchase: Purchase) => {
     setSelectedPurchase(purchase);
+    setModalAction("return");
     setIsDetailModalOpen(true);
   };
 
   const handleReportIssue = (purchase: Purchase) => {
     setSelectedPurchase(purchase);
+    setModalAction("report");
     setIsDetailModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsDetailModalOpen(false);
     setSelectedPurchase(null);
+    setModalAction("view");
   };
 
   const isLoading = authLoading || purchasesLoading;
@@ -252,6 +260,7 @@ export default function MyPurchases() {
         isOpen={isDetailModalOpen}
         onClose={handleCloseModal}
         userId={user?.id}
+        initialAction={modalAction}
       />
     </Layout>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -49,11 +49,14 @@ import {
 } from "lucide-react";
 import type { Purchase } from "./OrderCard";
 
+export type ModalAction = "view" | "return" | "rate" | "report";
+
 interface OrderDetailModalProps {
   purchase: Purchase | null;
   isOpen: boolean;
   onClose: () => void;
   userId?: string;
+  initialAction?: ModalAction;
 }
 
 type DeliveryStep = "paid" | "tracking" | "delivered";
@@ -131,7 +134,7 @@ function DeliveryTimeline({ purchase }: { purchase: Purchase }) {
   );
 }
 
-export function OrderDetailModal({ purchase, isOpen, onClose, userId }: OrderDetailModalProps) {
+export function OrderDetailModal({ purchase, isOpen, onClose, userId, initialAction = "view" }: OrderDetailModalProps) {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
   const [isRatingOpen, setIsRatingOpen] = useState(false);
@@ -143,6 +146,23 @@ export function OrderDetailModal({ purchase, isOpen, onClose, userId }: OrderDet
   const [ratingComment, setRatingComment] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Handle initial action when modal opens
+  useEffect(() => {
+    if (isOpen && purchase) {
+      // Small delay to ensure modal is rendered first
+      const timer = setTimeout(() => {
+        if (initialAction === "return") {
+          setIsReturnDialogOpen(true);
+        } else if (initialAction === "rate") {
+          setIsRatingOpen(true);
+        } else if (initialAction === "report") {
+          setIsReportDialogOpen(true);
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, initialAction, purchase]);
 
   if (!purchase) return null;
 
@@ -416,8 +436,9 @@ export function OrderDetailModal({ purchase, isOpen, onClose, userId }: OrderDet
               <Select value={returnReason} onValueChange={setReturnReason}>
                 <SelectTrigger><SelectValue placeholder="اختر سبب الإرجاع" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="defective">المنتج معيب أو تالف</SelectItem>
-                  <SelectItem value="not_as_described">المنتج مختلف عن الوصف</SelectItem>
+                  <SelectItem value="damaged">المنتج معيب أو تالف</SelectItem>
+                  <SelectItem value="different_from_description">المنتج مختلف عن الوصف</SelectItem>
+                  <SelectItem value="missing_parts">أجزاء ناقصة</SelectItem>
                   <SelectItem value="wrong_item">استلمت منتجاً خاطئاً</SelectItem>
                   <SelectItem value="changed_mind">غيرت رأيي</SelectItem>
                   <SelectItem value="other">سبب آخر</SelectItem>

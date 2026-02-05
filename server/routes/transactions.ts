@@ -806,6 +806,39 @@ export function registerTransactionsRoutes(app: Express): void {
     }
   });
 
+  // Get return request by transaction ID
+  app.get("/api/return-requests/transaction/:transactionId", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const { transactionId } = req.params;
+      
+      // Get transaction to verify user is buyer or seller
+      const transaction = await storage.getTransactionById(transactionId);
+      if (!transaction) {
+        return res.status(404).json({ error: "الطلب غير موجود" });
+      }
+
+      // Check if user is buyer or seller
+      if (transaction.buyerId !== userId && transaction.sellerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
+      }
+
+      const returnRequest = await storage.getReturnRequestByTransaction(transactionId);
+      if (!returnRequest) {
+        return res.status(404).json({ error: "لا يوجد طلب إرجاع" });
+      }
+
+      return res.json(returnRequest);
+    } catch (error) {
+      console.error("Error fetching return request by transaction:", error);
+      return res.status(500).json({ error: "فشل في جلب طلب الإرجاع" });
+    }
+  });
+
   // Get buyer's return requests
   app.get("/api/return-requests/my", async (req, res) => {
     try {

@@ -60,22 +60,67 @@ export function CreateReturnDialog({ open, onOpenChange }: CreateReturnDialogPro
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const res = await secureRequest("/api/admin/returns", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          transactionId: transactionId || searchResults?.id,
-          reason: reason === "other" ? customReason : reason,
-          details: details || undefined,
-          templateId: templateId || undefined,
-          overridePolicy,
-        }),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to create return");
+      try {
+        const res = await secureRequest("/api/admin/returns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transactionId: transactionId || searchResults?.id,
+            reason: reason === "other" ? customReason : reason,
+            details: details || undefined,
+            templateId: templateId || undefined,
+            overridePolicy,
+          }),
+        });
+        
+        if (!res.ok) {
+          let errorMessage = "فشل في إنشاء طلب الإرجاع";
+          let errorCode: string | undefined;
+          let errorDetails: any = {};
+          
+          try {
+            const error = await res.json();
+            errorMessage = error.error || error.message || errorMessage;
+            errorCode = error.code;
+            errorDetails = {
+              transactionId: error.transactionId,
+              listingId: error.listingId,
+              returnRequestId: error.returnRequestId,
+            };
+          } catch (parseError) {
+            // Not JSON response - try to get text
+            try {
+              const text = await res.text();
+              errorMessage = text || `خطأ ${res.status}: ${res.statusText}`;
+            } catch {
+              errorMessage = `خطأ ${res.status}: ${res.statusText}`;
+            }
+          }
+          
+          console.error("[CreateReturn] API Error:", {
+            status: res.status,
+            statusText: res.statusText,
+            message: errorMessage,
+            code: errorCode,
+            details: errorDetails,
+            transactionId: transactionId || searchResults?.id,
+          });
+          
+          // Create error with code attached
+          const error = new Error(errorMessage);
+          (error as any).code = errorCode;
+          (error as any).details = errorDetails;
+          throw error;
+        }
+        return res.json();
+      } catch (error) {
+        // Handle network errors
+        if (error instanceof TypeError && error.message.includes("fetch")) {
+          console.error("[CreateReturn] Network Error:", error);
+          throw new Error("خطأ في الاتصال بالخادم. يرجى التحقق من الاتصال بالإنترنت والمحاولة مرة أخرى");
+        }
+        throw error;
       }
-      return res.json();
     },
     onSuccess: () => {
       toast({ title: "تم إنشاء طلب الإرجاع بنجاح" });
@@ -91,7 +136,33 @@ export function CreateReturnDialog({ open, onOpenChange }: CreateReturnDialogPro
       setSearchQuery("");
     },
     onError: (error: Error) => {
-      toast({ title: error.message || "فشل في إنشاء طلب الإرجاع", variant: "destructive" });
+      console.error("[CreateReturn] Mutation Error:", error);
+      const errorCode = (error as any).code;
+      const errorDetails = (error as any).details;
+      const isNetworkError = error.message?.includes("الاتصال") || error.message?.includes("fetch");
+      
+      // Build description with context
+      let description: string | undefined;
+      if (isNetworkError) {
+        description = "يرجى التحقق من الاتصال بالإنترنت والمحاولة مرة أخرى";
+      } else if (errorCode === "DATABASE_MIGRATION_REQUIRED") {
+        description = "يرجى تشغيل migration قاعدة البيانات المطلوبة";
+      } else if (errorCode === "TRANSACTION_NOT_FOUND") {
+        description = `المعاملة ${errorDetails?.transactionId || "غير موجودة"}`;
+      } else if (errorCode === "RETURN_ALREADY_EXISTS") {
+        description = `يوجد طلب إرجاع موجود بالفعل (ID: ${errorDetails?.returnRequestId || "غير معروف"})`;
+      } else if (errorCode === "LISTING_NOT_FOUND") {
+        description = `المنتج المرتبط بالمعاملة غير موجود`;
+      } else if (errorCode === "NO_RETURN_POLICY") {
+        description = "المنتج لا يحتوي على سياسة إرجاع. استخدم خيار تجاوز السياسة";
+      }
+      
+      toast({ 
+        title: error.message || "فشل في إنشاء طلب الإرجاع",
+        description,
+        variant: "destructive",
+        duration: errorCode ? 8000 : 5000, // Longer duration for important errors
+      });
     },
   });
 

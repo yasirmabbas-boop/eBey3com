@@ -83,25 +83,42 @@ router.post("/returns", requireAdmin, async (req, res) => {
     const { transactionId, reason, details, templateId, overridePolicy } = req.body;
     
     if (!transactionId || !reason) {
-      return res.status(400).json({ error: "Transaction ID and reason are required" });
+      return res.status(400).json({ 
+        error: "Transaction ID and reason are required",
+        code: "MISSING_REQUIRED_FIELDS"
+      });
     }
     
     // Get transaction
     const transaction = await storage.getTransactionById(transactionId);
     if (!transaction) {
-      return res.status(404).json({ error: "Transaction not found" });
+      return res.status(404).json({ 
+        error: `Transaction not found: ${transactionId}`,
+        code: "TRANSACTION_NOT_FOUND",
+        transactionId 
+      });
     }
     
     // Check if return request already exists
     const existingRequest = await storage.getReturnRequestByTransaction(transactionId);
     if (existingRequest) {
-      return res.status(400).json({ error: "Return request already exists for this transaction" });
+      return res.status(400).json({ 
+        error: `Return request already exists for transaction ${transactionId}. Return ID: ${existingRequest.id}`,
+        code: "RETURN_ALREADY_EXISTS",
+        transactionId,
+        returnRequestId: existingRequest.id
+      });
     }
     
     // Get listing for category and price
     const listing = await storage.getListing(transaction.listingId);
     if (!listing) {
-      return res.status(404).json({ error: "Listing not found" });
+      return res.status(404).json({ 
+        error: `Listing not found: ${transaction.listingId} (for transaction ${transactionId})`,
+        code: "LISTING_NOT_FOUND",
+        transactionId,
+        listingId: transaction.listingId
+      });
     }
     
     // Admin can override return policy restrictions
@@ -119,23 +136,58 @@ router.post("/returns", requireAdmin, async (req, res) => {
       // Check if within return policy period (unless quality issue)
       const isQualityIssue = ["damaged", "different_from_description", "missing_parts"].includes(reason);
       if (!isQualityIssue && returnPolicyDays === 0) {
-        return res.status(400).json({ error: "Product has no return policy. Use overridePolicy=true to bypass" });
+        return res.status(400).json({ 
+          error: `Product "${listing.title}" (ID: ${listing.id}) has no return policy. Use overridePolicy=true to bypass`,
+          code: "NO_RETURN_POLICY",
+          transactionId,
+          listingId: listing.id,
+          listingTitle: listing.title
+        });
       }
     }
     
     // Create return request with admin fields
-    const returnRequest = await storage.createReturnRequest({
-      transactionId,
-      buyerId: transaction.buyerId,
-      sellerId: transaction.sellerId,
-      listingId: transaction.listingId,
-      reason,
-      details: details || null,
-      adminInitiatedBy: adminUser.id,
-      templateId: templateId || null,
-      category: listing.category || null,
-      listingPrice: listing.price || null,
-    } as any);
+    let returnRequest;
+    try {
+      returnRequest = await storage.createReturnRequest({
+        transactionId,
+        buyerId: transaction.buyerId,
+        sellerId: transaction.sellerId,
+        listingId: transaction.listingId,
+        reason,
+        details: details || null,
+        adminInitiatedBy: adminUser.id,
+        templateId: templateId || null,
+        category: listing.category || null,
+        listingPrice: listing.price || null,
+      } as any);
+    } catch (dbError: any) {
+      console.error("[AdminReturns] Database error creating return request:", dbError);
+      
+      // Check for common database errors
+      const errorMessage = dbError?.message || String(dbError);
+      if (errorMessage.includes("does not exist") || errorMessage.includes("relation") || errorMessage.includes("table")) {
+        return res.status(500).json({ 
+          error: "Database table not found. Please run migration 0030_add_return_management_system.sql",
+          code: "DATABASE_MIGRATION_REQUIRED",
+          transactionId
+        });
+      }
+      if (errorMessage.includes("violates") || errorMessage.includes("constraint")) {
+        return res.status(400).json({ 
+          error: `Database constraint violation: ${errorMessage}`,
+          code: "DATABASE_CONSTRAINT_ERROR",
+          transactionId
+        });
+      }
+      
+      // Generic database error
+      return res.status(500).json({ 
+        error: `Database error: ${errorMessage}`,
+        code: "DATABASE_ERROR",
+        transactionId
+      });
+    }
     
     // Lock payout permission immediately
     try {
@@ -164,9 +216,16 @@ router.post("/returns", requireAdmin, async (req, res) => {
       success: true,
       returnRequest,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[AdminReturns] Error creating return request:", error);
-    res.status(500).json({ error: "Failed to create return request" });
+    const errorMessage = error?.message || String(error);
+    const transactionId = req.body?.transactionId || "unknown";
+    
+    res.status(500).json({ 
+      error: `Failed to create return request: ${errorMessage}`,
+      code: "INTERNAL_SERVER_ERROR",
+      transactionId
+    });
   }
 });
 
