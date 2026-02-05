@@ -288,8 +288,14 @@ export default function CheckoutPage() {
     
     if (!phone.trim()) {
       errors.push("رقم الهاتف مطلوب");
-    } else if (!/^07[3-9][0-9]{8}$/.test(phone)) {
-      errors.push("رقم الهاتف غير صحيح (يجب أن يبدأ بـ 07 ويحتوي على 11 رقماً)");
+    } else {
+      // Normalize Arabic-Indic and Eastern Arabic numerals to ASCII
+      const normalizedPhone = phone.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+                                   .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+                                   .replace(/\s/g, '');
+      if (!/^07[3-9][0-9]{8}$/.test(normalizedPhone)) {
+        errors.push("رقم الهاتف غير صحيح (يجب أن يبدأ بـ 07 ويحتوي على 11 رقماً)");
+      }
     }
     
     if (!city) {

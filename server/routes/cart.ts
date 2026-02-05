@@ -6,15 +6,19 @@ import { sendPushNotification } from "../push-notifications";
 import { sendToUser } from "../websocket";
 import { validateCsrfToken } from "../middleware/csrf";
 
-// Convert Arabic-Indic numerals (٠-٩) to Western numerals (0-9)
+// Convert Arabic-Indic (٠-٩) and Eastern Arabic (۰-۹) numerals to Western numerals (0-9)
 function normalizePhone(phone: string): string {
-  const arabicNumerals = '٠١٢٣٤٥٦٧٨٩';
-  return phone.replace(/[٠-٩]/g, (d) => String(arabicNumerals.indexOf(d)));
+  const arabicIndic = '٠١٢٣٤٥٦٧٨٩';
+  const easternArabic = '۰۱۲۳۴۵۶۷۸۹';
+  return phone
+    .replace(/[٠-٩]/g, d => String(arabicIndic.indexOf(d)))
+    .replace(/[۰-۹]/g, d => String(easternArabic.indexOf(d)))
+    .replace(/\s/g, '');
 }
 
 const checkoutSchema = z.object({
   fullName: z.string().trim().min(3).max(100),
-  phone: z.string().regex(/^07[3-9][0-9]{8}$/),
+  phone: z.string().transform(normalizePhone).pipe(z.string().regex(/^07[3-9][0-9]{8}$/)),
   city: z.string().trim().min(3).max(50),
   addressLine1: z.string().trim().min(5).max(200),
   addressLine2: z.string().trim().max(200).optional(),

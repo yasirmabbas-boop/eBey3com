@@ -110,12 +110,27 @@ export function validateRequired(value: string | null | undefined, language: Lan
   return { valid: true };
 }
 
+export function normalizeArabicNumerals(str: string): string {
+  const arabicIndicMap: { [key: string]: string } = {
+    '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+    '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+  };
+  const easternArabicMap: { [key: string]: string } = {
+    '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+    '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9'
+  };
+  return str.split('').map(char => 
+    arabicIndicMap[char] || easternArabicMap[char] || char
+  ).join('');
+}
+
 export function validatePhone(phone: string, language: Language): ValidationResult {
   if (!phone || phone.trim() === "") {
     return { valid: false, message: messages.required[language] };
   }
+  const normalized = normalizeArabicNumerals(phone.replace(/\s/g, ""));
   const phoneRegex = /^07[0-9]{9}$/;
-  if (!phoneRegex.test(phone.replace(/\s/g, ""))) {
+  if (!phoneRegex.test(normalized)) {
     return { valid: false, message: messages.phoneFormat[language] };
   }
   return { valid: true };

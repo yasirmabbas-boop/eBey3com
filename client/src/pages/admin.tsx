@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Loader2, Users, Package, AlertTriangle, DollarSign, BarChart3, FileWarning, CheckCircle, XCircle, Shield, Ban, UserCheck, Store, Pause, Play, Trash2, Eye, Search, Mail, MailOpen, Key, Copy, BadgeCheck, Award, Star, StarOff, Wallet, BanknoteIcon, Clock, Calendar } from "lucide-react";
+import { AdminSearchBar } from "@/components/admin/admin-search-bar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -598,6 +599,11 @@ export default function AdminPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8" dir="rtl">
+        {/* Global Search Bar */}
+        <div className="mb-6 flex justify-end">
+          <AdminSearchBar />
+        </div>
+        
         <div className="flex flex-col md:flex-row gap-6">
           <aside className="w-full md:w-64 shrink-0">
             <Card>
