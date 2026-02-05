@@ -8,6 +8,8 @@ import { payoutsRouter } from "./payouts";
 import { financialRouter } from "./financial";
 import { messagesRouter } from "./messages";
 import { searchRouter } from "./search";
+import { returnsRouter } from "./returns";
+import { templatesRouter } from "./templates";
 
 export function registerAdminRoutes(app: Express): void {
   // Apply CSRF validation to all admin routes except GET requests
@@ -22,4 +24,6 @@ export function registerAdminRoutes(app: Express): void {
   app.use("/api/admin", financialRouter);
   app.use("/api/admin", messagesRouter);
   app.use("/api/admin", searchRouter);
+  app.use("/api/admin", returnsRouter);
+  app.use("/api/admin", templatesRouter);
 }
