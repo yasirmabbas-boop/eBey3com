@@ -1756,154 +1756,184 @@ export default function SellerDashboard() {
 
           <TabsContent value="offers" className="space-y-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <HandCoins className="h-5 w-5 text-primary" />
                   العروض المستلمة
                 </CardTitle>
+                <Select value={offerFilter} onValueChange={(v) => setOfferFilter(v as typeof offerFilter)}>
+                  <SelectTrigger className="w-[140px]" data-testid="offer-filter-select">
+                    <SelectValue placeholder="جميع العروض" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع العروض</SelectItem>
+                    <SelectItem value="pending">قيد الانتظار</SelectItem>
+                    <SelectItem value="accepted">مقبولة</SelectItem>
+                    <SelectItem value="rejected">مرفوضة</SelectItem>
+                    <SelectItem value="expired">منتهية</SelectItem>
+                  </SelectContent>
+                </Select>
               </CardHeader>
               <CardContent>
                 {offersLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                ) : receivedOffers.length === 0 ? (
-                  <div className="text-center py-8">
-                    <HandCoins className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">لا توجد عروض مستلمة حالياً</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {receivedOffers.map(offer => {
-                      const listing = listings.find(l => l.id === offer.listingId);
-                      return (
-                        <div 
-                          key={offer.id} 
-                          className="border rounded-lg p-4 hover:bg-gray-50"
-                          data-testid={`offer-card-${offer.id}`}
-                        >
-                          <div className="flex items-start gap-4">
-                            {listing?.images?.[0] && (
-                              <img 
-                                src={listing.images[0]} 
-                                alt={listing?.title} 
-                                className="w-20 h-20 object-cover rounded-lg"
-                                loading="lazy"
-                                style={{ imageRendering: "auto" }}
-                              />
-                            )}
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between mb-2">
-                                <div>
-                                  <Link href={`/product/${offer.listingId}`}>
-                                    <h4 className="font-bold text-lg hover:text-primary cursor-pointer">
-                                      {listing?.title || "منتج"}
-                                    </h4>
-                                  </Link>
-                                  <p className="text-sm text-gray-500">
-                                    السعر الأصلي: {listing?.price?.toLocaleString()} د.ع
-                                  </p>
-                                  {(offer.status === "pending" || offer.status === "countered") && (offer as any).expiresAt && (
-                                    <OfferCountdown expiresAt={(offer as any).expiresAt} />
+                ) : (() => {
+                  const filteredOffers = receivedOffers.filter(offer => {
+                    if (offerFilter === "all") return true;
+                    return offer.status === offerFilter;
+                  });
+                  
+                  if (filteredOffers.length === 0) {
+                    return (
+                      <div className="text-center py-8">
+                        <HandCoins className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-500">
+                          {offerFilter === "all" ? "لا توجد عروض مستلمة حالياً" : `لا توجد عروض ${offerFilter === "pending" ? "قيد الانتظار" : offerFilter === "accepted" ? "مقبولة" : offerFilter === "rejected" ? "مرفوضة" : "منتهية"}`}
+                        </p>
+                        {offerFilter !== "all" && (
+                          <Button variant="outline" className="mt-4" onClick={() => setOfferFilter("all")}>
+                            عرض جميع العروض
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div className="space-y-4">
+                      {filteredOffers.map(offer => {
+                        const listing = listings.find(l => l.id === offer.listingId);
+                        return (
+                          <div 
+                            key={offer.id} 
+                            className="border rounded-lg p-4 hover:bg-gray-50"
+                            data-testid={`offer-card-${offer.id}`}
+                          >
+                            <div className="flex items-start gap-4">
+                              {listing?.images?.[0] && (
+                                <img 
+                                  src={listing.images[0]} 
+                                  alt={listing?.title} 
+                                  className="w-20 h-20 object-cover rounded-lg"
+                                  loading="lazy"
+                                  style={{ imageRendering: "auto" }}
+                                />
+                              )}
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div>
+                                    <Link href={`/product/${offer.listingId}`}>
+                                      <h4 className="font-bold text-lg hover:text-primary cursor-pointer">
+                                        {listing?.title || "منتج"}
+                                      </h4>
+                                    </Link>
+                                    <p className="text-sm text-gray-500">
+                                      السعر الأصلي: {listing?.price?.toLocaleString()} د.ع
+                                    </p>
+                                    {(offer.status === "pending" || offer.status === "countered") && (offer as any).expiresAt && (
+                                      <OfferCountdown expiresAt={(offer as any).expiresAt} />
+                                    )}
+                                  </div>
+                                  <Badge className={
+                                    offer.status === "pending" ? "bg-yellow-100 text-yellow-800" :
+                                    offer.status === "accepted" ? "bg-green-100 text-green-800" :
+                                    offer.status === "rejected" ? "bg-red-100 text-red-800" :
+                                    offer.status === "countered" ? "bg-blue-100 text-blue-800" :
+                                    "bg-gray-100 text-gray-800"
+                                  }>
+                                    {offer.status === "pending" ? "بانتظار الرد" :
+                                     offer.status === "accepted" ? "مقبول" :
+                                     offer.status === "rejected" ? "مرفوض" :
+                                     offer.status === "countered" ? "عرض مقابل" :
+                                     offer.status === "expired" ? "منتهي" : offer.status}
+                                  </Badge>
+                                </div>
+
+                                <div className="bg-primary/5 p-3 rounded-lg mb-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm text-gray-600">العرض المقدم:</span>
+                                    <span className="text-xl font-bold text-primary">
+                                      {offer.offerAmount.toLocaleString()} د.ع
+                                    </span>
+                                  </div>
+                                  {offer.message && (
+                                    <p className="text-sm text-gray-600 mt-2 flex items-start gap-1">
+                                      <MessageSquare className="h-4 w-4 mt-0.5 shrink-0" />
+                                      {offer.message}
+                                    </p>
                                   )}
-                                </div>
-                                <Badge className={
-                                  offer.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-                                  offer.status === "accepted" ? "bg-green-100 text-green-800" :
-                                  offer.status === "rejected" ? "bg-red-100 text-red-800" :
-                                  offer.status === "countered" ? "bg-blue-100 text-blue-800" :
-                                  "bg-gray-100 text-gray-800"
-                                }>
-                                  {offer.status === "pending" ? "بانتظار الرد" :
-                                   offer.status === "accepted" ? "مقبول" :
-                                   offer.status === "rejected" ? "مرفوض" :
-                                   offer.status === "countered" ? "عرض مقابل" :
-                                   offer.status === "expired" ? "منتهي" : offer.status}
-                                </Badge>
-                              </div>
-
-                              <div className="bg-primary/5 p-3 rounded-lg mb-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm text-gray-600">العرض المقدم:</span>
-                                  <span className="text-xl font-bold text-primary">
-                                    {offer.offerAmount.toLocaleString()} د.ع
-                                  </span>
-                                </div>
-                                {offer.message && (
-                                  <p className="text-sm text-gray-600 mt-2 flex items-start gap-1">
-                                    <MessageSquare className="h-4 w-4 mt-0.5 shrink-0" />
-                                    {offer.message}
+                                  <p className="text-xs text-gray-400 mt-2">
+                                    {new Date(offer.createdAt).toLocaleDateString("ar-IQ", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit"
+                                    })}
                                   </p>
+                                </div>
+
+                                {offer.status === "pending" && (
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => offerResponseMutation.mutate({ 
+                                        offerId: offer.id, 
+                                        action: "accept" 
+                                      })}
+                                      disabled={offerResponseMutation.isPending}
+                                      className="bg-green-600 hover:bg-green-700"
+                                      data-testid={`button-accept-offer-${offer.id}`}
+                                    >
+                                      <CheckCircle className="h-4 w-4 ml-1" />
+                                      قبول
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        setSelectedOfferForCounter(offer);
+                                        setCounterOfferAmount("");
+                                        setCounterOfferDialogOpen(true);
+                                      }}
+                                      disabled={offerResponseMutation.isPending}
+                                      data-testid={`button-counter-offer-${offer.id}`}
+                                    >
+                                      <ArrowRight className="h-4 w-4 ml-1" />
+                                      عرض مقابل
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => offerResponseMutation.mutate({ 
+                                        offerId: offer.id, 
+                                        action: "reject" 
+                                      })}
+                                      disabled={offerResponseMutation.isPending}
+                                      data-testid={`button-reject-offer-${offer.id}`}
+                                    >
+                                      رفض
+                                    </Button>
+                                  </div>
                                 )}
-                                <p className="text-xs text-gray-400 mt-2">
-                                  {new Date(offer.createdAt).toLocaleDateString("ar-IQ", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit"
-                                  })}
-                                </p>
+
+                                {offer.status === "countered" && offer.counterAmount && (
+                                  <div className="bg-blue-50 p-2 rounded mt-2">
+                                    <p className="text-sm text-blue-800">
+                                      عرضك المقابل: {offer.counterAmount.toLocaleString()} د.ع
+                                    </p>
+                                  </div>
+                                )}
                               </div>
-
-                              {offer.status === "pending" && (
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => offerResponseMutation.mutate({ 
-                                      offerId: offer.id, 
-                                      action: "accept" 
-                                    })}
-                                    disabled={offerResponseMutation.isPending}
-                                    className="bg-green-600 hover:bg-green-700"
-                                    data-testid={`button-accept-offer-${offer.id}`}
-                                  >
-                                    <CheckCircle className="h-4 w-4 ml-1" />
-                                    قبول
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      setSelectedOfferForCounter(offer);
-                                      setCounterOfferAmount("");
-                                      setCounterOfferDialogOpen(true);
-                                    }}
-                                    disabled={offerResponseMutation.isPending}
-                                    data-testid={`button-counter-offer-${offer.id}`}
-                                  >
-                                    <ArrowRight className="h-4 w-4 ml-1" />
-                                    عرض مقابل
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => offerResponseMutation.mutate({ 
-                                      offerId: offer.id, 
-                                      action: "reject" 
-                                    })}
-                                    disabled={offerResponseMutation.isPending}
-                                    data-testid={`button-reject-offer-${offer.id}`}
-                                  >
-                                    رفض
-                                  </Button>
-                                </div>
-                              )}
-
-                              {offer.status === "countered" && offer.counterAmount && (
-                                <div className="bg-blue-50 p-2 rounded mt-2">
-                                  <p className="text-sm text-blue-800">
-                                    عرضك المقابل: {offer.counterAmount.toLocaleString()} د.ع
-                                  </p>
-                                </div>
-                              )}
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
@@ -2040,12 +2070,26 @@ export default function SellerDashboard() {
               </Card>
             ) : (() => {
               const filteredOrders = sellerOrders.filter(order => {
-                if (salesFilter === "all") return true;
-                if (salesFilter === "pending_payment") return order.status === "pending_payment";
-                if (salesFilter === "pending") return order.status === "pending" || order.status === "processing";
-                if (salesFilter === "shipped") return order.status === "shipped";
-                if (salesFilter === "delivered") return order.status === "delivered" || order.status === "completed";
-                return true;
+                // Status filter
+                let matchesStatus = true;
+                if (salesFilter !== "all") {
+                  if (salesFilter === "pending_payment") matchesStatus = order.status === "pending_payment";
+                  else if (salesFilter === "pending") matchesStatus = order.status === "pending" || order.status === "processing";
+                  else if (salesFilter === "shipped") matchesStatus = order.status === "shipped";
+                  else if (salesFilter === "delivered") matchesStatus = order.status === "delivered" || order.status === "completed";
+                }
+                
+                // Time period filter
+                let matchesTime = true;
+                if (timePeriod !== "all" && order.createdAt) {
+                  const orderDate = new Date(order.createdAt);
+                  const now = new Date();
+                  const daysAgo = parseInt(timePeriod);
+                  const cutoffDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+                  matchesTime = orderDate >= cutoffDate;
+                }
+                
+                return matchesStatus && matchesTime;
               });
               
               if (filteredOrders.length === 0) {
