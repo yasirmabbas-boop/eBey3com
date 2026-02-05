@@ -37,7 +37,7 @@ export function PurchaseFilters({
         <div>
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">مشترياتي</h1>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            {totalCount > 0 ? \`\${totalCount} طلب\` : "تتبع طلباتك وتسليماتك"}
+            {totalCount > 0 ? `${totalCount} طلب` : "تتبع طلباتك وتسليماتك"}
           </p>
         </div>
       </div>
