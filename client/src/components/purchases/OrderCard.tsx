@@ -124,25 +124,25 @@ export function OrderCard({
 
   return (
     <Card
-      className={`p-4 cursor-pointer transition-all hover:shadow-md hover:border-primary/30 ${
+      className={`p-3 sm:p-4 cursor-pointer transition-all hover:shadow-md hover:border-primary/30 active:bg-muted/50 ${
         needsRating ? "border-r-4 border-r-amber-400" : ""
       }`}
       onClick={() => onViewDetails(purchase)}
       data-testid={`order-card-${purchase.id}`}
     >
-      <div className="flex gap-4">
-        {/* Thumbnail */}
+      <div className="flex gap-3 sm:gap-4">
+        {/* Thumbnail - Larger on mobile for better touch */}
         <div className="flex-shrink-0">
           {purchase.listing?.images?.[0] ? (
             <img
               src={purchase.listing.images[0]}
               alt={purchase.listing?.title || "منتج"}
-              className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-lg"
+              className="w-[72px] h-[72px] sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover rounded-xl"
               loading="lazy"
             />
           ) : (
-            <div className="w-20 h-20 md:w-24 md:h-24 bg-muted rounded-lg flex items-center justify-center">
-              <Package className="h-8 w-8 text-muted-foreground/40" />
+            <div className="w-[72px] h-[72px] sm:w-20 sm:h-20 md:w-24 md:h-24 bg-muted rounded-xl flex items-center justify-center">
+              <Package className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground/40" />
             </div>
           )}
         </div>
@@ -151,122 +151,126 @@ export function OrderCard({
         <div className="flex-1 min-w-0">
           {/* Title and Status Row */}
           <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="font-semibold text-sm md:text-base line-clamp-2 flex-1">
+            <h3 className="font-semibold text-sm sm:text-base line-clamp-2 flex-1">
               {purchase.listing?.title || "منتج"}
             </h3>
             <Badge
-              className={`flex-shrink-0 text-xs px-2 py-0.5 ${statusConfig.color}`}
+              className={`flex-shrink-0 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 ${statusConfig.color}`}
             >
-              <StatusIcon className="h-3 w-3 ml-1" />
-              {statusConfig.label}
+              <StatusIcon className="h-3 w-3 ml-0.5 sm:ml-1" />
+              <span className="hidden xs:inline">{statusConfig.label}</span>
+              <span className="xs:hidden">{statusConfig.label.split(" ")[0]}</span>
             </Badge>
           </div>
 
           {/* Order Meta */}
-          <div className="text-xs text-muted-foreground space-y-0.5 mb-2">
-            <p className="flex items-center gap-1">
+          <div className="text-[11px] sm:text-xs text-muted-foreground space-y-0.5 mb-2">
+            <p className="flex items-center gap-1 flex-wrap">
               <span className="font-mono">#{purchase.id.slice(0, 8).toUpperCase()}</span>
-              <span className="mx-1">•</span>
+              <span className="mx-0.5 sm:mx-1">•</span>
               <span>{formatDate(purchase.createdAt)}</span>
             </p>
             {purchase.listing?.sellerName && (
-              <p className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {purchase.listing.sellerName}
-                {purchase.listing.city && ` • ${purchase.listing.city}`}
+              <p className="flex items-center gap-1 truncate">
+                <MapPin className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">
+                  {purchase.listing.sellerName}
+                  {purchase.listing.city && ` • ${purchase.listing.city}`}
+                </span>
               </p>
             )}
           </div>
 
           {/* Price and Quick Actions Row */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <p className="font-bold text-primary text-base md:text-lg">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-bold text-primary text-base sm:text-lg">
               {purchase.amount?.toLocaleString() || 0} د.ع
             </p>
 
-            {/* Quick Actions */}
-            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            {/* Quick Actions - Responsive layout */}
+            <div className="flex items-center gap-1 sm:gap-1.5" onClick={(e) => e.stopPropagation()}>
+              {/* Mobile: Show only icons, Desktop: Show text */}
               {isShipped && (
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-xs px-2"
+                  className="h-8 sm:h-7 w-8 sm:w-auto p-0 sm:px-2 text-xs"
                   onClick={() => onTrackPackage(purchase)}
                 >
-                  <Truck className="h-3 w-3 ml-1" />
-                  تتبع
+                  <Truck className="h-4 w-4 sm:h-3 sm:w-3 sm:ml-1" />
+                  <span className="hidden sm:inline">تتبع</span>
                 </Button>
               )}
               
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 text-xs px-2"
+                className="h-8 sm:h-7 w-8 sm:w-auto p-0 sm:px-2 text-xs"
                 onClick={() => onMessageSeller(purchase)}
               >
-                <MessageCircle className="h-3 w-3 ml-1" />
-                مراسلة
+                <MessageCircle className="h-4 w-4 sm:h-3 sm:w-3 sm:ml-1" />
+                <span className="hidden sm:inline">مراسلة</span>
               </Button>
 
               {needsRating && (
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-xs px-2 text-amber-600 border-amber-300 hover:bg-amber-50"
+                  className="h-8 sm:h-7 w-8 sm:w-auto p-0 sm:px-2 text-xs text-amber-600 border-amber-300 hover:bg-amber-50"
                   onClick={() => onRateSeller(purchase)}
                 >
-                  <Star className="h-3 w-3 ml-1" />
-                  قيّم
+                  <Star className="h-4 w-4 sm:h-3 sm:w-3 sm:ml-1" />
+                  <span className="hidden sm:inline">قيّم</span>
                 </Button>
               )}
 
               {isDelivered && purchase.hasReview && (
-                <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">
+                <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] sm:text-xs hidden sm:flex">
                   <CheckCircle className="h-3 w-3 ml-1" />
                   تم التقييم
                 </Badge>
               )}
 
-              {/* More Actions Dropdown */}
+              {/* More Actions Dropdown - Larger touch target on mobile */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 w-7 p-0"
+                    className="h-8 w-8 sm:h-7 sm:w-7 p-0"
                   >
-                    <MoreVertical className="h-4 w-4" />
+                    <MoreVertical className="h-5 w-5 sm:h-4 sm:w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => onViewDetails(purchase)}>
+                <DropdownMenuContent align="end" className="w-52 sm:w-48">
+                  <DropdownMenuItem onClick={() => onViewDetails(purchase)} className="py-3 sm:py-2">
                     <Eye className="h-4 w-4 ml-2" />
                     عرض التفاصيل
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onTrackPackage(purchase)}>
+                  <DropdownMenuItem onClick={() => onTrackPackage(purchase)} className="py-3 sm:py-2">
                     <Truck className="h-4 w-4 ml-2" />
                     تتبع الشحنة
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onMessageSeller(purchase)}>
+                  <DropdownMenuItem onClick={() => onMessageSeller(purchase)} className="py-3 sm:py-2">
                     <MessageCircle className="h-4 w-4 ml-2" />
                     مراسلة البائع
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {isDelivered && !purchase.hasReview && (
-                    <DropdownMenuItem onClick={() => onRateSeller(purchase)}>
+                    <DropdownMenuItem onClick={() => onRateSeller(purchase)} className="py-3 sm:py-2">
                       <Star className="h-4 w-4 ml-2" />
                       تقييم البائع
                     </DropdownMenuItem>
                   )}
                   {isDelivered && (
-                    <DropdownMenuItem onClick={() => onRequestReturn(purchase)}>
+                    <DropdownMenuItem onClick={() => onRequestReturn(purchase)} className="py-3 sm:py-2">
                       <RotateCcw className="h-4 w-4 ml-2" />
                       طلب إرجاع
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem
                     onClick={() => onReportIssue(purchase)}
-                    className="text-red-600"
+                    className="text-red-600 py-3 sm:py-2"
                   >
                     <AlertTriangle className="h-4 w-4 ml-2" />
                     الإبلاغ عن مشكلة
