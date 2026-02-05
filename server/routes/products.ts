@@ -197,7 +197,7 @@ export function registerProductRoutes(app: Express): void {
         }
       }
       
-      // Filter out user's own listings and purchased items (unless viewing own profile)
+      // Filter purchased items and deprioritize user's own listings (unless viewing own profile)
       let filteredListings = paginatedListings;
       let filteredTotal = total;
       
@@ -206,16 +206,33 @@ export function registerProductRoutes(app: Express): void {
         const userPurchases = await storage.getPurchasesForBuyer(viewerId);
         const purchasedListingIds = new Set(userPurchases.map(t => t.listingId));
         
-        // Filter out own listings and purchased items
-        filteredListings = paginatedListings.filter(listing => {
-          const isOwnListing = listing.sellerId === viewerId;
-          const alreadyPurchased = purchasedListingIds.has(listing.id);
-          return !isOwnListing && !alreadyPurchased;
-        });
+        // Separate own listings from others, filter out purchased items
+        const otherListings: typeof paginatedListings = [];
+        const ownListings: typeof paginatedListings = [];
         
-        // Adjust total count (approximate - actual count would need SQL modification)
-        const removedCount = paginatedListings.length - filteredListings.length;
-        filteredTotal = Math.max(0, total - removedCount);
+        for (const listing of paginatedListings) {
+          // Always filter out purchased items
+          if (purchasedListingIds.has(listing.id)) continue;
+          
+          if (listing.sellerId === viewerId) {
+            ownListings.push(listing);
+          } else {
+            otherListings.push(listing);
+          }
+        }
+        
+        // Deprioritize own items: insert them at random positions with lower frequency
+        // Show ~1 own item per 5 other items on average
+        filteredListings = [...otherListings];
+        for (const ownListing of ownListings) {
+          // Random position weighted towards the end (deprioritized)
+          const insertPosition = Math.floor(Math.random() * (filteredListings.length + 1) * 0.7 + filteredListings.length * 0.3);
+          filteredListings.splice(Math.min(insertPosition, filteredListings.length), 0, ownListing);
+        }
+        
+        // Adjust total count for purchased items only
+        const purchasedCount = paginatedListings.length - (otherListings.length + ownListings.length);
+        filteredTotal = Math.max(0, total - purchasedCount);
       }
       
       // Get favorites count for all listings

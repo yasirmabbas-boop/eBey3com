@@ -10,6 +10,7 @@ import { messagesRouter } from "./messages";
 import { searchRouter } from "./search";
 import { returnsRouter } from "./returns";
 import { templatesRouter } from "./templates";
+import { rulesRouter } from "./rules";
 
 export function registerAdminRoutes(app: Express): void {
   // Apply CSRF validation to all admin routes except GET requests
@@ -26,4 +27,5 @@ export function registerAdminRoutes(app: Express): void {
   app.use("/api/admin", searchRouter);
   app.use("/api/admin", returnsRouter);
   app.use("/api/admin", templatesRouter);
+  app.use("/api/admin", rulesRouter);
 }

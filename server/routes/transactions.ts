@@ -10,6 +10,25 @@ import { db } from "../db";
 import { transactions } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
+async function notifyAdminsOfAutoApproval(returnRequestId: string, ruleName: string) {
+  try {
+    const admins = await storage.getAdminUsers();
+    for (const admin of admins) {
+      await storage.createNotification({
+        userId: admin.id,
+        type: "return_auto_approved",
+        title: "إرجاع تمت الموافقة عليه تلقائياً",
+        message: `طلب إرجاع #${returnRequestId.slice(0,8)} تمت الموافقة عليه بواسطة القاعدة: ${ruleName}`,
+        linkUrl: `/admin?tab=returns&returnId=${returnRequestId}`,
+        relatedId: returnRequestId,
+      });
+    }
+  } catch (error) {
+    console.error("[ReturnRequest] Error notifying admins:", error);
+    throw error;
+  }
+}
+
 async function sendNotificationAsync(params: {
   userId: string;
   type: string;
@@ -691,6 +710,57 @@ export function registerTransactionsRoutes(app: Express): void {
         // Continue - return request is still created, but log warning
         console.warn(`[ReturnRequest] WARNING: Return created but permission not locked for transaction ${transactionId}`);
       }
+
+      // ===== RULES ENGINE INTEGRATION (FAIL-SAFE) =====
+      // CRITICAL: Return creation MUST succeed even if rules engine fails
+      let autoApprovalAttempted = false;
+      try {
+        const { returnRulesEngine } = await import("../services/return-rules-engine");
+        
+        // Calculate days after delivery for rules evaluation
+        const deliveredAt = transaction.completedAt || transaction.createdAt;
+        const daysAfterDelivery = Math.floor((Date.now() - new Date(deliveredAt).getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Get seller rating if available
+        const seller = await storage.getUser(transaction.sellerId);
+        const sellerRating = seller?.rating || 0;
+        
+        const evaluation = await returnRulesEngine.evaluateReturn({
+          ...returnRequest,
+          transactionAmount: transaction.amount,
+          listingCategory: listing.category || null,
+          sellerRating,
+          daysAfterDelivery,
+        });
+        
+        autoApprovalAttempted = true;
+        
+        if (evaluation && evaluation.action === 'auto_approve') {
+          // Auto-approval is BEST EFFORT - if this fails, return is still created
+          await storage.updateReturnRequestByAdmin(returnRequest.id, {
+            status: 'approved',
+            autoApproved: true,
+            approvalRuleId: evaluation.rule.id,
+            autoApprovedAt: new Date(),
+            sellerResponse: `Auto-approved by rule: ${evaluation.rule.name}`,
+          } as any);
+          
+          console.log(`[ReturnRequest] ✅ Auto-approved by rule ${evaluation.rule.id}`);
+          
+          // ASYNC notification (non-blocking)
+          notifyAdminsOfAutoApproval(returnRequest.id, evaluation.rule.name).catch(err => {
+            console.error("[ReturnRequest] Failed to notify admins:", err);
+          });
+        }
+      } catch (ruleError) {
+        console.error("[ReturnRequest] ⚠️ Rules engine error (SAFE FALLBACK):", ruleError);
+        // CRITICAL: Don't throw - return creation already succeeded
+        // Log error for monitoring but don't fail the request
+        if (autoApprovalAttempted) {
+          console.error("[ReturnRequest] Auto-approval failed - return requires manual review");
+        }
+      }
+      // ===== END RULES ENGINE INTEGRATION =====
 
       // Send notification to seller with deep link to returns tab
       try {

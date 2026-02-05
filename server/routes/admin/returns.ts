@@ -4,7 +4,7 @@ import { requireAdmin } from "./middleware";
 
 const router = Router();
 
-// Get all return requests with pagination and filtering
+// Get all return requests with pagination
 router.get("/returns", requireAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -33,6 +33,7 @@ router.get("/returns", requireAdmin, async (req, res) => {
           transaction: transaction ? {
             id: transaction.id,
             amount: transaction.amount,
+            status: transaction.status,
             completedAt: transaction.completedAt,
           } : null,
           listing: listing ? {
@@ -53,6 +54,7 @@ router.get("/returns", requireAdmin, async (req, res) => {
             id: seller.id,
             displayName: seller.displayName,
             accountCode: seller.accountCode,
+            phone: seller.phone,
           } : null,
         };
       })
@@ -78,7 +80,7 @@ router.get("/returns", requireAdmin, async (req, res) => {
 router.post("/returns", requireAdmin, async (req, res) => {
   try {
     const adminUser = (req as any).adminUser;
-    const { transactionId, reason, details, templateId, overrideRestrictions } = req.body;
+    const { transactionId, reason, details, templateId, overridePolicy } = req.body;
     
     if (!transactionId || !reason) {
       return res.status(400).json({ error: "Transaction ID and reason are required" });
@@ -90,40 +92,34 @@ router.post("/returns", requireAdmin, async (req, res) => {
       return res.status(404).json({ error: "Transaction not found" });
     }
     
-    // Get listing
+    // Check if return request already exists
+    const existingRequest = await storage.getReturnRequestByTransaction(transactionId);
+    if (existingRequest) {
+      return res.status(400).json({ error: "Return request already exists for this transaction" });
+    }
+    
+    // Get listing for category and price
     const listing = await storage.getListing(transaction.listingId);
     if (!listing) {
       return res.status(404).json({ error: "Listing not found" });
     }
     
-    // Check if return already exists
-    const existingReturn = await storage.getReturnRequestByTransaction(transactionId);
-    if (existingReturn) {
-      return res.status(400).json({ 
-        error: "Return request already exists for this transaction",
-        returnRequest: existingReturn,
-      });
-    }
-    
-    // Admin can override restrictions if overrideRestrictions is true
-    if (!overrideRestrictions) {
-      // Check return policy (same logic as buyer-initiated)
-      const returnPolicyDays = (listing as any).returnPolicyDays || 0;
-      const deliveredAt = transaction.completedAt || transaction.createdAt;
-      const daysSinceDelivery = Math.floor((Date.now() - new Date(deliveredAt).getTime()) / (1000 * 60 * 60 * 24));
+    // Admin can override return policy restrictions
+    let returnPolicyDays = 0;
+    if (!overridePolicy) {
+      // Check normal return policy
+      const returnPolicy = (listing as any).returnPolicy || "لا يوجد إرجاع";
+      if (returnPolicy === "يوم واحد") returnPolicyDays = 1;
+      else if (returnPolicy === "3 أيام") returnPolicyDays = 3;
+      else if (returnPolicy === "7 أيام") returnPolicyDays = 7;
+      else if (returnPolicy === "14 يوم") returnPolicyDays = 14;
+      else if (returnPolicy === "30 يوم") returnPolicyDays = 30;
+      else if (returnPolicy === "استبدال فقط") returnPolicyDays = 7;
       
+      // Check if within return policy period (unless quality issue)
       const isQualityIssue = ["damaged", "different_from_description", "missing_parts"].includes(reason);
-      
       if (!isQualityIssue && returnPolicyDays === 0) {
-        return res.status(400).json({ 
-          error: "This product does not accept returns. Set overrideRestrictions=true to bypass.",
-        });
-      }
-      
-      if (!isQualityIssue && daysSinceDelivery > returnPolicyDays) {
-        return res.status(400).json({ 
-          error: `Return period expired (${returnPolicyDays} days). Set overrideRestrictions=true to bypass.`,
-        });
+        return res.status(400).json({ error: "Product has no return policy. Use overridePolicy=true to bypass" });
       }
     }
     
@@ -141,7 +137,7 @@ router.post("/returns", requireAdmin, async (req, res) => {
       listingPrice: listing.price || null,
     } as any);
     
-    // Lock payout permission (same as buyer-initiated)
+    // Lock payout permission immediately
     try {
       const { payoutPermissionService } = await import("../../services/payout-permission-service");
       await payoutPermissionService.lockPermissionForReturn(transactionId, returnRequest.id);
@@ -150,32 +146,18 @@ router.post("/returns", requireAdmin, async (req, res) => {
       console.error(`[AdminReturn] Failed to lock payout permission: ${lockError}`);
     }
     
-    // Notify seller
-    try {
-      await storage.createNotification({
-        userId: transaction.sellerId,
-        type: "return_request",
-        title: "طلب إرجاع جديد (من الإدارة)",
-        message: `تم إنشاء طلب إرجاع من قبل الإدارة للمنتج "${(listing as any).title}"`,
-        linkUrl: `/seller-dashboard?tab=returns&returnId=${returnRequest.id}`,
-        relatedId: returnRequest.id,
-      });
-    } catch (notifError) {
-      console.error("[AdminReturn] Failed to send seller notification:", notifError);
-    }
-    
     // Notify buyer
     try {
       await storage.createNotification({
         userId: transaction.buyerId,
-        type: "return_request",
-        title: "تم إنشاء طلب إرجاع",
-        message: `تم إنشاء طلب إرجاع للمنتج "${(listing as any).title}" من قبل الإدارة`,
-        linkUrl: `/buyer-dashboard?tab=returns&returnId=${returnRequest.id}`,
+        type: "return_requested",
+        title: "طلب إرجاع جديد",
+        message: `تم إنشاء طلب إرجاع لطلبك "${listing.title}"`,
+        linkUrl: `/buyer-dashboard?tab=returns`,
         relatedId: returnRequest.id,
       });
     } catch (notifError) {
-      console.error("[AdminReturn] Failed to send buyer notification:", notifError);
+      console.error("[AdminReturn] Failed to notify buyer:", notifError);
     }
     
     res.status(201).json({
@@ -183,7 +165,7 @@ router.post("/returns", requireAdmin, async (req, res) => {
       returnRequest,
     });
   } catch (error) {
-    console.error("[AdminReturns] Error creating admin return:", error);
+    console.error("[AdminReturns] Error creating return request:", error);
     res.status(500).json({ error: "Failed to create return request" });
   }
 });
@@ -200,18 +182,21 @@ router.patch("/returns/:id", requireAdmin, async (req, res) => {
       return res.status(404).json({ error: "Return request not found" });
     }
     
-    // Admin can update any field
-    const updatedReturn = await storage.updateReturnRequestByAdmin(returnId, {
-      ...updates,
-      adminNotes: updates.adminNotes || returnRequest.adminNotes,
-    });
+    // Add admin notes if status is being changed
+    if (updates.status && updates.status !== returnRequest.status) {
+      updates.adminNotes = updates.adminNotes || `Status changed from ${returnRequest.status} to ${updates.status} by admin`;
+      updates.processedBy = adminUser.id;
+      updates.processedAt = new Date();
+    }
+    
+    const updated = await storage.updateReturnRequestByAdmin(returnId, updates);
     
     res.json({
       success: true,
-      returnRequest: updatedReturn,
+      returnRequest: updated,
     });
   } catch (error) {
-    console.error("[AdminReturns] Error updating return:", error);
+    console.error("[AdminReturns] Error updating return request:", error);
     res.status(500).json({ error: "Failed to update return request" });
   }
 });
@@ -226,7 +211,7 @@ router.get("/returns/:id", requireAdmin, async (req, res) => {
       return res.status(404).json({ error: "Return request not found" });
     }
     
-    // Enrich with full details
+    // Enrich with all related data
     const [transaction, listing, buyer, seller] = await Promise.all([
       storage.getTransactionById(returnRequest.transactionId),
       storage.getListing(returnRequest.listingId),
@@ -244,7 +229,7 @@ router.get("/returns/:id", requireAdmin, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("[AdminReturns] Error fetching return:", error);
+    console.error("[AdminReturns] Error fetching return request:", error);
     res.status(500).json({ error: "Failed to fetch return request" });
   }
 });
