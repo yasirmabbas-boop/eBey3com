@@ -81,6 +81,12 @@ export function registerOffersRoutes(app: Express): void {
         return res.status(400).json({ error: "You have already purchased this item" });
       }
 
+      // Check if buyer already has a pending or countered offer on this listing
+      const existingPendingOffer = await storage.getBuyerPendingOfferForListing(userId, parsed.listingId);
+      if (existingPendingOffer) {
+        return res.status(400).json({ error: "You already have a pending offer on this item. Please wait for the seller to respond." });
+      }
+
       // If listing has explicit negotiable flag, enforce it when present
       if ((listing as any).isNegotiable === false) {
         return res.status(400).json({ error: "This listing does not accept offers" });

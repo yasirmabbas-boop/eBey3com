@@ -131,6 +131,7 @@ export interface IStorage {
   getOffersBySeller(sellerId: string): Promise<Offer[]>;
   getOffersForListing(listingId: string): Promise<Offer[]>;
   getPendingOffersForListing(listingId: string): Promise<Offer[]>;
+  getBuyerPendingOfferForListing(buyerId: string, listingId: string): Promise<Offer | undefined>;
   rejectAllPendingOffersForListing(listingId: string, reason?: string): Promise<number>;
   updateOfferStatus(id: string, status: string, counterAmount?: number, counterMessage?: string): Promise<Offer | undefined>;
   expireOldOffers(): Promise<number>;
@@ -1084,6 +1085,17 @@ export class DatabaseStorage implements IStorage {
         or(eq(offers.status, "pending"), eq(offers.status, "countered"))
       ))
       .orderBy(desc(offers.createdAt));
+  }
+
+  async getBuyerPendingOfferForListing(buyerId: string, listingId: string): Promise<Offer | undefined> {
+    const [offer] = await db.select().from(offers)
+      .where(and(
+        eq(offers.buyerId, buyerId),
+        eq(offers.listingId, listingId),
+        or(eq(offers.status, "pending"), eq(offers.status, "countered"))
+      ))
+      .limit(1);
+    return offer;
   }
 
   async rejectAllPendingOffersForListing(listingId: string, reason?: string): Promise<number> {
