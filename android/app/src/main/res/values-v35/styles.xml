@@ -13,4 +13,13 @@
         <!-- Opt-out of Android 15 edge-to-edge enforcement -->
         <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
+
+    <!-- Splash screen theme for Android 15+ - also needs edge-to-edge opt-out -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:background">@drawable/splash</item>
+        <item name="android:fitsSystemWindows">true</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+        <!-- Opt-out of Android 15 edge-to-edge enforcement -->
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
 </resources>
