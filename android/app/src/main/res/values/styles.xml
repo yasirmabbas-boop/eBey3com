@@ -7,6 +7,9 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <!-- Ensure content respects system bar boundaries -->
+        <item name="android:fitsSystemWindows">true</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
     </style>
 
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
@@ -18,8 +21,10 @@
         <item name="android:navigationBarColor">@android:color/white</item>
     </style>
 
-
+    <!-- Splash screen theme - also needs safe area handling -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <item name="android:fitsSystemWindows">true</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
     </style>
 </resources>
