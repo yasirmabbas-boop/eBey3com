@@ -259,7 +259,7 @@ export function FullscreenImageViewer({
         top: 0,
         left: 0,
         width: '100vw',
-        height: '100dvh',
+        height: 'calc(var(--vh, 1vh) * 100)',
         backgroundColor: '#000',
         zIndex: 99999,
         display: 'flex',
@@ -356,7 +356,7 @@ export function FullscreenImageViewer({
           draggable={false}
           style={{
             maxWidth: 'calc(100vw - 80px)',
-            maxHeight: 'calc(100dvh - 140px)',
+            maxHeight: 'calc(var(--vh, 1vh) * 100 - 140px)',
             objectFit: 'contain',
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
             transition: isTransitioning ? 'transform 0.2s ease-out' : 'none',

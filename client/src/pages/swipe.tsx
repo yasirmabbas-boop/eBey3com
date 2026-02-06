@@ -305,7 +305,7 @@ export default function SwipePage() {
   // Loading state - show when loading OR when filters just changed
   if ((isLoading || isFiltersChanged) && processedItems.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center" style={{ height: '100dvh' }}>
+      <div className="fixed inset-0 bg-black flex items-center justify-center" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
         <SwipeReelFilters filters={filters} onFiltersChange={setFilters} />
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
@@ -320,7 +320,7 @@ export default function SwipePage() {
   // Error state
   if (error) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center px-4" style={{ height: '100dvh' }}>
+      <div className="fixed inset-0 bg-black flex items-center justify-center px-4" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2 text-white">
@@ -343,7 +343,7 @@ export default function SwipePage() {
   // Empty state
   if (processedItems.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black" style={{ height: '100dvh' }}>
+      <div className="fixed inset-0 bg-black" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
         <SwipeReelFilters filters={filters} onFiltersChange={setFilters} />
         <div className="flex items-center justify-center h-full px-4">
           <div className="text-center">
@@ -372,7 +372,7 @@ export default function SwipePage() {
     <div 
       className="fixed inset-0 bg-black" 
       style={{ 
-        height: '100dvh',
+        height: 'calc(var(--vh, 1vh) * 100)',
         top: 0,
         left: 0,
         right: 0,
