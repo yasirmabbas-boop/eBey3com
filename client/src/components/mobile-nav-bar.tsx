@@ -5,7 +5,7 @@ import { useNavVisibility } from "@/hooks/use-nav-visibility";
 import { useLanguage } from "@/lib/i18n";
 import { useNavState } from "@/hooks/use-nav-state";
 import { hapticLight, hapticSuccess, hapticError } from "@/lib/despia";
-import { isNative } from "@/lib/capacitor";
+import { isNative, isAndroid } from "@/lib/capacitor";
 import { useQuery } from "@tanstack/react-query";
 import { getAuthHeaders } from "@/lib/queryClient";
 import { useNavBarSwipe } from "@/hooks/use-nav-bar-swipe";
@@ -136,7 +136,9 @@ export function MobileNavBar() {
       dir={isRTL ? "rtl" : "ltr"}
       style={{ 
         zIndex: 99999,
-        paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))',
+        // Android needs explicit padding since env(safe-area-inset-bottom) returns 0
+        // iOS uses the CSS env() value. Android gesture nav bar is typically 48-56px
+        paddingBottom: isAndroid ? '48px' : 'var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))',
         position: "fixed",
         display: "flex"
       }}
