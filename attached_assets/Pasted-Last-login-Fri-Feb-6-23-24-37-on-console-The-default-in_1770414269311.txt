@@ -1,0 +1,519 @@
+Last login: Fri Feb  6 23:24:37 on console
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+anonymous:~ yasirabbas$ cd /Users/yasirabbas/eBey3com/ios/App
+anonymous:App yasirabbas$ pod install
+Analyzing dependencies
+
+――― MARKDOWN TEMPLATE ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+### Command
+
+```
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/bin/pod install
+```
+
+### Report
+
+* What did you do?
+
+* What did you expect to happen?
+
+* What happened instead?
+
+
+### Stack
+
+```
+   CocoaPods : 1.16.2
+        Ruby : ruby 4.0.1 (2026-01-13 revision e04267a14b) +PRISM [x86_64-darwin23]
+    RubyGems : 4.0.3
+        Host : macOS 15.7.3 (24G419)
+       Xcode : 26.2 (17C52)
+         Git : git version 2.50.1 (Apple Git-155)
+Ruby lib dir : /usr/local/Cellar/ruby/4.0.1/lib
+Repositories : trunk - CDN - https://cdn.cocoapods.org/
+```
+
+### Plugins
+
+```
+cocoapods-deintegrate : 1.0.5
+cocoapods-plugins     : 1.0.0
+cocoapods-search      : 1.0.1
+cocoapods-trunk       : 1.6.0
+cocoapods-try         : 1.2.0
+```
+
+### Podfile
+
+```ruby
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+platform :ios, '14.0'
+use_frameworks!
+
+# workaround to avoid Xcode caching of Pods that requires
+# Product -> Clean Build Folder after new Cordova plugins installed
+# Requires CocoaPods 1.6 or newer
+install! 'cocoapods', :disable_input_output_paths => true
+
+def capacitor_pods
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+  pod 'CapacitorCamera', :path => '../../node_modules/@capacitor/camera'
+  pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
+  pod 'CapacitorKeyboard', :path => '../../node_modules/@capacitor/keyboard'
+  pod 'CapacitorNetwork', :path => '../../node_modules/@capacitor/network'
+  pod 'CapacitorPushNotifications', :path => '../../node_modules/@capacitor/push-notifications'
+  pod 'CapacitorShare', :path => '../../node_modules/@capacitor/share'
+  pod 'CapacitorSplashScreen', :path => '../../node_modules/@capacitor/splash-screen'
+  pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
+end
+
+target 'App' do
+  capacitor_pods
+  # Add your Pods here
+  pod 'FirebaseCore'
+  pod 'FirebaseMessaging'
+end
+
+post_install do |installer|
+  assertDeploymentTarget(installer)
+end
+```
+
+### Error
+
+```
+Nanaimo::Reader::ParseError - [!] Dictionary missing value for key "CODE_SIGN_IDENTITY", expected '=' and found "["
+   #  -------------------------------------------
+   #  			CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+   #  			CODE_SIGN_IDENTITY = "";
+268>  			CODE_SIGN_IDENTITY[sdk=iphonesimulator*] = "";
+      			                  ^
+   #  			COPY_PHASE_STRIP = NO;
+   #  			DEBUG_INFORMATION_FORMAT = dwarf;
+   #  -------------------------------------------
+
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:284:in 'Nanaimo::Reader#raise_parser_error'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:190:in 'Nanaimo::Reader#parse_dictionary'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:132:in 'Nanaimo::Reader#parse_object'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:193:in 'Nanaimo::Reader#parse_dictionary'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:132:in 'Nanaimo::Reader#parse_object'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:193:in 'Nanaimo::Reader#parse_dictionary'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:132:in 'Nanaimo::Reader#parse_object'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:193:in 'Nanaimo::Reader#parse_dictionary'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:132:in 'Nanaimo::Reader#parse_object'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:107:in 'Nanaimo::Reader#parse!'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/xcodeproj-1.27.0/lib/xcodeproj/plist.rb:27:in 'Xcodeproj::Plist.read_from_path'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/xcodeproj-1.27.0/lib/xcodeproj/project.rb:211:in 'Xcodeproj::Project#initialize_from_file'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/xcodeproj-1.27.0/lib/xcodeproj/project.rb:113:in 'Xcodeproj::Project.open'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:1194:in 'block (2 levels) in Pod::Installer::Analyzer#inspect_targets_to_integrate'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:1193:in 'Hash#each'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:1193:in 'block in Pod::Installer::Analyzer#inspect_targets_to_integrate'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/user_interface.rb:64:in 'Pod::UserInterface.section'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:1188:in 'Pod::Installer::Analyzer#inspect_targets_to_integrate'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:107:in 'Pod::Installer::Analyzer#analyze'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer.rb:422:in 'Pod::Installer#analyze'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer.rb:244:in 'block in Pod::Installer#resolve_dependencies'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/user_interface.rb:64:in 'Pod::UserInterface.section'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer.rb:243:in 'Pod::Installer#resolve_dependencies'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer.rb:162:in 'Pod::Installer#install!'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/command/install.rb:52:in 'Pod::Command::Install#run'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/claide-1.1.0/lib/claide/command.rb:334:in 'CLAide::Command.run'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/command.rb:52:in 'Pod::Command.run'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/bin/pod:55:in '<top (required)>'
+/usr/local/Cellar/ruby/4.0.1/lib/ruby/4.0.0/rubygems.rb:303:in 'Kernel#load'
+/usr/local/Cellar/ruby/4.0.1/lib/ruby/4.0.0/rubygems.rb:303:in 'Gem.activate_and_load_bin_path'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/bin/pod:25:in '<main>'
+```
+
+――― TEMPLATE END ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+[!] Oh no, an error occurred.
+
+Search for existing GitHub issues similar to yours:
+https://github.com/CocoaPods/CocoaPods/search?q=%5B%21%5D+Dictionary+missing+value+for+key+%22CODE_SIGN_IDENTITY%22%2C+expected+%27%3D%27+and+found+%22%5B%22%0A+++%23++-------------------------------------------%0A+++%23++%09%09%09CLANG_WARN__DUPLICATE_METHOD_MATCH+%3D+YES%3B%0A+++%23++%09%09%09CODE_SIGN_IDENTITY+%3D+%22%22%3B%0A268%3E++%09%09%09CODE_SIGN_IDENTITY%5Bsdk%3Diphonesimulator%2A%5D+%3D+%22%22%3B%0A++++++%09%09%09++++++++++++++++++%5E%0A+++%23++%09%09%09COPY_PHASE_STRIP+%3D+NO%3B%0A+++%23++%09%09%09DEBUG_INFORMATION_FORMAT+%3D+dwarf%3B%0A+++%23++-------------------------------------------%0A&type=Issues
+
+If none exists, create a ticket, with the template displayed above, on:
+https://github.com/CocoaPods/CocoaPods/issues/new
+
+Be sure to first read the contributing guide for details on how to properly submit a ticket:
+https://github.com/CocoaPods/CocoaPods/blob/master/CONTRIBUTING.md
+
+Don't forget to anonymize any private data!
+
+Looking for related issues on cocoapods/cocoapods...
+Searching for inspections failed: undefined method 'map' for nil
+anonymous:App yasirabbas$ open App.xcworkspace
+anonymous:App yasirabbas$ cd /Users/yasirabbas/eBey3com/ios/App
+anonymous:App yasirabbas$ rm -rf Pods
+anonymous:App yasirabbas$ rm -f Podfile.lock
+anonymous:App yasirabbas$ open App.xcworkspace
+anonymous:App yasirabbas$ ls /Users/yasirabbas/eBey3com/ios/App/*.xcworkspace
+xcshareddata	xcuserdata
+anonymous:App yasirabbas$ ls /Users/yasirabbas/eBey3com/ios/App/*.xcodeproj
+project.pbxproj		project.xcworkspace	xcuserdata
+anonymous:App yasirabbas$ pod --version
+1.16.2
+anonymous:App yasirabbas$ cd /Users/yasirabbas/eBey3com/ios/App
+anonymous:App yasirabbas$ pod install --repo-update
+Updating local specs repositories
+Analyzing dependencies
+
+――― MARKDOWN TEMPLATE ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+### Command
+
+```
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/bin/pod install --repo-update
+```
+
+### Report
+
+* What did you do?
+
+* What did you expect to happen?
+
+* What happened instead?
+
+
+### Stack
+
+```
+   CocoaPods : 1.16.2
+        Ruby : ruby 4.0.1 (2026-01-13 revision e04267a14b) +PRISM [x86_64-darwin23]
+    RubyGems : 4.0.3
+        Host : macOS 15.7.3 (24G419)
+       Xcode : 26.2 (17C52)
+         Git : git version 2.50.1 (Apple Git-155)
+Ruby lib dir : /usr/local/Cellar/ruby/4.0.1/lib
+Repositories : trunk - CDN - https://cdn.cocoapods.org/
+```
+
+### Plugins
+
+```
+cocoapods-deintegrate : 1.0.5
+cocoapods-plugins     : 1.0.0
+cocoapods-search      : 1.0.1
+cocoapods-trunk       : 1.6.0
+cocoapods-try         : 1.2.0
+```
+
+### Podfile
+
+```ruby
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+platform :ios, '14.0'
+use_frameworks!
+
+# workaround to avoid Xcode caching of Pods that requires
+# Product -> Clean Build Folder after new Cordova plugins installed
+# Requires CocoaPods 1.6 or newer
+install! 'cocoapods', :disable_input_output_paths => true
+
+def capacitor_pods
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+  pod 'CapacitorCamera', :path => '../../node_modules/@capacitor/camera'
+  pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
+  pod 'CapacitorKeyboard', :path => '../../node_modules/@capacitor/keyboard'
+  pod 'CapacitorNetwork', :path => '../../node_modules/@capacitor/network'
+  pod 'CapacitorPushNotifications', :path => '../../node_modules/@capacitor/push-notifications'
+  pod 'CapacitorShare', :path => '../../node_modules/@capacitor/share'
+  pod 'CapacitorSplashScreen', :path => '../../node_modules/@capacitor/splash-screen'
+  pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
+end
+
+target 'App' do
+  capacitor_pods
+  # Add your Pods here
+  pod 'FirebaseCore'
+  pod 'FirebaseMessaging'
+end
+
+post_install do |installer|
+  assertDeploymentTarget(installer)
+end
+```
+
+### Error
+
+```
+Nanaimo::Reader::ParseError - [!] Dictionary missing value for key "CODE_SIGN_IDENTITY", expected '=' and found "["
+   #  -------------------------------------------
+   #  			CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+   #  			CODE_SIGN_IDENTITY = "";
+268>  			CODE_SIGN_IDENTITY[sdk=iphonesimulator*] = "";
+      			                  ^
+   #  			COPY_PHASE_STRIP = NO;
+   #  			DEBUG_INFORMATION_FORMAT = dwarf;
+   #  -------------------------------------------
+
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:284:in 'Nanaimo::Reader#raise_parser_error'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:190:in 'Nanaimo::Reader#parse_dictionary'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:132:in 'Nanaimo::Reader#parse_object'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:193:in 'Nanaimo::Reader#parse_dictionary'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:132:in 'Nanaimo::Reader#parse_object'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:193:in 'Nanaimo::Reader#parse_dictionary'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:132:in 'Nanaimo::Reader#parse_object'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:193:in 'Nanaimo::Reader#parse_dictionary'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:132:in 'Nanaimo::Reader#parse_object'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:107:in 'Nanaimo::Reader#parse!'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/xcodeproj-1.27.0/lib/xcodeproj/plist.rb:27:in 'Xcodeproj::Plist.read_from_path'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/xcodeproj-1.27.0/lib/xcodeproj/project.rb:211:in 'Xcodeproj::Project#initialize_from_file'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/xcodeproj-1.27.0/lib/xcodeproj/project.rb:113:in 'Xcodeproj::Project.open'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:1194:in 'block (2 levels) in Pod::Installer::Analyzer#inspect_targets_to_integrate'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:1193:in 'Hash#each'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:1193:in 'block in Pod::Installer::Analyzer#inspect_targets_to_integrate'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/user_interface.rb:64:in 'Pod::UserInterface.section'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:1188:in 'Pod::Installer::Analyzer#inspect_targets_to_integrate'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:107:in 'Pod::Installer::Analyzer#analyze'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer.rb:422:in 'Pod::Installer#analyze'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer.rb:244:in 'block in Pod::Installer#resolve_dependencies'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/user_interface.rb:64:in 'Pod::UserInterface.section'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer.rb:243:in 'Pod::Installer#resolve_dependencies'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer.rb:162:in 'Pod::Installer#install!'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/command/install.rb:52:in 'Pod::Command::Install#run'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/claide-1.1.0/lib/claide/command.rb:334:in 'CLAide::Command.run'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/command.rb:52:in 'Pod::Command.run'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/bin/pod:55:in '<top (required)>'
+/usr/local/Cellar/ruby/4.0.1/lib/ruby/4.0.0/rubygems.rb:303:in 'Kernel#load'
+/usr/local/Cellar/ruby/4.0.1/lib/ruby/4.0.0/rubygems.rb:303:in 'Gem.activate_and_load_bin_path'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/bin/pod:25:in '<main>'
+```
+
+――― TEMPLATE END ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+[!] Oh no, an error occurred.
+
+Search for existing GitHub issues similar to yours:
+https://github.com/CocoaPods/CocoaPods/search?q=%5B%21%5D+Dictionary+missing+value+for+key+%22CODE_SIGN_IDENTITY%22%2C+expected+%27%3D%27+and+found+%22%5B%22%0A+++%23++-------------------------------------------%0A+++%23++%09%09%09CLANG_WARN__DUPLICATE_METHOD_MATCH+%3D+YES%3B%0A+++%23++%09%09%09CODE_SIGN_IDENTITY+%3D+%22%22%3B%0A268%3E++%09%09%09CODE_SIGN_IDENTITY%5Bsdk%3Diphonesimulator%2A%5D+%3D+%22%22%3B%0A++++++%09%09%09++++++++++++++++++%5E%0A+++%23++%09%09%09COPY_PHASE_STRIP+%3D+NO%3B%0A+++%23++%09%09%09DEBUG_INFORMATION_FORMAT+%3D+dwarf%3B%0A+++%23++-------------------------------------------%0A&type=Issues
+
+If none exists, create a ticket, with the template displayed above, on:
+https://github.com/CocoaPods/CocoaPods/issues/new
+
+Be sure to first read the contributing guide for details on how to properly submit a ticket:
+https://github.com/CocoaPods/CocoaPods/blob/master/CONTRIBUTING.md
+
+Don't forget to anonymize any private data!
+
+Looking for related issues on cocoapods/cocoapods...
+Searching for inspections failed: undefined method 'map' for nil
+anonymous:App yasirabbas$ ruby --version
+ruby 2.6.10p210 (2022-04-12 revision 67958) [universal.x86_64-darwin24]
+anonymous:App yasirabbas$ pod --version
+1.16.2
+anonymous:App yasirabbas$ cd /Users/yasirabbas/eBey3com/ios/App
+anonymous:App yasirabbas$ arch -x86_64 pod install --repo-update
+arch: Can't find pod in PATH
+anonymous:App yasirabbas$ which pod
+anonymous:App yasirabbas$ which pod
+anonymous:App yasirabbas$ cd /Users/yasirabbas/eBey3com/ios/App
+anonymous:App yasirabbas$ /usr/local/bin/pod install --repo-update
+-bash: /usr/local/bin/pod: No such file or directory
+anonymous:App yasirabbas$ which pod
+anonymous:App yasirabbas$ find / -name "pod" -type f 2>/dev/null | head -5
+/usr/local/Cellar/cocoapods/1.16.2_2/bin/pod
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/bin/pod
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/bin/pod
+^C
+anonymous:App yasirabbas$ cd /Users/yasirabbas/eBey3com/ios/App
+anonymous:App yasirabbas$ /usr/local/Cellar/cocoapods/1.16.2_2/bin/pod install --repo-update
+Updating local specs repositories
+Analyzing dependencies
+
+――― MARKDOWN TEMPLATE ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+### Command
+
+```
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/bin/pod install --repo-update
+```
+
+### Report
+
+* What did you do?
+
+* What did you expect to happen?
+
+* What happened instead?
+
+
+### Stack
+
+```
+   CocoaPods : 1.16.2
+        Ruby : ruby 4.0.1 (2026-01-13 revision e04267a14b) +PRISM [x86_64-darwin23]
+    RubyGems : 4.0.3
+        Host : macOS 15.7.3 (24G419)
+       Xcode : 26.2 (17C52)
+         Git : git version 2.50.1 (Apple Git-155)
+Ruby lib dir : /usr/local/Cellar/ruby/4.0.1/lib
+Repositories : trunk - CDN - https://cdn.cocoapods.org/
+```
+
+### Plugins
+
+```
+cocoapods-deintegrate : 1.0.5
+cocoapods-plugins     : 1.0.0
+cocoapods-search      : 1.0.1
+cocoapods-trunk       : 1.6.0
+cocoapods-try         : 1.2.0
+```
+
+### Podfile
+
+```ruby
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+platform :ios, '14.0'
+use_frameworks!
+
+# workaround to avoid Xcode caching of Pods that requires
+# Product -> Clean Build Folder after new Cordova plugins installed
+# Requires CocoaPods 1.6 or newer
+install! 'cocoapods', :disable_input_output_paths => true
+
+def capacitor_pods
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+  pod 'CapacitorCamera', :path => '../../node_modules/@capacitor/camera'
+  pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
+  pod 'CapacitorKeyboard', :path => '../../node_modules/@capacitor/keyboard'
+  pod 'CapacitorNetwork', :path => '../../node_modules/@capacitor/network'
+  pod 'CapacitorPushNotifications', :path => '../../node_modules/@capacitor/push-notifications'
+  pod 'CapacitorShare', :path => '../../node_modules/@capacitor/share'
+  pod 'CapacitorSplashScreen', :path => '../../node_modules/@capacitor/splash-screen'
+  pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
+end
+
+target 'App' do
+  capacitor_pods
+  # Add your Pods here
+  pod 'FirebaseCore'
+  pod 'FirebaseMessaging'
+end
+
+post_install do |installer|
+  assertDeploymentTarget(installer)
+end
+```
+
+### Error
+
+```
+Nanaimo::Reader::ParseError - [!] Dictionary missing value for key "CODE_SIGN_IDENTITY", expected '=' and found "["
+   #  -------------------------------------------
+   #  			CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+   #  			CODE_SIGN_IDENTITY = "";
+268>  			CODE_SIGN_IDENTITY[sdk=iphonesimulator*] = "";
+      			                  ^
+   #  			COPY_PHASE_STRIP = NO;
+   #  			DEBUG_INFORMATION_FORMAT = dwarf;
+   #  -------------------------------------------
+
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:284:in 'Nanaimo::Reader#raise_parser_error'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:190:in 'Nanaimo::Reader#parse_dictionary'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:132:in 'Nanaimo::Reader#parse_object'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:193:in 'Nanaimo::Reader#parse_dictionary'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:132:in 'Nanaimo::Reader#parse_object'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:193:in 'Nanaimo::Reader#parse_dictionary'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:132:in 'Nanaimo::Reader#parse_object'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:193:in 'Nanaimo::Reader#parse_dictionary'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:132:in 'Nanaimo::Reader#parse_object'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/nanaimo-0.4.0/lib/nanaimo/reader.rb:107:in 'Nanaimo::Reader#parse!'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/xcodeproj-1.27.0/lib/xcodeproj/plist.rb:27:in 'Xcodeproj::Plist.read_from_path'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/xcodeproj-1.27.0/lib/xcodeproj/project.rb:211:in 'Xcodeproj::Project#initialize_from_file'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/xcodeproj-1.27.0/lib/xcodeproj/project.rb:113:in 'Xcodeproj::Project.open'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:1194:in 'block (2 levels) in Pod::Installer::Analyzer#inspect_targets_to_integrate'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:1193:in 'Hash#each'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:1193:in 'block in Pod::Installer::Analyzer#inspect_targets_to_integrate'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/user_interface.rb:64:in 'Pod::UserInterface.section'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:1188:in 'Pod::Installer::Analyzer#inspect_targets_to_integrate'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer/analyzer.rb:107:in 'Pod::Installer::Analyzer#analyze'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer.rb:422:in 'Pod::Installer#analyze'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer.rb:244:in 'block in Pod::Installer#resolve_dependencies'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/user_interface.rb:64:in 'Pod::UserInterface.section'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer.rb:243:in 'Pod::Installer#resolve_dependencies'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/installer.rb:162:in 'Pod::Installer#install!'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/command/install.rb:52:in 'Pod::Command::Install#run'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/claide-1.1.0/lib/claide/command.rb:334:in 'CLAide::Command.run'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/lib/cocoapods/command.rb:52:in 'Pod::Command.run'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/gems/cocoapods-1.16.2/bin/pod:55:in '<top (required)>'
+/usr/local/Cellar/ruby/4.0.1/lib/ruby/4.0.0/rubygems.rb:303:in 'Kernel#load'
+/usr/local/Cellar/ruby/4.0.1/lib/ruby/4.0.0/rubygems.rb:303:in 'Gem.activate_and_load_bin_path'
+/usr/local/Cellar/cocoapods/1.16.2_2/libexec/bin/pod:25:in '<main>'
+```
+
+――― TEMPLATE END ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+
+[!] Oh no, an error occurred.
+
+Search for existing GitHub issues similar to yours:
+https://github.com/CocoaPods/CocoaPods/search?q=%5B%21%5D+Dictionary+missing+value+for+key+%22CODE_SIGN_IDENTITY%22%2C+expected+%27%3D%27+and+found+%22%5B%22%0A+++%23++-------------------------------------------%0A+++%23++%09%09%09CLANG_WARN__DUPLICATE_METHOD_MATCH+%3D+YES%3B%0A+++%23++%09%09%09CODE_SIGN_IDENTITY+%3D+%22%22%3B%0A268%3E++%09%09%09CODE_SIGN_IDENTITY%5Bsdk%3Diphonesimulator%2A%5D+%3D+%22%22%3B%0A++++++%09%09%09++++++++++++++++++%5E%0A+++%23++%09%09%09COPY_PHASE_STRIP+%3D+NO%3B%0A+++%23++%09%09%09DEBUG_INFORMATION_FORMAT+%3D+dwarf%3B%0A+++%23++-------------------------------------------%0A&type=Issues
+
+If none exists, create a ticket, with the template displayed above, on:
+https://github.com/CocoaPods/CocoaPods/issues/new
+
+Be sure to first read the contributing guide for details on how to properly submit a ticket:
+https://github.com/CocoaPods/CocoaPods/blob/master/CONTRIBUTING.md
+
+Don't forget to anonymize any private data!
+
+Looking for related issues on cocoapods/cocoapods...
+Searching for inspections failed: undefined method 'map' for nil
+anonymous:App yasirabbas$ cat /Users/yasirabbas/eBey3com/ios/App/Podfile
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+platform :ios, '14.0'
+use_frameworks!
+
+# workaround to avoid Xcode caching of Pods that requires
+# Product -> Clean Build Folder after new Cordova plugins installed
+# Requires CocoaPods 1.6 or newer
+install! 'cocoapods', :disable_input_output_paths => true
+
+def capacitor_pods
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+  pod 'CapacitorCamera', :path => '../../node_modules/@capacitor/camera'
+  pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
+  pod 'CapacitorKeyboard', :path => '../../node_modules/@capacitor/keyboard'
+  pod 'CapacitorNetwork', :path => '../../node_modules/@capacitor/network'
+  pod 'CapacitorPushNotifications', :path => '../../node_modules/@capacitor/push-notifications'
+  pod 'CapacitorShare', :path => '../../node_modules/@capacitor/share'
+  pod 'CapacitorSplashScreen', :path => '../../node_modules/@capacitor/splash-screen'
+  pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
+end
+
+target 'App' do
+  capacitor_pods
+  # Add your Pods here
+  pod 'FirebaseCore'
+  pod 'FirebaseMessaging'
+end
+
+post_install do |installer|
+  assertDeploymentTarget(installer)
+end
+anonymous:App yasirabbas$ sed -i '' '/CODE_SIGN_IDENTITY\[/d' /Users/yasirabbas/eBey3com/ios/App/App.xcodeproj/project.pbxproj
+anonymous:App yasirabbas$ cd /Users/yasirabbas/eBey3com/ios/App
+anonymous:App yasirabbas$ pod install
+Analyzing dependencies
+[!] CocoaPods could not find compatible versions for pod "Capacitor":
+  In Podfile:
+    Capacitor (from `../../node_modules/@capacitor/ios`)
+
+Specs satisfying the `Capacitor (from `../../node_modules/@capacitor/ios`)` dependency were found, but they required a higher minimum deployment target.
+anonymous:App yasirabbas$ 

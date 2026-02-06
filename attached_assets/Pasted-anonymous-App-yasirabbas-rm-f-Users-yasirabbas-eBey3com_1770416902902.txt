@@ -1,0 +1,37 @@
+anonymous:App yasirabbas$ rm -f "/Users/yasirabbas/eBey3com/ios/App/App/GoogleService-Info 2.plist" "/Users/yasirabbas/eBey3com/ios/App/App/GoogleService-Info(1).plist"
+anonymous:App yasirabbas$ ls /Users/yasirabbas/eBey3com/ios/App/App/GoogleService-Info*
+/Users/yasirabbas/eBey3com/ios/App/App/GoogleService-Info.plist
+anonymous:App yasirabbas$ rm -rf ~/Library/Developer/Xcode/DerivedData/App-*
+anonymous:App yasirabbas$ rm -rf ~/Library/Developer/Xcode/DerivedData/App-*
+anonymous:App yasirabbas$ ls /Users/yasirabbas/eBey3com/ios/App/App/GoogleService-Info*
+/Users/yasirabbas/eBey3com/ios/App/App/GoogleService-Info 2.plist
+/Users/yasirabbas/eBey3com/ios/App/App/GoogleService-Info.plist
+anonymous:App yasirabbas$ rm -f "/Users/yasirabbas/eBey3com/ios/App/App/GoogleService-Info 2.plist"
+anonymous:App yasirabbas$ grep -c "GoogleService-Info 2" /Users/yasirabbas/eBey3com/ios/App/App.xcodeproj/project.pbxproj
+4
+anonymous:App yasirabbas$ sed -i '' '/GoogleService-Info 2/d' /Users/yasirabbas/eBey3com/ios/App/App.xcodeproj/project.pbxproj
+'anonymous:App yasirabbas$ '
+> 
+anonymous:App yasirabbas$ rm -rf ~/Library/Developer/Xcode/DerivedData/App-*
+anonymous:App yasirabbas$ rm -f "/Users/yasirabbas/eBey3com/ios/App/App/GoogleService-Info 2.plist"
+anonymous:App yasirabbas$ open /Users/yasirabbas/eBey3com/ios/App/App.xcworkspace
+anonymous:App yasirabbas$ grep -c "GoogleService-Info 2" /Users/yasirabbas/eBey3com/ios/App/App.xcodeproj/project.pbxproj
+0
+anonymous:App yasirabbas$ grep -c "GoogleService-Info" /Users/yasirabbas/eBey3com/ios/App/App.xcodeproj/project.pbxproj
+4
+anonymous:App yasirabbas$ grep "GoogleService-Info" /Users/yasirabbas/eBey3com/ios/App/App.xcodeproj/project.pbxproj
+		4F5A5AA02F36A18D00C08B2E /* GoogleService-Info 2.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4F5A5A9F2F36A18D00C08B2E /* GoogleService-Info 2.plist */; };
+		4F5A5A9F2F36A18D00C08B2E /* GoogleService-Info 2.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info 2.plist"; sourceTree = "<group>"; };
+				4F5A5A9F2F36A18D00C08B2E /* GoogleService-Info 2.plist */,
+				4F5A5AA02F36A18D00C08B2E /* GoogleService-Info 2.plist in Resources */,
+anonymous:App yasirabbas$ sed -i '' 's/GoogleService-Info 2.plist/GoogleService-Info.plist/g' /Users/yasirabbas/eBey3com/ios/App/App.xcodeproj/project.pbxproj
+anonymous:App yasirabbas$ grep "GoogleService-Info" /Users/yasirabbas/eBey3com/ios/App/App.xcodeproj/project.pbxproj
+		4F5A5AA02F36A18D00C08B2E /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4F5A5A9F2F36A18D00C08B2E /* GoogleService-Info.plist */; };
+		4F5A5A9F2F36A18D00C08B2E /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+				4F5A5A9F2F36A18D00C08B2E /* GoogleService-Info.plist */,
+				4F5A5AA02F36A18D00C08B2E /* GoogleService-Info.plist in Resources */,
+anonymous:App yasirabbas$ rm -rf ~/Library/Developer/Xcode/DerivedData/App-*
+rm -f "/Users/yasirabbas/eBey3com/ios/App/App/GoogleService-Info 2.plist"
+anonymous:App yasirabbas$ rm -f "/Users/yasirabbas/eBey3com/ios/App/App/GoogleService-Info 2.plist"
+anonymous:App yasirabbas$ open /Users/yasirabbas/eBey3com/ios/App/App.xcworkspace
+anonymous:App yasirabbas$ 
