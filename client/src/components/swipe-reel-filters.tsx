@@ -89,7 +89,7 @@ export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: S
   return (
     <div 
       className={`absolute top-0 left-0 right-0 z-30 transition-opacity duration-300 ${hidden ? 'opacity-0 pointer-events-none' : ''}`}
-      style={{ paddingTop: 'max(env(safe-area-inset-top, 8px), 8px)' }}
+      style={{ paddingTop: 'max(var(--safe-area-top, env(safe-area-inset-top, 8px)), 8px)' }}
     >
       <div className="px-2 py-2">
         <div className="flex items-center gap-2">

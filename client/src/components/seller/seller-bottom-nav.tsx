@@ -15,7 +15,6 @@ import { Package, Bell, ShoppingBag, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/lib/i18n";
 import { hapticLight } from "@/lib/despia";
-import { isNative } from "@/lib/capacitor";
 
 export type SellerNavTab = "inventory" | "activity" | "orders" | "earnings";
 
@@ -126,7 +125,7 @@ export function SellerBottomNav({
       dir="rtl"
       style={{
         zIndex: 'var(--seller-nav-z-index, 100000)', // Above main nav and chat widgets
-        paddingBottom: isNative ? "0px" : "var(--safe-area-bottom)",
+        paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))',
       }}
       data-testid="seller-bottom-nav"
     >

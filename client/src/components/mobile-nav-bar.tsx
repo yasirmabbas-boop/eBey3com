@@ -136,7 +136,7 @@ export function MobileNavBar() {
       dir={isRTL ? "rtl" : "ltr"}
       style={{ 
         zIndex: 99999,
-        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), var(--safe-area-bottom, 0px))',
+        paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))',
         position: "fixed",
         display: "flex"
       }}

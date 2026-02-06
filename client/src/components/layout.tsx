@@ -9,7 +9,7 @@ import { ImageSearchModal } from "@/components/image-search-modal";
 import { SmartSearch } from "@/components/smart-search";
 import { BackButton } from "@/components/back-button";
 import { useLanguage } from "@/lib/i18n";
-import { isNative, isAndroid } from "@/lib/capacitor";
+import { isNative } from "@/lib/capacitor";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -26,7 +26,6 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
 
   return (
     <div className="despia-app bg-background font-sans md:min-h-screen md:block overflow-x-hidden max-w-full" dir={isRtl ? "rtl" : "ltr"}>
-            
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 
@@ -34,7 +33,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       {!hideHeader && (
       <div
         className="despia-topbar bg-primary text-white py-2 px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]"
-        style={{ paddingTop: isAndroid ? "24px" : "var(--safe-area-top)" }}
+        style={{ paddingTop: 'var(--safe-area-top, env(safe-area-inset-top, 0px))' }}
       >
         <div className="container mx-auto flex justify-between items-center relative">
           <Link href="/" className="flex-shrink-0 flex items-center">

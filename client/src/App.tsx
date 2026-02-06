@@ -12,6 +12,7 @@ import { InstallPWAPrompt } from "@/components/install-pwa-prompt";
 import { PushNotificationPrompt } from "@/components/push-notification-prompt";
 import { PWAUpdateBanner } from "@/components/pwa-update-banner";
 import { NavVisibilityProvider } from "@/hooks/use-nav-visibility";
+import { SafeAreaProvider } from "@/hooks/use-safe-area-provider";
 import { LanguageProvider } from "@/lib/i18n";
 import { BanBanner } from "@/components/ban-banner";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -210,7 +211,8 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
           <TooltipProvider>
-            <NavVisibilityProvider>
+            <SafeAreaProvider>
+              <NavVisibilityProvider>
               <ScrollToTop />
               <SocketNotificationsWrapper />
               <Toaster />
@@ -227,6 +229,7 @@ function App() {
               {!isNative && <PWAUpdateBanner />}
               <PushNotificationPrompt />
             </NavVisibilityProvider>
+            </SafeAreaProvider>
           </TooltipProvider>
         </LanguageProvider>
       </QueryClientProvider>

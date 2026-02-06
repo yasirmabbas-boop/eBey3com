@@ -10,7 +10,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         // Create notification channel for Android 8.0+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
@@ -21,7 +21,7 @@ public class MainActivity extends BridgeActivity {
             channel.setDescription("Default notification channel for push notifications");
             channel.enableVibration(true);
             channel.setShowBadge(true);
-            
+
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             if (notificationManager != null) {
                 notificationManager.createNotificationChannel(channel);

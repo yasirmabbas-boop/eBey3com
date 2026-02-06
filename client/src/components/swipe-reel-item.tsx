@@ -186,7 +186,7 @@ export function SwipeReelItem({
         className="absolute bottom-0 left-0 right-0 px-4 z-10 pointer-events-none transition-opacity duration-300"
         style={{
           background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 40%, transparent 100%)',
-          paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)'
+          paddingBottom: 'max(var(--safe-area-bottom, env(safe-area-inset-bottom, 16px)), 16px)'
         }}
       >
         <div className="space-y-2 pointer-events-auto">
