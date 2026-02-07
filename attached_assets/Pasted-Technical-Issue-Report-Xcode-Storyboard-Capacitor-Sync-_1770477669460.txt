@@ -1,0 +1,46 @@
+Technical Issue Report: Xcode Storyboard/Capacitor Sync Conflict
+
+Project Context:
+
+    App Name: ebey3.com (Capacitor/iOS bridge)
+
+    Development Environment: Xcode (running from volume named "Three")
+
+    Target Device: Physical iPhone
+
+1. The Core Error
+
+The project is throwing the following persistent build error: Main.storyboard: Launch screens may not set custom classnames [12]
+2. The Symptoms
+
+    The 1cm Gap: There is a persistent white gap at the bottom of the screen on the physical device because the view is not pinned to the Superview.
+
+    Black Screen: After clearing some errors, the app builds but shows a black screen, suggesting a missing "Initial View Controller" or a failure to load the Bridge.
+
+    Settings Reverting: Changes made in the "General" tab (like setting the Launch Screen File) are being wiped or deleted after a build or sync.
+
+    Disk Space Issues: The Mac volume "Three" was previously out of space, which likely caused info.plist corruption or failed writes to the DerivedData workspace arena.
+
+3. Solutions Attempted
+
+    Disk Cleanup: Performed rm -rf ~/Library/Developer/Xcode/DerivedData/*, xcrun simctl delete unavailable, and pod cache clean --all to ensure the drive has writing capacity.
+
+    Hierarchy Fix: Nested the View properly under the Bridge View Controller in the Document Outline.
+
+    Constraint Modification: Attempted to pin the View to 0 on all sides with a focus on changing the bottom constraint from Safe Area to Superview.
+
+    Class Assignment: Verified that the Bridge View Controller in Main.storyboard is set to CAPBridgeViewController (Module: Capacitor) while ensuring the LaunchScreen.storyboard has no custom class.
+
+    Launch Screen Reassignment: Tried changing the Launch Screen File in the Project Settings/General tab from Main to LaunchScreen.
+
+    Capacitor Sync: Ran npx cap copy ios from the project root directory.
+
+    Physical Reset: Deleted the app from the iPhone and performed a "Clean Build Folder" (Cmd+Shift+K).
+
+4. Current Blockers
+
+    Xcode continues to treat Main.storyboard as a Launch Screen despite it being the main app interface, thereby forbidding the use of CAPBridgeViewController.
+
+    The "Initial View Controller" arrow is potentially missing or not being recognized, resulting in a black screen.
+
+    Capacitor/Xcode sync appears to be overwriting manual configuration changes.
