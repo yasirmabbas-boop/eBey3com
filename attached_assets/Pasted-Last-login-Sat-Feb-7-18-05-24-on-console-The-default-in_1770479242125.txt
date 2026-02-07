@@ -1,0 +1,386 @@
+Last login: Sat Feb  7 18:05:24 on console
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+anonymous:~ yasirabbas$ npx cap copy ios
+npm error could not determine executable to run
+npm error A complete log of this run can be found in: /Users/yasirabbas/.npm/_logs/2026-02-07T15_14_27_012Z-debug-0.log
+anonymous:~ yasirabbas$ cd # Deletes the Xcode temporary build folders (safe and recommended)
+anonymous:~ yasirabbas$ rm -rf ~/Library/Developer/Xcode/DerivedData/*
+anonymous:~ yasirabbas$ 
+anonymous:~ yasirabbas$ # Deletes unused simulator data to free up more disk space
+anonymous:~ yasirabbas$ xcrun simctl delete unavailable
+
+# Cleans the CocoaPods cache to ensure dependencies are fresh
+pod cache clean --all
+anonymous:~ yasirabbas$ 
+anonymous:~ yasirabbas$ # Cleans the CocoaPods cache to ensure dependencies are fresh
+anonymous:~ yasirabbas$ pod cache clean --all
+anonymous:~ yasirabbas$ # Syncs your capacitor.config.json and web assets to the App folder
+anonymous:~ yasirabbas$ npx cap copy ios
+npm error could not determine executable to run
+npm error A complete log of this run can be found in: /Users/yasirabbas/.npm/_logs/2026-02-07T15_16_08_872Z-debug-0.log
+anonymous:~ yasirabbas$ # 1. Move into your project folder
+anonymous:~ yasirabbas$ cd /Users/yasirabbas/eBey3com
+anonymous:eBey3com yasirabbas$ 
+anonymous:eBey3com yasirabbas$ # 2. Sync the web code to iOS (This should work now)
+anonymous:eBey3com yasirabbas$ npx cap copy ios
+
+# 3. Open the project in Xcode
+⠙ copy ios [warn] Cannot copy web assets from public to ios/App/App/public
+       Web asset directory specified by webDir does not exist. This is not an
+       error because server.url is set in config.
+✔ Creating capacitor.config.json in ios/App/App in 2.44ms
+✔ copy ios in 214.41ms
+anonymous:eBey3com yasirabbas$ 
+anonymous:eBey3com yasirabbas$ # 3. Open the project in Xcode
+anonymous:eBey3com yasirabbas$ cat > /Users/yasirabbas/eBey3com/ios/App/App/Base.lproj/Main.storyboard << 'STORYBOARD'
+> <?xml version="1.0" encoding="UTF-8"?>
+> <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17132" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
+>     <device id="retina6_12" orientation="portrait" appearance="light"/>
+>     <dependencies>
+>         <deployment identifier="iOS"/>
+>         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17105"/>
+>         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+>         <capability name="System colors in document resources" minToolsVersion="11.0"/>
+>         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+>     </dependencies>
+>     <scenes>
+>         <!--Custom View Controller-->
+>         <scene sceneID="tne-QT-ifu">
+>             <objects>
+>                 <viewController id="BYZ-38-t0r" customClass="CustomViewController" customModule="App" customModuleProvider="target" sceneMemberID="viewController">
+>                     <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
+>                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+>                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+>                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+>                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
+>                     </view>
+>                 </viewController>
+>                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
+>             </objects>
+>             <point key="canvasLocation" x="53" y="375"/>
+>         </scene>
+>     </scenes>
+>     <resources>
+>         <systemColor name="systemBackgroundColor">
+>             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+>         </systemColor>
+>     </resources>
+> </document>
+> STORYBOARD
+anonymous:eBey3com yasirabbas$ sed -i '' 's|<key>NSAllowsArbitraryLoads</key>\n.*<false/>|<key>NSAllowsArbitraryLoads</key>\n<true/>|' /Users/yasirabbas/eBey3com/ios/App/App/Info.plist
+anonymous:eBey3com yasirabbas$ open -a TextEdit /Users/yasirabbas/eBey3com/capacitor.config.ts
+anonymous:eBey3com yasirabbas$ open -a TextEdit /Users/yasirabbas/eBey3com/ios/App/App/Info.plist
+anonymous:eBey3com yasirabbas$ cd /Users/yasirabbas/eBey3com
+anonymous:eBey3com yasirabbas$ npm run build
+npx cap copy ios
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v6.4.1 building for production...
+✓ 6 modules transformed.
+✗ Build failed in 803ms
+[vite]: Rollup failed to resolve import "@sentry/react" from "/Users/yasirabbas/eBey3com/client/src/App.tsx".
+This is most likely unintended because it can break your application at runtime.
+If you do want to externalize this module explicitly add it to
+`build.rollupOptions.external`
+    at viteLog (/Users/yasirabbas/eBey3com/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46374:15)
+    at <anonymous> (/Users/yasirabbas/eBey3com/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46432:18)
+    at onwarn (/Users/yasirabbas/eBey3com/node_modules/@vitejs/plugin-react/dist/index.js:90:7)
+    at <anonymous> (/Users/yasirabbas/eBey3com/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46430:7)
+    at onRollupLog (/Users/yasirabbas/eBey3com/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46422:5)
+    at onLog (/Users/yasirabbas/eBey3com/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46072:7)
+    at <anonymous> (/Users/yasirabbas/eBey3com/node_modules/rollup/dist/es/shared/node-entry.js:20955:32)
+    at Object.logger (/Users/yasirabbas/eBey3com/node_modules/rollup/dist/es/shared/node-entry.js:22942:9)
+    at ModuleLoader.handleInvalidResolvedId (/Users/yasirabbas/eBey3com/node_modules/rollup/dist/es/shared/node-entry.js:21686:26)
+    at <anonymous> (/Users/yasirabbas/eBey3com/node_modules/rollup/dist/es/shared/node-entry.js:21644:26) {
+  watchFiles: [
+    '/Users/yasirabbas/eBey3com/client/index.html',
+    '/Users/yasirabbas/eBey3com/client/src/main.tsx',
+    '/Users/yasirabbas/eBey3com/package.json',
+    '/Users/yasirabbas/eBey3com/client/src/App.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/index.css',
+    '/Users/yasirabbas/eBey3com/node_modules/tailwindcss/index.css',
+    '/Users/yasirabbas/eBey3com/node_modules/tw-animate-css/dist/tw-animate.css',
+    '/Users/yasirabbas/eBey3com/node_modules/react-dom/client.js',
+    '/Users/yasirabbas/eBey3com/node_modules/react/jsx-runtime.js',
+    '/Users/yasirabbas/eBey3com/client/src/components/error-boundary.tsx',
+    '/Users/yasirabbas/eBey3com/client/public/اي بيع-04.svg',
+    '/Users/yasirabbas/eBey3com/client/public/manifest.json',
+    '/Users/yasirabbas/eBey3com/client/public/sw.js',
+    '/Users/yasirabbas/eBey3com/client/vite.config.ts',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/seller-onboarding.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/consolidated-tabs.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/performance-card.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/seller-bottom-nav.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/needs-attention-section.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/action-card.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/activity-section.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/smart-search.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/aspect-ratio.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/alert-dialog.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/pagination.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/tabs.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/button-group.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/card.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/slider.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/input-group.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/popover.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/progress.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/toaster.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/input-otp.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/chart.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/hover-card.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/sheet.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/field.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/scroll-area.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/resizable.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/label.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/sonner.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/navigation-menu.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/accordion.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/drawer.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/empty.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/tooltip.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/alert.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/switch.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/calendar.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/breadcrumb.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/radio-group.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/command.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/item.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/toggle-group.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/avatar.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/menubar.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/kbd.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/dialog.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/badge.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/sidebar.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/table.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/separator.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/button.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/toggle.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/toast.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/checkbox.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/spinner.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/collapsible.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/dropdown-menu.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/select.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/textarea.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/input.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/skeleton.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/context-menu.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/form.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/carousel.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/SchedulingSection.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/ShippingSection.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/BasicInfoSection.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/SellWizard.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/index.ts',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/SaleTypeSection.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/ImageUploadSection.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/purchases/PurchaseFilters.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/purchases/OrderDetailModal.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/purchases/index.ts',
+    '/Users/yasirabbas/eBey3com/client/src/components/purchases/OrderCard.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/push-notification-prompt.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/address-selection-modal.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/swipe-back-navigation.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/star-rating.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/favorite-button.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/product-comments.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/map-picker.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ban-banner.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/post-registration-survey.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/verified-badge.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/phone-verification-modal.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/empty-state.tsx',
+    ... 113 more items
+  ]
+}
+anonymous:eBey3com yasirabbas$ npx cap copy iosopen -a TextEdit /Users/yasirabbas/eBey3com/capacitor.config.ts
+
+
+error: unknown option '-a'
+anonymous:eBey3com yasirabbas$ 
+anonymous:eBey3com yasirabbas$ 
+anonymous:eBey3com yasirabbas$ 
+anonymous:eBey3com yasirabbas$ open -a TextEdit /Users/yasirabbas/eBey3com/capacitor.config.ts
+anonymous:eBey3com yasirabbas$ cd /Users/yasirabbas/eBey3com
+anonymous:eBey3com yasirabbas$ 
+anonymous:eBey3com yasirabbas$ cat > ios/App/App/capacitor.config.json << 'EOF'
+> {
+>   "appId": "iq.ebay3.app",
+>   "appName": "E-بيع",
+>   "webDir": "dist/public",
+>   "ios": {
+>     "contentInset": "automatic"
+>   },
+>   "server": {
+>     "androidScheme": "https"
+>   },
+>   "plugins": {
+>     "SplashScreen": {
+>       "launchShowDuration": 2000,
+>       "backgroundColor": "#000000",
+>       "showSpinner": false,
+>       "androidSpinnerStyle": "small",
+>       "iosSpinnerStyle": "small",
+>       "splashFullScreen": false,
+>       "splashImmersive": false
+>     },
+>     "PushNotifications": {
+>       "presentationOptions": ["badge", "sound", "alert"]
+>     },
+>     "Keyboard": {
+>       "resize": "body",
+>       "resizeOnFullScreen": true
+>     },
+>     "StatusBar": {
+>       "overlaysWebView": false,
+>       "style": "LIGHT",
+>       "backgroundColor": "#000000"
+>     }
+>   }
+> }
+> EOF
+anonymous:eBey3com yasirabbas$ npm run build
+npx cap copy ios
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+
+building client...
+vite v6.4.1 building for production...
+✓ 6 modules transformed.
+✗ Build failed in 677ms
+[vite]: Rollup failed to resolve import "@sentry/react" from "/Users/yasirabbas/eBey3com/client/src/App.tsx".
+This is most likely unintended because it can break your application at runtime.
+If you do want to externalize this module explicitly add it to
+`build.rollupOptions.external`
+    at viteLog (/Users/yasirabbas/eBey3com/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46374:15)
+    at <anonymous> (/Users/yasirabbas/eBey3com/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46432:18)
+    at onwarn (/Users/yasirabbas/eBey3com/node_modules/@vitejs/plugin-react/dist/index.js:90:7)
+    at <anonymous> (/Users/yasirabbas/eBey3com/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46430:7)
+    at onRollupLog (/Users/yasirabbas/eBey3com/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46422:5)
+    at onLog (/Users/yasirabbas/eBey3com/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46072:7)
+    at <anonymous> (/Users/yasirabbas/eBey3com/node_modules/rollup/dist/es/shared/node-entry.js:20955:32)
+    at Object.logger (/Users/yasirabbas/eBey3com/node_modules/rollup/dist/es/shared/node-entry.js:22942:9)
+    at ModuleLoader.handleInvalidResolvedId (/Users/yasirabbas/eBey3com/node_modules/rollup/dist/es/shared/node-entry.js:21686:26)
+    at <anonymous> (/Users/yasirabbas/eBey3com/node_modules/rollup/dist/es/shared/node-entry.js:21644:26) {
+  watchFiles: [
+    '/Users/yasirabbas/eBey3com/client/index.html',
+    '/Users/yasirabbas/eBey3com/client/src/main.tsx',
+    '/Users/yasirabbas/eBey3com/package.json',
+    '/Users/yasirabbas/eBey3com/client/src/App.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/index.css',
+    '/Users/yasirabbas/eBey3com/node_modules/tailwindcss/index.css',
+    '/Users/yasirabbas/eBey3com/node_modules/tw-animate-css/dist/tw-animate.css',
+    '/Users/yasirabbas/eBey3com/client/src/components/error-boundary.tsx',
+    '/Users/yasirabbas/eBey3com/node_modules/react-dom/client.js',
+    '/Users/yasirabbas/eBey3com/node_modules/react/jsx-runtime.js',
+    '/Users/yasirabbas/eBey3com/client/public/اي بيع-04.svg',
+    '/Users/yasirabbas/eBey3com/client/public/manifest.json',
+    '/Users/yasirabbas/eBey3com/client/public/sw.js',
+    '/Users/yasirabbas/eBey3com/client/vite.config.ts',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/seller-onboarding.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/consolidated-tabs.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/performance-card.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/seller-bottom-nav.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/needs-attention-section.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/action-card.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/seller/activity-section.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/smart-search.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/aspect-ratio.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/alert-dialog.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/pagination.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/tabs.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/button-group.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/card.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/slider.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/input-group.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/popover.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/progress.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/toaster.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/input-otp.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/chart.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/hover-card.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/sheet.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/field.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/scroll-area.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/resizable.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/label.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/sonner.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/navigation-menu.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/accordion.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/drawer.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/empty.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/tooltip.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/alert.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/switch.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/calendar.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/breadcrumb.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/radio-group.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/command.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/item.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/toggle-group.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/avatar.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/menubar.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/kbd.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/dialog.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/badge.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/sidebar.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/table.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/separator.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/button.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/toggle.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/toast.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/checkbox.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/spinner.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/collapsible.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/dropdown-menu.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/select.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/textarea.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/input.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/skeleton.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/context-menu.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/form.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ui/carousel.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/SchedulingSection.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/ShippingSection.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/BasicInfoSection.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/SellWizard.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/index.ts',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/SaleTypeSection.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/sell/ImageUploadSection.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/purchases/PurchaseFilters.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/purchases/OrderDetailModal.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/purchases/index.ts',
+    '/Users/yasirabbas/eBey3com/client/src/components/purchases/OrderCard.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/push-notification-prompt.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/address-selection-modal.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/swipe-back-navigation.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/star-rating.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/favorite-button.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/product-comments.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/map-picker.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/ban-banner.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/post-registration-survey.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/verified-badge.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/phone-verification-modal.tsx',
+    '/Users/yasirabbas/eBey3com/client/src/components/empty-state.tsx',
+    ... 113 more items
+  ]
+}
+anonymous:eBey3com yasirabbas$ npx cap copy ios
+✖ copy ios - failed!
+[error] Could not find the web assets directory: ./dist/public.
+        Please create it and make sure it has an index.html file. You can change
+        the path of this directory in capacitor.config.ts (webDir option). You
+        may need to compile the web assets for your app (typically npm run
+        build). More info:
+        https://capacitorjs.com/docs/basics/workflow#sync-your-project
+anonymous:eBey3com yasirabbas$ 
