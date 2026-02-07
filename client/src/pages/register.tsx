@@ -16,6 +16,7 @@ import { validatePhone, validatePassword } from "@/lib/form-validation";
 import { PhoneVerificationModal } from "@/components/phone-verification-modal";
 import { isDespia } from "@/lib/despia";
 import { isNative } from "@/lib/capacitor";
+import { FacebookLogin } from "@capacitor-community/facebook-login";
 
 export default function Register() {
   const [, navigate] = useLocation();
@@ -246,9 +247,63 @@ export default function Register() {
                     return;
                   }
 
-                  // For native apps (Despia or Capacitor): Use Facebook JS SDK (in-app login)
-                  if ((isDespia() || isNative) && window.FB) {
-                    console.log("[Facebook Register] Using FB SDK for native app");
+                  // For native apps (Capacitor): Use native Facebook Login plugin
+                  if (isNative) {
+                    console.log("[Facebook Register] Using Capacitor native plugin");
+                    setIsLoading(true);
+                    
+                    try {
+                      // Use native Facebook SDK via Capacitor plugin
+                      const result = await FacebookLogin.login({ permissions: ['public_profile', 'email'] });
+                      
+                      if (result.accessToken) {
+                        const accessToken = result.accessToken.token;
+                        const userID = result.accessToken.userId;
+                        console.log("[Facebook Register] Got native FB access token, validating with server...");
+                        
+                        const res = await fetch("/api/auth/facebook/token", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          credentials: "include",
+                          body: JSON.stringify({ accessToken, userID }),
+                        });
+                        
+                        const data = await res.json();
+                        
+                        if (res.ok && data.success) {
+                          console.log("[Facebook Register] Server validation successful");
+                          if (data.authToken) {
+                            localStorage.setItem("authToken", data.authToken);
+                          }
+                          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+                          queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+                          navigate(data.needsOnboarding ? "/onboarding" : "/");
+                        } else {
+                          throw new Error(data.error || "Registration failed");
+                        }
+                      } else {
+                        console.log("[Facebook Register] User cancelled or no token");
+                      }
+                    } catch (error) {
+                      console.error("[Facebook Register] Error:", error);
+                      toast({
+                        title: t("error"),
+                        description: tr(
+                          "فشل التسجيل بفيسبوك",
+                          "تۆمارکردن لەگەڵ فەیسبووک سەرکەوتوو نەبوو",
+                          "Facebook registration failed"
+                        ),
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setIsLoading(false);
+                    }
+                    return;
+                  }
+                  
+                  // For Despia: Use Facebook JS SDK (in-app login)
+                  if (isDespia() && window.FB) {
+                    console.log("[Facebook Register] Using FB SDK for Despia");
                     setIsLoading(true);
                     
                     window.FB.login(async (response) => {
