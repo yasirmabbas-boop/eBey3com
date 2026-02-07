@@ -97,7 +97,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       )}
 
       {/* Main Content */}
-      <main className={`despia-content md:pb-0 md:flex-1 ${isNative ? "pb-6" : "pb-[var(--bottom-nav-padding)]"}`}>
+      <main className={`despia-content md:pb-0 md:flex-1 pb-[var(--bottom-nav-padding)]`}>
         {children}
         
       </main>

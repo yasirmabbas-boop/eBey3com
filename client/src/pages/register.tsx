@@ -15,6 +15,7 @@ import { FormError } from "@/components/form-error";
 import { validatePhone, validatePassword } from "@/lib/form-validation";
 import { PhoneVerificationModal } from "@/components/phone-verification-modal";
 import { isDespia } from "@/lib/despia";
+import { isNative } from "@/lib/capacitor";
 
 export default function Register() {
   const [, navigate] = useLocation();
@@ -245,9 +246,9 @@ export default function Register() {
                     return;
                   }
 
-                  // For Despia native apps: Use Facebook JS SDK (in-app login)
-                  if (isDespia() && window.FB) {
-                    console.log("[Facebook Register] Using FB SDK for Despia native app");
+                  // For native apps (Despia or Capacitor): Use Facebook JS SDK (in-app login)
+                  if ((isDespia() || isNative) && window.FB) {
+                    console.log("[Facebook Register] Using FB SDK for native app");
                     setIsLoading(true);
                     
                     window.FB.login(async (response) => {

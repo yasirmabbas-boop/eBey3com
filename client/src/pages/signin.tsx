@@ -15,6 +15,7 @@ import { useLanguage } from "@/lib/i18n";
 import { FormError } from "@/components/form-error";
 import { validatePhone, validatePassword } from "@/lib/form-validation";
 import { isDespia } from "@/lib/despia";
+import { isNative } from "@/lib/capacitor";
 
 declare global {
   interface Window {
@@ -405,9 +406,9 @@ export default function SignIn() {
                         return;
                       }
 
-                      // For Despia native apps: Use Facebook JS SDK (in-app login)
-                      if (isDespia() && window.FB) {
-                        console.log("[Facebook Login] Using FB SDK for Despia native app");
+                      // For native apps (Despia or Capacitor): Use Facebook JS SDK (in-app login)
+                      if ((isDespia() || isNative) && window.FB) {
+                        console.log("[Facebook Login] Using FB SDK for native app");
                         setIsLoading(true);
                         
                         window.FB.login(async (response) => {

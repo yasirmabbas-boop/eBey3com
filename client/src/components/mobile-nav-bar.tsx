@@ -136,9 +136,7 @@ export function MobileNavBar() {
       dir={isRTL ? "rtl" : "ltr"}
       style={{ 
         zIndex: 99999,
-        // Android needs explicit padding since env(safe-area-inset-bottom) returns 0
-        // iOS uses the CSS env() value. Android gesture nav bar is typically 48-56px
-        paddingBottom: isAndroid ? '48px' : 'var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))',
+        paddingBottom: isAndroid ? '48px' : 'env(safe-area-inset-bottom, 0px)',
         position: "fixed",
         display: "flex"
       }}
