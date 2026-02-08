@@ -253,13 +253,15 @@ export default function Register() {
                     setIsLoading(true);
                     
                     try {
-                      // Use native Facebook SDK via Capacitor plugin
-                      const result = await FacebookLogin.login({ permissions: ['public_profile', 'email'] });
+                      const result = await FacebookLogin.login({ permissions: ['public_profile', 'email'] }) as any;
                       
-                      if (result.accessToken) {
-                        const accessToken = result.accessToken.token;
-                        const userID = result.accessToken.userId;
-                        console.log("[Facebook Register] Got native FB access token, validating with server...");
+                      const fbToken = result.accessToken?.token || result.authenticationToken?.token;
+                      const fbUserID = result.accessToken?.userId || result.authenticationToken?.userId;
+                      
+                      if (fbToken && fbUserID) {
+                        const accessToken = fbToken;
+                        const userID = fbUserID;
+                        console.log("[Facebook Register] Got FB token, validating with server...", result.authenticationToken ? "(Limited Login JWT)" : "(classic access token)");
                         
                         const res = await fetch("/api/auth/facebook/token", {
                           method: "POST",
