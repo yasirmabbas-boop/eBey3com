@@ -10,6 +10,7 @@ import {
   type Transaction, type InsertTransaction,
   type Category, type InsertCategory,
   type BuyerAddress, type InsertBuyerAddress,
+  type SellerAddress, type InsertSellerAddress,
   type CartItem, type InsertCartItem,
   type Notification, type InsertNotification,
   type Report, type InsertReport,
@@ -20,7 +21,7 @@ import {
   type ContactMessage, type InsertContactMessage,
   type ProductComment, type InsertProductComment,
   type PushSubscription, type InsertPushSubscription,
-  users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, returnTemplates, returnApprovalRules, contactMessages, productComments, pushSubscriptions
+  users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, sellerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, returnTemplates, returnApprovalRules, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, lt, inArray, ne, isNotNull } from "drizzle-orm";
@@ -1413,6 +1414,59 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db.update(buyerAddresses)
       .set({ isDefault: true })
       .where(and(eq(buyerAddresses.id, addressId), eq(buyerAddresses.userId, userId)))
+      .returning();
+    return !!updated;
+  }
+
+  // Seller addresses methods
+  async getSellerAddresses(userId: string): Promise<SellerAddress[]> {
+    return db.select().from(sellerAddresses)
+      .where(eq(sellerAddresses.userId, userId))
+      .orderBy(desc(sellerAddresses.isDefault), desc(sellerAddresses.createdAt));
+  }
+
+  async getSellerAddressById(id: string): Promise<SellerAddress | undefined> {
+    const [address] = await db.select().from(sellerAddresses)
+      .where(eq(sellerAddresses.id, id))
+      .limit(1);
+    return address;
+  }
+
+  async createSellerAddress(address: InsertSellerAddress): Promise<SellerAddress> {
+    // If this is marked as default, unset other defaults first
+    if (address.isDefault) {
+      await db.update(sellerAddresses)
+        .set({ isDefault: false })
+        .where(eq(sellerAddresses.userId, address.userId));
+    }
+    const [newAddress] = await db.insert(sellerAddresses).values(address).returning();
+    return newAddress;
+  }
+
+  async updateSellerAddress(id: string, updates: Partial<InsertSellerAddress>): Promise<SellerAddress | undefined> {
+    const [address] = await db.update(sellerAddresses)
+      .set(updates)
+      .where(eq(sellerAddresses.id, id))
+      .returning();
+    return address;
+  }
+
+  async deleteSellerAddress(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(sellerAddresses)
+      .where(eq(sellerAddresses.id, id))
+      .returning();
+    return !!deleted;
+  }
+
+  async setDefaultSellerAddress(userId: string, addressId: string): Promise<boolean> {
+    // Unset all defaults for this user
+    await db.update(sellerAddresses)
+      .set({ isDefault: false })
+      .where(eq(sellerAddresses.userId, userId));
+    // Set the new default
+    const [updated] = await db.update(sellerAddresses)
+      .set({ isDefault: true })
+      .where(and(eq(sellerAddresses.id, addressId), eq(sellerAddresses.userId, userId)))
       .returning();
     return !!updated;
   }

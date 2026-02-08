@@ -6,6 +6,7 @@ import { Layout } from "@/components/layout";
 import { useAuth, AUTH_QUERY_KEY } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@/hooks/use-upload";
+import { useLanguage } from "@/lib/i18n";
 import { share } from "@/lib/nativeShare";
 import { getUserAvatarSrc } from "@/lib/avatar";
 import { authFetch } from "@/lib/api";
@@ -37,6 +38,7 @@ import { PhoneVerificationModal } from "@/components/phone-verification-modal";
 
 // Skeleton loading component for the account page
 function AccountSkeleton() {
+  const { t } = useLanguage();
   return (
     <Layout>
       <div className="min-h-screen bg-gray-50">
@@ -60,8 +62,8 @@ function AccountSkeleton() {
                   <Plus className="h-6 w-6 text-white" />
                 </div>
                 <div className="flex-1">
-                  <span className="font-bold text-white text-lg">أضف منتج جديد</span>
-                  <p className="text-blue-100 text-sm mt-0.5">ابدأ ببيع منتجاتك الآن</p>
+                  <span className="font-bold text-white text-lg">{t("addNewProduct")}</span>
+                  <p className="text-blue-100 text-sm mt-0.5">{t("startSellingNow")}</p>
                 </div>
                 <ChevronLeft className="h-6 w-6 text-white" />
               </div>
@@ -70,13 +72,13 @@ function AccountSkeleton() {
 
           {/* Shopping Section - Static structure with skeleton badges */}
           <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">التسوق</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">{t("shopping")}</h2>
             <Link href="/buyer-dashboard">
               <div className="flex items-center gap-4 py-4 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
                 <Package className="h-6 w-6 text-gray-600" />
                 <div className="flex-1">
-                  <span className="font-medium text-gray-900">مركز المشتري</span>
-                  <p className="text-sm text-gray-500 mt-0.5">مشترياتك ومزايداتك وعروضك</p>
+                  <span className="font-medium text-gray-900">{t("buyerCenter")}</span>
+                  <p className="text-sm text-gray-500 mt-0.5">{t("yourPurchasesBidsOffers")}</p>
                 </div>
                 <ChevronLeft className="h-5 w-5 text-gray-400" />
               </div>
@@ -89,8 +91,8 @@ function AccountSkeleton() {
               <div className="flex items-center gap-4 py-4 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
                 <MapPin className="h-6 w-6 text-gray-600" />
                 <div className="flex-1">
-                  <span className="font-medium text-gray-900">العنوان</span>
-                  <p className="text-sm text-gray-500 mt-0.5">إدارة عنوان التوصيل</p>
+                  <span className="font-medium text-gray-900">{t("address")}</span>
+                  <p className="text-sm text-gray-500 mt-0.5">{t("manageDeliveryAddress")}</p>
                 </div>
                 <ChevronLeft className="h-5 w-5 text-gray-400" />
               </div>
@@ -102,8 +104,8 @@ function AccountSkeleton() {
             <div className="flex items-center gap-4 py-4 px-2">
               <Settings className="h-6 w-6 text-gray-600" />
               <div className="flex-1">
-                <span className="font-medium text-gray-900">الإعدادات</span>
-                <p className="text-sm text-gray-500 mt-0.5">إدارة حسابك والأمان والمساعدة</p>
+                <span className="font-medium text-gray-900">{t("settings")}</span>
+                <p className="text-sm text-gray-500 mt-0.5">{t("manageAccountSecurityHelp")}</p>
               </div>
               <ChevronDown className="h-5 w-5 text-gray-400" />
             </div>
@@ -150,6 +152,7 @@ export default function MyAccount() {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -166,7 +169,7 @@ export default function MyAccount() {
     console.log("[Avatar] Starting upload, file:", file.name, file.size);
 
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "الملف كبير جداً", description: "الحد الأقصى 5 ميغابايت", variant: "destructive" });
+      toast({ title: t("fileTooLarge"), description: t("maxFileSize"), variant: "destructive" });
       return;
     }
 
@@ -217,17 +220,17 @@ export default function MyAccount() {
       if (res.ok) {
         const profileResult = await res.json();
         console.log("[Avatar] Profile update result:", profileResult);
-        toast({ title: "تم تحديث الصورة بنجاح" });
+        toast({ title: t("photoUpdated") });
         queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: ["/api/account/profile"] });
       } else {
         const errorText = await res.text();
         console.error("[Avatar] Profile update failed:", errorText);
-        toast({ title: "خطأ", description: "فشل في حفظ الصورة", variant: "destructive" });
+        toast({ title: t("error"), description: t("failedToSavePhoto"), variant: "destructive" });
       }
     } catch (error) {
       console.error("[Avatar] Error:", error);
-      toast({ title: "خطأ", description: "فشل في رفع أو حفظ الصورة", variant: "destructive" });
+      toast({ title: t("error"), description: t("failedToUploadPhoto"), variant: "destructive" });
     } finally {
       setIsUploadingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -237,18 +240,18 @@ export default function MyAccount() {
   const handleShareProfile = async () => {
     const url = `${window.location.origin}/seller/${user?.id}`;
     const shared = await share({ 
-      title: `متجر ${user?.displayName}`, 
+      title: `${t("store")} ${user?.displayName}`, 
       url,
-      dialogTitle: 'مشاركة المتجر'
+      dialogTitle: t("shareStore")
     });
     
     if (!shared) {
       // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(url);
-        toast({ title: "تم نسخ رابط المتجر" });
+        toast({ title: t("storeLinkCopied") });
       } catch {
-        toast({ title: "فشل نسخ الرابط", variant: "destructive" });
+        toast({ title: t("failedToCopyLink"), variant: "destructive" });
       }
     }
   };
@@ -276,13 +279,13 @@ export default function MyAccount() {
     // Only redirect if auth check completed AND user is not authenticated
     if (!isLoading && !isAuthenticated) {
       toast({
-        title: "يجب تسجيل الدخول",
-        description: "يرجى تسجيل الدخول للوصول إلى حسابك",
+        title: t("mustLogin"),
+        description: t("loginToAccessAccount"),
         variant: "destructive",
       });
       navigate("/signin?redirect=/my-account");
     }
-  }, [isLoading, isAuthenticated, navigate, toast]);
+  }, [isLoading, isAuthenticated, navigate, toast, t]);
 
   // Optimistic rendering: if we have a token, show skeleton immediately
   // This makes the page feel instant for logged-in users
@@ -305,13 +308,13 @@ export default function MyAccount() {
       await logout();
       navigate("/");
       toast({
-        title: "تم تسجيل الخروج",
-        description: "نراك قريباً!",
+        title: t("loggedOut"),
+        description: t("seeYouSoon"),
       });
     } catch (error) {
       toast({
-        title: "خطأ",
-        description: "فشل تسجيل الخروج",
+        title: t("error"),
+        description: t("logoutFailed"),
         variant: "destructive",
       });
     }
@@ -320,8 +323,8 @@ export default function MyAccount() {
   const sellingItems: AccountMenuItem[] = [
     {
       icon: <BarChart3 className="h-6 w-6" />,
-      label: "لوحة البائع",
-      description: "إدارة منتجاتك ومبيعاتك",
+      label: t("sellerDashboard"),
+      description: t("manageProductsSales"),
       href: "/seller-dashboard",
       badge: sellerSummary?.pendingOrders || undefined,
       badgeColor: "bg-red-500",
@@ -331,26 +334,26 @@ export default function MyAccount() {
   const settingsSubItems = [
     {
       icon: <User className="h-5 w-5" />,
-      label: "ملفي الشخصي",
-      description: "تعديل الاسم والصورة والعنوان",
+      label: t("myProfile"),
+      description: t("editNamePhotoAddress"),
       href: "/settings",
     },
     {
       icon: <Shield className="h-5 w-5" />,
-      label: "إعدادات الأمان",
-      description: "المصادقة الثنائية وكلمة المرور",
+      label: t("securitySettings"),
+      description: t("twoFactorAndPassword"),
       href: "/security-settings",
     },
     {
       icon: <HelpCircle className="h-5 w-5" />,
-      label: "المساعدة",
-      description: "الأسئلة الشائعة والدعم",
+      label: t("help"),
+      description: t("faqAndSupport"),
       href: "/contact",
     },
     {
       icon: <Info className="h-5 w-5" />,
-      label: "حول التطبيق",
-      description: "معلومات عن E-بيع",
+      label: t("aboutApp"),
+      description: t("aboutAppDescription"),
       href: "/about",
     },
   ];
@@ -428,13 +431,13 @@ export default function MyAccount() {
             </div>
             <div className="flex-1">
               <h1 className="font-bold text-lg text-gray-900">{user.displayName || user.phone}</h1>
-              <p className="text-sm text-gray-500">عضو منذ {memberSince}</p>
+              <p className="text-sm text-gray-500">{t("memberSince")} {memberSince}</p>
               {user.phoneVerified && (
                 <div className="flex items-center gap-1 mt-1">
                   <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                   <span className="text-sm text-gray-600">
-                    {user.rating ? `${Math.round(user.rating * 20)}% تقييم إيجابي` : "جديد"} 
-                    {user.totalSales ? ` • ${user.totalSales} عملية بيع` : ""}
+                    {user.rating ? `${Math.round(user.rating * 20)}% ${t("positiveRatingPercent")}` : t("newSeller")} 
+                    {user.totalSales ? ` • ${user.totalSales} ${t("saleOperation")}` : ""}
                   </span>
                 </div>
               )}
@@ -470,8 +473,8 @@ export default function MyAccount() {
                   <Plus className="h-6 w-6 text-white" />
                 </div>
                 <div className="flex-1">
-                  <span className="font-bold text-white text-lg">أضف منتج جديد</span>
-                  <p className="text-blue-100 text-sm mt-0.5">ابدأ ببيع منتجاتك الآن</p>
+                  <span className="font-bold text-white text-lg">{t("addNewProduct")}</span>
+                  <p className="text-blue-100 text-sm mt-0.5">{t("startSellingNow")}</p>
                 </div>
                 <ChevronLeft className="h-6 w-6 text-white" />
               </div>
@@ -480,7 +483,7 @@ export default function MyAccount() {
 
           {/* Shopping Section */}
           <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">التسوق</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">{t("shopping")}</h2>
             <Link href="/buyer-dashboard">
               <div className="flex items-center gap-4 py-4 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors" data-testid="menu-buyer-center">
                 <div className="text-gray-600">
@@ -488,14 +491,14 @@ export default function MyAccount() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">مركز المشتري</span>
+                    <span className="font-medium text-gray-900">{t("buyerCenter")}</span>
                     {(buyerSummary?.activeOffers || 0) > 0 && (
                       <Badge className="bg-primary text-white text-xs px-2 py-0.5">
                         {buyerSummary?.activeOffers}
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 mt-0.5">مشترياتك ومزايداتك وعروضك</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{t("yourPurchasesBidsOffers")}</p>
                 </div>
                 <ChevronLeft className="h-5 w-5 text-gray-400" />
               </div>
@@ -505,7 +508,7 @@ export default function MyAccount() {
           {/* Selling Section - Only show for verified sellers */}
           {user.phoneVerified && (
             <div className="bg-white px-4 py-4 -mx-4 md:mx-0 md:px-6 border-b">
-              <h2 className="text-lg font-bold text-gray-900 mb-2">البيع</h2>
+              <h2 className="text-lg font-bold text-gray-900 mb-2">{t("selling")}</h2>
               <div className="divide-y">
                 {sellingItems.map((item, i) => (
                   <MenuItem key={i} item={item} />
@@ -526,8 +529,8 @@ export default function MyAccount() {
                   <Settings className="h-6 w-6" />
                 </div>
                 <div className="flex-1 text-right">
-                  <span className="font-medium text-gray-900">الإعدادات</span>
-                  <p className="text-sm text-gray-500 mt-0.5">إدارة حسابك والأمان والمساعدة</p>
+                  <span className="font-medium text-gray-900">{t("settings")}</span>
+                  <p className="text-sm text-gray-500 mt-0.5">{t("manageAccountSecurityHelp")}</p>
                 </div>
                 <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showSettingsMenu ? 'rotate-180' : ''}`} />
               </button>
@@ -553,7 +556,7 @@ export default function MyAccount() {
                     data-testid="button-logout"
                   >
                     <LogOut className="h-5 w-5" />
-                    <span className="font-medium text-sm">تسجيل الخروج</span>
+                    <span className="font-medium text-sm">{t("logout")}</span>
                   </button>
                 </div>
               )}

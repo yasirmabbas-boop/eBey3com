@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useLocation, Link, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import imageCompression from "browser-image-compression";
-import type { Listing } from "@shared/schema";
+import type { Listing, SellerAddress } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { authFetch } from "@/lib/api";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/lib/i18n";
 import { SellWizard, ImageUploadSection } from "@/components/sell";
+import { CategorySpecificFields, validateCategorySpecifications } from "@/components/sell/CategorySpecificFields";
+import { SellerAddressModal } from "@/components/seller-address-modal";
 import { capturePhoto } from "@/lib/nativeCamera";
 import { isNative } from "@/lib/capacitor";
 import { 
@@ -33,7 +36,9 @@ import {
   Loader2,
   Package,
   MessageSquare,
-  AlertTriangle
+  AlertTriangle,
+  MapPin,
+  Edit
 } from "lucide-react";
 
 const IRAQI_CITIES = [
@@ -113,6 +118,39 @@ export default function SellWizardPage() {
     sellerName: "",
     allowedBidderType: "verified_only",
   });
+  
+  // Category-specific specifications (e.g., size, gender for clothing)
+  const [specifications, setSpecifications] = useState<Record<string, string>>({});
+  const [specificationErrors, setSpecificationErrors] = useState<Record<string, string>>({});
+
+  // Seller address/location state
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<SellerAddress | null>(null);
+
+  // Fetch seller's saved addresses
+  const { data: sellerAddresses, isLoading: isLoadingAddresses } = useQuery<SellerAddress[]>({
+    queryKey: ["/api/seller/addresses"],
+    queryFn: async () => {
+      const res = await authFetch("/api/seller/addresses");
+      if (!res.ok) throw new Error("Failed to fetch addresses");
+      return res.json();
+    },
+    enabled: !!user,
+  });
+
+  // Auto-select default address when addresses load
+  useEffect(() => {
+    if (sellerAddresses && sellerAddresses.length > 0 && !selectedAddress && !isEditMode) {
+      const defaultAddr = sellerAddresses.find(a => a.isDefault) || sellerAddresses[0];
+      setSelectedAddress(defaultAddr);
+      // Also set the city/area from the address
+      setFormData(prev => ({
+        ...prev,
+        city: defaultAddr.city,
+        area: defaultAddr.district || "",
+      }));
+    }
+  }, [sellerAddresses, selectedAddress, isEditMode]);
 
   const [isRequestingSellerAccess, setIsRequestingSellerAccess] = useState(false);
   const [sellerFormData, setSellerFormData] = useState({
@@ -209,6 +247,11 @@ export default function SellWizardPage() {
       setIsNegotiable(sourceListing.isNegotiable ?? false);
       setHasReservePrice(!!(sourceListing as any).reservePrice);
       setTags(sourceListing.tags ?? []);
+      
+      // Load category-specific specifications
+      if ((sourceListing as any).specifications) {
+        setSpecifications((sourceListing as any).specifications);
+      }
     }
   }, [sourceListing, isEditMode, user?.displayName]);
 
@@ -229,6 +272,12 @@ export default function SellWizardPage() {
       processedValue = convertArabicNumerals(value);
     }
     setFormData(prev => ({ ...prev, [field]: processedValue }));
+    
+    // Clear specifications when category changes (different categories have different fields)
+    if (field === "category") {
+      setSpecifications({});
+      setSpecificationErrors({});
+    }
   }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -513,11 +562,15 @@ export default function SellWizardPage() {
     }
   };
 
+  // Validate category-specific fields for step 2
+  const specErrors = formData.category ? validateCategorySpecifications(formData.category, specifications, language) : {};
+  const hasNoSpecErrors = Object.keys(specErrors).length === 0;
+  
   const stepValidation = [
     images.length >= 2,
-    formData.title.trim().length >= 5 && formData.description.trim().length >= 10 && !!formData.category && !!formData.condition,
+    formData.title.trim().length >= 5 && formData.description.trim().length >= 10 && !!formData.category && !!formData.condition && hasNoSpecErrors,
     !!formData.price && parseInt(formData.price) >= 1000 && (saleType === "fixed" || (startTimeOption === "now" || (!!formData.startDate && !!formData.startHour)) && !!formData.endDate && !!formData.endHour),
-    !!formData.city && !!formData.deliveryWindow && !!formData.returnPolicy,
+    !!selectedAddress && !!formData.deliveryWindow && !!formData.returnPolicy,
     true,
   ];
 
@@ -566,8 +619,11 @@ export default function SellWizardPage() {
         reservePrice: (saleType === "auction" && hasReservePrice && formData.reservePrice) 
           ? parseInt(formData.reservePrice) 
           : null,
-        city: formData.city,
-        area: formData.area || null,
+        city: selectedAddress?.city || formData.city,
+        area: selectedAddress?.district || formData.area || null,
+        sellerAddressId: selectedAddress?.id || null,
+        locationLat: selectedAddress?.latitude || null,
+        locationLng: selectedAddress?.longitude || null,
         deliveryWindow: formData.deliveryWindow,
         shippingType: formData.shippingType,
         shippingCost: formData.shippingType === "buyer_pays" ? parseInt(formData.shippingCost) || 0 : 0,
@@ -579,6 +635,7 @@ export default function SellWizardPage() {
         isNegotiable,
         sellerName: formData.sellerName || user?.displayName || "بائع",
         allowedBidderType: formData.allowedBidderType,
+        specifications: Object.keys(specifications).length > 0 ? specifications : null,
       };
       
       const url = isEditMode ? `/api/listings/${editListingId}` : "/api/listings";
@@ -754,6 +811,7 @@ export default function SellWizardPage() {
                     <SelectItem value="ساعات">{t("watches")}</SelectItem>
                     <SelectItem value="إلكترونيات">{t("electronics")}</SelectItem>
                     <SelectItem value="ملابس">{t("clothing")}</SelectItem>
+                    <SelectItem value="سيارات">{t("vehicles")}</SelectItem>
                     <SelectItem value="مجوهرات">{t("jewelry")}</SelectItem>
                     <SelectItem value="مكياج">{t("makeup")}</SelectItem>
                     <SelectItem value="تحف وأثاث">{t("furniture")}</SelectItem>
@@ -789,6 +847,17 @@ export default function SellWizardPage() {
                 data-testid="input-brand"
               />
             </div>
+            
+            {/* Category-Specific Specifications */}
+            {formData.category && (
+              <CategorySpecificFields
+                category={formData.category}
+                specifications={specifications}
+                language={language}
+                errors={specificationErrors}
+                onChange={setSpecifications}
+              />
+            )}
 
             <div className="space-y-3">
               <Label>{language === "ar" ? "الكلمات المفتاحية" : "وشەی سەرەکییەکان"}</Label>
@@ -1137,28 +1206,90 @@ export default function SellWizardPage() {
 
           {/* Step 4: Shipping */}
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{language === "ar" ? "المدينة" : "شار"} *</Label>
-                <Select value={formData.city} onValueChange={(v) => handleInputChange("city", v)}>
-                  <SelectTrigger data-testid="select-city">
-                    <SelectValue placeholder={language === "ar" ? "اختر المحافظة" : "پارێزگا هەڵبژێرە"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {IRAQI_PROVINCES.map((province) => (
-                      <SelectItem key={province} value={province}>{province}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>{language === "ar" ? "المنطقة" : "ناوچە"}</Label>
-                <Input 
-                  placeholder={language === "ar" ? "اختياري" : "ئارەزوومەندانە"}
-                  value={formData.area}
-                  onChange={(e) => handleInputChange("area", e.target.value)}
-                />
-              </div>
+            {/* Pickup Location Selection */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                {language === "ar" ? "موقع الاستلام" : "شوێنی وەرگرتنەوە"} *
+              </Label>
+              
+              {isLoadingAddresses ? (
+                <div className="flex items-center justify-center p-4 border rounded-lg">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : selectedAddress ? (
+                <Card className="border-primary/50 bg-primary/5">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{selectedAddress.label}</span>
+                          {selectedAddress.isDefault && (
+                            <Badge variant="secondary" className="text-xs">
+                              {language === "ar" ? "افتراضي" : "بنەڕەتی"}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{selectedAddress.contactName}</p>
+                        <p className="text-sm text-muted-foreground" dir="ltr">{selectedAddress.phone}</p>
+                        <p className="text-sm">
+                          {selectedAddress.city}
+                          {selectedAddress.district && ` - ${selectedAddress.district}`}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{selectedAddress.addressLine1}</p>
+                        {selectedAddress.latitude && selectedAddress.longitude && (
+                          <p className="text-xs text-green-600 flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            {language === "ar" ? "الموقع محدد على الخريطة" : "شوێن لەسەر نەخشە دیاریکراوە"}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAddressModal(true)}
+                      >
+                        <Edit className="h-4 w-4 ml-1" />
+                        {language === "ar" ? "تغيير" : "گۆڕین"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="border-dashed">
+                  <CardContent className="p-6 text-center">
+                    <MapPin className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {language === "ar" 
+                        ? "لم يتم تحديد موقع الاستلام بعد" 
+                        : "هێشتا شوێنی وەرگرتنەوە دیاری نەکراوە"}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="default"
+                      onClick={() => setShowAddressModal(true)}
+                    >
+                      <Plus className="h-4 w-4 ml-1" />
+                      {language === "ar" ? "إضافة موقع الاستلام" : "شوێنی وەرگرتنەوە زیاد بکە"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {sellerAddresses && sellerAddresses.length > 1 && selectedAddress && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setShowAddressModal(true)}
+                >
+                  {language === "ar" 
+                    ? `لديك ${sellerAddresses.length} مواقع محفوظة` 
+                    : `${sellerAddresses.length} شوێنی پاشەکەوتکراوت هەیە`}
+                </Button>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -1330,6 +1461,21 @@ export default function SellWizardPage() {
             </div>
           </div>
         </SellWizard>
+
+        {/* Seller Address Modal */}
+        <SellerAddressModal
+          open={showAddressModal}
+          onOpenChange={setShowAddressModal}
+          onSelect={(address) => {
+            setSelectedAddress(address);
+            setFormData(prev => ({
+              ...prev,
+              city: address.city,
+              area: address.district || "",
+            }));
+          }}
+          forceAddNew={!sellerAddresses || sellerAddresses.length === 0}
+        />
       </div>
     </Layout>
   );

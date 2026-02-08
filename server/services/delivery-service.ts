@@ -66,13 +66,28 @@ class DeliveryService {
       return null;
     }
 
+    // Get seller's saved address for precise pickup location
+    let sellerAddress = null;
+    if (listing.sellerAddressId) {
+      sellerAddress = await storage.getSellerAddressById(listing.sellerAddressId);
+    }
+
+    // Determine pickup information using seller address if available, else fall back to listing/seller
+    const pickupAddress = sellerAddress?.addressLine1 || listing.area || seller.addressLine1 || seller.city || "بغداد";
+    const pickupCity = sellerAddress?.city || listing.city || seller.city || "بغداد";
+    const pickupDistrict = sellerAddress?.district || "";
+    const pickupPhone = sellerAddress?.phone || seller.phone || "";
+    const pickupContactName = sellerAddress?.contactName || listing.sellerName || seller.displayName;
+    const pickupLatitude = sellerAddress?.latitude || listing.locationLat;
+    const pickupLongitude = sellerAddress?.longitude || listing.locationLng;
+
     try {
       const deliveryResponse = await deliveryApi.createShipment({
         orderId: transactionId,
-        pickupAddress: seller.addressLine1 || seller.city || "بغداد",
-        pickupCity: seller.city || "بغداد",
-        pickupPhone: seller.phone || "",
-        pickupContactName: seller.displayName,
+        pickupAddress,
+        pickupCity,
+        pickupPhone,
+        pickupContactName,
         deliveryAddress: transaction.deliveryAddress || "",
         deliveryCity: transaction.deliveryCity || "",
         deliveryPhone: transaction.deliveryPhone || "",
@@ -91,10 +106,10 @@ class DeliveryService {
           transactionId,
           externalDeliveryId: deliveryResponse.externalDeliveryId,
           externalTrackingNumber: deliveryResponse.trackingNumber,
-          pickupAddress: seller.addressLine1 || seller.city || "بغداد",
-          pickupCity: seller.city || "بغداد",
-          pickupPhone: seller.phone || "",
-          pickupContactName: seller.displayName,
+          pickupAddress,
+          pickupCity,
+          pickupPhone,
+          pickupContactName,
           deliveryAddress: transaction.deliveryAddress || "",
           deliveryCity: transaction.deliveryCity || "",
           deliveryPhone: transaction.deliveryPhone || "",
@@ -104,6 +119,7 @@ class DeliveryService {
           itemDescription: listing.title,
           status: "pending",
           estimatedDeliveryDate: estimatedDate,
+          sellerAddressId: listing.sellerAddressId,
         })
         .returning();
 
@@ -561,6 +577,115 @@ class DeliveryService {
       value: value as DriverCancellationReason,
       label,
     }));
+  }
+
+  /**
+   * Create a return shipment for an approved return request
+   * This swaps the pickup (buyer) and delivery (seller) addresses
+   */
+  async createReturnDeliveryOrder(transactionId: string): Promise<typeof deliveryOrders.$inferSelect | null> {
+    // Get the original transaction
+    const [transaction] = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, transactionId))
+      .limit(1);
+
+    if (!transaction) {
+      console.error(`[DeliveryService] Transaction not found for return: ${transactionId}`);
+      return null;
+    }
+
+    // Get seller details
+    const [seller] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, transaction.sellerId))
+      .limit(1);
+
+    // Get listing details
+    const [listing] = await db
+      .select()
+      .from(listings)
+      .where(eq(listings.id, transaction.listingId))
+      .limit(1);
+
+    if (!seller || !listing) {
+      console.error(`[DeliveryService] Seller or listing not found for return: ${transactionId}`);
+      return null;
+    }
+
+    // Get seller's saved address for return delivery destination
+    let sellerAddress = null;
+    if (listing.sellerAddressId) {
+      sellerAddress = await storage.getSellerAddressById(listing.sellerAddressId);
+    }
+
+    // For return: buyer is pickup, seller is delivery (swapped from original order)
+    // Pickup = buyer's address (from original transaction delivery info)
+    const pickupAddress = transaction.deliveryAddress || "";
+    const pickupCity = transaction.deliveryCity || "";
+    const pickupPhone = transaction.deliveryPhone || "";
+    const pickupContactName = "المشتري"; // Same as original delivery contact
+
+    // Delivery = seller's address (swap from original pickup)
+    const deliveryAddress = sellerAddress?.addressLine1 || listing.area || seller.addressLine1 || seller.city || "بغداد";
+    const deliveryCity = sellerAddress?.city || listing.city || seller.city || "بغداد";
+    const deliveryPhone = sellerAddress?.phone || seller.phone || "";
+    const deliveryContactName = sellerAddress?.contactName || listing.sellerName || seller.displayName;
+
+    try {
+      // Call delivery API for return shipment
+      const deliveryResponse = await deliveryApi.createShipment({
+        orderId: `${transactionId}-return`,
+        pickupAddress,
+        pickupCity,
+        pickupPhone,
+        pickupContactName,
+        deliveryAddress,
+        deliveryCity,
+        deliveryPhone,
+        deliveryContactName,
+        codAmount: 0, // No COD for returns
+        shippingCost: 0, // Return shipping handled differently
+        itemDescription: `إرجاع: ${listing.title}`,
+        itemWeight: undefined,
+      });
+
+      const estimatedDate = new Date(deliveryResponse.estimatedDeliveryDate);
+
+      // Create delivery order record for return
+      const [returnDeliveryOrder] = await db
+        .insert(deliveryOrders)
+        .values({
+          transactionId: `${transactionId}-return`,
+          externalDeliveryId: deliveryResponse.externalDeliveryId,
+          externalTrackingNumber: deliveryResponse.trackingNumber,
+          pickupAddress,
+          pickupCity,
+          pickupPhone,
+          pickupContactName,
+          deliveryAddress,
+          deliveryCity,
+          deliveryPhone,
+          deliveryContactName,
+          codAmount: 0,
+          shippingCost: 0,
+          itemDescription: `إرجاع: ${listing.title}`,
+          status: "pending",
+          estimatedDeliveryDate: estimatedDate,
+          sellerAddressId: listing.sellerAddressId,
+        })
+        .returning();
+
+      await this.logStatus(returnDeliveryOrder.id, "pending", "تم إنشاء طلب إرجاع", true);
+
+      console.log(`[DeliveryService] Created return delivery order: ${returnDeliveryOrder.id} for transaction: ${transactionId}`);
+      return returnDeliveryOrder;
+    } catch (error: any) {
+      console.error(`[DeliveryService] Failed to create return delivery order:`, error);
+      return null;
+    }
   }
 
   private async logStatus(

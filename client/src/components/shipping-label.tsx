@@ -26,9 +26,10 @@ interface ShippingLabelProps {
     saleDate: Date;
     weight?: string;
   };
+  isReturn?: boolean; // For return shipment labels with swapped addresses
 }
 
-export function ShippingLabel({ open, onOpenChange, orderDetails }: ShippingLabelProps) {
+export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = false }: ShippingLabelProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
@@ -43,7 +44,7 @@ export function ShippingLabel({ open, onOpenChange, orderDetails }: ShippingLabe
       <html dir="rtl" lang="ar">
       <head>
         <meta charset="UTF-8">
-        <title>إيصال توصيل - ${orderDetails.orderId}</title>
+        <title>${isReturn ? "إيصال إرجاع" : "إيصال توصيل"} - ${orderDetails.orderId}</title>
         <style>
           * {
             margin: 0;
@@ -251,8 +252,8 @@ export function ShippingLabel({ open, onOpenChange, orderDetails }: ShippingLabe
       <DialogContent className="max-w-md p-0 overflow-hidden" dir="rtl">
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-blue-600" />
-            إيصال التوصيل
+            <Package className={`h-5 w-5 ${isReturn ? 'text-red-600' : 'text-blue-600'}`} />
+            {isReturn ? "إيصال الإرجاع" : "إيصال التوصيل"}
           </DialogTitle>
         </DialogHeader>
 
@@ -263,14 +264,21 @@ export function ShippingLabel({ open, onOpenChange, orderDetails }: ShippingLabe
                 
                 <div className="header flex justify-between items-start border-b-2 border-black pb-2 mb-2">
                   <div className="header-left text-right">
-                    <h1 className="text-xl font-black">إيصال توصيل</h1>
-                    <div className="text-[10px] text-gray-600 uppercase tracking-widest">SHIPPING LABEL</div>
+                    <h1 className="text-xl font-black">{isReturn ? "إيصال إرجاع" : "إيصال توصيل"}</h1>
+                    <div className="text-[10px] text-gray-600 uppercase tracking-widest">{isReturn ? "RETURN LABEL" : "SHIPPING LABEL"}</div>
                     <div className="text-[9px] text-gray-400 mt-1">{formatDate(orderDetails.saleDate)}</div>
                   </div>
-                  <div className="cod-badge border-2 border-black px-2 py-1 text-center">
-                    <div className="font-bold text-lg">COD</div>
-                    <span className="text-[8px]">الدفع عند الاستلام</span>
-                  </div>
+                  {isReturn ? (
+                    <div className="cod-badge border-2 border-red-600 bg-red-50 px-2 py-1 text-center">
+                      <div className="font-bold text-lg text-red-600">إرجاع</div>
+                      <span className="text-[8px] text-red-500">RETURN</span>
+                    </div>
+                  ) : (
+                    <div className="cod-badge border-2 border-black px-2 py-1 text-center">
+                      <div className="font-bold text-lg">COD</div>
+                      <span className="text-[8px]">الدفع عند الاستلام</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="barcode-section text-center my-2">
@@ -286,40 +294,86 @@ export function ShippingLabel({ open, onOpenChange, orderDetails }: ShippingLabe
                 </div>
 
                 <div className="addresses flex gap-2 flex-1 mb-2">
-                  <div className="address-box flex-1 border border-gray-300 rounded-md p-2">
-                    <div className="address-header flex items-center gap-1 font-bold text-[11px] pb-1 border-b border-gray-200 mb-1">
-                      <span>📦</span>
-                      <span>من: البائع</span>
-                    </div>
-                    <div className="address-content text-[10px] leading-relaxed">
-                      <div className="name font-bold text-xs mb-1">{orderDetails.sellerName}</div>
-                      <div className="text-gray-600">{orderDetails.sellerCity}</div>
-                      {orderDetails.sellerAddress && <div className="text-gray-500 text-[9px]">{orderDetails.sellerAddress}</div>}
-                      <div className="phone font-semibold mt-1" dir="ltr">{orderDetails.sellerPhone}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="address-box buyer flex-1 border-2 border-black rounded-md p-2 bg-gray-50">
-                    <div className="address-header flex items-center gap-1 font-bold text-[11px] pb-1 border-b border-gray-400 mb-1">
-                      <span>🏠</span>
-                      <span>إلى: المشتري</span>
-                    </div>
-                    <div className="address-content text-[10px] leading-relaxed">
-                      <div className="name font-bold text-sm mb-1">{orderDetails.buyerName}</div>
-                      <div className="text-gray-700">{orderDetails.city}</div>
-                      {orderDetails.district && <div className="text-gray-600">{orderDetails.district}</div>}
-                      <div className="text-gray-500 text-[9px]">{orderDetails.deliveryAddress}</div>
-                      <div className="phone font-bold mt-1" dir="ltr">{orderDetails.buyerPhone}</div>
-                    </div>
-                  </div>
+                  {isReturn ? (
+                    <>
+                      {/* Return: Buyer is sender (from) */}
+                      <div className="address-box flex-1 border border-gray-300 rounded-md p-2">
+                        <div className="address-header flex items-center gap-1 font-bold text-[11px] pb-1 border-b border-gray-200 mb-1">
+                          <span>📦</span>
+                          <span>من: المشتري</span>
+                        </div>
+                        <div className="address-content text-[10px] leading-relaxed">
+                          <div className="name font-bold text-xs mb-1">{orderDetails.buyerName}</div>
+                          <div className="text-gray-600">{orderDetails.city}</div>
+                          {orderDetails.district && <div className="text-gray-500 text-[9px]">{orderDetails.district}</div>}
+                          <div className="text-gray-500 text-[9px]">{orderDetails.deliveryAddress}</div>
+                          <div className="phone font-semibold mt-1" dir="ltr">{orderDetails.buyerPhone}</div>
+                        </div>
+                      </div>
+                      
+                      {/* Return: Seller is receiver (to) */}
+                      <div className="address-box buyer flex-1 border-2 border-red-600 rounded-md p-2 bg-red-50">
+                        <div className="address-header flex items-center gap-1 font-bold text-[11px] pb-1 border-b border-red-200 mb-1">
+                          <span>🏠</span>
+                          <span>إلى: البائع</span>
+                        </div>
+                        <div className="address-content text-[10px] leading-relaxed">
+                          <div className="name font-bold text-sm mb-1">{orderDetails.sellerName}</div>
+                          <div className="text-gray-700">{orderDetails.sellerCity}</div>
+                          {orderDetails.sellerAddress && <div className="text-gray-600 text-[9px]">{orderDetails.sellerAddress}</div>}
+                          <div className="phone font-bold mt-1" dir="ltr">{orderDetails.sellerPhone}</div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Standard: Seller is sender (from) */}
+                      <div className="address-box flex-1 border border-gray-300 rounded-md p-2">
+                        <div className="address-header flex items-center gap-1 font-bold text-[11px] pb-1 border-b border-gray-200 mb-1">
+                          <span>📦</span>
+                          <span>من: البائع</span>
+                        </div>
+                        <div className="address-content text-[10px] leading-relaxed">
+                          <div className="name font-bold text-xs mb-1">{orderDetails.sellerName}</div>
+                          <div className="text-gray-600">{orderDetails.sellerCity}</div>
+                          {orderDetails.sellerAddress && <div className="text-gray-500 text-[9px]">{orderDetails.sellerAddress}</div>}
+                          <div className="phone font-semibold mt-1" dir="ltr">{orderDetails.sellerPhone}</div>
+                        </div>
+                      </div>
+                      
+                      {/* Standard: Buyer is receiver (to) */}
+                      <div className="address-box buyer flex-1 border-2 border-black rounded-md p-2 bg-gray-50">
+                        <div className="address-header flex items-center gap-1 font-bold text-[11px] pb-1 border-b border-gray-400 mb-1">
+                          <span>🏠</span>
+                          <span>إلى: المشتري</span>
+                        </div>
+                        <div className="address-content text-[10px] leading-relaxed">
+                          <div className="name font-bold text-sm mb-1">{orderDetails.buyerName}</div>
+                          <div className="text-gray-700">{orderDetails.city}</div>
+                          {orderDetails.district && <div className="text-gray-600">{orderDetails.district}</div>}
+                          <div className="text-gray-500 text-[9px]">{orderDetails.deliveryAddress}</div>
+                          <div className="phone font-bold mt-1" dir="ltr">{orderDetails.buyerPhone}</div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                <div className="cod-amount bg-amber-100 border-2 border-amber-500 rounded-md p-3 text-center mb-2">
-                  <div className="label-text text-[9px] text-amber-700 mb-1">المبلغ المطلوب (الدفع عند الاستلام)</div>
-                  <div className="amount text-2xl font-black text-amber-900">
-                    {formatPrice(orderDetails.price)} د.ع
+                {isReturn ? (
+                  <div className="cod-amount bg-gray-100 border-2 border-gray-400 rounded-md p-3 text-center mb-2">
+                    <div className="label-text text-[9px] text-gray-600 mb-1">طلب إرجاع - لا يوجد مبلغ للتحصيل</div>
+                    <div className="amount text-lg font-bold text-gray-700">
+                      إرجاع بدون رسوم
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="cod-amount bg-amber-100 border-2 border-amber-500 rounded-md p-3 text-center mb-2">
+                    <div className="label-text text-[9px] text-amber-700 mb-1">المبلغ المطلوب (الدفع عند الاستلام)</div>
+                    <div className="amount text-2xl font-black text-amber-900">
+                      {formatPrice(orderDetails.price)} د.ع
+                    </div>
+                  </div>
+                )}
 
                 <div className="footer-section flex justify-between items-end">
                   <div className="product-info flex-1">

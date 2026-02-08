@@ -178,6 +178,219 @@ export const CATEGORY_SPECIFICATIONS: Record<string, { fields: string[] }> = {
   }
 };
 
+// Category-specific field options with Arabic and Kurdish labels
+export const SPECIFICATION_OPTIONS = {
+  // Clothing - Gender options
+  gender: [
+    { value: "men", labelAr: "رجالي", labelKu: "پیاوان" },
+    { value: "women", labelAr: "نسائي", labelKu: "ژنان" },
+    { value: "unisex", labelAr: "للجنسين", labelKu: "هەردووکیان" },
+    { value: "kids", labelAr: "أطفال", labelKu: "منداڵان" },
+  ],
+  
+  // Clothing - Size options
+  size: [
+    { value: "XS", labelAr: "XS", labelKu: "XS" },
+    { value: "S", labelAr: "S", labelKu: "S" },
+    { value: "M", labelAr: "M", labelKu: "M" },
+    { value: "L", labelAr: "L", labelKu: "L" },
+    { value: "XL", labelAr: "XL", labelKu: "XL" },
+    { value: "XXL", labelAr: "XXL", labelKu: "XXL" },
+    { value: "XXXL", labelAr: "XXXL", labelKu: "XXXL" },
+    { value: "36", labelAr: "36", labelKu: "36" },
+    { value: "38", labelAr: "38", labelKu: "38" },
+    { value: "40", labelAr: "40", labelKu: "40" },
+    { value: "42", labelAr: "42", labelKu: "42" },
+    { value: "44", labelAr: "44", labelKu: "44" },
+    { value: "46", labelAr: "46", labelKu: "46" },
+    { value: "48", labelAr: "48", labelKu: "48" },
+    { value: "free", labelAr: "مقاس حر", labelKu: "ئازاد" },
+  ],
+  
+  // Electronics - Storage options
+  storage: [
+    { value: "16GB", labelAr: "16 جيجابايت", labelKu: "16 گیگابایت" },
+    { value: "32GB", labelAr: "32 جيجابايت", labelKu: "32 گیگابایت" },
+    { value: "64GB", labelAr: "64 جيجابايت", labelKu: "64 گیگابایت" },
+    { value: "128GB", labelAr: "128 جيجابايت", labelKu: "128 گیگابایت" },
+    { value: "256GB", labelAr: "256 جيجابايت", labelKu: "256 گیگابایت" },
+    { value: "512GB", labelAr: "512 جيجابايت", labelKu: "512 گیگابایت" },
+    { value: "1TB", labelAr: "1 تيرابايت", labelKu: "1 تێرابایت" },
+    { value: "2TB", labelAr: "2 تيرابايت", labelKu: "2 تێرابایت" },
+  ],
+  
+  // Electronics - RAM options
+  ram: [
+    { value: "2GB", labelAr: "2 جيجابايت", labelKu: "2 گیگابایت" },
+    { value: "4GB", labelAr: "4 جيجابايت", labelKu: "4 گیگابایت" },
+    { value: "6GB", labelAr: "6 جيجابايت", labelKu: "6 گیگابایت" },
+    { value: "8GB", labelAr: "8 جيجابايت", labelKu: "8 گیگابایت" },
+    { value: "12GB", labelAr: "12 جيجابايت", labelKu: "12 گیگابایت" },
+    { value: "16GB", labelAr: "16 جيجابايت", labelKu: "16 گیگابایت" },
+    { value: "32GB", labelAr: "32 جيجابايت", labelKu: "32 گیگابایت" },
+    { value: "64GB", labelAr: "64 جيجابايت", labelKu: "64 گیگابایت" },
+  ],
+  
+  // Cars - Fuel Type options
+  fuelType: [
+    { value: "petrol", labelAr: "بنزين", labelKu: "بەنزین" },
+    { value: "diesel", labelAr: "ديزل", labelKu: "دیزل" },
+    { value: "hybrid", labelAr: "هايبرد", labelKu: "هایبرید" },
+    { value: "electric", labelAr: "كهربائي", labelKu: "کارەبایی" },
+    { value: "lpg", labelAr: "غاز", labelKu: "گاز" },
+  ],
+  
+  // Cars - Transmission options
+  transmission: [
+    { value: "automatic", labelAr: "أوتوماتيك", labelKu: "ئۆتۆماتیک" },
+    { value: "manual", labelAr: "عادي", labelKu: "دەستی" },
+    { value: "cvt", labelAr: "CVT", labelKu: "CVT" },
+  ],
+  
+  // Cars - Body Type options
+  bodyType: [
+    { value: "sedan", labelAr: "سيدان", labelKu: "سیدان" },
+    { value: "suv", labelAr: "SUV", labelKu: "SUV" },
+    { value: "hatchback", labelAr: "هاتشباك", labelKu: "هاتشباک" },
+    { value: "coupe", labelAr: "كوبيه", labelKu: "کوپە" },
+    { value: "pickup", labelAr: "بيك اب", labelKu: "پیک ئەپ" },
+    { value: "van", labelAr: "فان", labelKu: "ڤان" },
+    { value: "convertible", labelAr: "مكشوف", labelKu: "سەربەست" },
+  ],
+  
+  // Watches - Movement options
+  movement: [
+    { value: "automatic", labelAr: "أوتوماتيك", labelKu: "ئۆتۆماتیک" },
+    { value: "quartz", labelAr: "كوارتز", labelKu: "کوارتز" },
+    { value: "mechanical", labelAr: "ميكانيكي", labelKu: "میکانیکی" },
+    { value: "solar", labelAr: "شمسي", labelKu: "خۆرەکی" },
+    { value: "kinetic", labelAr: "كينيتك", labelKu: "کینێتیک" },
+  ],
+  
+  // Watches - Case Size options
+  caseSize: [
+    { value: "small", labelAr: "صغير (أقل من 36مم)", labelKu: "بچووک (کەمتر لە 36مم)" },
+    { value: "medium", labelAr: "متوسط (36-40مم)", labelKu: "ناوەند (36-40مم)" },
+    { value: "large", labelAr: "كبير (41-44مم)", labelKu: "گەورە (41-44مم)" },
+    { value: "xlarge", labelAr: "كبير جداً (أكثر من 44مم)", labelKu: "زۆر گەورە (زیاتر لە 44مم)" },
+  ],
+  
+  // Common color options
+  color: [
+    { value: "black", labelAr: "أسود", labelKu: "ڕەش" },
+    { value: "white", labelAr: "أبيض", labelKu: "سپی" },
+    { value: "red", labelAr: "أحمر", labelKu: "سوور" },
+    { value: "blue", labelAr: "أزرق", labelKu: "شین" },
+    { value: "green", labelAr: "أخضر", labelKu: "سەوز" },
+    { value: "yellow", labelAr: "أصفر", labelKu: "زەرد" },
+    { value: "pink", labelAr: "وردي", labelKu: "پەمەیی" },
+    { value: "purple", labelAr: "بنفسجي", labelKu: "مۆر" },
+    { value: "orange", labelAr: "برتقالي", labelKu: "پرتەقاڵی" },
+    { value: "brown", labelAr: "بني", labelKu: "قاوەیی" },
+    { value: "gray", labelAr: "رمادي", labelKu: "خۆڵەمێشی" },
+    { value: "gold", labelAr: "ذهبي", labelKu: "ئاڵتونی" },
+    { value: "silver", labelAr: "فضي", labelKu: "زیوی" },
+    { value: "beige", labelAr: "بيج", labelKu: "بێژ" },
+    { value: "navy", labelAr: "كحلي", labelKu: "شینی تۆخ" },
+    { value: "multicolor", labelAr: "متعدد الألوان", labelKu: "فرە ڕەنگ" },
+  ],
+  
+  // Clothing - Material options
+  material: [
+    { value: "cotton", labelAr: "قطن", labelKu: "لۆکە" },
+    { value: "polyester", labelAr: "بوليستر", labelKu: "پۆلیەستەر" },
+    { value: "silk", labelAr: "حرير", labelKu: "ئاوریشم" },
+    { value: "wool", labelAr: "صوف", labelKu: "خوری" },
+    { value: "linen", labelAr: "كتان", labelKu: "کەتان" },
+    { value: "denim", labelAr: "جينز", labelKu: "جینز" },
+    { value: "leather", labelAr: "جلد", labelKu: "چەرم" },
+    { value: "synthetic", labelAr: "صناعي", labelKu: "دەستکرد" },
+    { value: "blend", labelAr: "مزيج", labelKu: "تێکەڵ" },
+  ],
+  
+  // Jewelry - Material options
+  jewelryMaterial: [
+    { value: "gold_24k", labelAr: "ذهب 24 قيراط", labelKu: "ئاڵتون 24 قیرات" },
+    { value: "gold_21k", labelAr: "ذهب 21 قيراط", labelKu: "ئاڵتون 21 قیرات" },
+    { value: "gold_18k", labelAr: "ذهب 18 قيراط", labelKu: "ئاڵتون 18 قیرات" },
+    { value: "gold_14k", labelAr: "ذهب 14 قيراط", labelKu: "ئاڵتون 14 قیرات" },
+    { value: "silver", labelAr: "فضة", labelKu: "زیو" },
+    { value: "platinum", labelAr: "بلاتين", labelKu: "پلاتین" },
+    { value: "stainless", labelAr: "ستانلس ستيل", labelKu: "ستانلێس ستیل" },
+    { value: "titanium", labelAr: "تيتانيوم", labelKu: "تیتانیۆم" },
+  ],
+  
+  // Jewelry - Gemstone options
+  gemstone: [
+    { value: "diamond", labelAr: "ألماس", labelKu: "ئەڵماس" },
+    { value: "ruby", labelAr: "ياقوت أحمر", labelKu: "یاقووتی سوور" },
+    { value: "sapphire", labelAr: "ياقوت أزرق", labelKu: "یاقووتی شین" },
+    { value: "emerald", labelAr: "زمرد", labelKu: "زومرود" },
+    { value: "pearl", labelAr: "لؤلؤ", labelKu: "دور" },
+    { value: "opal", labelAr: "أوبال", labelKu: "ئۆپاڵ" },
+    { value: "turquoise", labelAr: "فيروز", labelKu: "فیرووز" },
+    { value: "none", labelAr: "بدون حجر", labelKu: "بێ بەرد" },
+  ],
+  
+  // Antiques - Era options
+  era: [
+    { value: "ancient", labelAr: "قديم جداً (قبل 1800)", labelKu: "زۆر کۆن (پێش 1800)" },
+    { value: "19th", labelAr: "القرن 19", labelKu: "سەدەی 19" },
+    { value: "early20th", labelAr: "أوائل القرن 20", labelKu: "سەرەتای سەدەی 20" },
+    { value: "mid20th", labelAr: "منتصف القرن 20", labelKu: "ناوەڕاستی سەدەی 20" },
+    { value: "late20th", labelAr: "أواخر القرن 20", labelKu: "کۆتایی سەدەی 20" },
+    { value: "modern", labelAr: "حديث", labelKu: "مۆدێرن" },
+  ],
+};
+
+// Category field configuration: which fields are required vs optional
+export const CATEGORY_FIELD_CONFIG: Record<string, { required: string[]; optional: string[] }> = {
+  "ملابس": {
+    required: ["gender", "size"],
+    optional: ["color", "material"],
+  },
+  "إلكترونيات": {
+    required: [],
+    optional: ["storage", "ram", "color"],
+  },
+  "ساعات": {
+    required: [],
+    optional: ["movement", "caseSize", "color"],
+  },
+  "سيارات": {
+    required: ["year", "mileage"],
+    optional: ["fuelType", "transmission", "bodyType", "color"],
+  },
+  "تحف وأثاث": {
+    required: [],
+    optional: ["era", "material"],
+  },
+  "مجوهرات": {
+    required: [],
+    optional: ["jewelryMaterial", "gemstone", "color"],
+  },
+};
+
+// Field labels for form display
+export const SPECIFICATION_LABELS: Record<string, { ar: string; ku: string }> = {
+  gender: { ar: "الفئة", ku: "جۆر" },
+  size: { ar: "المقاس", ku: "قەبارە" },
+  color: { ar: "اللون", ku: "ڕەنگ" },
+  material: { ar: "الخامة", ku: "مادە" },
+  storage: { ar: "سعة التخزين", ku: "قەبارەی هەڵگرتن" },
+  ram: { ar: "الذاكرة RAM", ku: "RAM میمۆری" },
+  year: { ar: "سنة الصنع", ku: "ساڵی دروستکردن" },
+  mileage: { ar: "عداد الكيلومترات", ku: "کیلۆمەتر" },
+  fuelType: { ar: "نوع الوقود", ku: "جۆری سووتەمەنی" },
+  transmission: { ar: "ناقل الحركة", ku: "گێربۆکس" },
+  bodyType: { ar: "نوع الهيكل", ku: "جۆری باڵ" },
+  movement: { ar: "نوع الحركة", ku: "جۆری جوڵە" },
+  caseSize: { ar: "حجم العلبة", ku: "قەبارەی سندوق" },
+  jewelryMaterial: { ar: "نوع المعدن", ku: "جۆری کانزا" },
+  gemstone: { ar: "الحجر الكريم", ku: "بەردی گرانبەها" },
+  era: { ar: "الحقبة", ku: "سەردەم" },
+};
+
 export const BRAND_SYNONYMS: Record<string, string[]> = {
   "omega": ["أوميغا", "اوميغا", "اوميجا", "أوميجا", "اومیغا", "اومیجا"],
   "rolex": ["رولكس", "رولکس", "روليكس", "رولیکس"],
