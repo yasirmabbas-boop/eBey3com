@@ -406,9 +406,9 @@ export default function SellWizardPage() {
       
       const blob = await response.blob();
       
-      // Create FormData and send to AI endpoint
       const formData = new FormData();
       formData.append('image', blob, 'product.jpg');
+      formData.append('language', language);
       
       const aiResponse = await fetch('/api/analyze-image', {
         method: 'POST',

@@ -23,7 +23,7 @@ const model = genAI.getGenerativeModel({
   }
 });
 
-export async function analyzeProductImage(imageBuffer: Buffer): Promise<ProductAnalysis> {
+export async function analyzeProductImage(imageBuffer: Buffer, language: string = 'ar'): Promise<ProductAnalysis> {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY environment variable is not configured");
   }
@@ -40,6 +40,42 @@ export async function analyzeProductImage(imageBuffer: Buffer): Promise<ProductA
       mimeType = 'image/webp';
     }
 
+    const isKurdish = language === 'ku';
+
+    const descriptionLangInstruction = isKurdish
+      ? `2. description: Write in SORANI KURDISH (کوردی سۆرانی).
+   - Tone: Professional but friendly, like a trusted local merchant.
+   - Structure:
+     * Line 1: Clear identification (Brand, Model) in Kurdish.
+     * Line 2: Specific details found in images (Size, material, specs) in Kurdish.
+     * Line 3: Condition & Accessories (Box, charger, scratches) in Kurdish.
+   - CRITICAL: Verify material claims. Do not claim "ئەسڵی" (Original). Leave that to the seller to add if they wish.`
+      : `2. description: Write in IRAQI ARABIC (اللهجة العراقية).
+   - Tone: Professional but local (مثل دلالية السوق).
+   - Structure:
+     * Line 1: Clear identification (Brand, Model).
+     * Line 2: Specific details found in images (Size, material, specs).
+     * Line 3: Condition & Accessories (Box, charger, scratches).
+   - CRITICAL: Verify material claims. Do not claim "Original" (أصلي). Leave that to the seller to add if they wish.`;
+
+    const titleInstruction = isKurdish
+      ? `1. title: "Kurdish Title | English Title" (Max 80 chars).
+   - Format: Brand (Transliterated to Kurdish) + Model + Key Feature.
+   - Transliteration Guide: Citizen→سیتیزن, Rolex→ڕۆلێکس, Apple→ئاپڵ, Samsung→سامسۆنگ, Huawei→هواوەی, Casio→کاسیۆ, Seiko→سێکۆ.
+   - Example: "کاتژمێری سیتیزن ئیکۆ درایڤ پیاوانە | Citizen Eco-Drive Men's Watch"`
+      : `1. title: "Arabic Title | English Title" (Max 80 chars).
+   - Format: Brand (Transliterated) + Model + Key Feature.
+   - Transliteration Guide: Citizen→سيتيزن, Rolex→رولكس, Apple→آبل, Samsung→سامسونج, Huawei→هواوي, Casio→كاسيو, Seiko→سيكو.
+   - Example: "ساعة سيتيزن ايكو درايف رجالية | Citizen Eco-Drive Men's Watch"`;
+
+    const tagsInstruction = isKurdish
+      ? `4. tags: Array of 5 strings. Mixed Kurdish/English specific to the item.`
+      : `4. tags: Array of 5 strings. Mixed Arabic/English specific to the item.`;
+
+    const materialsWarning = isKurdish
+      ? `2. MATERIALS vs. COLOR: Be skeptical. Do NOT say "زێڕ" (Gold) unless you see a hallmark (e.g., 18k, 750, 21k). If no hallmark is visible, you MUST use "ڕەنگی زێڕین" (Gold color) or "ڕووکش" (Plated).`
+      : `2. MATERIALS vs. COLOR: Be skeptical. Do NOT say "Gold" (ذهب) unless you see a hallmark (e.g., 18k, 750, 21k). If no hallmark is visible, you MUST use "لون ذهبي" (Gold color) or "مطلي" (Plated).`;
+
     const prompt = `You are an expert Iraqi merchant and product appraiser (دلال خبير) for a Baghdad-based e-commerce platform. Your goal is to analyze a set of product images and generate a highly accurate, trustworthy sales listing.
 
 INPUT CONTEXT:
@@ -48,7 +84,7 @@ You will be provided with one or more images of a single product. You must synth
 STEP 1: VISUAL ANALYSIS (Internal Monologue)
 Before generating JSON, you must analyze the images step-by-step. Look for:
 1. TEXT & OCR: Read ALL text visible on the product, labels, and box. Identify Brand Names, Model Numbers (alphanumeric codes), and Serial Numbers.
-2. MATERIALS vs. COLOR: Be skeptical. Do NOT say "Gold" (ذهب) unless you see a hallmark (e.g., 18k, 750, 21k). If no hallmark is visible, you MUST use "لون ذهبي" (Gold color) or "مطلي" (Plated).
+${materialsWarning}
 3. CONDITION: Look for scratches, dents, or wear. Does it have the original box?
 4. CATEGORY CHECK: Is it a smart watch or analog? Is it a phone or a cover?
 
@@ -56,22 +92,13 @@ STEP 2: JSON GENERATION
 Generate a single valid JSON object based on your analysis.
 
 Rules for JSON Fields:
-1. title: "Arabic Title | English Title" (Max 80 chars).
-   - Format: Brand (Transliterated) + Model + Key Feature.
-   - Transliteration Guide: Citizen→سيتيزن, Rolex→رولكس, Apple→آبل, Samsung→سامسونج, Huawei→هواوي, Casio→كاسيو, Seiko→سيكو.
-   - Example: "ساعة سيتيزن ايكو درايف رجالية | Citizen Eco-Drive Men's Watch"
+${titleInstruction}
 
-2. description: Write in IRAQI ARABIC (اللهجة العراقية).
-   - Tone: Professional but local (مثل دلالية السوق).
-   - Structure:
-     * Line 1: Clear identification (Brand, Model).
-     * Line 2: Specific details found in images (Size, material, specs).
-     * Line 3: Condition & Accessories (Box, charger, scratches).
-   - CRITICAL: Verify material claims. Do not claim "Original" (أصلي). Leave that to the seller to add if they wish.
+${descriptionLangInstruction}
 
 3. category: Choose  from: ["ساعات" "مكياج", "إلكترونيات", "ملابس", "مجوهرات", "تحف وأثاث", "مقتنيات", "أخرى"]
 
-4. tags: Array of 5 strings. Mixed Arabic/English specific to the item.
+${tagsInstruction}
 
 5. model: The exact alphanumeric model number found in the images (e.g., "M79230N", "SM-S908E"). If none found, return null.
 

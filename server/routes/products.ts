@@ -594,9 +594,10 @@ export function registerProductRoutes(app: Express): void {
         });
       }
 
-      console.log(`[analyze-image] Processing image: ${req.file.mimetype}, ${(req.file.size / 1024).toFixed(1)}KB`);
+      const language = (req.body?.language as string) || 'ar';
+      console.log(`[analyze-image] Processing image: ${req.file.mimetype}, ${(req.file.size / 1024).toFixed(1)}KB, language: ${language}`);
 
-      const analysis = await analyzeProductImage(req.file.buffer);
+      const analysis = await analyzeProductImage(req.file.buffer, language);
 
       console.log(`[analyze-image] Analysis complete: ${analysis.title} - ${analysis.category}`);
 
