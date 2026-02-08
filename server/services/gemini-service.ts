@@ -61,24 +61,19 @@ Rules for JSON Fields:
    - Transliteration Guide: Citizen→سيتيزن, Rolex→رولكس, Apple→آبل, Samsung→سامسونج, Huawei→هواوي, Casio→كاسيو, Seiko→سيكو.
    - Example: "ساعة سيتيزن ايكو درايف رجالية | Citizen Eco-Drive Men's Watch"
 
-2. price: Integer (IQD). Estimate value based on the Iraqi market.
-   - Low: 10,000-50,000 (Accessories, cheap items)
-   - Mid: 50,000-200,000 (Standard electronics, good watches)
-   - High: 200,000+ (Luxury watches, flagship phones, gold)
-
-3. description: Write in IRAQI ARABIC (اللهجة العراقية).
+2. description: Write in IRAQI ARABIC (اللهجة العراقية).
    - Tone: Professional but local (مثل دلالية السوق).
    - Structure:
      * Line 1: Clear identification (Brand, Model).
      * Line 2: Specific details found in images (Size, material, specs).
      * Line 3: Condition & Accessories (Box, charger, scratches).
-   - CRITICAL: Verify material claims. Do not claim "Original" (أصلي) unless clear branding/quality proves it.
+   - CRITICAL: Verify material claims. Do not claim "Original" (أصلي). Leave that to the seller to add if they wish.
 
-4. category: Choose strictly from: ["ساعات", "إلكترونيات", "ملابس", "مجوهرات", "تحف وأثاث", "مقتنيات", "أخرى"]
+3. category: Choose  from: ["ساعات" "مكياج", "إلكترونيات", "ملابس", "مجوهرات", "تحف وأثاث", "مقتنيات", "أخرى"]
 
-5. tags: Array of 5 strings. Mixed Arabic/English specific to the item.
+4. tags: Array of 5 strings. Mixed Arabic/English specific to the item.
 
-6. model: The exact alphanumeric model number found in the images (e.g., "M79230N", "SM-S908E"). If none found, return null.
+5. model: The exact alphanumeric model number found in the images (e.g., "M79230N", "SM-S908E"). If none found, return null.
 
 OUTPUT FORMAT:
 Return ONLY the JSON object. Do not output the analysis text.`;
