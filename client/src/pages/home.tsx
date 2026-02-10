@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Clock, Search as SearchIcon, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel, TrendingUp, Timer } from "lucide-react";
+import { Eye, Clock, Search as SearchIcon, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel, TrendingUp, Timer, MapPin, Star } from "lucide-react";
 import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
 import type { Listing } from "@shared/schema";
@@ -153,6 +153,58 @@ export default function Home() {
       console.log("Error loading from localStorage:", e);
     }
   }, []);
+
+  // Fetch server-side user preferences (for logged-in users)
+  const { data: serverPreferences } = useQuery<{
+    topCategories: string[];
+    recentSearches: string[];
+    priceRange: { low: number; high: number } | null;
+    topBrands: string[];
+  }>({
+    queryKey: ["/api/account/preferences"],
+    queryFn: async () => {
+      const res = await fetch("/api/account/preferences");
+      if (!res.ok) return null;
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!user?.id,
+  });
+
+  // Sync server preferences to localStorage when available
+  useEffect(() => {
+    if (serverPreferences) {
+      if (serverPreferences.topCategories.length > 0) {
+        setUserPreferredCategories(serverPreferences.topCategories);
+        localStorage.setItem("userPreferredCategories", JSON.stringify(serverPreferences.topCategories));
+      }
+      if (serverPreferences.recentSearches.length > 0) {
+        setPreviousSearches(serverPreferences.recentSearches);
+        localStorage.setItem("previousSearches", JSON.stringify(serverPreferences.recentSearches));
+      }
+      if (serverPreferences.priceRange) {
+        const range = { min: serverPreferences.priceRange.low, max: serverPreferences.priceRange.high };
+        setUserPriceRange(range);
+        localStorage.setItem("userPriceRange", JSON.stringify(range));
+      }
+    }
+  }, [serverPreferences]);
+
+  // Fetch personalized recommendations (for logged-in users)
+  const { data: recommendations } = useQuery<{
+    searchBased: Array<{ query: string; listings: any[] }>;
+    recommended: any[];
+    popularInArea: any[];
+  }>({
+    queryKey: ["/api/recommendations"],
+    queryFn: async () => {
+      const res = await fetch("/api/recommendations");
+      if (!res.ok) return { searchBased: [], recommended: [], popularInArea: [] };
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!user?.id,
+  });
 
   const { data: listingsData, isLoading } = useListings({ limit: 100 });
   const listings: Listing[] = listingsData?.listings || [];
@@ -319,6 +371,39 @@ export default function Home() {
           </Section>
         )}
 
+        {/* Because you searched for X -- personalized rows */}
+        {recommendations?.searchBased?.map((group) => (
+          <Section
+            key={group.query}
+            title={language === "ar" ? `لأنك بحثت عن "${group.query}"` : `"${group.query}" بۆت گەڕا`}
+            icon={<SearchIcon className="h-4 w-4 text-blue-500" />}
+            seeAllLink={`/search?q=${encodeURIComponent(group.query)}`}
+            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+          >
+            {group.listings.map((product: any) => (
+              <div key={product.id} className="snap-start">
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </Section>
+        ))}
+
+        {/* Recommended for you */}
+        {recommendations?.recommended && recommendations.recommended.length > 0 && (
+          <Section
+            title={language === "ar" ? "مقترح لك" : "پێشنیارکراو بۆ تۆ"}
+            icon={<Star className="h-4 w-4 text-yellow-500" />}
+            seeAllLink="/search"
+            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+          >
+            {recommendations.recommended.map((product: any) => (
+              <div key={product.id} className="snap-start">
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </Section>
+        )}
+
         {/* New Arrivals */}
         <Section 
           title={language === "ar" ? "جديد الآن" : "تازەکان"}
@@ -344,6 +429,22 @@ export default function Home() {
             seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
           >
             {endingSoon.map((product) => (
+              <div key={product.id} className="snap-start">
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </Section>
+        )}
+
+        {/* Popular in your area */}
+        {recommendations?.popularInArea && recommendations.popularInArea.length > 0 && (
+          <Section
+            title={language === "ar" ? "رائج في منطقتك" : "بەناوبانگ لە ناوچەکەت"}
+            icon={<MapPin className="h-4 w-4 text-green-500" />}
+            seeAllLink="/search"
+            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+          >
+            {recommendations.popularInArea.map((product: any) => (
               <div key={product.id} className="snap-start">
                 <ProductCard product={product} />
               </div>

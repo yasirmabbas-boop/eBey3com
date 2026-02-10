@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Camera, Layers, Tag } from "lucide-react";
+import { Search, Camera, Layers, Tag, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 interface SmartSearchProps {
   onImageSearchClick?: () => void;
@@ -18,21 +19,54 @@ interface Suggestion {
 
 export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps) {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [, navigate] = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+
+  // Debounce the query to avoid firing on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const { data: suggestions = [] } = useQuery<Suggestion[]>({
-    queryKey: ["/api/search-suggestions", query],
+    queryKey: ["/api/search-suggestions", debouncedQuery],
     queryFn: async () => {
-      const res = await fetch(`/api/search-suggestions?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`/api/search-suggestions?q=${encodeURIComponent(debouncedQuery)}`);
       if (!res.ok) return [];
       return res.json();
     },
     staleTime: 30000,
+    enabled: debouncedQuery.length >= 2, // Only fetch when at least 2 chars typed
   });
+
+  // Fetch recent searches from server preferences (for logged-in users)
+  const { data: userPreferences } = useQuery<{
+    topCategories: string[];
+    recentSearches: string[];
+    priceRange: { low: number; high: number } | null;
+    topBrands: string[];
+  }>({
+    queryKey: ["/api/account/preferences"],
+    queryFn: async () => {
+      const res = await fetch("/api/account/preferences");
+      if (!res.ok) return null;
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!user?.id,
+  });
+
+  const recentSearches = userPreferences?.recentSearches || [];
+  // Show recent searches when input is empty and focused, otherwise show suggestions
+  const showRecentSearches = query.length === 0 && recentSearches.length > 0;
+  const dropdownItemCount = showRecentSearches ? recentSearches.length : suggestions.length;
 
   const getTypeIcon = (type: Suggestion["type"]) => {
     switch (type) {
@@ -82,19 +116,25 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showDropdown || suggestions.length === 0) return;
+    if (!showDropdown || dropdownItemCount === 0) return;
     
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev));
+      setSelectedIndex(prev => (prev < dropdownItemCount - 1 ? prev + 1 : prev));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelectedIndex(prev => (prev > 0 ? prev - 1 : -1));
     } else if (e.key === "Enter" && selectedIndex >= 0) {
       e.preventDefault();
-      const item = suggestions[selectedIndex];
-      setQuery(item.term);
-      handleSearch(item.term);
+      if (showRecentSearches) {
+        const term = recentSearches[selectedIndex];
+        setQuery(term);
+        handleSearch(term);
+      } else {
+        const item = suggestions[selectedIndex];
+        setQuery(item.term);
+        handleSearch(item.term);
+      }
     } else if (e.key === "Escape") {
       setShowDropdown(false);
     }
@@ -117,12 +157,13 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
           onChange={(e) => {
             setQuery(e.target.value);
             setSelectedIndex(-1);
-            if (e.target.value.length > 0) {
+            // Show dropdown when typing (for suggestions) or when empty (for recent searches)
+            if (e.target.value.length > 0 || recentSearches.length > 0) {
               setShowDropdown(true);
             }
           }}
           onFocus={() => {
-            if (query.length > 0 && suggestions.length > 0) {
+            if ((query.length > 0 && suggestions.length > 0) || (query.length === 0 && recentSearches.length > 0)) {
               setShowDropdown(true);
             }
           }}
@@ -145,39 +186,66 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
         )}
       </div>
 
-      {showDropdown && suggestions.length > 0 && (
+      {showDropdown && dropdownItemCount > 0 && (
         <div 
           ref={dropdownRef}
           className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
         >
           <div className="p-2">
-            <div className="text-xs text-gray-500 px-3 py-1 font-medium">اقتراحات البحث</div>
-            {suggestions.map((item, index) => (
-              <button
-                key={`${item.term}-${index}`}
-                type="button"
-                onClick={() => handleSuggestionClick(item.term)}
-                className={`w-full text-right px-3 py-2 rounded-md flex items-center justify-between hover:bg-blue-50 transition-colors ${
-                  selectedIndex === index ? "bg-blue-50" : ""
-                }`}
-                data-testid={`suggestion-${index}`}
-              >
-                <div className="flex items-center gap-2">
-                  {getTypeIcon(item.type)}
-                  <span className="font-medium line-clamp-1">{item.term}</span>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                    {getTypeLabel(item.type)}
-                  </span>
-                  {item.category && item.type !== "category" && (
+            {showRecentSearches ? (
+              <>
+                <div className="text-xs text-gray-500 px-3 py-1 font-medium">عمليات بحث سابقة</div>
+                {recentSearches.map((term, index) => (
+                  <button
+                    key={`recent-${term}-${index}`}
+                    type="button"
+                    onClick={() => handleSuggestionClick(term)}
+                    className={`w-full text-right px-3 py-2 rounded-md flex items-center justify-between hover:bg-blue-50 transition-colors ${
+                      selectedIndex === index ? "bg-blue-50" : ""
+                    }`}
+                    data-testid={`recent-search-${index}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-gray-400" />
+                      <span className="font-medium line-clamp-1">{term}</span>
+                    </div>
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-                      {item.category}
+                      سابق
                     </span>
-                  )}
-                </div>
-              </button>
-            ))}
+                  </button>
+                ))}
+              </>
+            ) : (
+              <>
+                <div className="text-xs text-gray-500 px-3 py-1 font-medium">اقتراحات البحث</div>
+                {suggestions.map((item, index) => (
+                  <button
+                    key={`${item.term}-${index}`}
+                    type="button"
+                    onClick={() => handleSuggestionClick(item.term)}
+                    className={`w-full text-right px-3 py-2 rounded-md flex items-center justify-between hover:bg-blue-50 transition-colors ${
+                      selectedIndex === index ? "bg-blue-50" : ""
+                    }`}
+                    data-testid={`suggestion-${index}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {getTypeIcon(item.type)}
+                      <span className="font-medium line-clamp-1">{item.term}</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                        {getTypeLabel(item.type)}
+                      </span>
+                      {item.category && item.type !== "category" && (
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                          {item.category}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         </div>
       )}
@@ -185,3 +253,4 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
       </form>
   );
 }
+

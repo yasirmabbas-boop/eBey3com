@@ -7,6 +7,7 @@ import { randomUUID } from "crypto";
 import { insertListingSchema } from "@shared/schema";
 import { storage } from "../storage";
 import { analyzeImageForSearch } from "../services/gemini-image-search";
+import { buildSearchQueryFromAnalysis } from "../services/query-expander";
 import { analyzeProductImage } from "../services/gemini-service";
 import {
   BACKGROUND_TOO_COMPLEX_MESSAGE,
@@ -135,19 +136,6 @@ export function registerProductRoutes(app: Express): void {
       
       // Use optimized paginated query with SQL-level filtering
       const searchQuery = typeof q === "string" ? q : undefined;
-      console.log('[DEBUG-SERVER] API /api/listings request', { 
-        category: typeof category === "string" ? category : undefined, 
-        sellerId: sellerIdStr, 
-        includeSoldRequested: includeSold === "true",
-        hasSearchQuery: !!searchQuery,
-        isOwnProfile,
-        includeSoldFinal: (includeSold === "true" && !!searchQuery) || isOwnProfile, 
-        searchQuery, 
-        page: pageNum 
-      });
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings',message:'listings-request',data:{category:typeof category === "string" ? category : undefined,sellerId:sellerIdStr,includeSold:includeSold === "true" || isOwnProfile,searchQuery,page:pageNum,limit},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H6'})}).catch(()=>{});
-      // #endregion
       const { listings: paginatedListings, total } = await storage.getListingsPaginated({
         limit,
         offset,
@@ -162,11 +150,8 @@ export function registerProductRoutes(app: Express): void {
         maxPrice: typeof maxPrice === "string" ? parseInt(maxPrice) : undefined,
         conditions,
         cities,
+        userId: viewerId || undefined,
       });
-      console.log('[DEBUG-SERVER] API /api/listings response', { listingsCount: paginatedListings.length, total });
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings',message:'listings-response',data:{listingsCount:paginatedListings.length,total},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H7'})}).catch(()=>{});
-      // #endregion
       
       // Track search analytics when there's a search query
       if (searchQuery && searchQuery.trim()) {
@@ -264,6 +249,45 @@ export function registerProductRoutes(app: Express): void {
     }
   });
 
+  // Search facets - server-side aggregation for dynamic filter counts
+  // MUST be registered before any /api/listings/:id routes
+  app.get("/api/listings/facets", async (req, res) => {
+    try {
+      const { category, saleType, includeSold, q, minPrice, maxPrice, condition, city, sellerId } = req.query;
+      const saleTypes = Array.isArray(saleType)
+        ? saleType.map(s => String(s))
+        : typeof saleType === "string" ? [saleType] : undefined;
+      const conditions = Array.isArray(condition)
+        ? condition.map(c => String(c))
+        : typeof condition === "string" ? [condition] : undefined;
+      const cities = Array.isArray(city)
+        ? city.map(c => String(c))
+        : typeof city === "string" ? [city] : undefined;
+
+      const searchQuery = typeof q === "string" ? q : undefined;
+      const viewerId = await getUserIdFromRequest(req);
+      const sellerIdStr = typeof sellerId === "string" ? sellerId : undefined;
+      const isOwnProfile = !!(viewerId && sellerIdStr && viewerId === sellerIdStr);
+
+      const facets = await storage.getSearchFacets({
+        category: typeof category === "string" ? category : undefined,
+        saleTypes,
+        sellerId: sellerIdStr,
+        includeSold: (includeSold === "true" && !!searchQuery) || isOwnProfile,
+        searchQuery,
+        minPrice: typeof minPrice === "string" ? parseInt(minPrice) : undefined,
+        maxPrice: typeof maxPrice === "string" ? parseInt(maxPrice) : undefined,
+        conditions,
+        cities,
+      });
+
+      res.json(facets);
+    } catch (error) {
+      console.error("Error getting search facets:", error);
+      res.status(500).json({ categories: [], conditions: [], saleTypes: [], cities: [], priceRange: { min: 0, max: 0 } });
+    }
+  });
+
   // Get purchase status for a listing (check if current user has purchased)
   app.get("/api/listings/:id/purchase-status", async (req, res) => {
     try {
@@ -284,13 +308,7 @@ export function registerProductRoutes(app: Express): void {
   app.get("/api/listings/:id", async (req, res) => {
     try {
       const listing = await storage.getListing(req.params.id);
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings/:id',message:'listing-detail-fetch',data:{listingId:req.params.id,found:!!listing,isDeleted:listing?.isDeleted,isActive:listing?.isActive,quantitySold:listing?.quantitySold,quantityAvailable:listing?.quantityAvailable},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H10'})}).catch(()=>{});
-      // #endregion
       if (!listing || listing.isDeleted) {
-        // #region agent log
-        fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'routes.ts:/api/listings/:id',message:'listing-detail-not-found',data:{listingId:req.params.id,found:!!listing,isDeleted:listing?.isDeleted},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H11'})}).catch(()=>{});
-        // #endregion
         return res.status(404).json({ error: "Listing not found" });
       }
       // Cache individual listing for 60 seconds
@@ -1291,124 +1309,165 @@ export function registerProductRoutes(app: Express): void {
     }
   });
 
+  // Personalized recommendations for the home page
+  app.get("/api/recommendations", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.json({ searchBased: [], recommended: [], popularInArea: [] });
+      }
+
+      const preferences = await storage.getUserPreferences(userId);
+
+      // "Because you searched for X" -- top 3 recent searches, 6 listings each
+      const searchBased: Array<{ query: string; listings: any[] }> = [];
+      const topSearches = preferences.recentSearches.slice(0, 3);
+      for (const searchTerm of topSearches) {
+        const { listings: matchedListings } = await storage.getListingsPaginated({
+          searchQuery: searchTerm,
+          limit: 6,
+          offset: 0,
+          userId,
+        });
+        if (matchedListings.length > 0) {
+          searchBased.push({
+            query: searchTerm,
+            listings: matchedListings.map(l => ({
+              id: l.id,
+              title: l.title,
+              price: l.price,
+              currentBid: l.currentBid,
+              image: l.images?.[0] || "",
+              saleType: l.saleType,
+              auctionEndTime: l.auctionEndTime,
+              views: l.views || 0,
+            })),
+          });
+        }
+      }
+
+      // "Recommended for you" -- best items for this user based on category preferences
+      let recommended: any[] = [];
+      if (preferences.topCategories.length > 0) {
+        // Fetch listings from user's top category with personalized ranking
+        const { listings: recListings } = await storage.getListingsPaginated({
+          limit: 12,
+          offset: 0,
+          category: preferences.topCategories[0],
+          userId,
+        });
+        recommended = recListings.map(l => ({
+          id: l.id,
+          title: l.title,
+          price: l.price,
+          currentBid: l.currentBid,
+          image: l.images?.[0] || "",
+          saleType: l.saleType,
+          auctionEndTime: l.auctionEndTime,
+          views: l.views || 0,
+        }));
+      }
+
+      // "Popular in your area" -- filter by user's city
+      let popularInArea: any[] = [];
+      const user = await storage.getUser(userId);
+      if (user?.city) {
+        const { listings: areaListings } = await storage.getListingsPaginated({
+          limit: 12,
+          offset: 0,
+          cities: [user.city],
+          userId,
+        });
+        popularInArea = areaListings.map(l => ({
+          id: l.id,
+          title: l.title,
+          price: l.price,
+          currentBid: l.currentBid,
+          image: l.images?.[0] || "",
+          saleType: l.saleType,
+          auctionEndTime: l.auctionEndTime,
+          views: l.views || 0,
+        }));
+      }
+
+      res.json({ searchBased, recommended, popularInArea });
+    } catch (error) {
+      console.error("Error fetching recommendations:", error);
+      res.status(500).json({ searchBased: [], recommended: [], popularInArea: [] });
+    }
+  });
+
+  // Search suggestions - auto-complete as user types
+  app.get("/api/search-suggestions", async (req, res) => {
+    try {
+      const q = typeof req.query.q === "string" ? req.query.q : "";
+      const limit = Math.min(parseInt(req.query.limit as string) || 10, 20);
+      const suggestions = await storage.getSearchSuggestions(q, limit);
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Error getting search suggestions:", error);
+      res.status(500).json([]);
+    }
+  });
+
   // AI-powered image search - analyze image and find matching products
   // Note: This route is separate from /api/listings, so we apply CSRF protection here
   app.post("/api/image-search", validateCsrfToken, async (req, res) => {
     try {
       const { imageBase64 } = req.body;
-      
+
       if (!imageBase64) {
         return res.status(400).json({ error: "Image data is required" });
       }
 
-      // Analyze the image using AI vision
+      // Step 1: Analyze the image using Gemini vision
       const analysis = await analyzeImageForSearch(imageBase64);
-      
-      console.log("[image-search] AI Analysis result:", JSON.stringify(analysis, null, 2));
-      
-      // Get all listings to search through
-      const { listings } = await storage.getListingsPaginated({ limit: 200, offset: 0 });
-      
-      // Build comprehensive search terms from analysis
+
+      // Step 2: Build a text query from the analysis and route through
+      //         the same FTS + synonym + Best Match pipeline as text search.
+      const builtQuery = buildSearchQueryFromAnalysis(analysis);
+
       const brandTerms: string[] = [
         analysis.brand,
         analysis.model,
         ...analysis.brandVariants
       ].filter((term): term is string => !!term && term.length > 0);
-      
-      const otherTerms: string[] = [
+
+      const allSearchTerms = [
+        ...brandTerms,
         analysis.itemType,
         analysis.category,
         analysis.material,
         ...analysis.colors,
         ...analysis.keywords
       ].filter((term): term is string => !!term && term.length > 0);
-      
-      const allSearchTerms = [...brandTerms, ...otherTerms];
-      
-      // Score each listing based on how well it matches
-      const scoredListings = listings.map(listing => {
-        let score = 0;
-        let hasBrandMatch = false;
-        const title = (listing.title || "").toLowerCase();
-        const description = (listing.description || "").toLowerCase();
-        const category = (listing.category || "").toLowerCase();
-        const tags = (listing.tags || []).map((t: string) => t.toLowerCase());
-        const allText = `${title} ${description} ${tags.join(" ")}`;
-        
-        // BRAND MATCHING - highest priority (200+ points for brand match)
-        for (const brandTerm of brandTerms) {
-          const lowerBrand = brandTerm.toLowerCase();
-          if (title.includes(lowerBrand)) {
-            score += 200;
-            hasBrandMatch = true;
-          } else if (tags.some((tag: string) => tag.includes(lowerBrand) || lowerBrand.includes(tag))) {
-            score += 150;
-            hasBrandMatch = true;
-          } else if (description.includes(lowerBrand)) {
-            score += 100;
-            hasBrandMatch = true;
-          }
-        }
-        
-        // Model matching (e.g., "Submariner", "Speedmaster")
-        if (analysis.model) {
-          const modelLower = analysis.model.toLowerCase();
-          if (allText.includes(modelLower)) {
-            score += 80;
-          }
-        }
-        
-        // Category must match for watches
-        const isWatch = analysis.category === "ساعات" || analysis.itemType.toLowerCase().includes("watch");
-        const listingIsWatch = category.includes("ساعات") || category.includes("watch");
-        if (isWatch && !listingIsWatch) {
-          score = 0; // Exclude non-watches if searching for watches
-        } else if (isWatch && listingIsWatch) {
-          score += 30; // Bonus for correct category
-        }
-        
-        // Other term matching (lower weight)
-        for (const term of otherTerms) {
-          const lowerTerm = term.toLowerCase();
-          if (lowerTerm.length < 3) continue; // Skip very short terms
-          
-          if (title.includes(lowerTerm)) score += 15;
-          else if (tags.some((tag: string) => tag.includes(lowerTerm))) score += 10;
-          else if (description.includes(lowerTerm)) score += 5;
-        }
-        
-        return { listing, score, hasBrandMatch };
+
+      // Determine category filter from analysis
+      const categoryFilter = (analysis.category && analysis.category !== "أخرى")
+        ? analysis.category
+        : undefined;
+
+      // Use the main search pipeline — full FTS + synonyms + Best Match ranking
+      const { listings: matchedListings } = await storage.getListingsPaginated({
+        limit: 20,
+        offset: 0,
+        searchQuery: builtQuery || undefined,
+        category: categoryFilter,
       });
-      
-      // Filter and sort - prioritize brand matches, require minimum score
-      const MIN_SCORE = analysis.brand ? 50 : 20; // Higher threshold if brand was detected
-      
-      let matchingListings = scoredListings
-        .filter(item => item.score >= MIN_SCORE)
-        .sort((a, b) => {
-          // Brand matches always first
-          if (a.hasBrandMatch && !b.hasBrandMatch) return -1;
-          if (!a.hasBrandMatch && b.hasBrandMatch) return 1;
-          return b.score - a.score;
-        })
-        .slice(0, 12)
-        .map(item => ({
-          id: item.listing.id,
-          title: item.listing.title,
-          price: item.listing.price,
-          image: item.listing.images?.[0] || "",
-          currentBid: item.listing.currentBid,
-          saleType: item.listing.saleType,
-          score: item.score,
-          hasBrandMatch: item.hasBrandMatch
-        }));
-      
-      console.log("[image-search] Found", matchingListings.length, "matches. Brand terms:", brandTerms);
-      
+
+      const results = matchedListings.map(listing => ({
+        id: listing.id,
+        title: listing.title,
+        price: listing.price,
+        image: listing.images?.[0] || "",
+        currentBid: listing.currentBid,
+        saleType: listing.saleType,
+        score: (listing as any).relevanceScore || 0,
+      }));
+
       res.json({
         analysis,
-        results: matchingListings,
+        results,
         searchTerms: allSearchTerms,
         brandTerms
       });

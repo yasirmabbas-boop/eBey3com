@@ -60,37 +60,53 @@ export async function analyzeImageForSearch(imageBase64: string): Promise<{
       }
     }
 
-    const prompt = `You are an expert luxury product identifier specializing in watches, jewelry, and collectibles. Your task is to analyze product images with HIGH ACCURACY for brand recognition.
+    const prompt = `You are an expert product identifier for an e-commerce marketplace. You can recognize products across ALL categories with HIGH ACCURACY for brand recognition.
 
 CRITICAL: Focus heavily on identifying the BRAND. Look for:
-- Logo on the dial, case, or band
-- Crown shape and position
-- Case design unique to specific brands
-- Font style of numbers/text
-- Known watch face designs (Submariner, Speedmaster, Royal Oak, etc.)
+- Logos, brand names, or text printed/engraved on the product
+- Distinctive design elements unique to specific brands
+- Packaging, labels, or tags visible in the image
+- Known product designs (e.g., Submariner dial, iPhone notch, Nike swoosh, Louis Vuitton monogram)
 
-Common watch brands to look for:
+== WATCHES & JEWELRY ==
 - Luxury: Rolex, Omega, Patek Philippe, Audemars Piguet, Cartier, IWC, Breitling, TAG Heuer, Panerai, Hublot, Tudor
 - Mid-range: Tissot, Longines, Hamilton, Seiko, Citizen, Orient, Casio G-Shock
 - Fashion: Fossil, Michael Kors, Armani, Guess, Diesel
+
+== ELECTRONICS ==
+- Phones: Apple iPhone, Samsung Galaxy, Huawei, Xiaomi, OnePlus, Google Pixel
+- Laptops: MacBook, Dell, HP, Lenovo, Asus, Acer
+- Audio: AirPods, Sony, Bose, JBL, Beats, Samsung Galaxy Buds
+- Gaming: PlayStation, Xbox, Nintendo Switch
+- Cameras: Canon, Nikon, Sony, Fujifilm
+
+== CLOTHING & ACCESSORIES ==
+- Luxury: Louis Vuitton, Gucci, Prada, Chanel, Hermès, Dior, Burberry
+- Sportswear: Nike, Adidas, Puma, New Balance, Under Armour
+- Bags, shoes, sunglasses: identify brand and specific model if possible
+
+== VEHICLES ==
+- Make & model: Toyota, Mercedes, BMW, Lexus, Honda, Nissan, Kia, Hyundai
+- Identify year range if visible from body style
 
 Respond in JSON:
 {
   "brand": "exact brand name if identifiable, null only if truly unrecognizable",
   "brandVariants": ["alternative spellings", "Arabic name", "common misspellings"],
-  "model": "specific model name if known (e.g., Submariner, Speedmaster)",
-  "itemType": "specific type (wristwatch, pocket watch, necklace, ring, etc.)",
-  "category": "ساعات for watches, مجوهرات for jewelry, إكسسوارات for accessories",
+  "model": "specific model name if known (e.g., Submariner, iPhone 15 Pro, Air Jordan 1)",
+  "itemType": "specific type (wristwatch, smartphone, laptop, sneakers, sedan, handbag, etc.)",
+  "category": "ساعات for watches, إلكترونيات for electronics, ملابس for clothing/shoes/bags, سيارات for vehicles, مجوهرات for jewelry, تحف وأثاث for antiques/furniture, أخرى for other",
   "colors": ["primary color", "secondary colors"],
-  "material": "gold, steel, leather, etc.",
-  "keywords": ["brand-specific terms", "style descriptors", "Arabic terms"],
+  "material": "gold, steel, leather, fabric, plastic, etc.",
+  "keywords": ["brand-specific terms", "style descriptors", "Arabic terms for the product"],
   "description": "وصف قصير بالعربية يتضمن الماركة والنوع"
 }
 
-IMPORTANT: 
+IMPORTANT:
 - If you see ANY brand indicators, identify the brand - don't default to null
 - Include brand name in multiple formats in keywords (English, Arabic transliteration)
-- Be specific about the watch style and distinguishing features
+- Choose the most specific category from the list above
+- Be specific about distinguishing features, model names, and condition
 
 Analyze this product image carefully. Focus on identifying the BRAND first by examining logos, design elements, and distinctive features. Then extract all identifying details:`;
 

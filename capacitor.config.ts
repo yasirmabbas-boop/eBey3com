@@ -37,6 +37,9 @@ const config: CapacitorConfig = {
       overlaysWebView: true,
       style: 'LIGHT',
       backgroundColor: '#000000',
+    },
+    FacebookLogin: {
+      appId: '1149652599968295',
     }
   }
 };

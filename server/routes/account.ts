@@ -21,6 +21,22 @@ export function registerAccountRoutes(app: Express): void {
 
   // Apply CSRF validation to all account routes except GET requests
   app.use("/api/account", validateCsrfToken);
+
+  // Get user preference profile (derived from analytics)
+  app.get("/api/account/preferences", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+      const preferences = await storage.getUserPreferences(userId);
+      res.json(preferences);
+    } catch (error) {
+      console.error("Error fetching user preferences:", error);
+      res.status(500).json({ error: "فشل في جلب التفضيلات" });
+    }
+  });
+
   // Get full profile (for account settings)
   app.get("/api/account/profile", async (req, res) => {
     const userId = await getUserIdFromRequest(req);
