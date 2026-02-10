@@ -13,4 +13,8 @@ const pool = new pg.Pool({
   ssl: isProduction ? { rejectUnauthorized: false } : undefined,
 });
 
+pool.query('CREATE EXTENSION IF NOT EXISTS pg_trgm').catch((err: Error) => {
+  console.warn('[DB] Could not create pg_trgm extension:', err.message);
+});
+
 export const db = drizzle(pool, { schema });
