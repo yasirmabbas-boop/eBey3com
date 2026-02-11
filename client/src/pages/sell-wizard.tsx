@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -65,18 +66,25 @@ export default function SellWizardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { language, t } = useLanguage();
   
+  // Parse query parameters for edit, relist, and template modes
   const urlParams = new URLSearchParams(searchString);
   const editListingId = urlParams.get("edit");
+  const relistListingId = urlParams.get("relist");
+  const templateListingId = urlParams.get("template");
+  
   const isEditMode = !!editListingId;
+  const isRelistMode = !!relistListingId;
+  const isTemplateMode = !!templateListingId;
+  const sourceListingId = editListingId || relistListingId || templateListingId;
   
   const { data: sourceListing, isLoading: sourceListingLoading } = useQuery<Listing>({
-    queryKey: ["/api/listings", editListingId],
+    queryKey: ["/api/listings", sourceListingId],
     queryFn: async () => {
-      const res = await fetch(`/api/listings/${editListingId}`);
+      const res = await fetch(`/api/listings/${sourceListingId}`);
       if (!res.ok) throw new Error("Listing not found");
       return res.json();
     },
-    enabled: !!editListingId,
+    enabled: !!sourceListingId,
   });
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -123,6 +131,120 @@ export default function SellWizardPage() {
   const [specifications, setSpecifications] = useState<Record<string, string>>({});
   const [specificationErrors, setSpecificationErrors] = useState<Record<string, string>>({});
 
+  // Draft persistence state — mode-specific keys so drafts don't collide across modes
+  const WIZARD_DRAFT_KEY = isEditMode 
+    ? `wizard_listing_draft_edit_${editListingId}` 
+    : isRelistMode 
+      ? `wizard_listing_draft_relist_${relistListingId}` 
+      : isTemplateMode 
+        ? `wizard_listing_draft_template_${templateListingId}` 
+        : "wizard_listing_draft";
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  // Check if form has content worth saving
+  const hasFormContent = useCallback(() => {
+    return formData.title || formData.description || formData.price || images.length > 0;
+  }, [formData.title, formData.description, formData.price, images.length]);
+
+  // Load draft from localStorage on mount (works for both new and edit modes)
+  useEffect(() => {
+    if (!draftLoaded) {
+      const savedDraft = localStorage.getItem(WIZARD_DRAFT_KEY);
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          const values = Object.values(draft.formData || {});
+          const hasNonDefault = values.some((v: unknown) => v !== "" && v !== "1" && v !== "23" && v !== "00" && v !== "3-5 أيام" && v !== "seller_pays" && v !== "verified_only");
+          if (hasNonDefault) {
+            setShowDraftBanner(true);
+          }
+        } catch (e) {
+          localStorage.removeItem(WIZARD_DRAFT_KEY);
+        }
+      }
+      setDraftLoaded(true);
+    }
+  }, [draftLoaded, WIZARD_DRAFT_KEY]);
+
+  const loadDraft = () => {
+    const savedDraft = localStorage.getItem(WIZARD_DRAFT_KEY);
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        if (draft.formData) setFormData(draft.formData);
+        if (draft.images) setImages(draft.images);
+        if (draft.saleType) setSaleType(draft.saleType);
+        if (draft.isNegotiable !== undefined) setIsNegotiable(draft.isNegotiable);
+        if (draft.hasReservePrice !== undefined) setHasReservePrice(draft.hasReservePrice);
+        if (draft.startTimeOption) setStartTimeOption(draft.startTimeOption);
+        if (draft.tags) setTags(draft.tags);
+        if (draft.specifications) setSpecifications(draft.specifications);
+        if (draft.currentStep) setCurrentStep(draft.currentStep);
+        toast({ 
+          title: language === "ar" ? "تم استرجاع المسودة" : "ڕەشنووس گەڕایەوە", 
+          description: language === "ar" ? "تم تحميل البيانات المحفوظة مسبقاً" : "داتا پاشەکەوتکراوەکان بارکرا" 
+        });
+      } catch (e) {
+        console.error("Failed to load draft:", e);
+      }
+    }
+    setShowDraftBanner(false);
+  };
+
+  const clearDraft = () => {
+    localStorage.removeItem(WIZARD_DRAFT_KEY);
+    setShowDraftBanner(false);
+  };
+
+  const saveDraftToStorage = useCallback(() => {
+    try {
+      const draft = {
+        formData,
+        images,
+        tags,
+        specifications,
+        saleType,
+        isNegotiable,
+        hasReservePrice,
+        startTimeOption,
+        currentStep,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(WIZARD_DRAFT_KEY, JSON.stringify(draft));
+    } catch (e) {
+      console.warn("Failed to save draft to localStorage:", e);
+    }
+  }, [formData, images, tags, specifications, saleType, isNegotiable, hasReservePrice, startTimeOption, currentStep]);
+
+  // Auto-save draft to localStorage with debounce (works for both new and edit modes)
+  useEffect(() => {
+    if (!draftLoaded || showDraftBanner) return;
+
+    const hasContent = formData.title || formData.description || formData.price || images.length > 0;
+    if (!hasContent) return;
+
+    const timeoutId = setTimeout(() => {
+      saveDraftToStorage();
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData, images, tags, specifications, saleType, isNegotiable, hasReservePrice, startTimeOption, currentStep, draftLoaded, showDraftBanner, saveDraftToStorage]);
+
+  // Warn before leaving page with unsaved changes (browser close/refresh)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasFormContent()) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasFormContent]);
+
   // Seller address/location state
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<SellerAddress | null>(null);
@@ -140,7 +262,7 @@ export default function SellWizardPage() {
 
   // Auto-select default address when addresses load
   useEffect(() => {
-    if (sellerAddresses && sellerAddresses.length > 0 && !selectedAddress && !isEditMode) {
+    if (sellerAddresses && sellerAddresses.length > 0 && !selectedAddress && !sourceListingId) {
       const defaultAddr = sellerAddresses.find(a => a.isDefault) || sellerAddresses[0];
       setSelectedAddress(defaultAddr);
       // Also set the city/area from the address
@@ -150,7 +272,7 @@ export default function SellWizardPage() {
         area: defaultAddr.district || "",
       }));
     }
-  }, [sellerAddresses, selectedAddress, isEditMode]);
+  }, [sellerAddresses, selectedAddress, sourceListingId]);
 
   const [isRequestingSellerAccess, setIsRequestingSellerAccess] = useState(false);
   const [sellerFormData, setSellerFormData] = useState({
@@ -208,19 +330,29 @@ export default function SellWizardPage() {
     }
   }, [user, isEditMode]);
 
+  // Populate form when editing, relisting, or using as template
   useEffect(() => {
-    if (sourceListing && isEditMode) {
+    if (sourceListing && sourceListingId) {
+      // Parse auction times (skip for relist — they need new times)
+      let startDate = "";
+      let startHour = "00";
       let endDate = "";
       let endHour = "23";
       
-      if (sourceListing.auctionEndTime) {
+      if (sourceListing.auctionStartTime && !isRelistMode) {
+        const start = new Date(sourceListing.auctionStartTime);
+        startDate = start.toISOString().split('T')[0];
+        startHour = start.getHours().toString().padStart(2, '0');
+      }
+      
+      if (sourceListing.auctionEndTime && !isRelistMode) {
         const end = new Date(sourceListing.auctionEndTime);
         endDate = end.toISOString().split('T')[0];
         endHour = end.getHours().toString().padStart(2, '0');
       }
       
       setFormData({
-        title: sourceListing.title ?? "",
+        title: isTemplateMode ? "" : sourceListing.title ?? "",
         description: sourceListing.description ?? "",
         category: sourceListing.category ?? "",
         condition: sourceListing.condition ?? "",
@@ -236,9 +368,9 @@ export default function SellWizardPage() {
         shippingType: sourceListing.shippingType ?? "seller_pays",
         shippingCost: sourceListing.shippingCost?.toString() ?? "",
         returnPolicy: sourceListing.returnPolicy ?? "",
-        startDate: "",
-        startHour: "00",
-        quantityAvailable: sourceListing.quantityAvailable?.toString() ?? "1",
+        startDate,
+        startHour,
+        quantityAvailable: isRelistMode ? "1" : sourceListing.quantityAvailable?.toString() ?? "1",
         sellerName: sourceListing.sellerName ?? user?.displayName ?? "",
         allowedBidderType: sourceListing.allowedBidderType ?? "verified_only",
       });
@@ -248,12 +380,21 @@ export default function SellWizardPage() {
       setHasReservePrice(!!(sourceListing as any).reservePrice);
       setTags(sourceListing.tags ?? []);
       
+      // Set start time option based on whether auction has a scheduled start
+      if (sourceListing.auctionStartTime && !isRelistMode) {
+        const now = new Date();
+        const start = new Date(sourceListing.auctionStartTime);
+        if (start > now) {
+          setStartTimeOption("schedule");
+        }
+      }
+      
       // Load category-specific specifications
       if ((sourceListing as any).specifications) {
         setSpecifications((sourceListing as any).specifications);
       }
     }
-  }, [sourceListing, isEditMode, user?.displayName]);
+  }, [sourceListing, sourceListingId, isEditMode, isRelistMode, isTemplateMode, user?.displayName]);
 
   const convertArabicNumerals = (input: string): string => {
     const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -638,6 +779,7 @@ export default function SellWizardPage() {
         specifications: Object.keys(specifications).length > 0 ? specifications : null,
       };
       
+      // Edit mode updates the existing listing; template/relist/new all create a new listing
       const url = isEditMode ? `/api/listings/${editListingId}` : "/api/listings";
       const method = isEditMode ? "PATCH" : "POST";
       
@@ -650,11 +792,16 @@ export default function SellWizardPage() {
       
       const resultListing = await res.json();
       
+      // Clear draft on successful submission
+      localStorage.removeItem(WIZARD_DRAFT_KEY);
+      
       toast({
         title: language === "ar" ? "تم بنجاح!" : "سەرکەوتوو بوو!",
         description: isEditMode 
           ? (language === "ar" ? "تم تحديث منتجك بنجاح" : "بەرهەمەکەت بە سەرکەوتوویی نوێکرایەوە")
-          : (language === "ar" ? "تم نشر منتجك بنجاح" : "بەرهەمەکەت بە سەرکەوتوویی بڵاوکرایەوە"),
+          : isRelistMode
+            ? (language === "ar" ? "تم إعادة عرض المنتج بنجاح" : "بەرهەمەکە بە سەرکەوتوویی دووبارە بڵاوکرایەوە")
+            : (language === "ar" ? "تم نشر منتجك بنجاح" : "بەرهەمەکەت بە سەرکەوتوویی بڵاوکرایەوە"),
       });
       
       window.history.replaceState(null, "", `/product/${resultListing.id}`);
@@ -670,7 +817,7 @@ export default function SellWizardPage() {
     }
   };
 
-  if (authLoading || (isEditMode && sourceListingLoading)) {
+  if (authLoading || (sourceListingId && sourceListingLoading)) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -732,14 +879,46 @@ export default function SellWizardPage() {
     );
   }
 
+  const handleCancel = () => {
+    if (hasFormContent()) {
+      setShowExitConfirm(true);
+    } else {
+      localStorage.removeItem(WIZARD_DRAFT_KEY);
+      setLocation("/");
+    }
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 max-w-2xl">
+        {/* Draft Recovery Banner */}
+        {showDraftBanner && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-100 p-2 rounded-full">
+                <Clock className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-medium text-blue-800">{language === "ar" ? "لديك مسودة محفوظة" : "ڕەشنووسێکی پاشەکەوتکراوت هەیە"}</p>
+                <p className="text-sm text-blue-600">{language === "ar" ? "هل تريد استكمال العمل على المنتج السابق؟" : "دەتەوێت کارەکەت لەسەر بەرهەمی پێشوو تەواو بکەیت؟"}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={clearDraft}>
+                {language === "ar" ? "تجاهل" : "پشتگوێ بخە"}
+              </Button>
+              <Button type="button" size="sm" onClick={loadDraft} className="bg-blue-600 hover:bg-blue-700">
+                {language === "ar" ? "استرجاع المسودة" : "ڕەشنووس بگەڕێنەوە"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         <SellWizard
           currentStep={currentStep}
           onStepChange={setCurrentStep}
           stepValidation={stepValidation}
-          onCancel={() => setLocation("/")}
+          onCancel={handleCancel}
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
         >
@@ -811,6 +990,7 @@ export default function SellWizardPage() {
                     <SelectItem value="ساعات">{t("watches")}</SelectItem>
                     <SelectItem value="إلكترونيات">{t("electronics")}</SelectItem>
                     <SelectItem value="ملابس">{t("clothing")}</SelectItem>
+                    <SelectItem value="أحذية">{t("shoes")}</SelectItem>
                     <SelectItem value="سيارات">{t("vehicles")}</SelectItem>
                     <SelectItem value="مجوهرات">{t("jewelry")}</SelectItem>
                     <SelectItem value="مكياج">{t("makeup")}</SelectItem>
@@ -1476,6 +1656,50 @@ export default function SellWizardPage() {
           }}
           forceAddNew={!sellerAddresses || sellerAddresses.length === 0}
         />
+
+        {/* Exit Confirmation Dialog */}
+        <Dialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                {language === "ar" ? "حفظ التغييرات؟" : "گۆڕانکاریەکان پاشەکەوت بکەیت؟"}
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-gray-600 text-sm py-2">
+              {language === "ar" 
+                ? "لديك تغييرات غير محفوظة. هل تريد حفظها كمسودة قبل المغادرة؟" 
+                : "گۆڕانکاریی پاشەکەوت نەکراوت هەیە. دەتەوێت وەک ڕەشنووس پاشەکەوتی بکەیت پێش ئەوەی بڕۆیت؟"}
+            </p>
+            <DialogFooter className="flex gap-2 sm:gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  localStorage.removeItem(WIZARD_DRAFT_KEY);
+                  setShowExitConfirm(false);
+                  setLocation("/");
+                }}
+                className="flex-1"
+              >
+                {language === "ar" ? "تجاهل" : "پشتگوێ بخە"}
+              </Button>
+              <Button
+                onClick={() => {
+                  saveDraftToStorage();
+                  toast({ 
+                    title: language === "ar" ? "تم حفظ المسودة" : "ڕەشنووس پاشەکەوت کرا", 
+                    description: language === "ar" ? "يمكنك إكمال الإعلان لاحقاً" : "دەتوانیت دواتر ڕیکلامەکە تەواو بکەیت" 
+                  });
+                  setShowExitConfirm(false);
+                  setLocation("/");
+                }}
+                className="flex-1 bg-primary"
+              >
+                {language === "ar" ? "حفظ ومغادرة" : "پاشەکەوت و بڕۆ"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

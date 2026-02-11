@@ -123,6 +123,7 @@ export const translations: Translations = {
   other: { ar: "أخرى", ku: "تر", en: "Other" },
   watches: { ar: "ساعات", ku: "کاتژمێر", en: "Watches" },
   clothing: { ar: "ملابس", ku: "جلوبەرگ", en: "Clothing" },
+  shoes: { ar: "أحذية", ku: "پێڵاو", en: "Shoes" },
   furniture: { ar: "أثاث", ku: "کەلوپەل", en: "Furniture" },
   jewelry: { ar: "مجوهرات", ku: "خشڵ", en: "Jewelry" },
   makeup: { ar: "مكياج", ku: "مەیکئەپ", en: "Makeup" },

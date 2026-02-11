@@ -63,7 +63,11 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
     enabled: !!user?.id,
   });
 
-  const recentSearches = userPreferences?.recentSearches || [];
+  // Server preferences for logged-in users, localStorage fallback for anonymous
+  const recentSearches = (userPreferences?.recentSearches?.length
+    ? userPreferences.recentSearches
+    : (() => { try { return JSON.parse(localStorage.getItem("previousSearches") || "[]").slice(0, 10); } catch { return []; } })()
+  ) as string[];
   // Show recent searches when input is empty and focused, otherwise show suggestions
   const showRecentSearches = query.length === 0 && recentSearches.length > 0;
   const dropdownItemCount = showRecentSearches ? recentSearches.length : suggestions.length;

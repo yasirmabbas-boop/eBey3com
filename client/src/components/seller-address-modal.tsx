@@ -24,6 +24,9 @@ const LeafletMapPicker = lazy(() =>
   import("@/components/leaflet-map-picker").then(mod => ({ default: mod.LeafletMapPicker }))
 );
 
+// Import type for structured reverse geocode data
+import type { ReverseGeocodeResult } from "@/components/leaflet-map-picker";
+
 const IRAQI_PROVINCES = [
   "بغداد", "البصرة", "أربيل", "السليمانية", "دهوك", "الموصل",
   "كركوك", "الأنبار", "بابل", "ديالى", "كربلاء", "النجف",
@@ -155,14 +158,34 @@ export function SellerAddressModal({
     createAddressMutation.mutate(formData);
   };
 
-  const handleLocationSelect = (lat: number, lng: number, address?: string) => {
-    setFormData(prev => ({
-      ...prev,
-      latitude: lat,
-      longitude: lng,
-      // Optionally auto-fill address if not already filled
-      addressLine1: prev.addressLine1 || address?.split(",")[0] || prev.addressLine1,
-    }));
+  const matchProvince = (nominatimValue: string): string | null => {
+    // Exact match first
+    const exact = IRAQI_PROVINCES.find(p => p === nominatimValue);
+    if (exact) return exact;
+    // Substring match (handles "محافظة بغداد" matching "بغداد")
+    return IRAQI_PROVINCES.find(p =>
+      nominatimValue.includes(p) || p.includes(nominatimValue)
+    ) || null;
+  };
+
+  const handleLocationSelect = (lat: number, lng: number, addressInfo?: ReverseGeocodeResult) => {
+    setFormData(prev => {
+      // Try to match city/province from reverse geocode to IRAQI_PROVINCES
+      let matchedCity = prev.city;
+      if (addressInfo?.city) {
+        const found = matchProvince(addressInfo.city);
+        if (found) matchedCity = found;
+      }
+
+      return {
+        ...prev,
+        latitude: lat,
+        longitude: lng,
+        city: matchedCity,
+        district: prev.district || addressInfo?.district || "",
+        addressLine1: prev.addressLine1 || addressInfo?.street || addressInfo?.displayName?.split(",")[0] || "",
+      };
+    });
   };
 
   const defaultAddress = addresses?.find((a) => a.isDefault);

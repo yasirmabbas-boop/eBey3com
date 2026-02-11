@@ -274,6 +274,54 @@ export default function Settings() {
     }
   };
 
+  const matchProvince = (nominatimValue: string): string | null => {
+    const exact = IRAQI_PROVINCES.find(p => p === nominatimValue);
+    if (exact) return exact;
+    return IRAQI_PROVINCES.find(p =>
+      nominatimValue.includes(p) || p.includes(nominatimValue)
+    ) || null;
+  };
+
+  const reverseGeocodeAndFill = async (lat: number, lng: number) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ar&addressdetails=1`
+      );
+      const data = await response.json();
+      const addr = data.address || {};
+
+      // Auto-fill city (province) if we can match it
+      const province = addr.state || addr.city || addr.province || addr.governorate;
+      if (province) {
+        const matched = matchProvince(province);
+        if (matched && !city) {
+          setCity(matched);
+        }
+      }
+
+      // Auto-fill address line if empty
+      const street = addr.road || addr.pedestrian;
+      const district = addr.suburb || addr.neighbourhood || addr.city_district || addr.quarter;
+      if (!addressLine1 && street) {
+        setAddressLine1(street);
+      } else if (!addressLine1 && data.display_name) {
+        setAddressLine1(data.display_name.split(",")[0]);
+      }
+
+      // Auto-fill address line 2 (district) if empty
+      if (!addressLine2 && district) {
+        setAddressLine2(district);
+      }
+
+      // Show informative toast with matched city
+      const matchedName = province ? matchProvince(province) : null;
+      toast({ title: matchedName ? `تم تحديد الموقع - ${matchedName}` : "تم تحديد الموقع" });
+    } catch {
+      // If reverse geocoding fails, still show basic success
+      toast({ title: "تم تحديد الموقع" });
+    }
+  };
+
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       toast({ title: "غير مدعوم", description: "المتصفح لا يدعم تحديد الموقع", variant: "destructive" });
@@ -282,9 +330,11 @@ export default function Settings() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLatitude(position.coords.latitude);
-        setLongitude(position.coords.longitude);
-        toast({ title: "تم تحديد الموقع" });
+        const { latitude: lat, longitude: lng } = position.coords;
+        setLatitude(lat);
+        setLongitude(lng);
+        // Reverse geocode to auto-fill city, district, and address
+        reverseGeocodeAndFill(lat, lng);
       },
       () => {
         toast({ title: "خطأ", description: "فشل في الحصول على الموقع", variant: "destructive" });

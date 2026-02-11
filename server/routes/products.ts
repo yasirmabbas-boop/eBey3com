@@ -1314,25 +1314,42 @@ export function registerProductRoutes(app: Express): void {
     try {
       const userId = await getUserIdFromRequest(req);
       if (!userId) {
-        return res.json({ searchBased: [], recommended: [], popularInArea: [] });
+        return res.json({ categoryRecommendations: [], recommended: [], popularInArea: [] });
       }
 
       const preferences = await storage.getUserPreferences(userId);
 
-      // "Because you searched for X" -- top 3 recent searches, 6 listings each
-      const searchBased: Array<{ query: string; listings: any[] }> = [];
-      const topSearches = preferences.recentSearches.slice(0, 3);
-      for (const searchTerm of topSearches) {
-        const { listings: matchedListings } = await storage.getListingsPaginated({
-          searchQuery: searchTerm,
-          limit: 6,
+      // Friendly category labels -- subtle, never reveals search terms
+      const categoryLabels: Record<string, { ar: string; ku: string }> = {
+        "ساعات": { ar: "ساعات تناسبك", ku: "کاتژمێرەکان بۆ تۆ" },
+        "إلكترونيات": { ar: "إلكترونيات قد تعجبك", ku: "ئەلیکترۆنیات بۆ تۆ" },
+        "ملابس": { ar: "ملابس مختارة لك", ku: "جلوبەرگی هەڵبژێردراو" },
+        "أحذية": { ar: "أحذية قد تعجبك", ku: "پێڵاوەکان بۆ تۆ" },
+        "تحف وأثاث": { ar: "تحف وأثاث مميزة", ku: "شتومەکی تایبەت" },
+        "مجوهرات": { ar: "مجوهرات مختارة لك", ku: "خشڵی هەڵبژێردراو" },
+        "مكياج": { ar: "مكياج قد يعجبك", ku: "مەیکئەپ بۆ تۆ" },
+        "آلات موسيقية": { ar: "آلات موسيقية مميزة", ku: "ئامێری موسیقی تایبەت" },
+        "مقتنيات": { ar: "مقتنيات قد تعجبك", ku: "کۆکراوەکان بۆ تۆ" },
+        "سيارات": { ar: "سيارات قد تعجبك", ku: "ئۆتۆمبێلەکان بۆ تۆ" },
+        "أخرى": { ar: "منتجات مقترحة", ku: "بەرهەمی پێشنیارکراو" },
+      };
+
+      // Category-based recommendations -- up to 3 top categories, 8 listings each
+      const categoryRecommendations: Array<{ category: string; label: string; listings: any[] }> = [];
+      const topCategories = preferences.topCategories.slice(0, 3);
+      for (const cat of topCategories) {
+        const { listings: catListings } = await storage.getListingsPaginated({
+          category: cat,
+          limit: 8,
           offset: 0,
           userId,
         });
-        if (matchedListings.length > 0) {
-          searchBased.push({
-            query: searchTerm,
-            listings: matchedListings.map(l => ({
+        if (catListings.length > 0) {
+          const labels = categoryLabels[cat] || { ar: `${cat} قد تعجبك`, ku: `${cat} بۆ تۆ` };
+          categoryRecommendations.push({
+            category: cat,
+            label: labels.ar,
+            listings: catListings.map(l => ({
               id: l.id,
               title: l.title,
               price: l.price,
@@ -1346,10 +1363,9 @@ export function registerProductRoutes(app: Express): void {
         }
       }
 
-      // "Recommended for you" -- best items for this user based on category preferences
+      // "Recommended for you" -- general top-category picks (uses first category not already in categoryRecommendations)
       let recommended: any[] = [];
       if (preferences.topCategories.length > 0) {
-        // Fetch listings from user's top category with personalized ranking
         const { listings: recListings } = await storage.getListingsPaginated({
           limit: 12,
           offset: 0,
@@ -1390,10 +1406,10 @@ export function registerProductRoutes(app: Express): void {
         }));
       }
 
-      res.json({ searchBased, recommended, popularInArea });
+      res.json({ categoryRecommendations, recommended, popularInArea });
     } catch (error) {
       console.error("Error fetching recommendations:", error);
-      res.status(500).json({ searchBased: [], recommended: [], popularInArea: [] });
+      res.status(500).json({ categoryRecommendations: [], recommended: [], popularInArea: [] });
     }
   });
 

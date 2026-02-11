@@ -278,6 +278,13 @@ export function ShippingSection({
               <p className="text-xs text-gray-500">
                 {language === "ar" ? "سيتم إضافة هذا المبلغ للسعر النهائي" : "ئەم بڕە زیاد دەکرێت بۆ نرخی کۆتایی"}
               </p>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-2.5 mt-2">
+                <p className="text-xs text-orange-700">
+                  {language === "ar"
+                    ? "ملاحظة: سيتم إضافة 2,000 د.ع تلقائياً على المشتري إذا كان في محافظة مختلفة عن محافظتك."
+                    : "تێبینی: 2,000 دینار زیادە دەکرێت بۆ کڕیار ئەگەر لە پارێزگایەکی جیاواز بێت."}
+                </p>
+              </div>
             </div>
           )}
         </div>

@@ -120,7 +120,7 @@ Return ONLY the JSON object. Do not output the analysis text.`;
     
     const analysis = JSON.parse(text) as ProductAnalysis;
     
-    const validCategories = ['ساعات', 'إلكترونيات', 'ملابس', 'مجوهرات', 'تحف وأثاث', 'مقتنيات', 'أخرى'];
+    const validCategories = ['ساعات', 'إلكترونيات', 'ملابس', 'أحذية', 'مجوهرات', 'تحف وأثاث', 'مقتنيات', 'أخرى'];
     if (!validCategories.includes(analysis.category)) {
       analysis.category = 'أخرى';
     }

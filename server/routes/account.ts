@@ -584,6 +584,9 @@ export function registerAccountRoutes(app: Express): void {
               price: listing.price,
               images: listing.images,
               productCode: listing.productCode,
+              shippingCost: listing.shippingCost ?? 0,
+              shippingType: listing.shippingType ?? "seller_pays",
+              city: listing.city ?? "",
             } : undefined,
             buyer: buyer ? {
               id: buyer.id,

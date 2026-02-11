@@ -23,6 +23,7 @@ const CATEGORIES = [
   { id: "ساعات", nameAr: "ساعات", nameKu: "کاتژمێر" },
   { id: "إلكترونيات", nameAr: "إلكترونيات", nameKu: "ئەلیکترۆنیات" },
   { id: "ملابس", nameAr: "ملابس", nameKu: "جلوبەرگ" },
+  { id: "أحذية", nameAr: "أحذية", nameKu: "پێڵاو" },
   { id: "تحف وأثاث", nameAr: "تحف وأثاث", nameKu: "کەلوپەل" },
   { id: "مجوهرات", nameAr: "مجوهرات", nameKu: "زێوەر" },
   { id: "مكياج", nameAr: "مكياج", nameKu: "مەیکئەپ" },

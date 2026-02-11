@@ -45,6 +45,7 @@ const CATEGORIES = [
   { id: "ساعات", nameAr: "ساعات", nameKu: "کاتژمێر", icon: Watch },
   { id: "إلكترونيات", nameAr: "إلكترونيات", nameKu: "ئەلیکترۆنیات", icon: Smartphone },
   { id: "ملابس", nameAr: "ملابس", nameKu: "جلوبەرگ", icon: Shirt },
+  { id: "أحذية", nameAr: "أحذية", nameKu: "پێڵاو", icon: ShoppingBag },
   { id: "تحف وأثاث", nameAr: "تحف وأثاث", nameKu: "کەلوپەل", icon: Armchair },
   { id: "سيارات", nameAr: "سيارات", nameKu: "ئۆتۆمبێل", icon: Car },
   { id: "عقارات", nameAr: "عقارات", nameKu: "خانوبەرە", icon: Home },
@@ -157,6 +158,17 @@ export default function SearchPage() {
     setSortBy(searchQuery ? "relevance" : "newest");
     // Note: page reset and mergedListings reset handled by the appliedFilters effect
   }, [searchQuery, categoryParam]);
+
+  // Save search to localStorage so SmartSearch dropdown shows recent searches for all users
+  useEffect(() => {
+    if (searchQuery && searchQuery.trim()) {
+      try {
+        const stored = JSON.parse(localStorage.getItem("previousSearches") || "[]");
+        const updated = [searchQuery.trim(), ...stored.filter((s: string) => s !== searchQuery.trim())].slice(0, 10);
+        localStorage.setItem("previousSearches", JSON.stringify(updated));
+      } catch (e) { /* ignore */ }
+    }
+  }, [searchQuery]);
 
   const ITEMS_PER_PAGE = 20;
 
@@ -801,6 +813,7 @@ export default function SearchPage() {
                     new Date(product.auctionEndTime).getTime() - Date.now() < 24 * 60 * 60 * 1000;
                   const isHotItem = (product.views || 0) > 50 || ((product as any).totalBids || 0) > 5;
                   const shippingCost = product.shippingCost || 0;
+                  const shippingType = (product as any).shippingType || "seller_pays";
                   
                   return (
                     <Link key={product.id} href={`/product/${product.id}`}>
@@ -859,9 +872,13 @@ export default function SearchPage() {
                             <p className="text-gray-900 font-bold text-sm sm:text-base">
                               {(product.currentBid || product.price || 0).toLocaleString()} {t("currency")}
                             </p>
-                            {shippingCost > 0 ? (
+                            {shippingType === "buyer_pays" && shippingCost > 0 ? (
                               <p className="text-[10px] sm:text-xs text-gray-400">
                                 + {shippingCost.toLocaleString()} {t("shipping")}
+                              </p>
+                            ) : shippingType === "pickup" ? (
+                              <p className="text-[10px] sm:text-xs text-gray-500">
+                                {language === "ar" ? "استلام شخصي" : "وەرگرتنی کەسی"}
                               </p>
                             ) : (
                               <p className="text-[10px] sm:text-xs text-green-600">

@@ -25,6 +25,7 @@ interface ShippingLabelProps {
     paymentMethod: string;
     saleDate: Date;
     weight?: string;
+    shippingCost?: number;
   };
   isReturn?: boolean; // For return shipment labels with swapped addresses
 }
@@ -380,6 +381,9 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
                     <div className="label-text text-[8px] text-gray-400">المحتويات:</div>
                     <div className="title text-[10px] font-medium">{orderDetails.productTitle}</div>
                     {orderDetails.weight && <div className="weight text-[8px] text-gray-500">الوزن: {orderDetails.weight}</div>}
+                    {!isReturn && orderDetails.shippingCost != null && orderDetails.shippingCost > 0 && (
+                      <div className="weight text-[8px] text-gray-600 mt-0.5">الشحن: {formatPrice(orderDetails.shippingCost)} د.ع</div>
+                    )}
                   </div>
                   <div className="qr-code mr-2">
                     <QRCodeSVG value={qrData} size={50} level="M" />

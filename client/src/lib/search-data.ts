@@ -61,6 +61,27 @@ export const SEARCH_SUGGESTIONS = [
   { ar: "خاتم", en: "ring", category: "أخرى" },
   { ar: "سلسلة ذهب", en: "gold chain", category: "أخرى" },
   { ar: "عقد", en: "necklace", category: "أخرى" },
+  // Shoes
+  { ar: "أحذية", en: "shoes", category: "أحذية" },
+  { ar: "حذاء نايكي", en: "nike shoes", category: "أحذية" },
+  { ar: "حذاء اديداس", en: "adidas shoes", category: "أحذية" },
+  { ar: "حذاء بوما", en: "puma shoes", category: "أحذية" },
+  { ar: "حذاء ريبوك", en: "reebok shoes", category: "أحذية" },
+  { ar: "حذاء نيو بالانس", en: "new balance shoes", category: "أحذية" },
+  { ar: "حذاء كونفيرس", en: "converse shoes", category: "أحذية" },
+  { ar: "حذاء فانز", en: "vans shoes", category: "أحذية" },
+  { ar: "حذاء جوردان", en: "jordan shoes", category: "أحذية" },
+  { ar: "حذاء ييزي", en: "yeezy shoes", category: "أحذية" },
+  { ar: "سنيكرز", en: "sneakers", category: "أحذية" },
+  { ar: "بوت", en: "boots", category: "أحذية" },
+  { ar: "صندل", en: "sandals", category: "أحذية" },
+  { ar: "كعب عالي", en: "high heels", category: "أحذية" },
+  { ar: "حذاء رياضي", en: "athletic shoes", category: "أحذية" },
+  { ar: "حذاء رسمي", en: "dress shoes", category: "أحذية" },
+  { ar: "حذاء كاجوال", en: "casual shoes", category: "أحذية" },
+  { ar: "لوفر", en: "loafers", category: "أحذية" },
+  { ar: "حذاء غوتشي", en: "gucci shoes", category: "أحذية" },
+  { ar: "حذاء لويس فيتون", en: "louis vuitton shoes", category: "أحذية" },
 ];
 
 export const WATCH_BRANDS = [
@@ -169,6 +190,9 @@ export const CATEGORY_SPECIFICATIONS: Record<string, { fields: string[] }> = {
   },
   "ملابس": {
     fields: ["brand", "size", "color", "material", "style", "gender"]
+  },
+  "أحذية": {
+    fields: ["shoeBrand", "shoeSize", "shoeWidth", "shoeStyle", "upperMaterial", "color", "gender"]
   },
   "سيارات": {
     fields: ["make", "model", "year", "mileage", "fuelType", "transmission", "color", "bodyType"]
@@ -341,6 +365,79 @@ export const SPECIFICATION_OPTIONS = {
     { value: "late20th", labelAr: "أواخر القرن 20", labelKu: "کۆتایی سەدەی 20" },
     { value: "modern", labelAr: "حديث", labelKu: "مۆدێرن" },
   ],
+  
+  // Shoes - Size options (EU sizes)
+  shoeSize: [
+    { value: "35", labelAr: "35 EU", labelKu: "35 EU" },
+    { value: "36", labelAr: "36 EU", labelKu: "36 EU" },
+    { value: "37", labelAr: "37 EU", labelKu: "37 EU" },
+    { value: "38", labelAr: "38 EU", labelKu: "38 EU" },
+    { value: "39", labelAr: "39 EU", labelKu: "39 EU" },
+    { value: "40", labelAr: "40 EU", labelKu: "40 EU" },
+    { value: "41", labelAr: "41 EU", labelKu: "41 EU" },
+    { value: "42", labelAr: "42 EU", labelKu: "42 EU" },
+    { value: "43", labelAr: "43 EU", labelKu: "43 EU" },
+    { value: "44", labelAr: "44 EU", labelKu: "44 EU" },
+    { value: "45", labelAr: "45 EU", labelKu: "45 EU" },
+    { value: "46", labelAr: "46 EU", labelKu: "46 EU" },
+    { value: "47", labelAr: "47 EU", labelKu: "47 EU" },
+    { value: "48", labelAr: "48 EU", labelKu: "48 EU" },
+  ],
+  
+  // Shoes - Width options
+  shoeWidth: [
+    { value: "narrow", labelAr: "ضيق", labelKu: "تەسک" },
+    { value: "standard", labelAr: "عادي", labelKu: "ئاسایی" },
+    { value: "wide", labelAr: "عريض", labelKu: "پان" },
+    { value: "extra_wide", labelAr: "عريض جداً", labelKu: "زۆر پان" },
+  ],
+  
+  // Shoes - Style options
+  shoeStyle: [
+    { value: "sneakers", labelAr: "سنيكرز", labelKu: "سنیکرز" },
+    { value: "boots", labelAr: "بوت", labelKu: "بووت" },
+    { value: "sandals", labelAr: "صندل", labelKu: "سەنداڵ" },
+    { value: "heels", labelAr: "كعب عالي", labelKu: "پاشنە بەرز" },
+    { value: "flats", labelAr: "فلات", labelKu: "تەخت" },
+    { value: "loafers", labelAr: "لوفر", labelKu: "لۆفەر" },
+    { value: "oxford", labelAr: "أوكسفورد", labelKu: "ئۆکسفۆرد" },
+    { value: "athletic", labelAr: "رياضي", labelKu: "وەرزشی" },
+    { value: "casual", labelAr: "كاجوال", labelKu: "کاژواڵ" },
+    { value: "formal", labelAr: "رسمي", labelKu: "فەرمی" },
+    { value: "slippers", labelAr: "شبشب", labelKu: "شەبشەب" },
+  ],
+  
+  // Shoes - Brand options
+  shoeBrand: [
+    { value: "nike", labelAr: "نايكي", labelKu: "نایکی" },
+    { value: "adidas", labelAr: "اديداس", labelKu: "ئادیداس" },
+    { value: "puma", labelAr: "بوما", labelKu: "پووما" },
+    { value: "reebok", labelAr: "ريبوك", labelKu: "ڕیبۆک" },
+    { value: "new_balance", labelAr: "نيو بالانس", labelKu: "نیو باڵانس" },
+    { value: "converse", labelAr: "كونفيرس", labelKu: "کۆنڤێرس" },
+    { value: "vans", labelAr: "فانز", labelKu: "ڤانز" },
+    { value: "jordan", labelAr: "جوردان", labelKu: "جۆردان" },
+    { value: "yeezy", labelAr: "ييزي", labelKu: "یێزی" },
+    { value: "gucci", labelAr: "غوتشي", labelKu: "گووچی" },
+    { value: "louis_vuitton", labelAr: "لويس فيتون", labelKu: "لوویس ڤیتۆن" },
+    { value: "balenciaga", labelAr: "بالنسياغا", labelKu: "باڵەنسیاگا" },
+    { value: "prada", labelAr: "برادا", labelKu: "پرادا" },
+    { value: "timberland", labelAr: "تمبرلاند", labelKu: "تیمبەرلاند" },
+    { value: "clarks", labelAr: "كلاركس", labelKu: "کلارکس" },
+    { value: "skechers", labelAr: "سكيتشرز", labelKu: "سکێچەرز" },
+    { value: "other", labelAr: "أخرى", labelKu: "تر" },
+  ],
+  
+  // Shoes - Upper material options
+  upperMaterial: [
+    { value: "leather", labelAr: "جلد طبيعي", labelKu: "چەرمی ڕەسەن" },
+    { value: "synthetic", labelAr: "جلد صناعي", labelKu: "چەرمی دروستکراو" },
+    { value: "canvas", labelAr: "قماش", labelKu: "قوماش" },
+    { value: "mesh", labelAr: "شبكي", labelKu: "تۆڕ" },
+    { value: "suede", labelAr: "شامواه", labelKu: "شاموا" },
+    { value: "knit", labelAr: "تريكو", labelKu: "تریکۆ" },
+    { value: "rubber", labelAr: "مطاط", labelKu: "لاستیک" },
+  ],
 };
 
 // Category field configuration: which fields are required vs optional
@@ -356,6 +453,10 @@ export const CATEGORY_FIELD_CONFIG: Record<string, { required: string[]; optiona
   "ساعات": {
     required: [],
     optional: ["movement", "caseSize", "color"],
+  },
+  "أحذية": {
+    required: ["gender", "shoeSize"],
+    optional: ["shoeBrand", "shoeStyle", "shoeWidth", "upperMaterial", "color"],
   },
   "سيارات": {
     required: ["year", "mileage"],
@@ -389,6 +490,12 @@ export const SPECIFICATION_LABELS: Record<string, { ar: string; ku: string }> = 
   jewelryMaterial: { ar: "نوع المعدن", ku: "جۆری کانزا" },
   gemstone: { ar: "الحجر الكريم", ku: "بەردی گرانبەها" },
   era: { ar: "الحقبة", ku: "سەردەم" },
+  // Shoes
+  shoeSize: { ar: "مقاس الحذاء", ku: "قەبارەی پێڵاو" },
+  shoeWidth: { ar: "عرض الحذاء", ku: "پانی پێڵاو" },
+  shoeStyle: { ar: "نوع الحذاء", ku: "جۆری پێڵاو" },
+  shoeBrand: { ar: "الماركة", ku: "براند" },
+  upperMaterial: { ar: "خامة الوجه", ku: "مادەی سەرەوە" },
 };
 
 export const BRAND_SYNONYMS: Record<string, string[]> = {
@@ -428,6 +535,7 @@ export const CATEGORY_KEYWORDS: Record<string, string[]> = {
   "ساعات": ["watch", "watches", "ساعة", "ساعات", "وقت", "timepiece", "wristwatch", "horology"],
   "إلكترونيات": ["electronics", "الكترونيات", "جهاز", "أجهزة", "phone", "laptop", "computer", "هاتف", "لابتوب", "كمبيوتر"],
   "ملابس": ["clothing", "clothes", "ملابس", "لبس", "fashion", "أزياء", "dress", "فستان"],
+  "أحذية": ["shoes", "shoe", "أحذية", "حذاء", "sneakers", "سنيكرز", "boots", "بوت", "sandals", "صندل", "heels", "كعب", "نايكي", "nike", "adidas", "اديداس", "جوردان", "jordan"],
   "تحف وأثاث": ["antiques", "furniture", "تحف", "أثاث", "انتيك", "vintage", "فينتاج"],
   "سيارات": ["car", "cars", "سيارة", "سيارات", "vehicle", "مركبة", "auto"],
   "مجوهرات": ["jewelry", "jewellery", "مجوهرات", "ذهب", "gold", "diamond", "ألماس"],

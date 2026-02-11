@@ -22,9 +22,24 @@ const checkoutSchema = z.object({
   city: z.string().trim().min(3).max(50),
   addressLine1: z.string().trim().min(5).max(200),
   addressLine2: z.string().trim().max(200).optional(),
-  shippingCost: z.number().int().min(0),
+  shippingCost: z.number().int().min(0).optional(), // Accepted but recalculated server-side
   saveAddress: z.boolean().optional(),
 });
+
+const INTER_CITY_SURCHARGE = 2000; // Flat surcharge for inter-city delivery
+
+/** Server-side shipping calculation per item - mirrors client logic */
+function calculateItemShipping(
+  listing: { shippingType: string | null; shippingCost: number | null; city: string | null },
+  quantity: number,
+  buyerCity: string
+): number {
+  if (listing.shippingType === "seller_pays") return 0;
+  const baseCost = (listing.shippingCost || 0) * quantity;
+  const isSameCity = buyerCity && listing.city && buyerCity === listing.city;
+  const surcharge = isSameCity ? 0 : INTER_CITY_SURCHARGE * quantity;
+  return baseCost + surcharge;
+}
 
 export function registerCartRoutes(app: Express): void {
   // Apply CSRF validation to all cart routes except GET requests
@@ -71,6 +86,9 @@ export function registerCartRoutes(app: Express): void {
               isActive: listing.isActive,
               sellerId: listing.sellerId,
               sellerName,
+              city: listing.city || "",
+              shippingType: listing.shippingType || "seller_pays",
+              shippingCost: listing.shippingCost || 0,
             },
           };
         })
@@ -309,9 +327,13 @@ export function registerCartRoutes(app: Express): void {
         // Determine the purchase amount
         // For auctions with buyNowPrice, use the buyNowPrice
         const isAuctionBuyNow = listing.saleType === "auction" && (listing as any).buyNowPrice;
-        const purchaseAmount = isAuctionBuyNow 
+        const itemPrice = isAuctionBuyNow 
           ? (listing as any).buyNowPrice 
           : listing.price * cartItem.quantity;
+
+        // Calculate shipping server-side based on seller settings and city match
+        const itemShipping = calculateItemShipping(listing, cartItem.quantity, parsed.city);
+        const purchaseAmount = itemPrice + itemShipping;
 
         // Create transaction
         const transaction = await storage.createTransaction({

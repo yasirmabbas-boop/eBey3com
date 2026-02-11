@@ -15,6 +15,9 @@ export interface CartItemWithListing extends CartItem {
     isActive: boolean;
     sellerId: string | null;
     sellerName: string;
+    city: string;
+    shippingType: string;
+    shippingCost: number;
   } | null;
 }
 

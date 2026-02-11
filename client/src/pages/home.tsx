@@ -1,13 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { useListings } from "@/hooks/use-listings";
 import { useLanguage } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Clock, Search as SearchIcon, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel, TrendingUp, Timer, MapPin, Star } from "lucide-react";
+import { Eye, Clock, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel, TrendingUp, Timer, MapPin, Star } from "lucide-react";
 import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
 import type { Listing } from "@shared/schema";
@@ -16,6 +15,7 @@ const CATEGORIES = [
   { id: "ساعات", name: "ساعات", nameEn: "watches", icon: Clock, color: "blue" },
   { id: "إلكترونيات", name: "إلكترونيات", nameEn: "electronics", icon: Zap, color: "amber" },
   { id: "ملابس", name: "ملابس", nameEn: "clothing", icon: Tag, color: "purple" },
+  { id: "أحذية", name: "أحذية", nameEn: "shoes", icon: ShoppingBag, color: "orange" },
   { id: "تحف وأثاث", name: "تحف وأثاث", nameEn: "antiques", icon: Sparkles, color: "rose" },
   { id: "مجوهرات", name: "مجوهرات", nameEn: "jewelry", icon: Heart, color: "pink" },
   { id: "مكياج", name: "مكياج", nameEn: "makeup", icon: Sparkles, color: "fuchsia" },
@@ -117,10 +117,8 @@ function LoadingSkeleton() {
 
 export default function Home() {
   const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>([]);
-  const [previousSearches, setPreviousSearches] = useState<string[]>([]);
   const [userPreferredCategories, setUserPreferredCategories] = useState<string[]>([]);
   const [userPriceRange, setUserPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: Infinity });
-  const [, navigate] = useLocation();
   const { language } = useLanguage();
   const { user } = useAuth();
 
@@ -130,12 +128,6 @@ export default function Home() {
       if (viewedStored) {
         const ids = JSON.parse(viewedStored) as string[];
         setRecentlyViewedIds(ids.slice(0, 10));
-      }
-      
-      const searchesStored = localStorage.getItem("previousSearches");
-      if (searchesStored) {
-        const searches = JSON.parse(searchesStored) as string[];
-        setPreviousSearches(searches.slice(0, 10));
       }
 
       const categoriesStored = localStorage.getItem("userPreferredCategories");
@@ -178,10 +170,6 @@ export default function Home() {
         setUserPreferredCategories(serverPreferences.topCategories);
         localStorage.setItem("userPreferredCategories", JSON.stringify(serverPreferences.topCategories));
       }
-      if (serverPreferences.recentSearches.length > 0) {
-        setPreviousSearches(serverPreferences.recentSearches);
-        localStorage.setItem("previousSearches", JSON.stringify(serverPreferences.recentSearches));
-      }
       if (serverPreferences.priceRange) {
         const range = { min: serverPreferences.priceRange.low, max: serverPreferences.priceRange.high };
         setUserPriceRange(range);
@@ -192,14 +180,14 @@ export default function Home() {
 
   // Fetch personalized recommendations (for logged-in users)
   const { data: recommendations } = useQuery<{
-    searchBased: Array<{ query: string; listings: any[] }>;
+    categoryRecommendations: Array<{ category: string; label: string; listings: any[] }>;
     recommended: any[];
     popularInArea: any[];
   }>({
     queryKey: ["/api/recommendations"],
     queryFn: async () => {
       const res = await fetch("/api/recommendations");
-      if (!res.ok) return { searchBased: [], recommended: [], popularInArea: [] };
+      if (!res.ok) return { categoryRecommendations: [], recommended: [], popularInArea: [] };
       return res.json();
     },
     staleTime: 5 * 60 * 1000,
@@ -348,45 +336,26 @@ export default function Home() {
           </Section>
         )}
 
-        {/* Previous Searches */}
-        {previousSearches.length > 0 && (
-          <Section 
-            title={language === "ar" ? "عمليات بحث سابقة" : "گەڕانە پێشووەکان"}
-            icon={<SearchIcon className="h-4 w-4 text-green-600" />}
-          >
-            {previousSearches.map((search, index) => (
-              <div 
-                key={index} 
-                className="snap-start flex-shrink-0 w-[calc(40vw-12px)] sm:w-[180px]"
-                onClick={() => navigate(`/search?q=${encodeURIComponent(search)}`)}
-              >
-                <Card className="cursor-pointer hover:shadow-md transition-shadow h-full flex items-center justify-center p-4 bg-gradient-to-br from-gray-50 to-gray-100">
-                  <div className="text-center">
-                    <SearchIcon className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm font-medium text-gray-700 line-clamp-2">{search}</p>
-                  </div>
-                </Card>
-              </div>
-            ))}
-          </Section>
-        )}
-
-        {/* Because you searched for X -- personalized rows */}
-        {recommendations?.searchBased?.map((group) => (
-          <Section
-            key={group.query}
-            title={language === "ar" ? `لأنك بحثت عن "${group.query}"` : `"${group.query}" بۆت گەڕا`}
-            icon={<SearchIcon className="h-4 w-4 text-blue-500" />}
-            seeAllLink={`/search?q=${encodeURIComponent(group.query)}`}
-            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
-          >
-            {group.listings.map((product: any) => (
-              <div key={product.id} className="snap-start">
-                <ProductCard product={product} />
-              </div>
-            ))}
-          </Section>
-        ))}
+        {/* Category recommendations -- subtle, per-category rows */}
+        {recommendations?.categoryRecommendations?.map((group) => {
+          const catInfo = CATEGORIES.find(c => c.id === group.category);
+          const CatIcon = catInfo?.icon || Tag;
+          return (
+            <Section
+              key={group.category}
+              title={group.label}
+              icon={<CatIcon className="h-4 w-4 text-primary" />}
+              seeAllLink={`/search?category=${encodeURIComponent(group.category)}`}
+              seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+            >
+              {group.listings.map((product: any) => (
+                <div key={product.id} className="snap-start">
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </Section>
+          );
+        })}
 
         {/* Recommended for you */}
         {recommendations?.recommended && recommendations.recommended.length > 0 && (

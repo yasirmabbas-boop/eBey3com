@@ -98,6 +98,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
+const INTER_CITY_SURCHARGE = 2000;
+
 interface SellerProduct {
   id: string;
   title: string;
@@ -133,6 +135,7 @@ interface SellerOrder {
   amount: number;
   status: string;
   deliveryStatus: string;
+  deliveryCity?: string;
   createdAt: string;
   completedAt?: string;
   buyerRating?: number;
@@ -143,6 +146,9 @@ interface SellerOrder {
     price: number;
     images: string[];
     productCode?: string;
+    shippingCost?: number;
+    shippingType?: string;
+    city?: string;
   };
   buyer?: {
     id: string;
@@ -154,6 +160,19 @@ interface SellerOrder {
     latitude?: number;
     longitude?: number;
   };
+}
+
+function computeOrderShipping(order: SellerOrder): number {
+  const listing = order.listing;
+  if (!listing || listing.shippingType === "seller_pays") return 0;
+  const quantity = 1;
+  const baseCost = (listing.shippingCost || 0) * quantity;
+  const buyerCity = order.buyer?.city ?? order.deliveryCity ?? "";
+  const isSameCity = listing.city && buyerCity && buyerCity === listing.city;
+  const surcharge = (buyerCity && listing.city && buyerCity !== listing.city)
+    ? INTER_CITY_SURCHARGE * quantity
+    : 0;
+  return baseCost + surcharge;
 }
 
 interface SellerMessage extends Message {
@@ -316,6 +335,7 @@ export default function SellerDashboard() {
   const [quickFilter, setQuickFilter] = useState<"pending_shipment" | "needs_reply" | "ending_soon" | "none">("none");
   const [showShippingLabel, setShowShippingLabel] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<SellerProduct | null>(null);
+  const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<SellerOrder | null>(null);
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
   const [stockProductId, setStockProductId] = useState<string | null>(null);
   const [newStockQuantity, setNewStockQuantity] = useState("");
@@ -677,6 +697,8 @@ export default function SellerDashboard() {
     const hasDeliveredOrCompleted = productOrders.some(o => 
       o.status === "delivered" || o.status === "completed"
     );
+    // Use first order with buyer for sold/pending_shipment items (for print label)
+    const firstOrderWithBuyer = productOrders.find(o => o.buyer);
     
     let status = "draft";
     if (hasPendingShipment) {
@@ -717,6 +739,16 @@ export default function SellerDashboard() {
       quantitySold,
       saleType: l.saleType || "fixed",
       auctionEndTime: l.auctionEndTime ? new Date(l.auctionEndTime).toISOString() : undefined,
+      buyer: firstOrderWithBuyer?.buyer ? {
+        id: firstOrderWithBuyer.buyer.id || "",
+        name: firstOrderWithBuyer.buyer.name || "مشتري",
+        phone: firstOrderWithBuyer.buyer.phone,
+        address: firstOrderWithBuyer.buyer.address,
+        city: firstOrderWithBuyer.buyer.city,
+        district: firstOrderWithBuyer.buyer.district,
+      } : undefined,
+      soldDate: firstOrderWithBuyer?.createdAt ? new Date(firstOrderWithBuyer.createdAt).toLocaleDateString("ar-IQ") : undefined,
+      finalPrice: firstOrderWithBuyer?.amount,
     };
   });
 
@@ -968,6 +1000,13 @@ export default function SellerDashboard() {
 
   const handlePrintLabel = (product: SellerProduct) => {
     setSelectedProduct(product);
+    setSelectedOrderForPrint(null);
+    setShowShippingLabel(true);
+  };
+
+  const handlePrintLabelFromOrder = (order: SellerOrder) => {
+    setSelectedOrderForPrint(order);
+    setSelectedProduct(null);
     setShowShippingLabel(true);
   };
 
@@ -977,8 +1016,7 @@ export default function SellerDashboard() {
       // For now, open the shipping label for the first pending order
       // Future enhancement: Batch print all pending labels
       const firstPendingOrder = pendingOrders[0];
-      setSelectedProduct(firstPendingOrder as any);
-      setShowShippingLabel(true);
+      handlePrintLabelFromOrder(firstPendingOrder);
       
       // Also navigate to sales tab with pending filter
       setActiveTab("sales");
@@ -1460,6 +1498,57 @@ export default function SellerDashboard() {
                 {language === "ar" ? "بحاجة لرد" : "پێویستی بە وەڵام"}
               </Button>
             </div>
+
+            {/* Saved Local Drafts from wizard */}
+            {(() => {
+              const lds: { k: string; t: string; p: string; img: string; at: string; url: string; m: string }[] = [];
+              try {
+                for (let i = 0; i < localStorage.length; i++) {
+                  const k = localStorage.key(i);
+                  if (k && k.startsWith("wizard_listing_draft")) {
+                    const raw = localStorage.getItem(k);
+                    if (!raw) continue;
+                    const d = JSON.parse(raw);
+                    if (!d.formData || (!d.formData.title && !d.formData.description && !(d.images?.length > 0))) continue;
+                    let url = "/sell", m = language === "ar" ? "مسودة جديدة" : "ڕەشنووسی نوێ";
+                    if (k.includes("_edit_")) { url = `/sell?edit=${k.replace("wizard_listing_draft_edit_", "")}`; m = language === "ar" ? "تعديل" : "دەستکاری"; }
+                    else if (k.includes("_relist_")) { url = `/sell?relist=${k.replace("wizard_listing_draft_relist_", "")}`; m = language === "ar" ? "إعادة عرض" : "دووبارە"; }
+                    else if (k.includes("_template_")) { url = `/sell?template=${k.replace("wizard_listing_draft_template_", "")}`; m = language === "ar" ? "قالب" : "قاڵب"; }
+                    lds.push({ k, t: d.formData.title || (language === "ar" ? "بدون عنوان" : "بێ ناونیشان"), p: d.formData.price || "0", img: d.images?.[0] || "", at: d.savedAt || "", url, m });
+                  }
+                }
+              } catch (_e) { /* ignore */ }
+              if (lds.length === 0) return null;
+              return (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                  <h3 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    {language === "ar" ? "مسودات غير مكتملة" : "ڕەشنووسی تەواو نەکراو"}
+                  </h3>
+                  <div className="space-y-2">
+                    {lds.map((dr) => (
+                      <div key={dr.k} className="flex items-center justify-between bg-white rounded-lg p-3 border">
+                        <div className="flex items-center gap-3">
+                          {dr.img ? <img src={dr.img} alt="" className="w-12 h-12 object-cover rounded" /> : <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center"><Package className="h-5 w-5 text-gray-400" /></div>}
+                          <div>
+                            <p className="font-medium text-sm">{dr.t}</p>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <Badge variant="outline" className="text-xs">{dr.m}</Badge>
+                              {dr.p !== "0" && <span>{parseInt(dr.p).toLocaleString()} IQD</span>}
+                              {dr.at && <span>{new Date(dr.at).toLocaleDateString("ar-IQ")}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50" onClick={() => { localStorage.removeItem(dr.k); window.location.reload(); }}><Trash2 className="h-3 w-3" /></Button>
+                          <Link href={dr.url}><Button size="sm" className="gap-1"><Edit className="h-3 w-3" />{language === "ar" ? "متابعة" : "بەردەوام بە"}</Button></Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="grid gap-4">
               {filteredProducts.map(product => (
@@ -2280,6 +2369,18 @@ export default function SellerDashboard() {
                                 <span>{order.buyerRating}/5</span>
                               </div>
                             )}
+                            {(order.status === "pending" || order.status === "processing" || order.status === "shipped") && order.buyer && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handlePrintLabelFromOrder(order)}
+                                className="gap-1"
+                                data-testid={`button-print-label-${order.id}`}
+                              >
+                                <Printer className="h-4 w-4" />
+                                {language === "ar" ? "طباعة الشحن" : "چاپی ناردن"}
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="outline"
@@ -2604,27 +2705,54 @@ export default function SellerDashboard() {
         )}
       </div>
 
-      {selectedProduct?.buyer && (
+      {(selectedProduct?.buyer || selectedOrderForPrint) && (
         <ShippingLabel
           open={showShippingLabel}
-          onOpenChange={setShowShippingLabel}
-          orderDetails={{
-            orderId: `ORD-${selectedProduct.id}`,
-            productTitle: selectedProduct.title,
-            productCode: selectedProduct.productCode,
+          onOpenChange={(open) => {
+            setShowShippingLabel(open);
+            if (!open) {
+              setSelectedProduct(null);
+              setSelectedOrderForPrint(null);
+            }
+          }}
+          orderDetails={selectedOrderForPrint ? {
+            orderId: selectedOrderForPrint.id.slice(0, 8).toUpperCase(),
+            productTitle: selectedOrderForPrint.listing?.title || "منتج",
+            productCode: selectedOrderForPrint.listing?.productCode || "",
             sellerName: user?.displayName || "البائع",
             sellerPhone: user?.phone || "",
             sellerCity: user?.city || "العراق",
             sellerAddress: user?.addressLine1 || "",
-            buyerName: selectedProduct.buyer.name,
-            buyerPhone: selectedProduct.buyer.phone || "",
-            deliveryAddress: selectedProduct.buyer.address || "",
-            city: selectedProduct.buyer.city || "",
-            district: selectedProduct.buyer.district || "",
-            price: selectedProduct.finalPrice || selectedProduct.price,
-            saleDate: new Date(selectedProduct.soldDate || Date.now()),
+            buyerName: selectedOrderForPrint.buyer?.name || "مشتري",
+            buyerPhone: selectedOrderForPrint.buyer?.phone || "",
+            deliveryAddress: selectedOrderForPrint.buyer?.address || "",
+            city: selectedOrderForPrint.buyer?.city || "",
+            district: selectedOrderForPrint.buyer?.district || "",
+            price: selectedOrderForPrint.amount,
+            saleDate: new Date(selectedOrderForPrint.createdAt),
             paymentMethod: "الدفع عند الاستلام",
-          }}
+            shippingCost: computeOrderShipping(selectedOrderForPrint),
+          } : (() => {
+            const orderForProduct = sellerOrders.find(o => o.listingId === selectedProduct!.id);
+            return {
+              orderId: `ORD-${selectedProduct!.id}`,
+              productTitle: selectedProduct!.title,
+              productCode: selectedProduct!.productCode,
+              sellerName: user?.displayName || "البائع",
+              sellerPhone: user?.phone || "",
+              sellerCity: user?.city || "العراق",
+              sellerAddress: user?.addressLine1 || "",
+              buyerName: selectedProduct!.buyer!.name,
+              buyerPhone: selectedProduct!.buyer!.phone || "",
+              deliveryAddress: selectedProduct!.buyer!.address || "",
+              city: selectedProduct!.buyer!.city || "",
+              district: selectedProduct!.buyer!.district || "",
+              price: selectedProduct!.finalPrice || selectedProduct!.price,
+              saleDate: new Date(selectedProduct!.soldDate || Date.now()),
+              paymentMethod: "الدفع عند الاستلام",
+              shippingCost: orderForProduct ? computeOrderShipping(orderForProduct) : undefined,
+            };
+          })()}
         />
       )}
 

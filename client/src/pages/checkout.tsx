@@ -49,7 +49,22 @@ const IRAQI_CITIES = [
   "دهوك",
 ];
 
-const SHIPPING_PER_ITEM = 5000;
+const INTER_CITY_SURCHARGE = 2000; // Flat surcharge for inter-city delivery
+
+/** Calculate shipping cost for a single cart item based on seller's settings and city match */
+function calculateItemShipping(
+  item: { quantity: number; listing: { shippingType: string; shippingCost: number; city: string } | null },
+  buyerCity: string
+): number {
+  if (!item.listing) return 0;
+  // Seller pays shipping - free for buyer
+  if (item.listing.shippingType === "seller_pays") return 0;
+  // Buyer pays: seller's listed cost + inter-city surcharge if different city
+  const baseCost = (item.listing.shippingCost || 0) * item.quantity;
+  const isSameCity = buyerCity && item.listing.city && buyerCity === item.listing.city;
+  const surcharge = isSameCity ? 0 : INTER_CITY_SURCHARGE * item.quantity;
+  return baseCost + surcharge;
+}
 
 export default function CheckoutPage() {
   const [, navigate] = useLocation();
@@ -163,7 +178,16 @@ export default function CheckoutPage() {
   }, [cartItems]);
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const shippingTotal = totalItems * SHIPPING_PER_ITEM;
+  const shippingTotal = cartItems.reduce(
+    (sum, item) => sum + calculateItemShipping(item, city), 0
+  );
+  const hasInterCityItems = city ? cartItems.some(
+    item => item.listing?.shippingType !== "seller_pays" && item.listing?.city && item.listing.city !== city
+  ) : false;
+  const interCitySurchargeTotal = hasInterCityItems ? cartItems.reduce((sum, item) => {
+    if (item.listing?.shippingType === "seller_pays" || !item.listing?.city || item.listing.city === city) return sum;
+    return sum + INTER_CITY_SURCHARGE * item.quantity;
+  }, 0) : 0;
   const grandTotal = totalPrice + shippingTotal;
 
   const checkoutMutation = useMutation({
@@ -656,10 +680,44 @@ export default function CheckoutPage() {
                             <div className="font-bold text-primary text-sm">
                               {formatPrice(item.priceSnapshot * item.quantity)}
                             </div>
-                            <div className="text-xs text-gray-500 flex items-center gap-1">
-                              <Truck className="h-3 w-3" />
-                              +{formatPrice(SHIPPING_PER_ITEM * item.quantity)}
-                            </div>
+                            {(() => {
+                              const itemShipping = calculateItemShipping(item, city);
+                              const isInterCity = item.listing?.city && city && item.listing.city !== city;
+                              const sellerBase = (item.listing?.shippingCost || 0) * item.quantity;
+                              const surcharge = isInterCity ? INTER_CITY_SURCHARGE * item.quantity : 0;
+
+                              if (item.listing?.shippingType === "seller_pays") {
+                                return (
+                                  <div className="text-xs text-green-600 flex items-center gap-1">
+                                    <Truck className="h-3 w-3" />
+                                    شحن مجاني
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <div className="text-xs text-gray-500 space-y-0.5">
+                                  {sellerBase > 0 && (
+                                    <div className="flex items-center gap-1">
+                                      <Truck className="h-3 w-3" />
+                                      <span>شحن: {formatPrice(sellerBase)}</span>
+                                    </div>
+                                  )}
+                                  {isInterCity && (
+                                    <div className="flex items-center gap-1 text-orange-500">
+                                      <MapPin className="h-3 w-3" />
+                                      <span>+{formatPrice(surcharge)} ({item.listing?.city} → {city})</span>
+                                    </div>
+                                  )}
+                                  {itemShipping === 0 && !isInterCity && (
+                                    <div className="flex items-center gap-1 text-green-600">
+                                      <Truck className="h-3 w-3" />
+                                      شحن مجاني
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
                         </div>
                       ))}
@@ -683,12 +741,32 @@ export default function CheckoutPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 flex items-center gap-1">
                     <Truck className="h-3.5 w-3.5" />
-                    التوصيل ({totalItems} × {formatPrice(SHIPPING_PER_ITEM)})
+                    رسوم الشحن
                   </span>
-                  <span>{formatPrice(shippingTotal)}</span>
+                  <span className={shippingTotal === 0 ? "text-green-600 font-medium" : ""}>
+                    {shippingTotal === 0 ? "مجاني" : formatPrice(shippingTotal)}
+                  </span>
                 </div>
+                {hasInterCityItems && interCitySurchargeTotal > 0 && (
+                  <div className="flex justify-between items-center text-orange-600">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" />
+                      رسوم بين المحافظات
+                    </span>
+                    <span>{formatPrice(interCitySurchargeTotal)} (ضمن الشحن)</span>
+                  </div>
+                )}
               </div>
               
+              {hasInterCityItems && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-3 text-xs text-orange-700 flex items-start gap-2">
+                  <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span>
+                    يتم إضافة {formatPrice(INTER_CITY_SURCHARGE)} لكل منتج يُشحن من محافظة مختلفة عن محافظتك. هذه الرسوم تظهر ضمن تكلفة الشحن أعلاه.
+                  </span>
+                </div>
+              )}
+
               <Separator className="my-4" />
               
               <div className="flex justify-between text-lg font-bold mb-6">

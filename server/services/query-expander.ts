@@ -84,6 +84,7 @@ export const CATEGORY_KEYWORDS: Record<string, string[]> = {
   "تحف وأثاث": ["antiques", "furniture", "تحف", "أثاث", "انتيك", "vintage", "فينتاج"],
   "سيارات": ["car", "cars", "سيارة", "سيارات", "vehicle", "مركبة", "auto"],
   "مجوهرات": ["jewelry", "jewellery", "مجوهرات", "ذهب", "gold", "diamond", "ألماس"],
+  "أحذية": ["shoes", "shoe", "حذاء", "أحذية", "footwear", "sneakers", "سنيكرز", "بوط", "boots", "sandals", "صندل"],
 };
 
 /**
@@ -98,6 +99,31 @@ export function normalizeArabic(text: string): string {
     .replace(/[ئ]/g, "ی")
     .replace(/[\u064B-\u065F]/g, "") // strip diacritics
     .trim();
+}
+
+/**
+ * Compute Levenshtein (edit) distance between two strings.
+ * Used for fuzzy matching of brand/model names against user input.
+ */
+function levenshteinDistance(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+  return dp[m][n];
+}
+
+/**
+ * Maximum allowed edit distance for fuzzy matching, scaled by word length.
+ * Short words (<=4 chars): 1 edit. Longer words: ~1 edit per 4 chars.
+ */
+function fuzzyThreshold(wordLength: number): number {
+  return Math.max(1, Math.floor(wordLength / 4));
 }
 
 /**
@@ -183,6 +209,41 @@ export function expandQuery(rawQuery: string): ExpandedQuery {
     }
   }
 
+  // Fuzzy second-pass for brands: catch misspellings like ستزن → citizen (via ستيزن)
+  if (!brand) {
+    let bestDist = Infinity;
+    let bestBrandKey: string | null = null;
+    for (const token of tokens) {
+      if (token.length < 3) continue; // skip very short tokens to avoid false positives
+      const tokenNorm = normalizeArabic(token);
+      for (const [brandKey, synonyms] of Object.entries(BRAND_SYNONYMS)) {
+        // Check against the English brand key
+        const brandNorm = normalizeArabic(brandKey.toLowerCase());
+        const distBrand = levenshteinDistance(tokenNorm, brandNorm);
+        const threshBrand = fuzzyThreshold(brandNorm.length);
+        if (distBrand <= threshBrand && distBrand < bestDist) {
+          bestDist = distBrand;
+          bestBrandKey = brandKey;
+        }
+        // Check against each synonym
+        for (const syn of synonyms) {
+          const synNorm = normalizeArabic(syn.toLowerCase());
+          const distSyn = levenshteinDistance(tokenNorm, synNorm);
+          const threshSyn = fuzzyThreshold(synNorm.length);
+          if (distSyn <= threshSyn && distSyn < bestDist) {
+            bestDist = distSyn;
+            bestBrandKey = brandKey;
+          }
+        }
+      }
+    }
+    if (bestBrandKey) {
+      brand = bestBrandKey;
+      allTerms.add(bestBrandKey);
+      BRAND_SYNONYMS[bestBrandKey].forEach(s => allTerms.add(s.toLowerCase()));
+    }
+  }
+
   // Try to match models
   for (const token of tokens) {
     const tokenNorm = normalizeArabic(token);
@@ -219,6 +280,45 @@ export function expandQuery(rawQuery: string): ExpandedQuery {
         allTerms.add(modelKey);
         data.aliases.forEach(a => allTerms.add(a.toLowerCase()));
         break;
+      }
+    }
+  }
+
+  // Fuzzy second-pass for models: catch misspellings
+  if (!model) {
+    let bestDist = Infinity;
+    let bestModelKey: string | null = null;
+    for (const token of tokens) {
+      if (token.length < 3) continue;
+      const tokenNorm = normalizeArabic(token);
+      for (const [modelKey, data] of Object.entries(MODEL_SYNONYMS)) {
+        const modelNorm = normalizeArabic(modelKey.toLowerCase());
+        const distModel = levenshteinDistance(tokenNorm, modelNorm);
+        const threshModel = fuzzyThreshold(modelNorm.length);
+        if (distModel <= threshModel && distModel < bestDist) {
+          bestDist = distModel;
+          bestModelKey = modelKey;
+        }
+        for (const alias of data.aliases) {
+          const aliasNorm = normalizeArabic(alias.toLowerCase());
+          const distAlias = levenshteinDistance(tokenNorm, aliasNorm);
+          const threshAlias = fuzzyThreshold(aliasNorm.length);
+          if (distAlias <= threshAlias && distAlias < bestDist) {
+            bestDist = distAlias;
+            bestModelKey = modelKey;
+          }
+        }
+      }
+    }
+    if (bestModelKey) {
+      const data = MODEL_SYNONYMS[bestModelKey];
+      model = bestModelKey;
+      if (!brand) brand = data.brand;
+      allTerms.add(bestModelKey);
+      data.aliases.forEach(a => allTerms.add(a.toLowerCase()));
+      if (brand && BRAND_SYNONYMS[brand]) {
+        allTerms.add(brand);
+        BRAND_SYNONYMS[brand].forEach(s => allTerms.add(s.toLowerCase()));
       }
     }
   }

@@ -16,10 +16,17 @@ const customIcon = new Icon({
   shadowSize: [41, 41],
 });
 
+export interface ReverseGeocodeResult {
+  displayName?: string;
+  city?: string;      // Iraqi governorate (from Nominatim state/city/province)
+  district?: string;  // Suburb or neighbourhood
+  street?: string;    // Road name
+}
+
 interface LeafletMapPickerProps {
   latitude?: number;
   longitude?: number;
-  onLocationSelect: (lat: number, lng: number, address?: string) => void;
+  onLocationSelect: (lat: number, lng: number, addressInfo?: ReverseGeocodeResult) => void;
   language?: string;
 }
 
@@ -81,12 +88,18 @@ export function LeafletMapPicker({
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=${language === "ar" ? "ar" : "en"}`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=${language === "ar" ? "ar" : "en"}&addressdetails=1`
       );
       const data = await response.json();
-      
-      const address = data.display_name || undefined;
-      onLocationSelect(lat, lng, address);
+
+      const addr = data.address || {};
+      const addressInfo: ReverseGeocodeResult = {
+        displayName: data.display_name || undefined,
+        city: addr.state || addr.city || addr.province || addr.governorate || undefined,
+        district: addr.suburb || addr.neighbourhood || addr.city_district || addr.quarter || undefined,
+        street: addr.road || addr.pedestrian || undefined,
+      };
+      onLocationSelect(lat, lng, addressInfo);
     } catch (error) {
       // If reverse geocoding fails, just use coordinates
       onLocationSelect(lat, lng);

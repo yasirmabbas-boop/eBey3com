@@ -532,8 +532,10 @@ export class DatabaseStorage implements IStorage {
       // Full-text search via search_vector (uses GIN index from migration 0003)
       const ftsClause = sql`${listings.searchVector}::tsvector @@ to_tsquery('english', ${expanded.tsqueryString})`;
 
-      // Trigram similarity for typo tolerance (uses GIN trgm index)
-      const trigramClause = sql`similarity(${listings.title}, ${searchQuery.trim()}) > 0.25`;
+      // Word-level trigram similarity for typo tolerance -- compares query against each
+      // word in the title individually so short misspellings aren't drowned out
+      const searchTrimmed = searchQuery.trim();
+      const trigramClause = sql`EXISTS (SELECT 1 FROM unnest(string_to_array(${listings.title}, ' ')) AS word WHERE similarity(word, ${searchTrimmed}) > 0.35)`;
 
       // Original LIKE on description/tags as fallback
       likeClauses.push(sql`LOWER(${listings.description}) LIKE ${rawTerm}`);
@@ -565,7 +567,7 @@ export class DatabaseStorage implements IStorage {
 
       searchRankSql = sql`(
         COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('english', ${expanded.tsqueryString})), 0) * 40
-        + COALESCE(similarity(${listings.title}, ${searchQuery.trim()}), 0) * 10
+        + COALESCE((SELECT MAX(similarity(word, ${searchTrimmed})) FROM unnest(string_to_array(${listings.title}, ' ')) AS word), 0) * 10
         + CASE WHEN LOWER(${listings.title}) LIKE ${rawTerm} THEN 10 ELSE 0 END
         + CASE WHEN LOWER(COALESCE(${listings.brand}, '')) LIKE ${rawTerm} THEN 5 ELSE 0 END
         + CASE WHEN LOWER(${listings.category}) LIKE ${rawTerm} THEN 3 ELSE 0 END
@@ -663,6 +665,7 @@ export class DatabaseStorage implements IStorage {
       quantitySold: listings.quantitySold,
       brand: listings.brand,
       shippingCost: listings.shippingCost,
+      shippingType: listings.shippingType,
       isFeatured: listings.isFeatured,
     };
 
@@ -731,14 +734,14 @@ export class DatabaseStorage implements IStorage {
       ];
     });
     const ftsClause = sql`${listings.searchVector}::tsvector @@ to_tsquery('english', ${expanded.tsqueryString})`;
-    const trigramClause = sql`similarity(${listings.title}, ${searchTerm}) > 0.25`;
+    const trigramClause = sql`EXISTS (SELECT 1 FROM unnest(string_to_array(${listings.title}, ' ')) AS word WHERE similarity(word, ${searchTerm}) > 0.35)`;
 
     const productResults = await db.select({
       title: listings.title,
       category: listings.category,
       relevance: sql<number>`(
         COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('english', ${expanded.tsqueryString})), 0) * 10
-        + COALESCE(similarity(${listings.title}, ${searchTerm}), 0) * 5
+        + COALESCE((SELECT MAX(similarity(word, ${searchTerm})) FROM unnest(string_to_array(${listings.title}, ' ')) AS word), 0) * 5
       )`,
     })
       .from(listings)
@@ -749,7 +752,7 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(sql`(
         COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('english', ${expanded.tsqueryString})), 0) * 10
-        + COALESCE(similarity(${listings.title}, ${searchTerm}), 0) * 5
+        + COALESCE((SELECT MAX(similarity(word, ${searchTerm})) FROM unnest(string_to_array(${listings.title}, ' ')) AS word), 0) * 5
       ) DESC`)
       .limit(limit - suggestions.length);
 

@@ -62,7 +62,6 @@ const MyPurchases = lazy(() => import("@/pages/my-purchases"));
 const MySales = lazy(() => import("@/pages/my-sales"));
 const SellerDashboard = lazy(() => import("@/pages/seller-dashboard"));
 const BuyerDashboard = lazy(() => import("@/pages/buyer-dashboard"));
-const SellPage = lazy(() => import("@/pages/sell"));
 const SellWizardPage = lazy(() => import("@/pages/sell-wizard"));
 const DealsGuide = lazy(() => import("@/pages/deals-guide"));
 const CartPage = lazy(() => import("@/pages/cart"));
@@ -148,7 +147,6 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/about" component={About} />
       <Route path="/sell" component={SellWizardPage} />
-      <Route path="/sell-old" component={SellPage} />
       <Route path="/deals-guide" component={DealsGuide} />
       <Route path="/cart" component={CartPage} />
       <Route path="/checkout" component={CheckoutPage} />
