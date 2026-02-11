@@ -15,7 +15,7 @@ import { useLanguage } from "@/lib/i18n";
 import { FormError } from "@/components/form-error";
 import { validatePhone, validatePassword } from "@/lib/form-validation";
 import { isDespia } from "@/lib/despia";
-import { isNative } from "@/lib/capacitor";
+import { isNative, isPluginAvailable } from "@/lib/capacitor";
 import { FacebookLogin } from "@capacitor-community/facebook-login";
 
 declare global {
@@ -408,7 +408,7 @@ export default function SignIn() {
                       }
 
                       // For native apps (Capacitor): Use native Facebook Login plugin
-                      if (isNative) {
+                      if (isNative && isPluginAvailable('FacebookLogin')) {
                         console.log("[Facebook Login] Using Capacitor native plugin");
                         setIsLoading(true);
                         

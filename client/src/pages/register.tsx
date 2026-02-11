@@ -15,7 +15,7 @@ import { FormError } from "@/components/form-error";
 import { validatePhone, validatePassword } from "@/lib/form-validation";
 import { PhoneVerificationModal } from "@/components/phone-verification-modal";
 import { isDespia } from "@/lib/despia";
-import { isNative } from "@/lib/capacitor";
+import { isNative, isPluginAvailable } from "@/lib/capacitor";
 import { FacebookLogin } from "@capacitor-community/facebook-login";
 
 export default function Register() {
@@ -248,7 +248,7 @@ export default function Register() {
                   }
 
                   // For native apps (Capacitor): Use native Facebook Login plugin
-                  if (isNative) {
+                  if (isNative && isPluginAvailable('FacebookLogin')) {
                     console.log("[Facebook Register] Using Capacitor native plugin");
                     setIsLoading(true);
                     
