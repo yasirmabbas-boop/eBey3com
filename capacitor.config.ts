@@ -40,6 +40,8 @@ const config: CapacitorConfig = {
     },
     FacebookLogin: {
       appId: '1149652599968295',
+      clientToken: '03a6c8eae3cbaa91dd284f80d086417a',
+      permissions: ['public_profile', 'email'],
     }
   }
 };

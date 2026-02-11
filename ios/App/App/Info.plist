@@ -110,5 +110,17 @@
                 <string>fbapi</string>
                 <string>fb-messenger-share-api</string>
         </array>
+        
+        <!-- iOS 14+ App Tracking Transparency -->
+        <key>NSUserTrackingUsageDescription</key>
+        <string>نحتاج إلى إذنك لتتبع النشاط لتحسين تجربة الإعلانات</string>
+        
+        <!-- Disable automatic Facebook event logging until consent -->
+        <key>FacebookAutoLogAppEventsEnabled</key>
+        <false/>
+        
+        <!-- Disable IDFA collection until consent -->
+        <key>FacebookAdvertiserIDCollectionEnabled</key>
+        <false/>
 </dict>
 </plist>
