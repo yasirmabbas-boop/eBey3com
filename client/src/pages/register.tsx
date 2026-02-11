@@ -308,46 +308,48 @@ export default function Register() {
                     console.log("[Facebook Register] Using FB SDK (in-app)");
                     setIsLoading(true);
                     
-                    window.FB.login(async (response) => {
+                    window.FB.login((response) => {
                       if (response.authResponse) {
                         const { accessToken, userID } = response.authResponse;
                         console.log("[Facebook Register] Got FB access token, validating with server...");
                         
-                        try {
-                          const res = await fetch("/api/auth/facebook/token", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            credentials: "include",
-                            body: JSON.stringify({ accessToken, userID }),
-                          });
-                          
-                          const data = await res.json();
-                          
-                          if (res.ok && data.success) {
-                            console.log("[Facebook Register] Server validation successful");
-                            if (data.authToken) {
-                              localStorage.setItem("authToken", data.authToken);
+                        (async () => {
+                          try {
+                            const res = await fetch("/api/auth/facebook/token", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              credentials: "include",
+                              body: JSON.stringify({ accessToken, userID }),
+                            });
+                            
+                            const data = await res.json();
+                            
+                            if (res.ok && data.success) {
+                              console.log("[Facebook Register] Server validation successful");
+                              if (data.authToken) {
+                                localStorage.setItem("authToken", data.authToken);
+                              }
+                              queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+                              queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+                              navigate(data.needsOnboarding ? "/onboarding" : "/");
+                            } else {
+                              throw new Error(data.error || "Registration failed");
                             }
-                            queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-                            queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
-                            navigate(data.needsOnboarding ? "/onboarding" : "/");
-                          } else {
-                            throw new Error(data.error || "Registration failed");
+                          } catch (error) {
+                            console.error("[Facebook Register] Error:", error);
+                            toast({
+                              title: t("error"),
+                              description: tr(
+                                "فشل التسجيل بفيسبوك",
+                                "تۆمارکردن لەگەڵ فەیسبووک سەرکەوتوو نەبوو",
+                                "Facebook registration failed"
+                              ),
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setIsLoading(false);
                           }
-                        } catch (error) {
-                          console.error("[Facebook Register] Error:", error);
-                          toast({
-                            title: t("error"),
-                            description: tr(
-                              "فشل التسجيل بفيسبوك",
-                              "تۆمارکردن لەگەڵ فەیسبووک سەرکەوتوو نەبوو",
-                              "Facebook registration failed"
-                            ),
-                            variant: "destructive",
-                          });
-                        } finally {
-                          setIsLoading(false);
-                        }
+                        })();
                       } else {
                         console.log("[Facebook Register] User cancelled or error");
                         setIsLoading(false);

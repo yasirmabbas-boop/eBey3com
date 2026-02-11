@@ -468,46 +468,48 @@ export default function SignIn() {
                         console.log("[Facebook Login] Using FB SDK (in-app)");
                         setIsLoading(true);
                         
-                        window.FB.login(async (response) => {
+                        window.FB.login((response) => {
                           if (response.authResponse) {
                             const { accessToken, userID } = response.authResponse;
                             console.log("[Facebook Login] Got FB access token, validating with server...");
                             
-                            try {
-                              const res = await fetch("/api/auth/facebook/token", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                credentials: "include",
-                                body: JSON.stringify({ accessToken, userID }),
-                              });
-                              
-                              const data = await res.json();
-                              
-                              if (res.ok && data.success) {
-                                console.log("[Facebook Login] Server validation successful");
-                                if (data.authToken) {
-                                  localStorage.setItem("authToken", data.authToken);
+                            (async () => {
+                              try {
+                                const res = await fetch("/api/auth/facebook/token", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  credentials: "include",
+                                  body: JSON.stringify({ accessToken, userID }),
+                                });
+                                
+                                const data = await res.json();
+                                
+                                if (res.ok && data.success) {
+                                  console.log("[Facebook Login] Server validation successful");
+                                  if (data.authToken) {
+                                    localStorage.setItem("authToken", data.authToken);
+                                  }
+                                  queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+                                  queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+                                  navigate(data.needsOnboarding ? "/onboarding" : "/");
+                                } else {
+                                  throw new Error(data.error || "Login failed");
                                 }
-                                queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-                                queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
-                                navigate(data.needsOnboarding ? "/onboarding" : "/");
-                              } else {
-                                throw new Error(data.error || "Login failed");
+                              } catch (error) {
+                                console.error("[Facebook Login] Error:", error);
+                                toast({
+                                  title: t("error"),
+                                  description: tr(
+                                    "فشل تسجيل الدخول بفيسبوك",
+                                    "چوونە ژوورەوە لەگەڵ فەیسبووک سەرکەوتوو نەبوو",
+                                    "Facebook login failed"
+                                  ),
+                                  variant: "destructive",
+                                });
+                              } finally {
+                                setIsLoading(false);
                               }
-                            } catch (error) {
-                              console.error("[Facebook Login] Error:", error);
-                              toast({
-                                title: t("error"),
-                                description: tr(
-                                  "فشل تسجيل الدخول بفيسبوك",
-                                  "چوونە ژوورەوە لەگەڵ فەیسبووک سەرکەوتوو نەبوو",
-                                  "Facebook login failed"
-                                ),
-                                variant: "destructive",
-                              });
-                            } finally {
-                              setIsLoading(false);
-                            }
+                            })();
                           } else {
                             console.log("[Facebook Login] User cancelled or error");
                             setIsLoading(false);
