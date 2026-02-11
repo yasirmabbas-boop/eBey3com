@@ -280,6 +280,31 @@ export const insertBuyerAddressSchema = createInsertSchema(buyerAddresses).omit(
 export type InsertBuyerAddress = z.infer<typeof insertBuyerAddressSchema>;
 export type BuyerAddress = typeof buyerAddresses.$inferSelect;
 
+// Seller pickup addresses
+export const sellerAddresses = pgTable("seller_addresses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  label: text("label").notNull(), // "المنزل", "المستودع", "المحل"
+  contactName: text("contact_name").notNull(),
+  phone: text("phone").notNull(),
+  city: text("city").notNull(),
+  district: text("district"),
+  addressLine1: text("address_line_1").notNull(),
+  notes: text("notes"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertSellerAddressSchema = createInsertSchema(sellerAddresses).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertSellerAddress = z.infer<typeof insertSellerAddressSchema>;
+export type SellerAddress = typeof sellerAddresses.$inferSelect;
+
 // Shopping cart items
 export const cartItems = pgTable("cart_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -333,12 +358,16 @@ export const listings = pgTable("listings", {
   sellerId: varchar("seller_id"),
   city: text("city").notNull(),
   area: text("area"),
+  sellerAddressId: varchar("seller_address_id"), // Reference to seller_addresses
+  locationLat: real("location_lat"),
+  locationLng: real("location_lng"),
   sku: text("sku"),
   isActive: boolean("is_active").notNull().default(true),
   isPaused: boolean("is_paused").notNull().default(false),
   isNegotiable: boolean("is_negotiable").notNull().default(false),
   isExchangeable: boolean("is_exchangeable").notNull().default(false),
   serialNumber: text("serial_number"),
+  specifications: jsonb("specifications").$type<Record<string, string | number | boolean>>(),
   quantityAvailable: integer("quantity_available").notNull().default(1),
   quantitySold: integer("quantity_sold").notNull().default(0),
   views: integer("views").notNull().default(0),
@@ -467,6 +496,7 @@ export const returnRequests = pgTable("return_requests", {
   refundProcessed: boolean("refund_processed").default(false),
   category: text("category"),
   listingPrice: integer("listing_price"),
+  returnDeliveryOrderId: varchar("return_delivery_order_id"), // Reference to delivery_orders for return shipment
 });
 
 export const insertReturnRequestSchema = createInsertSchema(returnRequests).omit({
@@ -777,6 +807,7 @@ export const deliveryOrders = pgTable("delivery_orders", {
   returnReason: text("return_reason"),
   cashCollected: boolean("cash_collected").default(false),
   cashCollectedAt: timestamp("cash_collected_at"),
+  sellerAddressId: varchar("seller_address_id"), // Reference to seller_addresses for audit trail
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });

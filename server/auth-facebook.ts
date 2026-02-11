@@ -3,6 +3,8 @@ import { Strategy as FacebookStrategy } from "passport-facebook";
 import type { Express } from "express";
 import axios from "axios";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
+import jwksClient from "jwks-rsa";
 import { authStorage } from "./replit_integrations/auth/storage";
 import type { User } from "@shared/schema";
 
@@ -17,6 +19,61 @@ const FB_APP_ID = process.env.FB_APP_ID;
 const FB_APP_SECRET = process.env.FB_APP_SECRET;
 // CRITICAL: Use hardcoded production URL - DO NOT change to env var (breaks production)
 const FB_CALLBACK_URL = "https://ebey3.com/auth/facebook/callback";
+
+const facebookJwksClient = jwksClient({
+  jwksUri: "https://www.facebook.com/.well-known/oauth/openid/jwks",
+  cache: true,
+  cacheMaxAge: 86400000,
+});
+
+function isLimitedLoginJWT(token: string): boolean {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+    const header = JSON.parse(Buffer.from(parts[0], "base64url").toString());
+    return header.alg === "RS256" && !!header.kid;
+  } catch {
+    return false;
+  }
+}
+
+interface FacebookLimitedLoginClaims {
+  sub: string;
+  name?: string;
+  email?: string;
+  picture?: string;
+  iss: string;
+  aud: string;
+  exp: number;
+  iat: number;
+  nonce?: string;
+}
+
+async function verifyLimitedLoginToken(token: string): Promise<FacebookLimitedLoginClaims> {
+  return new Promise((resolve, reject) => {
+    jwt.verify(
+      token,
+      (header, callback) => {
+        facebookJwksClient.getSigningKey(header.kid!, (err, key) => {
+          if (err) return callback(err);
+          callback(null, key!.getPublicKey());
+        });
+      },
+      {
+        algorithms: ["RS256"],
+        audience: FB_APP_ID,
+        issuer: "https://www.facebook.com",
+      },
+      (err, decoded) => {
+        if (err) {
+          reject(new Error(`Facebook JWT verification failed: ${err.message}`));
+        } else {
+          resolve(decoded as FacebookLimitedLoginClaims);
+        }
+      }
+    );
+  });
+}
 
 /**
  * Exchange short-lived Facebook access token (1 hour) for long-lived token (60 days)
@@ -272,55 +329,77 @@ export function setupFacebookAuth(app: Express): void {
 
       console.log("[Facebook Token Auth] Validating token for user:", userID);
 
-      // Verify the token with Facebook Graph API
-      const verifyResponse = await axios.get(`https://graph.facebook.com/debug_token`, {
-        params: {
-          input_token: accessToken,
-          access_token: `${FB_APP_ID}|${FB_APP_SECRET}`,
-        },
-      });
+      let facebookId: string;
+      let email: string | null = null;
+      let displayName: string = "";
+      let profilePhoto: string | null = null;
+      let longLivedToken: string | null = null;
 
-      const tokenData = verifyResponse.data.data;
-      
-      if (!tokenData.is_valid || tokenData.user_id !== userID) {
-        console.error("[Facebook Token Auth] Invalid token:", tokenData);
-        return res.status(401).json({ error: "Invalid Facebook token" });
+      if (isLimitedLoginJWT(accessToken)) {
+        console.log("[Facebook Token Auth] Detected Limited Login JWT token, validating via JWKS...");
+
+        const claims = await verifyLimitedLoginToken(accessToken);
+        console.log("[Facebook Token Auth] JWT verified. sub:", claims.sub, "name:", claims.name);
+
+        facebookId = claims.sub;
+
+        if (facebookId !== userID) {
+          console.error("[Facebook Token Auth] JWT sub mismatch: expected", userID, "got", facebookId);
+          return res.status(401).json({ error: "Token user mismatch" });
+        }
+
+        displayName = claims.name || "مستخدم";
+        email = claims.email || null;
+        profilePhoto = claims.picture || null;
+        longLivedToken = null;
+
+      } else {
+        console.log("[Facebook Token Auth] Detected classic access token, validating via Graph API...");
+
+        const verifyResponse = await axios.get(`https://graph.facebook.com/debug_token`, {
+          params: {
+            input_token: accessToken,
+            access_token: `${FB_APP_ID}|${FB_APP_SECRET}`,
+          },
+        });
+
+        const tokenData = verifyResponse.data.data;
+
+        if (!tokenData.is_valid || tokenData.user_id !== userID) {
+          console.error("[Facebook Token Auth] Invalid token:", tokenData);
+          return res.status(401).json({ error: "Invalid Facebook token" });
+        }
+
+        if (tokenData.app_id !== FB_APP_ID) {
+          console.error("[Facebook Token Auth] Token app_id mismatch");
+          return res.status(401).json({ error: "Token not for this app" });
+        }
+
+        console.log("[Facebook Token Auth] Token verified, fetching user profile...");
+
+        const profileResponse = await axios.get(`https://graph.facebook.com/v18.0/${userID}`, {
+          params: {
+            fields: "id,first_name,last_name,email,picture.type(large)",
+            access_token: accessToken,
+          },
+        });
+
+        const profile = profileResponse.data;
+        console.log("[Facebook Token Auth] Profile fetched:", profile.id, profile.email);
+
+        longLivedToken = await exchangeForLongLivedToken(accessToken);
+        facebookId = profile.id;
+        email = profile.email || null;
+        const firstName = profile.first_name || "";
+        const lastName = profile.last_name || "";
+        displayName = `${firstName} ${lastName}`.trim() || "مستخدم";
+        profilePhoto = profile.picture?.data?.url || null;
       }
 
-      if (tokenData.app_id !== FB_APP_ID) {
-        console.error("[Facebook Token Auth] Token app_id mismatch");
-        return res.status(401).json({ error: "Token not for this app" });
-      }
-
-      console.log("[Facebook Token Auth] Token verified, fetching user profile...");
-
-      // Fetch user profile from Facebook
-      const profileResponse = await axios.get(`https://graph.facebook.com/v18.0/${userID}`, {
-        params: {
-          fields: "id,first_name,last_name,email,picture.type(large)",
-          access_token: accessToken,
-        },
-      });
-
-      const profile = profileResponse.data;
-      console.log("[Facebook Token Auth] Profile fetched:", profile.id, profile.email);
-
-      // Exchange for long-lived token
-      const longLivedToken = await exchangeForLongLivedToken(accessToken);
-
-      // Get or create user (same logic as regular Facebook auth)
-      const facebookId = profile.id;
-      const email = profile.email || null;
-      const firstName = profile.first_name || "";
-      const lastName = profile.last_name || "";
-      const displayName = `${firstName} ${lastName}`.trim();
-      const profilePhoto = profile.picture?.data?.url || null;
-
-      // Use upsertFacebookUser which handles both create and update
       const user = await authStorage.upsertFacebookUser({
         id: `fb_${facebookId}`,
         facebookId,
-        facebookLongLivedToken: longLivedToken,
+        facebookLongLivedToken: longLivedToken || undefined,
         email,
         displayName,
         avatar: profilePhoto,
@@ -331,7 +410,6 @@ export function setupFacebookAuth(app: Express): void {
         return res.status(500).json({ error: "Failed to create or find user" });
       }
 
-      // Set up session
       (req.session as any).userId = user.id;
       await new Promise<void>((resolve, reject) => {
         req.session.save((err) => {
@@ -340,13 +418,11 @@ export function setupFacebookAuth(app: Express): void {
         });
       });
 
-      // Generate auth token for client
       const authToken = crypto.randomBytes(32).toString("hex");
       const tokenExpiresAt = new Date();
       tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 30);
       await authStorage.updateUser(user.id, { authToken, tokenExpiresAt } as any);
 
-      // Check if user needs onboarding
       const fullUser = await authStorage.getUser(user.id);
       const hasPhone = fullUser?.phone && fullUser.phone.trim() !== "";
       const hasAddress = fullUser?.addressLine1 && fullUser.addressLine1.trim() !== "";

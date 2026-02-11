@@ -1,0 +1,41 @@
+I'm experiencing an issue where Firebase Cloud Messaging (FCM) push notifications work perfectly in the development environment but consistently fail in the published/production environment with the same exact code and credentials.
+
+Error Message:
+
+FirebaseMessagingError: Request is missing required authentication credential.
+Expected OAuth 2 access token, login cookie or other valid authentication credential.
+Code: messaging/third-party-auth-error
+Project Details:
+
+Firebase Project ID: ebey3-67950
+Service Account: firebase-adminsdk-fbsvc@ebey3-67950.iam.gserviceaccount.com
+What We've Tried (All Work in Development, All Fail in Production):
+
+Base64-encoded credentials via environment secret (FIREBASE_SERVICE_ACCOUNT_BASE64)
+Newline fix - Applied .replace(/\\n/g, '\n') to fix escaped newlines in private key
+Fresh service account key - Generated a brand new key from Firebase Console
+Direct JSON file upload - Placed the service account JSON file directly in the workspace
+OAuth token test - Used google-auth-library to manually test token generation - works in dev, fails in prod
+Clean rebuild - Deleted dist/ folder and rebuilt to ensure fresh compiled code
+Debug logging - Confirmed credentials load correctly (project ID, client email, private key format all verified)
+Key Observations:
+
+Environment Firebase Init OAuth Token Generation FCM Send
+Development ✅ Success ✅ Success ✅ Success
+Production (Published) ✅ Success ❌ Fails ❌ Fails
+The Firebase Admin SDK initializes successfully in both environments (same credentials, same code), but the OAuth 2.0 token generation step fails only in production when attempting to send FCM notifications.
+
+Questions:
+
+Are there any network restrictions or firewall rules in Replit's production environment that might block outbound OAuth 2.0 token requests to Google's servers (oauth2.googleapis.com)?
+Is there any difference in how environment secrets or file system access works between development and production?
+Are there known issues with Firebase Admin SDK or Google Auth Library in Replit's production infrastructure?
+Any guidance would be greatly appreciated. This is blocking our ability to send push notifications to users.
+
+Thank you,
+
+**Debug Logs:** https://storage.googleapis.com/replit-support-asset-with-auth/supportAsset/51554821/22bbd242-a17b-4293-a9b5-4f151ad4bf55/debug-logs.zip?GoogleAccessId=replit-web%40replit-web.iam.gserviceaccount.com&Expires=1777890098&Signature=CjcinDvyg%2B9sU%2FRV8Qfv1IEmwNq1rkUdUHqtw%2B2ljVHs6jqoj32mMIjagD4pxnnY106gt9ccDAWnPnmwwLUnWSVgY5%2FJhrDsaPrcBr66JFbFnhQq%2BPCvkrOTGqYJFBjF2EIXUhdk%2F12ZoPYi25kccxtY7srSKfvmTmJ%2FrQpiXbsfgvrwjwa3FgLV5r6CpH51yoBmWfSI8cCa90ENQOfywHxN4lKgZYXVU0vvl%2FFusQMQPF6w8wFq6...
+
+Username: yasirmabbas
+Email: yasir.m.abbas@gmail.com
+User ID: 51554821

@@ -16,6 +16,7 @@ import { registerPushRoutes } from "./push";
 import { registerAnalyticsRoutes } from "./analytics";
 import { registerLogisticsRoutes } from "./logistics-api";
 import { registerCommentRoutes } from "./comments";
+import { registerDeliveryWebhookRoutes } from "./delivery-webhook";
 
 export async function registerRoutes(server: Server, app: Express): Promise<void> {
   registerObjectStorageRoutes(app);
@@ -34,4 +35,5 @@ export async function registerRoutes(server: Server, app: Express): Promise<void
   registerReportsRoutes(app);
   registerAnalyticsRoutes(app);
   registerLogisticsRoutes(app); // PHASE 4: Logistics API for delivery partner
+  registerDeliveryWebhookRoutes(app); // Webhook endpoint for delivery status updates
 }

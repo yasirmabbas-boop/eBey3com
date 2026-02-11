@@ -16,7 +16,7 @@ export interface FacebookUserData {
   displayName?: string;
   avatar?: string | null;
   facebookId: string;
-  facebookLongLivedToken: string;
+  facebookLongLivedToken?: string;
 }
 
 export interface IAuthStorage {
@@ -96,15 +96,18 @@ class AuthStorage implements IAuthStorage {
 
       if (existingUser) {
         // Update existing user
-        const [updatedUser] = await db
-          .update(users)
-          .set({
-            facebookLongLivedToken: userData.facebookLongLivedToken,
+        const updateFields: any = {
             email: userData.email || sql`${users.email}`,
             displayName,
             avatar: sql`COALESCE(${users.avatar}, ${userData.avatar || null})`,
             lastLoginAt: new Date(),
-          })
+          };
+        if (userData.facebookLongLivedToken) {
+          updateFields.facebookLongLivedToken = userData.facebookLongLivedToken;
+        }
+        const [updatedUser] = await db
+          .update(users)
+          .set(updateFields)
           .where(eq(users.id, existingUser.id))
           .returning();
 
@@ -116,29 +119,35 @@ class AuthStorage implements IAuthStorage {
       }
 
       // Create new user
-      const [newUser] = await db
-        .insert(users)
-        .values({
+      const insertValues: any = {
           id: userData.id,
           email: userData.email || null,
           displayName,
           avatar: userData.avatar || null,
           authProvider: "facebook",
           authProviderId: userData.facebookId,
-          facebookLongLivedToken: userData.facebookLongLivedToken,
-          phone: null, // Leave phone NULL so onboarding flow triggers
-        })
-        .onConflictDoUpdate({
-          target: users.id,
-          set: {
+          phone: null,
+        };
+      if (userData.facebookLongLivedToken) {
+        insertValues.facebookLongLivedToken = userData.facebookLongLivedToken;
+      }
+      const conflictSet: any = {
             email: userData.email || sql`${users.email}`,
             displayName,
             avatar: sql`COALESCE(${users.avatar}, ${userData.avatar || null})`,
             authProvider: "facebook",
             authProviderId: userData.facebookId,
-            facebookLongLivedToken: userData.facebookLongLivedToken,
             lastLoginAt: new Date(),
-          },
+          };
+      if (userData.facebookLongLivedToken) {
+        conflictSet.facebookLongLivedToken = userData.facebookLongLivedToken;
+      }
+      const [newUser] = await db
+        .insert(users)
+        .values(insertValues)
+        .onConflictDoUpdate({
+          target: users.id,
+          set: conflictSet,
         })
         .returning();
 

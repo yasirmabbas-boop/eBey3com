@@ -1,0 +1,47 @@
+Last login: Sat Feb  7 20:56:29 on ttys006
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+anonymous:~ yasirabbas$ cd /Users/yasirabbas/eBey3com
+anonymous:eBey3com yasirabbas$ git stash --include-untracked
+Saved working directory and index state WIP on main: fdf3e16 Fix Android navigation bar being covered by system buttons
+anonymous:eBey3com yasirabbas$ git pull
+hint: Waiting for your editor to close the file... 
+
+
+
+
+
+
+
+
+
+
+
+
+
+Merge branch 'main' of https://github.com/yasirmabbas-boop/eBey3com
+# Please enter a commit message to explain why this merge is necessary,
+# especially if it merges an updated upstream into a topic branch.
+#
+# Lines starting with '#' will be ignored, and an empty message aborts
+# the commit.
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+~                                                                               
+                                                                       

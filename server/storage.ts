@@ -10,6 +10,7 @@ import {
   type Transaction, type InsertTransaction,
   type Category, type InsertCategory,
   type BuyerAddress, type InsertBuyerAddress,
+  type SellerAddress, type InsertSellerAddress,
   type CartItem, type InsertCartItem,
   type Notification, type InsertNotification,
   type Report, type InsertReport,
@@ -20,10 +21,18 @@ import {
   type ContactMessage, type InsertContactMessage,
   type ProductComment, type InsertProductComment,
   type PushSubscription, type InsertPushSubscription,
-  users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, returnTemplates, returnApprovalRules, contactMessages, productComments, pushSubscriptions
+  users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, sellerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, returnTemplates, returnApprovalRules, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, lt, inArray, ne, isNotNull } from "drizzle-orm";
+import { expandQuery } from "./services/query-expander";
+
+export interface UserPreferences {
+  topCategories: string[];        // e.g. ["ساعات", "إلكترونيات"]
+  recentSearches: string[];       // e.g. ["rolex", "iphone 15"]
+  priceRange: { low: number; high: number } | null;
+  topBrands: string[];            // extracted from search queries via expandQuery
+}
 
 // Extended report type with related entity details for admin view
 export interface ReportWithDetails {
@@ -82,8 +91,26 @@ export interface IStorage {
     maxPrice?: number;
     conditions?: string[];
     cities?: string[];
+    userId?: string;
   }): Promise<{ listings: Listing[]; total: number }>;
   getSearchSuggestions(query: string, limit?: number): Promise<Array<{ term: string; category: string; type: "category" | "product" }>>;
+  getSearchFacets(options: {
+    category?: string;
+    saleTypes?: string[];
+    sellerId?: string;
+    includeSold?: boolean;
+    searchQuery?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    conditions?: string[];
+    cities?: string[];
+  }): Promise<{
+    categories: Array<{ value: string; count: number }>;
+    conditions: Array<{ value: string; count: number }>;
+    saleTypes: Array<{ value: string; count: number }>;
+    cities: Array<{ value: string; count: number }>;
+    priceRange: { min: number; max: number };
+  }>;
   getListingsByCategory(category: string): Promise<Listing[]>;
   getListingsBySeller(sellerId: string): Promise<Listing[]>;
   getListing(id: string): Promise<Listing | undefined>;
@@ -118,6 +145,7 @@ export interface IStorage {
   trackAnalytics(event: InsertAnalytics): Promise<Analytics>;
   getAnalyticsByUser(userId: string): Promise<Analytics[]>;
   getAnalyticsByListing(listingId: string): Promise<Analytics[]>;
+  getUserPreferences(userId: string): Promise<UserPreferences>;
   
   getMessages(userId: string): Promise<Message[]>;
   getConversation(userId1: string, userId2: string): Promise<Message[]>;
@@ -456,6 +484,127 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(listings.createdAt));
   }
 
+  /**
+   * Build the common WHERE conditions array used by both getListingsPaginated
+   * and getSearchFacets so the filters are always identical.
+   */
+  private buildSearchConditions(options: {
+    category?: string;
+    saleTypes?: string[];
+    sellerId?: string;
+    includeSold?: boolean;
+    searchQuery?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    conditions?: string[];
+    cities?: string[];
+    userPreferences?: UserPreferences | null;
+  }): { where: any; searchRankSql: any; expanded: ReturnType<typeof expandQuery> | null } {
+    const { category, saleTypes, sellerId, includeSold, searchQuery, minPrice, maxPrice, conditions: conditionFilters, cities, userPreferences } = options;
+
+    const conds: any[] = [eq(listings.isDeleted, false)];
+    if (!includeSold) {
+      conds.push(availableListingCondition);
+    }
+    if (category) conds.push(eq(listings.category, category));
+    if (saleTypes && saleTypes.length > 0) {
+      conds.push(inArray(listings.saleType, saleTypes));
+    }
+    if (sellerId) conds.push(eq(listings.sellerId, sellerId));
+
+    // ── Full-text search + trigram + LIKE with synonym expansion ──
+    let searchRankSql: any = null;
+    let expanded: ReturnType<typeof expandQuery> | null = null;
+
+    if (searchQuery && searchQuery.trim()) {
+      expanded = expandQuery(searchQuery);
+      const rawTerm = `%${searchQuery.trim().toLowerCase()}%`;
+
+      // Build LIKE clauses for each synonym term (capped to 8 for perf)
+      const likeTerms = expanded.allTerms.slice(0, 8);
+      const likeClauses: any[] = [];
+      for (const term of likeTerms) {
+        const patt = `%${term.toLowerCase()}%`;
+        likeClauses.push(sql`LOWER(${listings.title}) LIKE ${patt}`);
+        likeClauses.push(sql`LOWER(COALESCE(${listings.brand}, '')) LIKE ${patt}`);
+      }
+
+      // Full-text search via search_vector (uses GIN index from migration 0003)
+      const ftsClause = sql`${listings.searchVector}::tsvector @@ to_tsquery('english', ${expanded.tsqueryString})`;
+
+      // Trigram similarity for typo tolerance (uses GIN trgm index)
+      const trigramClause = sql`similarity(${listings.title}, ${searchQuery.trim()}) > 0.25`;
+
+      // Original LIKE on description/tags as fallback
+      likeClauses.push(sql`LOWER(${listings.description}) LIKE ${rawTerm}`);
+      likeClauses.push(sql`LOWER(${listings.category}) LIKE ${rawTerm}`);
+      likeClauses.push(sql`EXISTS (SELECT 1 FROM unnest(${listings.tags}) AS tag WHERE LOWER(tag) LIKE ${rawTerm})`);
+
+      conds.push(or(ftsClause, trigramClause, ...likeClauses));
+
+      // ── Best Match composite score ──
+      // Weights: FTS rank (40), trigram similarity (10), title LIKE (10),
+      //          brand LIKE (5), category LIKE (3), seller rating (5),
+      //          engagement: views (capped), bids (capped), featured (3)
+      // Personalization: category affinity (+2), brand affinity (+2) -- small nudge
+      let personalizationSql = sql`0`;
+      if (userPreferences && (userPreferences.topCategories.length > 0 || userPreferences.topBrands.length > 0)) {
+        const boosts: any[] = [];
+        if (userPreferences.topCategories.length > 0) {
+          const catList = userPreferences.topCategories;
+          const catClauses = catList.map(c => sql`LOWER(${listings.category}) = ${c.toLowerCase()}`);
+          boosts.push(sql`CASE WHEN (${or(...catClauses)}) THEN 2 ELSE 0 END`);
+        }
+        if (userPreferences.topBrands.length > 0) {
+          const brandList = userPreferences.topBrands;
+          const brandClauses = brandList.map(b => sql`LOWER(COALESCE(${listings.brand}, '')) = ${b.toLowerCase()}`);
+          boosts.push(sql`CASE WHEN (${or(...brandClauses)}) THEN 2 ELSE 0 END`);
+        }
+        personalizationSql = boosts.length === 1 ? boosts[0] : sql`${boosts[0]} + ${boosts[1]}`;
+      }
+
+      searchRankSql = sql`(
+        COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('english', ${expanded.tsqueryString})), 0) * 40
+        + COALESCE(similarity(${listings.title}, ${searchQuery.trim()}), 0) * 10
+        + CASE WHEN LOWER(${listings.title}) LIKE ${rawTerm} THEN 10 ELSE 0 END
+        + CASE WHEN LOWER(COALESCE(${listings.brand}, '')) LIKE ${rawTerm} THEN 5 ELSE 0 END
+        + CASE WHEN LOWER(${listings.category}) LIKE ${rawTerm} THEN 3 ELSE 0 END
+        + COALESCE((SELECT rating FROM users WHERE users.id = ${listings.sellerId}), 0) * 5
+        + LEAST(COALESCE(${listings.views}, 0), 500) * 0.01
+        + LEAST(COALESCE(${listings.totalBids}, 0), 50) * 0.1
+        + CASE WHEN ${listings.isFeatured} THEN 3 ELSE 0 END
+        + ${personalizationSql}
+      )`;
+    }
+
+    // Price filters
+    if (minPrice !== undefined && !isNaN(minPrice)) {
+      conds.push(sql`COALESCE(${listings.currentBid}, ${listings.price}) >= ${minPrice}`);
+    }
+    if (maxPrice !== undefined && !isNaN(maxPrice)) {
+      conds.push(sql`COALESCE(${listings.currentBid}, ${listings.price}) <= ${maxPrice}`);
+    }
+
+    // Condition filter
+    if (conditionFilters && conditionFilters.length > 0) {
+      const condClauses = conditionFilters.map((c) =>
+        sql`LOWER(${listings.condition}) LIKE ${`%${c.toLowerCase()}%`}`
+      );
+      conds.push(or(...condClauses));
+    }
+
+    // City filter
+    if (cities && cities.length > 0) {
+      const cityClauses = cities.map((city) =>
+        sql`LOWER(${listings.city}) LIKE ${`%${city.toLowerCase()}%`}`
+      );
+      conds.push(or(...cityClauses));
+    }
+
+    const where = conds.length > 1 ? and(...conds) : conds[0];
+    return { where, searchRankSql, expanded };
+  }
+
   async getListingsPaginated(options: { 
     limit: number; 
     offset: number; 
@@ -468,92 +617,27 @@ export class DatabaseStorage implements IStorage {
     maxPrice?: number;
     conditions?: string[];
     cities?: string[];
+    userId?: string;
   }): Promise<{ listings: Listing[]; total: number }> {
-    const { limit, offset, category, saleTypes, sellerId, includeSold, searchQuery, minPrice, maxPrice, conditions: conditionFilters, cities } = options;
-    
-    console.log('[STORAGE] getListingsPaginated called with:', {
-      limit, offset, category, saleTypes, sellerId, includeSold, 
-      searchQuery, minPrice, maxPrice, 
-      conditionsCount: conditionFilters?.length, citiesCount: cities?.length
-    });
-    
-    // Only show available (non-sold) listings unless includeSold is true
-    // The route layer handles checking if user is viewing their own profile
-    // Always filter out deleted items
-    const conditions: any[] = [eq(listings.isDeleted, false)];
-    if (!includeSold) {
-      console.log('[STORAGE] Adding availableListingCondition (filtering out sold items)');
-      conditions.push(availableListingCondition);
-    } else {
-      console.log('[STORAGE] includeSold=true, showing ALL items including sold');
+    const { limit, offset, userId } = options;
+
+    // Fetch user preferences for personalized ranking (only when searching with a logged-in user)
+    let userPreferences: UserPreferences | null = null;
+    if (userId && options.searchQuery) {
+      try {
+        userPreferences = await this.getUserPreferences(userId);
+      } catch (e) {
+        // Non-critical: fall back to non-personalized ranking
+      }
     }
-    if (category) conditions.push(eq(listings.category, category));
-    if (saleTypes && saleTypes.length > 0) {
-      conditions.push(inArray(listings.saleType, saleTypes));
-    }
-    if (sellerId) conditions.push(eq(listings.sellerId, sellerId));
-    
-    // Enhanced search with full-text search and fuzzy matching
-    let searchRankSql = null;
-    if (searchQuery && searchQuery.trim()) {
-      const query = searchQuery.trim();
-      const searchTerm = `%${query.toLowerCase()}%`;
-      
-      // Use full-text search with tsvector for better performance and relevance
-      // Combine with fuzzy matching for typo tolerance
-      conditions.push(
-        or(
-          // LIKE search for partial matches
-          sql`LOWER(${listings.title}) LIKE ${searchTerm}`,
-          sql`LOWER(COALESCE(${listings.brand}, '')) LIKE ${searchTerm}`,
-          sql`LOWER(${listings.description}) LIKE ${searchTerm}`,
-          sql`LOWER(${listings.category}) LIKE ${searchTerm}`,
-          sql`LOWER(COALESCE(${listings.serialNumber}, '')) LIKE ${searchTerm}`,
-          sql`LOWER(COALESCE(${listings.sku}, '')) LIKE ${searchTerm}`,
-          sql`LOWER(COALESCE(${listings.productCode}, '')) LIKE ${searchTerm}`,
-          sql`EXISTS (SELECT 1 FROM unnest(${listings.tags}) AS tag WHERE LOWER(tag) LIKE ${searchTerm})`
-        )
-      );
-      
-      // Calculate relevance score based on title match priority
-      searchRankSql = sql`(
-        CASE WHEN LOWER(${listings.title}) LIKE ${searchTerm} THEN 10 ELSE 0 END +
-        CASE WHEN LOWER(COALESCE(${listings.brand}, '')) LIKE ${searchTerm} THEN 5 ELSE 0 END +
-        CASE WHEN LOWER(${listings.category}) LIKE ${searchTerm} THEN 3 ELSE 0 END
-      )`;
-    }
-    
-    // Price filters
-    if (minPrice !== undefined && !isNaN(minPrice)) {
-      conditions.push(sql`COALESCE(${listings.currentBid}, ${listings.price}) >= ${minPrice}`);
-    }
-    if (maxPrice !== undefined && !isNaN(maxPrice)) {
-      conditions.push(sql`COALESCE(${listings.currentBid}, ${listings.price}) <= ${maxPrice}`);
-    }
-    
-    // Condition filter
-    if (conditionFilters && conditionFilters.length > 0) {
-      const conditionClauses = conditionFilters.map((condition) =>
-        sql`LOWER(${listings.condition}) LIKE ${`%${condition.toLowerCase()}%`}`
-      );
-      conditions.push(or(...conditionClauses));
-    }
-    
-    // City filter
-    if (cities && cities.length > 0) {
-      const cityClauses = cities.map((city) =>
-        sql`LOWER(${listings.city}) LIKE ${`%${city.toLowerCase()}%`}`
-      );
-      conditions.push(or(...cityClauses));
-    }
-    
-    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
-    
+
+    const { where: whereClause, searchRankSql } = this.buildSearchConditions({ ...options, userPreferences });
+
     const [countResult] = await db.select({ count: sql<number>`count(*)::int` })
       .from(listings)
       .where(whereClause);
-    
-    // Build select with optional relevance score
+
+    // Build select fields
     const selectFields: any = {
       id: listings.id,
       title: listings.title,
@@ -577,37 +661,30 @@ export class DatabaseStorage implements IStorage {
       productCode: listings.productCode,
       quantityAvailable: listings.quantityAvailable,
       quantitySold: listings.quantitySold,
+      brand: listings.brand,
+      shippingCost: listings.shippingCost,
+      isFeatured: listings.isFeatured,
     };
-    
-    // Add relevance score when searching
+
     if (searchRankSql) {
       selectFields.relevanceScore = searchRankSql;
     }
-    
-    let query = db.select(selectFields)
-      .from(listings)
-      .where(whereClause);
-    
-    // Order by relevance when searching, otherwise by created date
-    if (searchRankSql) {
-      query = query.orderBy(desc(searchRankSql), desc(listings.createdAt));
-    } else {
-      query = query.orderBy(desc(listings.createdAt));
-    }
-    
-    const results = await query
-      .limit(limit)
-      .offset(offset);
-    
-    console.log('[STORAGE] Query results:', {
-      resultsCount: results.length,
-      total: countResult?.count || 0,
-      firstResultId: results[0]?.id,
-      firstResultIsActive: results[0]?.isActive,
-      firstResultQuantitySold: results[0]?.quantitySold,
-      firstResultQuantityAvailable: results[0]?.quantityAvailable
-    });
-    
+
+    // Order by Best Match score when searching, otherwise by created date
+    const results = searchRankSql
+      ? await db.select(selectFields)
+          .from(listings)
+          .where(whereClause)
+          .orderBy(desc(searchRankSql), desc(listings.createdAt))
+          .limit(limit)
+          .offset(offset)
+      : await db.select(selectFields)
+          .from(listings)
+          .where(whereClause)
+          .orderBy(desc(listings.createdAt))
+          .limit(limit)
+          .offset(offset);
+
     return { listings: results as Listing[], total: countResult?.count || 0 };
   }
 
@@ -615,11 +692,19 @@ export class DatabaseStorage implements IStorage {
     if (!query || !query.trim()) {
       return [];
     }
-    
+
+    const expanded = expandQuery(query);
     const searchTerm = query.trim().toLowerCase();
     const suggestions: Array<{ term: string; category: string; type: "category" | "product" }> = [];
-    
-    // Get category suggestions using DISTINCT
+
+    // Build LIKE patterns for synonym terms (capped to 6)
+    const likeTerms = expanded.allTerms.slice(0, 6);
+
+    // Get category suggestions using DISTINCT + synonyms
+    const catLikeClauses = likeTerms.map(t =>
+      sql`LOWER(${listings.category}) LIKE ${`%${t.toLowerCase()}%`}`
+    );
+
     const categoryResults = await db.selectDistinct({
       category: listings.category,
     })
@@ -627,42 +712,115 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(listings.isDeleted, false),
         availableListingCondition,
-        sql`LOWER(${listings.category}) LIKE ${`%${searchTerm}%`}`
+        or(...catLikeClauses)
       ))
       .limit(5);
-    
+
     categoryResults.forEach(row => {
       if (row.category) {
         suggestions.push({ term: row.category, category: row.category, type: "category" });
       }
     });
-    
-    // Get product title suggestions using full-text search and fuzzy matching
+
+    // Get product title suggestions using FTS + trigram + LIKE with synonyms
+    const titleLikeClauses = likeTerms.flatMap(t => {
+      const patt = `%${t.toLowerCase()}%`;
+      return [
+        sql`LOWER(${listings.title}) LIKE ${patt}`,
+        sql`LOWER(COALESCE(${listings.brand}, '')) LIKE ${patt}`,
+      ];
+    });
+    const ftsClause = sql`${listings.searchVector}::tsvector @@ to_tsquery('english', ${expanded.tsqueryString})`;
+    const trigramClause = sql`similarity(${listings.title}, ${searchTerm}) > 0.25`;
+
     const productResults = await db.select({
       title: listings.title,
       category: listings.category,
+      relevance: sql<number>`(
+        COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('english', ${expanded.tsqueryString})), 0) * 10
+        + COALESCE(similarity(${listings.title}, ${searchTerm}), 0) * 5
+      )`,
     })
       .from(listings)
       .where(and(
         eq(listings.isDeleted, false),
         availableListingCondition,
-        or(
-          sql`LOWER(${listings.title}) LIKE ${`%${searchTerm}%`}`,
-          sql`LOWER(COALESCE(${listings.brand}, '')) LIKE ${`%${searchTerm}%`}`
-        )
+        or(ftsClause, trigramClause, ...titleLikeClauses)
       ))
-      .orderBy(desc(listings.createdAt))
+      .orderBy(sql`(
+        COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('english', ${expanded.tsqueryString})), 0) * 10
+        + COALESCE(similarity(${listings.title}, ${searchTerm}), 0) * 5
+      ) DESC`)
       .limit(limit - suggestions.length);
-    
+
     productResults.forEach(row => {
-      suggestions.push({ 
-        term: row.title, 
-        category: row.category || "", 
-        type: "product" 
-      });
+      // Deduplicate by term
+      if (!suggestions.find(s => s.term === row.title)) {
+        suggestions.push({
+          term: row.title,
+          category: row.category || "",
+          type: "product"
+        });
+      }
     });
-    
+
     return suggestions.slice(0, limit);
+  }
+
+  async getSearchFacets(options: {
+    category?: string;
+    saleTypes?: string[];
+    sellerId?: string;
+    includeSold?: boolean;
+    searchQuery?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    conditions?: string[];
+    cities?: string[];
+  }): Promise<{
+    categories: Array<{ value: string; count: number }>;
+    conditions: Array<{ value: string; count: number }>;
+    saleTypes: Array<{ value: string; count: number }>;
+    cities: Array<{ value: string; count: number }>;
+    priceRange: { min: number; max: number };
+  }> {
+    const { where: whereClause } = this.buildSearchConditions(options);
+
+    // Run all aggregations in parallel for speed
+    const [catRows, condRows, saleRows, cityRows, priceRow] = await Promise.all([
+      db.select({
+        value: listings.category,
+        count: sql<number>`count(*)::int`,
+      }).from(listings).where(whereClause).groupBy(listings.category).orderBy(sql`count(*) DESC`).limit(20),
+
+      db.select({
+        value: listings.condition,
+        count: sql<number>`count(*)::int`,
+      }).from(listings).where(whereClause).groupBy(listings.condition).orderBy(sql`count(*) DESC`).limit(20),
+
+      db.select({
+        value: listings.saleType,
+        count: sql<number>`count(*)::int`,
+      }).from(listings).where(whereClause).groupBy(listings.saleType).orderBy(sql`count(*) DESC`).limit(10),
+
+      db.select({
+        value: listings.city,
+        count: sql<number>`count(*)::int`,
+      }).from(listings).where(whereClause).groupBy(listings.city).orderBy(sql`count(*) DESC`).limit(30),
+
+      db.select({
+        min: sql<number>`COALESCE(MIN(COALESCE(${listings.currentBid}, ${listings.price})), 0)::int`,
+        max: sql<number>`COALESCE(MAX(COALESCE(${listings.currentBid}, ${listings.price})), 0)::int`,
+      }).from(listings).where(whereClause),
+    ]);
+
+    return {
+      categories: catRows.filter(r => r.value).map(r => ({ value: r.value!, count: r.count })),
+      conditions: condRows.filter(r => r.value).map(r => ({ value: r.value!, count: r.count })),
+      saleTypes: saleRows.filter(r => r.value).map(r => ({ value: r.value!, count: r.count })),
+      cities: cityRows.filter(r => r.value).map(r => ({ value: r.value!, count: r.count })),
+      priceRange: { min: priceRow[0]?.min || 0, max: priceRow[0]?.max || 0 },
+    };
   }
 
   async getPurchasesWithDetails(buyerId: string): Promise<any[]> {
@@ -1026,6 +1184,60 @@ export class DatabaseStorage implements IStorage {
 
   async getAnalyticsByListing(listingId: string): Promise<Analytics[]> {
     return db.select().from(analytics).where(eq(analytics.listingId, listingId)).orderBy(desc(analytics.createdAt));
+  }
+
+  async getUserPreferences(userId: string): Promise<UserPreferences> {
+    // Top 5 categories the user searches/views in the last 90 days
+    const topCategoriesResult = await db.execute(sql`
+      SELECT category, COUNT(*)::int as cnt
+      FROM analytics
+      WHERE user_id = ${userId} AND category IS NOT NULL AND category != ''
+        AND created_at > NOW() - INTERVAL '90 days'
+      GROUP BY category ORDER BY cnt DESC LIMIT 5
+    `);
+    const topCategories = (topCategoriesResult.rows as any[]).map((r: any) => r.category as string);
+
+    // Recent unique search terms (last 30 days, up to 10)
+    const recentSearchesResult = await db.execute(sql`
+      SELECT search_query, MAX(created_at) as latest
+      FROM analytics
+      WHERE user_id = ${userId} AND event_type = 'search'
+        AND search_query IS NOT NULL AND search_query != ''
+        AND created_at > NOW() - INTERVAL '30 days'
+      GROUP BY search_query
+      ORDER BY latest DESC
+      LIMIT 10
+    `);
+    const recentSearches = (recentSearchesResult.rows as any[]).map((r: any) => r.search_query as string);
+
+    // Typical price range (25th to 75th percentile from viewed/searched listings)
+    const priceRangeResult = await db.execute(sql`
+      SELECT
+        PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY l.price) as price_low,
+        PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY l.price) as price_high
+      FROM analytics a JOIN listings l ON a.listing_id = l.id
+      WHERE a.user_id = ${userId} AND a.created_at > NOW() - INTERVAL '90 days'
+    `);
+    const priceRow = (priceRangeResult.rows as any[])[0];
+    const priceRange = priceRow?.price_low != null && priceRow?.price_high != null
+      ? { low: Number(priceRow.price_low), high: Number(priceRow.price_high) }
+      : null;
+
+    // Extract top brands from search queries using expandQuery
+    const brandCounts = new Map<string, number>();
+    for (const searchTerm of recentSearches) {
+      const expanded = expandQuery(searchTerm);
+      if (expanded.brand) {
+        const brand = expanded.brand.toLowerCase();
+        brandCounts.set(brand, (brandCounts.get(brand) || 0) + 1);
+      }
+    }
+    const topBrands = Array.from(brandCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([brand]) => brand);
+
+    return { topCategories, recentSearches, priceRange, topBrands };
   }
 
   async getMessages(userId: string): Promise<Message[]> {
@@ -1413,6 +1625,59 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db.update(buyerAddresses)
       .set({ isDefault: true })
       .where(and(eq(buyerAddresses.id, addressId), eq(buyerAddresses.userId, userId)))
+      .returning();
+    return !!updated;
+  }
+
+  // Seller addresses methods
+  async getSellerAddresses(userId: string): Promise<SellerAddress[]> {
+    return db.select().from(sellerAddresses)
+      .where(eq(sellerAddresses.userId, userId))
+      .orderBy(desc(sellerAddresses.isDefault), desc(sellerAddresses.createdAt));
+  }
+
+  async getSellerAddressById(id: string): Promise<SellerAddress | undefined> {
+    const [address] = await db.select().from(sellerAddresses)
+      .where(eq(sellerAddresses.id, id))
+      .limit(1);
+    return address;
+  }
+
+  async createSellerAddress(address: InsertSellerAddress): Promise<SellerAddress> {
+    // If this is marked as default, unset other defaults first
+    if (address.isDefault) {
+      await db.update(sellerAddresses)
+        .set({ isDefault: false })
+        .where(eq(sellerAddresses.userId, address.userId));
+    }
+    const [newAddress] = await db.insert(sellerAddresses).values(address).returning();
+    return newAddress;
+  }
+
+  async updateSellerAddress(id: string, updates: Partial<InsertSellerAddress>): Promise<SellerAddress | undefined> {
+    const [address] = await db.update(sellerAddresses)
+      .set(updates)
+      .where(eq(sellerAddresses.id, id))
+      .returning();
+    return address;
+  }
+
+  async deleteSellerAddress(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(sellerAddresses)
+      .where(eq(sellerAddresses.id, id))
+      .returning();
+    return !!deleted;
+  }
+
+  async setDefaultSellerAddress(userId: string, addressId: string): Promise<boolean> {
+    // Unset all defaults for this user
+    await db.update(sellerAddresses)
+      .set({ isDefault: false })
+      .where(eq(sellerAddresses.userId, userId));
+    // Set the new default
+    const [updated] = await db.update(sellerAddresses)
+      .set({ isDefault: true })
+      .where(and(eq(sellerAddresses.id, addressId), eq(sellerAddresses.userId, userId)))
       .returning();
     return !!updated;
   }

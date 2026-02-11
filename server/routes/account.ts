@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { insertBuyerAddressSchema } from "@shared/schema";
+import { insertBuyerAddressSchema, insertSellerAddressSchema } from "@shared/schema";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
 import { ObjectStorageService } from "../replit_integrations/object_storage/objectStorage";
@@ -21,6 +21,22 @@ export function registerAccountRoutes(app: Express): void {
 
   // Apply CSRF validation to all account routes except GET requests
   app.use("/api/account", validateCsrfToken);
+
+  // Get user preference profile (derived from analytics)
+  app.get("/api/account/preferences", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+      const preferences = await storage.getUserPreferences(userId);
+      res.json(preferences);
+    } catch (error) {
+      console.error("Error fetching user preferences:", error);
+      res.status(500).json({ error: "فشل في جلب التفضيلات" });
+    }
+  });
+
   // Get full profile (for account settings)
   app.get("/api/account/profile", async (req, res) => {
     const userId = await getUserIdFromRequest(req);
@@ -396,6 +412,117 @@ export function registerAccountRoutes(app: Express): void {
       res.json({ success: true });
     } catch (error) {
       console.error("Error setting default address:", error);
+      res.status(500).json({ error: "فشل في تعيين العنوان الافتراضي" });
+    }
+  });
+
+  // ============ Seller Addresses ============
+
+  // Get seller addresses
+  app.get("/api/seller/addresses", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const addresses = await storage.getSellerAddresses(userId);
+      res.json(addresses);
+    } catch (error) {
+      console.error("Error fetching seller addresses:", error);
+      res.status(500).json({ error: "فشل في جلب عناوين البائع" });
+    }
+  });
+
+  // Create seller address
+  app.post("/api/seller/addresses", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const validatedData = insertSellerAddressSchema.parse({
+        ...req.body,
+        userId,
+      });
+
+      // Check if this is the first address - make it default automatically
+      const existingAddresses = await storage.getSellerAddresses(userId);
+      if (existingAddresses.length === 0) {
+        validatedData.isDefault = true;
+      }
+
+      const address = await storage.createSellerAddress(validatedData);
+      res.status(201).json(address);
+    } catch (error) {
+      console.error("Error creating seller address:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "بيانات غير صالحة", details: error.errors });
+      }
+      res.status(500).json({ error: "فشل في إنشاء العنوان" });
+    }
+  });
+
+  // Update seller address
+  app.put("/api/seller/addresses/:id", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      // Verify ownership
+      const existingAddress = await storage.getSellerAddressById(req.params.id);
+      if (!existingAddress || existingAddress.userId !== userId) {
+        return res.status(404).json({ error: "العنوان غير موجود" });
+      }
+
+      const address = await storage.updateSellerAddress(req.params.id, req.body);
+      res.json(address);
+    } catch (error) {
+      console.error("Error updating seller address:", error);
+      res.status(500).json({ error: "فشل في تحديث العنوان" });
+    }
+  });
+
+  // Delete seller address
+  app.delete("/api/seller/addresses/:id", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      // Verify ownership
+      const existingAddress = await storage.getSellerAddressById(req.params.id);
+      if (!existingAddress || existingAddress.userId !== userId) {
+        return res.status(404).json({ error: "العنوان غير موجود" });
+      }
+
+      await storage.deleteSellerAddress(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting seller address:", error);
+      res.status(500).json({ error: "فشل في حذف العنوان" });
+    }
+  });
+
+  // Set default seller address
+  app.post("/api/seller/addresses/:id/default", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "غير مسجل الدخول" });
+    }
+
+    try {
+      const success = await storage.setDefaultSellerAddress(userId, req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "العنوان غير موجود" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error setting default seller address:", error);
       res.status(500).json({ error: "فشل في تعيين العنوان الافتراضي" });
     }
   });

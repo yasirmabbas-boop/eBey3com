@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/lib/i18n";
 import type { Listing } from "@shared/schema";
 import { ImageUploadSection } from "@/components/sell";
+import { CategorySpecificFields, validateCategorySpecifications } from "@/components/sell/CategorySpecificFields";
 import { capturePhoto } from "@/lib/nativeCamera";
 import { isNative } from "@/lib/capacitor";
 import { 
@@ -129,6 +130,9 @@ export default function SellPage() {
     allowedBidderType: "verified_only",
   });
   
+  // Category-specific specifications (e.g., size, gender for clothing)
+  const [specifications, setSpecifications] = useState<Record<string, string>>({});
+  
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
@@ -179,6 +183,7 @@ export default function SellPage() {
         if (draft.hasBuyNow !== undefined) setHasBuyNow(draft.hasBuyNow);
         if (draft.hasReservePrice !== undefined) setHasReservePrice(draft.hasReservePrice);
         if (draft.tags) setTags(draft.tags);
+        if (draft.specifications) setSpecifications(draft.specifications);
         toast({ title: language === "ar" ? "تم استرجاع المسودة" : "ڕەشنووس گەڕایەوە", description: language === "ar" ? "تم تحميل البيانات المحفوظة مسبقاً" : "داتا پاشەکەوتکراوەکان بارکرا" });
       } catch (e) {
         console.error("Failed to load draft:", e);
@@ -201,7 +206,7 @@ export default function SellPage() {
     
     const timeoutId = setTimeout(() => {
       try {
-        const draft = { formData, images: images.slice(0, 4), saleType, internationalShipping, hasBuyNow, hasReservePrice, tags, savedAt: new Date().toISOString() };
+        const draft = { formData, images: images.slice(0, 4), saleType, internationalShipping, hasBuyNow, hasReservePrice, tags, specifications, savedAt: new Date().toISOString() };
         localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
       } catch (e) {
         console.warn("Failed to save draft to localStorage:", e);
@@ -209,7 +214,7 @@ export default function SellPage() {
     }, 1000); // 1 second debounce
     
     return () => clearTimeout(timeoutId);
-  }, [formData, images, saleType, internationalShipping, hasBuyNow, hasReservePrice, tags, isNewListing, draftLoaded, showDraftBanner]);
+  }, [formData, images, saleType, internationalShipping, hasBuyNow, hasReservePrice, tags, specifications, isNewListing, draftLoaded, showDraftBanner]);
 
   // Populate form when editing, relisting, or using as template
   useEffect(() => {
@@ -266,6 +271,11 @@ export default function SellPage() {
       setSelectedCountries(sourceListing.internationalCountries ?? []);
       setTags(sourceListing.tags ?? []);
       
+      // Load category-specific specifications
+      if ((sourceListing as any).specifications) {
+        setSpecifications((sourceListing as any).specifications);
+      }
+      
       // Set hasReservePrice if reserve price exists
       if ((sourceListing as any).reservePrice) {
         setHasReservePrice(true);
@@ -309,6 +319,10 @@ export default function SellPage() {
         delete updated[field];
         return updated;
       });
+    }
+    // Clear specifications when category changes (different categories have different fields)
+    if (field === "category") {
+      setSpecifications({});
     }
   };
 
@@ -565,6 +579,12 @@ export default function SellPage() {
       errors.serialNumber = "الرقم التسلسلي مطلوب للساعات والمنتجات الثمينة";
     }
     
+    // Validate category-specific specifications
+    if (formData.category) {
+      const specErrors = validateCategorySpecifications(formData.category, specifications, language);
+      Object.assign(errors, specErrors);
+    }
+    
     if (saleType === "auction") {
       if (startTimeOption === "schedule") {
         if (!formData.startDate) errors.startDate = "تاريخ البدء مطلوب";
@@ -673,6 +693,7 @@ export default function SellPage() {
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
         tags: tags.length > 0 ? tags : null,
         allowedBidderType: formData.allowedBidderType,
+        specifications: Object.keys(specifications).length > 0 ? specifications : null,
       };
 
       // Only edit mode uses PATCH, relist and template create new listings via POST
@@ -1068,6 +1089,7 @@ export default function SellPage() {
                     <SelectContent>
                       <SelectItem value="ساعات">{t("watches")}</SelectItem>
                       <SelectItem value="ملابس">{t("clothing")}</SelectItem>
+                      <SelectItem value="سيارات">{t("vehicles")}</SelectItem>
                       <SelectItem value="تحف وأثاث">{t("furniture")}</SelectItem>
                       <SelectItem value="إلكترونيات">{t("electronics")}</SelectItem>
                       <SelectItem value="مجوهرات">{t("jewelry")}</SelectItem>
@@ -1140,6 +1162,17 @@ export default function SellPage() {
                   />
                 </div>
               </div>
+              
+              {/* Category-Specific Specifications */}
+              {formData.category && (
+                <CategorySpecificFields
+                  category={formData.category}
+                  specifications={specifications}
+                  language={language}
+                  errors={validationErrors}
+                  onChange={setSpecifications}
+                />
+              )}
 
               {/* Tags Input */}
               <div className="space-y-3">

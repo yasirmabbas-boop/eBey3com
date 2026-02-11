@@ -91,27 +91,13 @@ const SORT_OPTIONS = [
   { value: "most_bids", labelAr: "الأكثر مزايدة", labelKu: "زۆرترین مزایدە" },
 ];
 
-function calculateRelevanceScore(product: Listing, query: string): number {
-  if (!query) return 0;
-  const q = query.toLowerCase();
-  let score = 0;
-  
-  const title = (product.title || "").toLowerCase();
-  if (title === q) score += 100;
-  else if (title.startsWith(q)) score += 80;
-  else if (title.includes(q)) score += 60;
-  
-  const tags = product.tags || [];
-  if (tags.some((tag: string) => tag.toLowerCase() === q)) score += 50;
-  else if (tags.some((tag: string) => tag.toLowerCase().includes(q))) score += 30;
-  
-  if ((product.category || "").toLowerCase().includes(q)) score += 20;
-  if ((product.description || "").toLowerCase().includes(q)) score += 10;
-  
-  score += ((product as any).viewCount || 0) * 0.01;
-  score += ((product as any).totalBids || 0) * 0.5;
-  
-  return score;
+// Server-side facets response shape
+interface SearchFacets {
+  categories: Array<{ value: string; count: number }>;
+  conditions: Array<{ value: string; count: number }>;
+  saleTypes: Array<{ value: string; count: number }>;
+  cities: Array<{ value: string; count: number }>;
+  priceRange: { min: number; max: number };
 }
 
 interface FilterState {
@@ -157,10 +143,6 @@ export default function SearchPage() {
   const [mergedListings, setMergedListings] = useState<Listing[]>([]);
 
   useEffect(() => {
-    console.log('[DEBUG-A] useEffect1 triggered', { categoryParam, searchQuery });
-    // #region agent log
-    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:useEffect1',message:'init-filters-from-params',data:{categoryParam,searchQuery},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
     const freshFilters: FilterState = {
       category: categoryParam,
       conditions: [],
@@ -201,35 +183,10 @@ export default function SearchPage() {
   });
 
   useEffect(() => {
-    // #region agent log
-    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:loading-state',message:'loading-flags',data:{isLoading,isFetching,hasListingsData:!!listingsData?.listings,listingsCount:listingsData?.listings?.length,category:appliedFilters.category,page},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H8'})}).catch(()=>{});
-    // #endregion
-  }, [isLoading, isFetching, listingsData?.listings?.length, appliedFilters.category, page]);
-
-  useEffect(() => {
-    console.log('[DEBUG-D] useEffect3 - update mergedListings', { 
-      hasListingsData: !!listingsData?.listings, 
-      listingsCount: listingsData?.listings?.length, 
-      page,
-      firstListingId: listingsData?.listings?.[0]?.id,
-      firstListingIsActive: listingsData?.listings?.[0]?.isActive,
-      firstListingQuantitySold: listingsData?.listings?.[0]?.quantitySold,
-      firstListingQuantityAvailable: listingsData?.listings?.[0]?.quantityAvailable
-    });
-    // #region agent log
-    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:update-merged',message:'update-mergedListings',data:{page,hasListingsData:!!listingsData?.listings,listingsCount:listingsData?.listings?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H4'})}).catch(()=>{});
-    // #endregion
-    if (!listingsData?.listings) {
-      console.log('[SEARCH] No listings data to merge');
-      return;
-    }
+    if (!listingsData?.listings) return;
     if (page === 1) {
-      // Store page 1 data for when pagination starts
-      console.log('[SEARCH] Setting page 1 listings:', listingsData.listings.length);
       setMergedListings(listingsData.listings);
     } else {
-      // Append new pages to existing data
-      console.log('[SEARCH] Appending page', page, 'listings:', listingsData.listings.length);
       setMergedListings((prev) => [...prev, ...listingsData.listings]);
     }
   }, [listingsData, page]);
@@ -248,41 +205,47 @@ export default function SearchPage() {
     },
     enabled: !!sellerIdParam,
   });
+
+  // Server-side facets for accurate filter counts across the entire result set
+  const { data: facets } = useQuery<SearchFacets>({
+    queryKey: ["/api/listings/facets", searchQuery, appliedFilters.category, appliedFilters.priceMin, appliedFilters.priceMax, appliedFilters.conditions.join(","), appliedFilters.saleTypes.join(","), appliedFilters.cities.join(","), appliedFilters.includeSold, sellerIdParam],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchQuery) params.append("q", searchQuery);
+      if (appliedFilters.category) params.append("category", appliedFilters.category);
+      if (appliedFilters.priceMin) params.append("minPrice", appliedFilters.priceMin);
+      if (appliedFilters.priceMax) params.append("maxPrice", appliedFilters.priceMax);
+      if (appliedFilters.includeSold) params.append("includeSold", "true");
+      if (sellerIdParam) params.append("sellerId", sellerIdParam);
+      appliedFilters.conditions.forEach(c => params.append("condition", c));
+      appliedFilters.saleTypes.forEach(s => params.append("saleType", s));
+      appliedFilters.cities.forEach(c => params.append("city", c));
+      const res = await fetch(`/api/listings/facets?${params.toString()}`);
+      if (!res.ok) return { categories: [], conditions: [], saleTypes: [], cities: [], priceRange: { min: 0, max: 0 } };
+      return res.json();
+    },
+    staleTime: 30000,
+  });
   
   // Use data directly from React Query for page 1, merged state only for infinite scroll
   const listings: Listing[] = page === 1 
     ? (listingsData?.listings || [])
     : mergedListings.length > 0 ? mergedListings : (listingsData?.listings || []);
-  console.log('[DEBUG-E] listings computed', { 
-    page, 
-    listingsDataCount: listingsData?.listings?.length, 
-    mergedListingsLen: mergedListings.length, 
-    finalListingsLen: listings.length, 
-    isLoading,
-    appliedIncludeSold: appliedFilters.includeSold,
-    draftIncludeSold: draftFilters.includeSold
-  });
 
   const allProducts = useMemo(() => {
     return listings;
   }, [listings]);
 
   const filteredProducts = useMemo(() => {
+    // For "relevance" sort, trust the server-side Best Match ranking order.
+    // For other sorts, apply client-side ordering.
+    if (sortBy === "relevance" || sortBy === "newest") {
+      // Server already returns results in Best Match / newest order
+      return allProducts;
+    }
+
     const sortedProducts = [...allProducts];
     switch (sortBy) {
-      case "relevance":
-        if (searchQuery) {
-          sortedProducts.sort((a, b) => 
-            calculateRelevanceScore(b, searchQuery) - calculateRelevanceScore(a, searchQuery)
-          );
-        } else {
-          sortedProducts.sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return dateB - dateA;
-          });
-        }
-        break;
       case "price_low":
         sortedProducts.sort((a, b) => (a.currentBid || a.price) - (b.currentBid || b.price));
         break;
@@ -302,24 +265,12 @@ export default function SearchPage() {
       case "views":
         sortedProducts.sort((a, b) => (b.views || 0) - (a.views || 0));
         break;
-      case "newest":
       default:
-        sortedProducts.sort((a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return dateB - dateA;
-        });
         break;
     }
 
     return sortedProducts;
-  }, [allProducts, searchQuery, sortBy]);
-
-  useEffect(() => {
-    // #region agent log
-    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:filteredProducts',message:'filtered-products-counts',data:{allProductsCount:allProducts.length,filteredProductsCount:filteredProducts.length,sortBy,category:appliedFilters.category,searchQuery,isLoading,isFetching},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H5'})}).catch(()=>{});
-    // #endregion
-  }, [allProducts.length, filteredProducts.length, sortBy, appliedFilters.category, searchQuery, isLoading, isFetching]);
+  }, [allProducts, sortBy]);
 
   const displayedProducts = filteredProducts;
   const hasMoreProducts = listingsData?.pagination?.hasMore ?? false;
@@ -332,25 +283,30 @@ export default function SearchPage() {
     return allProducts;
   }, [allProducts]);
 
+  // Server-side facet count helpers (accurate across full result set, not just loaded page)
   const getCategoryCount = (categoryId: string | null) => {
-    return allProducts.filter(p => !categoryId || p.category === categoryId).length;
+    if (!facets) return 0;
+    if (!categoryId) return facets.categories.reduce((sum, c) => sum + c.count, 0);
+    return facets.categories.find(c => c.value === categoryId)?.count || 0;
   };
 
   const getConditionCount = (conditionId: string) => {
+    if (!facets) return 0;
     const cond = CONDITIONS.find(c => c.id === conditionId);
     const aliases = cond ? cond.aliases.map(a => a.toLowerCase()) : [conditionId.toLowerCase()];
-    return allProducts.filter(p => {
-      const productCondition = (p.condition || "").toLowerCase();
-      return aliases.some(alias => productCondition.includes(alias));
-    }).length;
+    return facets.conditions
+      .filter(fc => aliases.some(alias => fc.value.toLowerCase().includes(alias)))
+      .reduce((sum, fc) => sum + fc.count, 0);
   };
 
   const getSaleTypeCount = (saleType: string) => {
-    return allProducts.filter(p => p.saleType === saleType).length;
+    if (!facets) return 0;
+    return facets.saleTypes.find(s => s.value === saleType)?.count || 0;
   };
 
   const getCityCount = (city: string) => {
-    return allProducts.filter(p => (p.city || "").includes(city)).length;
+    if (!facets) return 0;
+    return facets.cities.find(c => c.value.includes(city))?.count || 0;
   };
 
   const toggleDraftCondition = (condition: string) => {
@@ -381,10 +337,6 @@ export default function SearchPage() {
   };
 
   const applyFilters = () => {
-    console.log('[SEARCH] Applying filters:', {
-      draftFilters,
-      prevAppliedFilters: appliedFilters
-    });
     setAppliedFilters(draftFilters);
     setPage(1);
     setMergedListings([]); // Clear merged listings when filters change
@@ -398,7 +350,6 @@ export default function SearchPage() {
   // Auto-clear includeSold when search query is cleared
   useEffect(() => {
     if (!searchQuery && (appliedFilters.includeSold || draftFilters.includeSold)) {
-      console.log('[SEARCH] Auto-clearing includeSold because search query is empty');
       setAppliedFilters(prev => ({ ...prev, includeSold: false }));
       setDraftFilters(prev => ({ ...prev, includeSold: false }));
     }
@@ -420,7 +371,6 @@ export default function SearchPage() {
   // Reset pagination when filters change - use primitive deps to avoid unnecessary runs
   const filterKey = `${appliedFilters.category}-${appliedFilters.includeSold}-${appliedFilters.priceMin}-${appliedFilters.priceMax}-${appliedFilters.conditions.join(',')}-${appliedFilters.saleTypes.join(',')}-${appliedFilters.cities.join(',')}`;
   useEffect(() => {
-    console.log('[DEBUG-F] useEffect2 - reset pagination', { filterKey, searchQuery, saleTypeParam, sellerIdParam });
     setPage(1);
     setMergedListings([]);
   }, [filterKey, searchQuery, saleTypeParam, sellerIdParam]);
@@ -439,8 +389,6 @@ export default function SearchPage() {
     appliedFilters.includeSold ? 1 : 0, // Count includeSold as an active filter
   ].reduce((a, b) => a + b, 0);
   
-  console.log('[SEARCH] Active filters count:', activeFiltersCount, 'includeSold:', appliedFilters.includeSold);
-
   const getPageTitle = () => {
     if (searchQuery) return `${t("searchResults")}: "${searchQuery}"`;
     if (appliedFilters.category) {
@@ -460,9 +408,6 @@ export default function SearchPage() {
   };
 
   const quickToggleCategory = (category: string | null) => {
-    // #region agent log
-    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'search.tsx:quickToggleCategory',message:'category-toggle',data:{current:appliedFilters.category,next:appliedFilters.category === category ? null : category},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H9'})}).catch(()=>{});
-    // #endregion
     setAppliedFilters(prev => ({
       ...prev,
       category: prev.category === category ? null : category

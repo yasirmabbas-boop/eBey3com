@@ -1034,6 +1034,25 @@ export function registerTransactionsRoutes(app: Express): void {
       } else if (status === "approved") {
         // Seller approved - permission stays LOCKED until admin processes refund
         console.log(`[ReturnRequest] Seller approved return for transaction: ${request.transactionId}. Permission remains LOCKED pending admin refund.`);
+        
+        // Create return shipment for buyer to send item back
+        try {
+          const { deliveryService } = await import("../services/delivery-service");
+          const returnDeliveryOrder = await deliveryService.createReturnDeliveryOrder(request.transactionId);
+          
+          if (returnDeliveryOrder) {
+            // Update return request with the delivery order ID
+            await storage.updateReturnRequestByAdmin(request.id, {
+              returnDeliveryOrderId: returnDeliveryOrder.id,
+            });
+            console.log(`[ReturnRequest] Created return shipment: ${returnDeliveryOrder.id} for return request: ${request.id}`);
+          } else {
+            console.error(`[ReturnRequest] Failed to create return shipment for return request: ${request.id}`);
+          }
+        } catch (shipmentError) {
+          console.error(`[ReturnRequest] Error creating return shipment:`, shipmentError);
+          // Don't fail the approval if shipment creation fails - can be retried later
+        }
       }
 
       // Notify buyer
