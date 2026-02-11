@@ -136,7 +136,7 @@ export function MobileNavBar() {
       dir={isRTL ? "rtl" : "ltr"}
       style={{ 
         zIndex: 99999,
-        paddingBottom: isAndroid ? '48px' : 'env(safe-area-inset-bottom, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 8px)',
         position: "fixed",
         display: "flex"
       }}
