@@ -303,9 +303,9 @@ export default function Register() {
                     return;
                   }
                   
-                  // For Despia: Use Facebook JS SDK (in-app login)
-                  if (isDespia() && window.FB) {
-                    console.log("[Facebook Register] Using FB SDK for Despia");
+                  // For native apps without plugin or Despia: Use Facebook JS SDK (in-app login)
+                  if ((isDespia() || isNative) && window.FB) {
+                    console.log("[Facebook Register] Using FB SDK (in-app)");
                     setIsLoading(true);
                     
                     window.FB.login(async (response) => {
