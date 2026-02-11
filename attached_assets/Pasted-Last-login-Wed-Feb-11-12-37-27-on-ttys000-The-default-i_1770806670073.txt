@@ -1,0 +1,58 @@
+Last login: Wed Feb 11 12:37:27 on ttys000
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+anonymous:~ yasirabbas$ cd /Users/yasirabbas/eBey3com/android
+anonymous:android yasirabbas$ ./gradlew bundleRelease -Pandroid.injected.signing.store.file=/Users/yasirabbas/eBey3com/release-key.jks -Pandroid.injected.signing.store.password=YOUR_PASSWORD -Pandroid.injected.signing.key.alias=ebay3 -Pandroid.injected.signing.key.password=GY3RRAX1QEQG9M4QPNNM4D2Y89
+
+> Configure project :app
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Configure project :capacitor-cordova-android-plugins
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Task :capacitor-android:compileReleaseJavaWithJavac
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :capacitor-community-facebook-login:compileReleaseJavaWithJavac
+Note: /Users/yasirabbas/eBey3com/node_modules/@capacitor-community/facebook-login/android/src/main/java/com/getcapacitor/community/facebooklogin/FacebookLogin.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :capacitor-camera:compileReleaseJavaWithJavac
+Note: /Users/yasirabbas/eBey3com/node_modules/@capacitor/camera/android/src/main/java/com/capacitorjs/plugins/camera/CameraBottomSheetDialogFragment.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :app:stripReleaseDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:signReleaseBundle FAILED
+
+[Incubating] Problems report is available at: file:///Users/yasirabbas/eBey3com/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:signReleaseBundle'.
+> A failure occurred while executing com.android.build.gradle.internal.tasks.FinalizeBundleTask$BundleToolRunnable
+   > Failed to read key ebay3 from store "/Users/yasirabbas/eBey3com/release-key.jks": keystore password was incorrect
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 29s
+480 actionable tasks: 352 executed, 128 up-to-date
+anonymous:android yasirabbas$ 
+
+
+
+
+
+
+
+
+

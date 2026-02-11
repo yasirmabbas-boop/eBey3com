@@ -1,0 +1,63 @@
+Last login: Wed Feb 11 11:52:38 on ttys000
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+anonymous:~ yasirabbas$    cd /Users/yasirabbas/eBey3com/android
+anonymous:android yasirabbas$    ./gradlew assembleDebug
+
+> Configure project :app
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Configure project :capacitor-cordova-android-plugins
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+[Incubating] Problems report is available at: file:///Users/yasirabbas/eBey3com/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.13/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 23s
+384 actionable tasks: 93 executed, 291 up-to-date
+                                                           anonymous:android yasdebug.apk   adb install -r app/build/outputs/apk/debug/app- 
+Performing Streamed Install
+Success
+anonymous:android yasirabbas$ 
+anonymous:android yasirabbas$ ls -la /Users/yasirabbas/eBey3com/android/app/google-services.json
+-rw-r--r--@ 1 yasirabbas  staff  664 Feb 11 12:36 /Users/yasirabbas/eBey3com/android/app/google-services.json
+anonymous:android yasirabbas$ tputs/apk/debug/app-debug.apk
+anonymous:android yasirabbas$ # Check the installed npm version
+anonymous:android yasirabbas$ npm list @capacitor-community/facebook-login
+
+# Check if the plugin is synced to Android
+cat android/capacitor.settings.gradle | grep facebook
+
+# Check the Podfile for iOS
+rest-express@1.0.0 /Users/yasirabbas/eBey3com
+└── @capacitor-community/facebook-login@8.0.0
+
+anonymous:android yasirabbas$ 
+anonymous:android yasirabbas$ # Check if the plugin is synced to Android
+anonymous:android yasirabbas$ cat android/capacitor.settings.gradle | grep facebook
+cat: android/capacitor.settings.gradle: No such file or directory
+anonymous:android yasirabbas$ 
+anonymous:android yasirabbas$ # Check the Podfile for iOS
+anonymous:android yasirabbas$ cat ios/App/Podfile | grep -i facebook
+cat: ios/App/Podfile: No such file or directory
+anonymous:android yasirabbas$ cat android/app/capacitor.build.gradle
+cat: android/app/capacitor.build.gradle: No such file or directory
+anonymous:android yasirabbas$ npx cap sync android
+[error] android platform has not been added yet.
+        See the docs for adding the android platform:
+        https://capacitorjs.com/docs/android#adding-the-android-platform
+anonymous:android yasirabbas$ cd /Users/yasirabbas/eBey3com
+anonymous:eBey3com yasirabbas$ npx cap add android
+[error] android platform already exists.
+        To re-add this platform, first remove ./android, then run this command
+        again.
+        WARNING: Your native project will be completely removed.
+anonymous:eBey3com yasirabbas$ cp -r android android-backup
+anonymous:eBey3com yasirabbas$ 
