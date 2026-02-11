@@ -6,7 +6,7 @@
     <string name="custom_url_scheme">iq.ebay3.app</string>
     
     <!-- Facebook Login -->
-    <string name="facebook_app_id">1149652599968295</string>
-    <string name="fb_login_protocol_scheme">fb1149652599968295</string>
+    <string name="facebook_app_id">2254913588327228</string>
+    <string name="fb_login_protocol_scheme">fb2254913588327228</string>
     <string name="facebook_client_token">03a6c8eae3cbaa91dd284f80d086417a</string>
 </resources>

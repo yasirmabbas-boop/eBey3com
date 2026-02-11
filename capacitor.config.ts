@@ -39,7 +39,7 @@ const config: CapacitorConfig = {
       backgroundColor: '#000000',
     },
     FacebookLogin: {
-      appId: '1149652599968295',
+      appId: '2254913588327228',
       clientToken: '03a6c8eae3cbaa91dd284f80d086417a',
       permissions: ['public_profile', 'email'],
     }
