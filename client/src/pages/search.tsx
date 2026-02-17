@@ -39,6 +39,7 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { ProductGridSkeleton } from "@/components/optimized-image";
 import { EmptySearchState } from "@/components/empty-state";
 import { useLanguage } from "@/lib/i18n";
+import { CATEGORY_SEARCH_FILTERS, SPECIFICATION_OPTIONS, SPECIFICATION_LABELS } from "@/lib/search-data";
 import type { Listing } from "@shared/schema";
 
 const CATEGORIES = [
@@ -99,6 +100,7 @@ interface SearchFacets {
   saleTypes: Array<{ value: string; count: number }>;
   cities: Array<{ value: string; count: number }>;
   priceRange: { min: number; max: number };
+  specFacets?: Record<string, Array<{ value: string; count: number }>>;
 }
 
 interface FilterState {
@@ -109,6 +111,7 @@ interface FilterState {
   priceMin: string;
   priceMax: string;
   includeSold: boolean;
+  specs: Record<string, string[]>;
 }
 
 export default function SearchPage() {
@@ -132,6 +135,7 @@ export default function SearchPage() {
     priceMin: "",
     priceMax: "",
     includeSold: false,
+    specs: {},
   });
   
   const [draftFilters, setDraftFilters] = useState<FilterState>(appliedFilters);
@@ -152,6 +156,7 @@ export default function SearchPage() {
       priceMin: "",
       priceMax: "",
       includeSold: false,
+      specs: {},
     };
     setAppliedFilters(freshFilters);
     setDraftFilters(freshFilters);
@@ -192,6 +197,7 @@ export default function SearchPage() {
     condition: appliedFilters.conditions.length > 0 ? appliedFilters.conditions : undefined,
     saleType: saleTypes.length > 0 ? saleTypes : undefined,
     city: appliedFilters.cities.length > 0 ? appliedFilters.cities : undefined,
+    specs: Object.keys(appliedFilters.specs).length > 0 ? appliedFilters.specs : undefined,
   });
 
   useEffect(() => {
@@ -220,7 +226,7 @@ export default function SearchPage() {
 
   // Server-side facets for accurate filter counts across the entire result set
   const { data: facets } = useQuery<SearchFacets>({
-    queryKey: ["/api/listings/facets", searchQuery, appliedFilters.category, appliedFilters.priceMin, appliedFilters.priceMax, appliedFilters.conditions.join(","), appliedFilters.saleTypes.join(","), appliedFilters.cities.join(","), appliedFilters.includeSold, sellerIdParam],
+    queryKey: ["/api/listings/facets", searchQuery, appliedFilters.category, appliedFilters.priceMin, appliedFilters.priceMax, appliedFilters.conditions.join(","), appliedFilters.saleTypes.join(","), appliedFilters.cities.join(","), appliedFilters.includeSold, sellerIdParam, JSON.stringify(appliedFilters.specs)],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchQuery) params.append("q", searchQuery);
@@ -232,6 +238,9 @@ export default function SearchPage() {
       appliedFilters.conditions.forEach(c => params.append("condition", c));
       appliedFilters.saleTypes.forEach(s => params.append("saleType", s));
       appliedFilters.cities.forEach(c => params.append("city", c));
+      for (const [key, values] of Object.entries(appliedFilters.specs)) {
+        values.forEach(v => params.append(`specs[${key}]`, v));
+      }
       const res = await fetch(`/api/listings/facets?${params.toString()}`);
       if (!res.ok) return { categories: [], conditions: [], saleTypes: [], cities: [], priceRange: { min: 0, max: 0 } };
       return res.json();
@@ -348,6 +357,22 @@ export default function SearchPage() {
     }));
   };
 
+  const toggleDraftSpec = (specKey: string, specValue: string) => {
+    setDraftFilters(prev => {
+      const currentValues = prev.specs[specKey] || [];
+      const newValues = currentValues.includes(specValue)
+        ? currentValues.filter(v => v !== specValue)
+        : [...currentValues, specValue];
+      const newSpecs = { ...prev.specs };
+      if (newValues.length === 0) {
+        delete newSpecs[specKey];
+      } else {
+        newSpecs[specKey] = newValues;
+      }
+      return { ...prev, specs: newSpecs };
+    });
+  };
+
   const applyFilters = () => {
     setAppliedFilters(draftFilters);
     setPage(1);
@@ -376,12 +401,13 @@ export default function SearchPage() {
       priceMin: "",
       priceMax: "",
       includeSold: false,
+      specs: {},
     };
     setDraftFilters(cleared);
   };
 
   // Reset pagination when filters change - use primitive deps to avoid unnecessary runs
-  const filterKey = `${appliedFilters.category}-${appliedFilters.includeSold}-${appliedFilters.priceMin}-${appliedFilters.priceMax}-${appliedFilters.conditions.join(',')}-${appliedFilters.saleTypes.join(',')}-${appliedFilters.cities.join(',')}`;
+  const filterKey = `${appliedFilters.category}-${appliedFilters.includeSold}-${appliedFilters.priceMin}-${appliedFilters.priceMax}-${appliedFilters.conditions.join(',')}-${appliedFilters.saleTypes.join(',')}-${appliedFilters.cities.join(',')}-${JSON.stringify(appliedFilters.specs)}`;
   useEffect(() => {
     setPage(1);
     setMergedListings([]);
@@ -398,7 +424,8 @@ export default function SearchPage() {
     appliedFilters.saleTypes.length,
     appliedFilters.cities.length,
     appliedFilters.priceMin || appliedFilters.priceMax ? 1 : 0,
-    appliedFilters.includeSold ? 1 : 0, // Count includeSold as an active filter
+    appliedFilters.includeSold ? 1 : 0,
+    Object.values(appliedFilters.specs).reduce((sum, vals) => sum + vals.length, 0),
   ].reduce((a, b) => a + b, 0);
   
   const getPageTitle = () => {
@@ -526,7 +553,7 @@ export default function SearchPage() {
                         <Button
                           variant={draftFilters.category === null ? "default" : "ghost"}
                           className="w-full justify-between"
-                          onClick={() => setDraftFilters(prev => ({ ...prev, category: null }))}
+                          onClick={() => setDraftFilters(prev => ({ ...prev, category: null, specs: {} }))}
                           data-testid="filter-category-all"
                         >
                           <span>{t("allCategories")}</span>
@@ -537,7 +564,7 @@ export default function SearchPage() {
                             key={cat.id}
                             variant={draftFilters.category === cat.id ? "default" : "ghost"}
                             className="w-full justify-between"
-                            onClick={() => setDraftFilters(prev => ({ ...prev, category: cat.id }))}
+                            onClick={() => setDraftFilters(prev => ({ ...prev, category: cat.id, specs: prev.category !== cat.id ? {} : prev.specs }))}
                             data-testid={`filter-category-${cat.id}`}
                           >
                             <span className="flex items-center gap-2">
@@ -692,6 +719,57 @@ export default function SearchPage() {
                         ))}
                       </div>
                     </div>
+
+                    {draftFilters.category && CATEGORY_SEARCH_FILTERS[draftFilters.category] && (
+                      <>
+                        {CATEGORY_SEARCH_FILTERS[draftFilters.category].map((specField) => {
+                          const options = SPECIFICATION_OPTIONS[specField as keyof typeof SPECIFICATION_OPTIONS];
+                          if (!options || !Array.isArray(options)) return null;
+                          
+                          const fieldLabel = SPECIFICATION_LABELS[specField];
+                          if (!fieldLabel) return null;
+                          
+                          const facetCounts = facets?.specFacets?.[specField] || [];
+                          const hasAnyData = facetCounts.length > 0;
+                          
+                          const getSpecCount = (value: string) => {
+                            return facetCounts.find(f => f.value === value)?.count || 0;
+                          };
+                          
+                          return (
+                            <div key={specField} className="bg-card p-4 rounded-lg soft-border elev-1">
+                              <h3 className="font-bold mb-4 flex items-center gap-2">
+                                <SlidersHorizontal className="h-4 w-4" />
+                                {language === "ar" ? fieldLabel.ar : fieldLabel.ku}
+                              </h3>
+                              <div className="space-y-3 max-h-48 overflow-y-auto">
+                                {options.map((option) => {
+                                  const count = getSpecCount(option.value);
+                                  return (
+                                    <div key={option.value} className="flex items-center justify-between">
+                                      <div className="flex items-center space-x-2 space-x-reverse">
+                                        <Checkbox
+                                          id={`spec-${specField}-${option.value}`}
+                                          checked={(draftFilters.specs[specField] || []).includes(option.value)}
+                                          onCheckedChange={() => toggleDraftSpec(specField, option.value)}
+                                          data-testid={`filter-spec-${specField}-${option.value}`}
+                                        />
+                                        <Label htmlFor={`spec-${specField}-${option.value}`} className="cursor-pointer text-sm">
+                                          {language === "ar" ? option.labelAr : option.labelKu}
+                                        </Label>
+                                      </div>
+                                      {count > 0 && (
+                                        <Badge variant="outline" className="text-xs">{count}</Badge>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
                   </div>
                 </ScrollArea>
 
@@ -768,11 +846,33 @@ export default function SearchPage() {
                 </button>
               </Badge>
             )}
+            {Object.entries(appliedFilters.specs).map(([specKey, values]) => {
+              const fieldLabel = SPECIFICATION_LABELS[specKey];
+              const options = SPECIFICATION_OPTIONS[specKey as keyof typeof SPECIFICATION_OPTIONS];
+              return values.map(val => {
+                const option = options?.find((o: any) => o.value === val);
+                const label = option ? (language === "ar" ? option.labelAr : option.labelKu) : val;
+                const fieldName = fieldLabel ? (language === "ar" ? fieldLabel.ar : fieldLabel.ku) : specKey;
+                return (
+                  <Badge key={`${specKey}-${val}`} variant="secondary" className="gap-1 px-3 py-1">
+                    {fieldName}: {label}
+                    <button onClick={() => setAppliedFilters(prev => {
+                      const newSpecs = { ...prev.specs };
+                      newSpecs[specKey] = (newSpecs[specKey] || []).filter(v => v !== val);
+                      if (newSpecs[specKey].length === 0) delete newSpecs[specKey];
+                      return { ...prev, specs: newSpecs };
+                    })}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                );
+              });
+            })}
             <Button 
               variant="ghost" 
               size="sm" 
               className="text-red-600"
-              onClick={() => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false })}
+              onClick={() => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false, specs: {} })}
             >
               {t("clearAll")}
             </Button>
@@ -788,7 +888,7 @@ export default function SearchPage() {
             (activeFiltersCount > 0 || searchQuery) ? (
               <EmptySearchState 
                 query={searchQuery || undefined}
-                onClearFilters={activeFiltersCount > 0 ? () => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false }) : undefined}
+                onClearFilters={activeFiltersCount > 0 ? () => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false, specs: {} }) : undefined}
                 language={language}
               />
             ) : (
