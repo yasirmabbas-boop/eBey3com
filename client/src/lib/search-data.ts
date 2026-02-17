@@ -189,7 +189,7 @@ export const CATEGORY_SPECIFICATIONS: Record<string, { fields: string[] }> = {
     fields: ["brand", "model", "storage", "ram", "screenSize", "color", "condition", "warranty", "accessories"]
   },
   "ملابس": {
-    fields: ["brand", "size", "color", "material", "style", "gender"]
+    fields: ["clothingBrand", "clothingType", "size", "color", "material", "gender"]
   },
   "أحذية": {
     fields: ["shoeBrand", "shoeSize", "shoeWidth", "shoeStyle", "upperMaterial", "color", "gender"]
@@ -332,6 +332,54 @@ export const SPECIFICATION_OPTIONS = {
     { value: "blend", labelAr: "مزيج", labelKu: "تێکەڵ" },
   ],
   
+  // Clothing - Brand options
+  clothingBrand: [
+    { value: "zara", labelAr: "زارا", labelKu: "زارا" },
+    { value: "hm", labelAr: "H&M", labelKu: "H&M" },
+    { value: "gucci", labelAr: "غوتشي", labelKu: "گووچی" },
+    { value: "louis_vuitton", labelAr: "لويس فيتون", labelKu: "لوویس ڤیتۆن" },
+    { value: "versace", labelAr: "فيرساتشي", labelKu: "ڤێرساچی" },
+    { value: "dolce_gabbana", labelAr: "دولتشي اند غابانا", labelKu: "دۆڵچە و گابانا" },
+    { value: "burberry", labelAr: "بيربري", labelKu: "بەربەری" },
+    { value: "armani", labelAr: "أرماني", labelKu: "ئارمانی" },
+    { value: "ralph_lauren", labelAr: "رالف لورين", labelKu: "ڕاڵف لۆرین" },
+    { value: "tommy_hilfiger", labelAr: "تومي هيلفيغر", labelKu: "تۆمی هیلفیگەر" },
+    { value: "calvin_klein", labelAr: "كالفن كلاين", labelKu: "کاڵڤن کلاین" },
+    { value: "lacoste", labelAr: "لاكوست", labelKu: "لاکۆست" },
+    { value: "balenciaga", labelAr: "بالنسياغا", labelKu: "باڵەنسیاگا" },
+    { value: "prada", labelAr: "برادا", labelKu: "پرادا" },
+    { value: "dior", labelAr: "ديور", labelKu: "دیۆر" },
+    { value: "chanel", labelAr: "شانيل", labelKu: "شانێل" },
+    { value: "fendi", labelAr: "فندي", labelKu: "فێندی" },
+    { value: "nike", labelAr: "نايكي", labelKu: "نایکی" },
+    { value: "adidas", labelAr: "اديداس", labelKu: "ئادیداس" },
+    { value: "local", labelAr: "ماركة محلية", labelKu: "براندی ناوخۆیی" },
+    { value: "other", labelAr: "أخرى", labelKu: "تر" },
+  ],
+  
+  // Clothing - Type options
+  clothingType: [
+    { value: "shirt", labelAr: "قميص", labelKu: "کراس" },
+    { value: "tshirt", labelAr: "تيشيرت", labelKu: "تیشێرت" },
+    { value: "pants", labelAr: "بنطلون", labelKu: "پانتۆڵ" },
+    { value: "jeans", labelAr: "جينز", labelKu: "جینز" },
+    { value: "dress", labelAr: "فستان", labelKu: "بەرگی ژنان" },
+    { value: "abaya", labelAr: "عباية", labelKu: "عەبایە" },
+    { value: "suit", labelAr: "بدلة", labelKu: "بەدلە" },
+    { value: "jacket", labelAr: "جاكيت", labelKu: "چاکێت" },
+    { value: "coat", labelAr: "معطف", labelKu: "پاڵتۆ" },
+    { value: "sweater", labelAr: "سويتر", labelKu: "سویتەر" },
+    { value: "hoodie", labelAr: "هودي", labelKu: "هوودی" },
+    { value: "shorts", labelAr: "شورت", labelKu: "شۆرت" },
+    { value: "skirt", labelAr: "تنورة", labelKu: "تەنوورە" },
+    { value: "sportswear", labelAr: "ملابس رياضية", labelKu: "جلی وەرزشی" },
+    { value: "underwear", labelAr: "ملابس داخلية", labelKu: "جلی ناوەوە" },
+    { value: "sleepwear", labelAr: "ملابس نوم", labelKu: "جلی خەوتن" },
+    { value: "traditional", labelAr: "ملابس تقليدية", labelKu: "جلی تەقلیدی" },
+    { value: "accessories", labelAr: "اكسسوارات", labelKu: "ئاکسێسوار" },
+    { value: "other", labelAr: "أخرى", labelKu: "تر" },
+  ],
+  
   // Jewelry - Material options
   jewelryMaterial: [
     { value: "gold_24k", labelAr: "ذهب 24 قيراط", labelKu: "ئاڵتون 24 قیرات" },
@@ -444,7 +492,7 @@ export const SPECIFICATION_OPTIONS = {
 export const CATEGORY_FIELD_CONFIG: Record<string, { required: string[]; optional: string[] }> = {
   "ملابس": {
     required: ["gender", "size"],
-    optional: ["color", "material"],
+    optional: ["clothingType", "clothingBrand", "color", "material"],
   },
   "إلكترونيات": {
     required: [],
@@ -472,6 +520,16 @@ export const CATEGORY_FIELD_CONFIG: Record<string, { required: string[]; optiona
   },
 };
 
+export const CATEGORY_SEARCH_FILTERS: Record<string, string[]> = {
+  "ملابس": ["gender", "clothingType", "clothingBrand", "size", "color", "material"],
+  "أحذية": ["gender", "shoeBrand", "shoeSize", "shoeStyle", "color"],
+  "إلكترونيات": ["storage", "ram", "color"],
+  "ساعات": ["movement", "caseSize", "color"],
+  "سيارات": ["fuelType", "transmission", "bodyType"],
+  "مجوهرات": ["jewelryMaterial", "gemstone", "color"],
+  "تحف وأثاث": ["era", "material"],
+};
+
 // Field labels for form display
 export const SPECIFICATION_LABELS: Record<string, { ar: string; ku: string }> = {
   gender: { ar: "الفئة", ku: "جۆر" },
@@ -490,6 +548,8 @@ export const SPECIFICATION_LABELS: Record<string, { ar: string; ku: string }> = 
   jewelryMaterial: { ar: "نوع المعدن", ku: "جۆری کانزا" },
   gemstone: { ar: "الحجر الكريم", ku: "بەردی گرانبەها" },
   era: { ar: "الحقبة", ku: "سەردەم" },
+  clothingBrand: { ar: "الماركة", ku: "براند" },
+  clothingType: { ar: "نوع الملابس", ku: "جۆری جل" },
   // Shoes
   shoeSize: { ar: "مقاس الحذاء", ku: "قەبارەی پێڵاو" },
   shoeWidth: { ar: "عرض الحذاء", ku: "پانی پێڵاو" },
