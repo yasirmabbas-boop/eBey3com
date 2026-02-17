@@ -14,6 +14,7 @@ export interface UseListingsOptions {
   condition?: string[];
   saleType?: string[];
   city?: string[];
+  specs?: Record<string, string[]>;
 }
 
 export interface UseListingsResponse {
@@ -43,7 +44,8 @@ export function useListings(options?: UseListingsOptions) {
     maxPrice,
     condition,
     saleType,
-    city
+    city,
+    specs
   } = options || {};
 
   return useQuery<UseListingsResponse>({
@@ -59,7 +61,8 @@ export function useListings(options?: UseListingsOptions) {
       maxPrice,
       condition?.join(','),
       saleType?.join(','),
-      city?.join(',')
+      city?.join(','),
+      JSON.stringify(specs)
     ],
     queryFn: async () => {
       // Build URL with query parameters
@@ -96,6 +99,11 @@ export function useListings(options?: UseListingsOptions) {
       }
       if (city && city.length > 0) {
         city.forEach(c => params.append("city", c));
+      }
+      if (specs) {
+        for (const [key, values] of Object.entries(specs)) {
+          values.forEach(v => params.append(`specs[${key}]`, v));
+        }
       }
       
       const url = `/api/listings${params.toString() ? `?${params.toString()}` : ""}`;

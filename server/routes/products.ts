@@ -125,6 +125,16 @@ export function registerProductRoutes(app: Express): void {
         : typeof city === "string"
           ? [city]
           : undefined;
+      // Parse specification filters: specs[gender]=men&specs[gender]=women&specs[size]=M
+      const specs: Record<string, string[]> = {};
+      for (const [key, val] of Object.entries(req.query)) {
+        const match = key.match(/^specs\[(.+)\]$/);
+        if (match) {
+          const specKey = match[1];
+          specs[specKey] = Array.isArray(val) ? val.map(String) : [String(val)];
+        }
+      }
+      const hasSpecs = Object.keys(specs).length > 0;
       const pageNum = parseInt(page as string) || 1;
       const limit = Math.min(parseInt(limitParam as string) || 20, 100);
       const offset = (pageNum - 1) * limit;
@@ -150,6 +160,7 @@ export function registerProductRoutes(app: Express): void {
         maxPrice: typeof maxPrice === "string" ? parseInt(maxPrice) : undefined,
         conditions,
         cities,
+        specs: hasSpecs ? specs : undefined,
         userId: viewerId || undefined,
       });
       
@@ -264,6 +275,16 @@ export function registerProductRoutes(app: Express): void {
         ? city.map(c => String(c))
         : typeof city === "string" ? [city] : undefined;
 
+      // Parse specification filters: specs[gender]=men&specs[gender]=women&specs[size]=M
+      const specs: Record<string, string[]> = {};
+      for (const [key, val] of Object.entries(req.query)) {
+        const match = key.match(/^specs\[(.+)\]$/);
+        if (match) {
+          const specKey = match[1];
+          specs[specKey] = Array.isArray(val) ? val.map(String) : [String(val)];
+        }
+      }
+      const hasSpecs = Object.keys(specs).length > 0;
       const searchQuery = typeof q === "string" ? q : undefined;
       const viewerId = await getUserIdFromRequest(req);
       const sellerIdStr = typeof sellerId === "string" ? sellerId : undefined;
@@ -279,6 +300,7 @@ export function registerProductRoutes(app: Express): void {
         maxPrice: typeof maxPrice === "string" ? parseInt(maxPrice) : undefined,
         conditions,
         cities,
+        specs: hasSpecs ? specs : undefined,
       });
 
       res.json(facets);

@@ -91,6 +91,7 @@ export interface IStorage {
     maxPrice?: number;
     conditions?: string[];
     cities?: string[];
+    specs?: Record<string, string[]>;
     userId?: string;
   }): Promise<{ listings: Listing[]; total: number }>;
   getSearchSuggestions(query: string, limit?: number): Promise<Array<{ term: string; category: string; type: "category" | "product" }>>;
@@ -104,12 +105,14 @@ export interface IStorage {
     maxPrice?: number;
     conditions?: string[];
     cities?: string[];
+    specs?: Record<string, string[]>;
   }): Promise<{
     categories: Array<{ value: string; count: number }>;
     conditions: Array<{ value: string; count: number }>;
     saleTypes: Array<{ value: string; count: number }>;
     cities: Array<{ value: string; count: number }>;
     priceRange: { min: number; max: number };
+    specFacets?: Record<string, Array<{ value: string; count: number }>>;
   }>;
   getListingsByCategory(category: string): Promise<Listing[]>;
   getListingsBySeller(sellerId: string): Promise<Listing[]>;
@@ -498,6 +501,7 @@ export class DatabaseStorage implements IStorage {
     maxPrice?: number;
     conditions?: string[];
     cities?: string[];
+    specs?: Record<string, string[]>;
     userPreferences?: UserPreferences | null;
   }): { where: any; searchRankSql: any; expanded: ReturnType<typeof expandQuery> | null } {
     const { category, saleTypes, sellerId, includeSold, searchQuery, minPrice, maxPrice, conditions: conditionFilters, cities, userPreferences } = options;
@@ -603,6 +607,18 @@ export class DatabaseStorage implements IStorage {
       conds.push(or(...cityClauses));
     }
 
+    // Specification filters (JSONB)
+    if (options.specs) {
+      for (const [key, values] of Object.entries(options.specs)) {
+        if (values && values.length > 0) {
+          const specClauses = values.map((v) =>
+            sql`${listings.specifications}->>${key} = ${v}`
+          );
+          conds.push(or(...specClauses));
+        }
+      }
+    }
+
     const where = conds.length > 1 ? and(...conds) : conds[0];
     return { where, searchRankSql, expanded };
   }
@@ -619,6 +635,7 @@ export class DatabaseStorage implements IStorage {
     maxPrice?: number;
     conditions?: string[];
     cities?: string[];
+    specs?: Record<string, string[]>;
     userId?: string;
   }): Promise<{ listings: Listing[]; total: number }> {
     const { limit, offset, userId } = options;
@@ -780,12 +797,14 @@ export class DatabaseStorage implements IStorage {
     maxPrice?: number;
     conditions?: string[];
     cities?: string[];
+    specs?: Record<string, string[]>;
   }): Promise<{
     categories: Array<{ value: string; count: number }>;
     conditions: Array<{ value: string; count: number }>;
     saleTypes: Array<{ value: string; count: number }>;
     cities: Array<{ value: string; count: number }>;
     priceRange: { min: number; max: number };
+    specFacets?: Record<string, Array<{ value: string; count: number }>>;
   }> {
     const { where: whereClause } = this.buildSearchConditions(options);
 
@@ -817,12 +836,51 @@ export class DatabaseStorage implements IStorage {
       }).from(listings).where(whereClause),
     ]);
 
+    // Compute specification facets when a category is selected
+    let specFacets: Record<string, Array<{ value: string; count: number }>> | undefined;
+    if (options.category) {
+      const CATEGORY_SPEC_FIELDS: Record<string, string[]> = {
+        "ملابس": ["gender", "clothingType", "clothingBrand", "size", "color", "material"],
+        "أحذية": ["gender", "shoeBrand", "shoeSize", "shoeStyle", "color"],
+        "إلكترونيات": ["storage", "ram", "color"],
+        "ساعات": ["movement", "caseSize", "color"],
+        "سيارات": ["fuelType", "transmission", "bodyType"],
+        "مجوهرات": ["jewelryMaterial", "gemstone", "color"],
+        "تحف وأثاث": ["era", "material"],
+      };
+
+      const specFields = CATEGORY_SPEC_FIELDS[options.category];
+      if (specFields && specFields.length > 0) {
+        const specQueries = specFields.map(field =>
+          db.select({
+            value: sql<string>`${listings.specifications}->>${sql.raw(`'${field}'`)}`,
+            count: sql<number>`count(*)::int`,
+          })
+            .from(listings)
+            .where(and(whereClause, sql`${listings.specifications}->>${sql.raw(`'${field}'`)} IS NOT NULL AND ${listings.specifications}->>${sql.raw(`'${field}'`)} != ''`))
+            .groupBy(sql`${listings.specifications}->>${sql.raw(`'${field}'`)}`)
+            .orderBy(sql`count(*) DESC`)
+            .limit(30)
+        );
+
+        const specResults = await Promise.all(specQueries);
+        specFacets = {};
+        specFields.forEach((field, idx) => {
+          const rows = specResults[idx].filter(r => r.value);
+          if (rows.length > 0) {
+            specFacets![field] = rows.map(r => ({ value: r.value, count: r.count }));
+          }
+        });
+      }
+    }
+
     return {
       categories: catRows.filter(r => r.value).map(r => ({ value: r.value!, count: r.count })),
       conditions: condRows.filter(r => r.value).map(r => ({ value: r.value!, count: r.count })),
       saleTypes: saleRows.filter(r => r.value).map(r => ({ value: r.value!, count: r.count })),
       cities: cityRows.filter(r => r.value).map(r => ({ value: r.value!, count: r.count })),
       priceRange: { min: priceRow[0]?.min || 0, max: priceRow[0]?.max || 0 },
+      specFacets,
     };
   }
 
