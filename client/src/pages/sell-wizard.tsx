@@ -441,10 +441,10 @@ export default function SellWizardPage() {
     
     try {
       const compressionOptions = {
-        maxSizeMB: 2,
-        maxWidthOrHeight: 1600,
+        maxSizeMB: 4,
+        maxWidthOrHeight: 1920,
         useWebWorker: true,
-        fileType: "image/webp" as const,
+        initialQuality: 0.92,
       };
 
       const compressedFiles = await Promise.all(
@@ -526,10 +526,10 @@ export default function SellWizardPage() {
       if (!(file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic"))) {
         try {
           fileToUpload = await imageCompression(file, {
-            maxSizeMB: 2,
-            maxWidthOrHeight: 1600,
+            maxSizeMB: 4,
+            maxWidthOrHeight: 1920,
             useWebWorker: true,
-            fileType: "image/webp" as const,
+            initialQuality: 0.92,
           });
         } catch {
           fileToUpload = file;

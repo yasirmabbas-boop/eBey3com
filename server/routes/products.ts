@@ -785,8 +785,8 @@ export function registerProductRoutes(app: Express): void {
       const thumbObjectName = [objectPrefix, thumbEntityId].filter(Boolean).join("/");
       const thumbnailUrl = `/objects/${thumbEntityId}`;
       const thumbBuffer = await sharp(result.imageBuffer, { failOnError: false })
-        .resize(400, 400, { fit: "cover", position: "center" })
-        .webp({ quality: 70 })
+        .resize(600, 600, { fit: "cover", position: "center" })
+        .webp({ quality: 82 })
         .toBuffer();
 
       await bucket.file(thumbObjectName).save(thumbBuffer, {

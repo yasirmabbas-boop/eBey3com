@@ -131,10 +131,10 @@ export function registerObjectStorageRoutes(app: Express): void {
         const { main, thumbnail } = await processImage(file.buffer, {
           maxWidth: 1600,
           maxHeight: 1600,
-          quality: 80,
+          quality: 90,
           format: "webp",
           generateThumbnail: true,
-          thumbnailWidth: 400,
+          thumbnailWidth: 600,
         });
 
         const mainId = randomUUID();

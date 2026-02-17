@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useLocation, useSearch, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -146,6 +146,7 @@ export default function SearchPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [mergedListings, setMergedListings] = useState<Listing[]>([]);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const freshFilters: FilterState = {
@@ -212,6 +213,23 @@ export default function SearchPage() {
   const handleLoadMore = useCallback(() => {
     setPage((prev) => prev + 1);
   }, []);
+
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isLoading && !isFetching && (listingsData?.pagination?.hasMore ?? false)) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { rootMargin: "400px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isLoading, isFetching, listingsData?.pagination?.hasMore]);
   
   const { data: sellerInfo } = useQuery({
     queryKey: ["/api/users", sellerIdParam],
@@ -248,10 +266,7 @@ export default function SearchPage() {
     staleTime: 30000,
   });
   
-  // Use data directly from React Query for page 1, merged state only for infinite scroll
-  const listings: Listing[] = page === 1 
-    ? (listingsData?.listings || [])
-    : mergedListings.length > 0 ? mergedListings : (listingsData?.listings || []);
+  const listings: Listing[] = mergedListings;
 
   const allProducts = useMemo(() => {
     return listings;
@@ -996,19 +1011,17 @@ export default function SearchPage() {
             </div>
           )}
 
-          {/* Load More Button */}
-          {!isLoading && hasMoreProducts && (
-            <div className="flex justify-center mt-8">
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={handleLoadMore}
-                className="px-8"
-                data-testid="button-load-more"
-              >
-                {t("showMore")} {remainingCount > 0 ? `(${remainingCount} ${t("anotherProduct")})` : ""}
-              </Button>
+          {/* Infinite Scroll Sentinel */}
+          <div ref={loadMoreRef} className="h-1" />
+          {!isLoading && isFetching && hasMoreProducts && (
+            <div className="flex justify-center py-6">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
+          )}
+          {!isLoading && !hasMoreProducts && mergedListings.length > 20 && (
+            <p className="text-center text-muted-foreground text-sm py-6">
+              {language === "ar" ? "لا توجد منتجات أخرى" : "بەرهەمی تر نییە"}
+            </p>
           )}
         </div>
       </div>

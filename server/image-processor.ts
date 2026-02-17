@@ -22,10 +22,10 @@ interface ImageProcessingOptions {
 const DEFAULT_OPTIONS: ImageProcessingOptions = {
   maxWidth: 1600,
   maxHeight: 1600,
-  quality: 80,
+  quality: 90,
   format: "webp",
   generateThumbnail: true,
-  thumbnailWidth: 400,
+  thumbnailWidth: 600,
 };
 
 async function isHeicBuffer(buffer: Buffer): Promise<boolean> {
@@ -109,7 +109,7 @@ export async function processImage(
         fit: "cover",
         position: "center",
       })
-      .webp({ quality: 70 })
+      .webp({ quality: 82 })
       .toBuffer();
 
     const thumbMetadata = await sharp(thumbBuffer).metadata();
