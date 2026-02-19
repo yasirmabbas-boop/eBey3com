@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { useListings } from "@/hooks/use-listings";
 import { useLanguage } from "@/lib/i18n";
+import { CONDITION_LABELS } from "@/lib/search-data";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -34,14 +35,22 @@ interface ProductCardProps {
     saleType: "auction" | "fixed";
     auctionEndTime?: Date | string | null;
     views?: number;
+    condition?: string;
+    specifications?: Record<string, string | number | boolean>;
   };
 }
 
 function ProductCard({ product }: ProductCardProps) {
+  const { language } = useLanguage();
+  const aspects = [
+    product.condition && (CONDITION_LABELS[product.condition] ? (language === "ar" ? CONDITION_LABELS[product.condition].ar : CONDITION_LABELS[product.condition].ku) : product.condition),
+    (product.specifications as Record<string, string>)?.["size"] || (product.specifications as Record<string, string>)?.["shoeSize"],
+    (product.specifications as Record<string, string>)?.["color"],
+  ].filter(Boolean);
   return (
     <Link href={`/product/${product.id}`}>
       <div className="overflow-hidden cursor-pointer group flex-shrink-0 w-[calc(40vw-8px)] sm:w-[170px] rounded-lg bg-white shadow-sm hover:shadow-md active:scale-[0.98] transition-all" data-testid={`card-product-${product.id}`}>
-        <div className="relative aspect-square overflow-hidden">
+        <div className="relative aspect-square overflow-hidden rounded-2xl">
           <OptimizedImage 
             src={product.image} 
             alt={product.title} 
@@ -60,6 +69,9 @@ function ProductCard({ product }: ProductCardProps) {
           <h3 className="font-medium text-[11px] mb-1 line-clamp-2 text-gray-800 group-hover:text-primary transition-colors leading-snug">
             {product.title}
           </h3>
+          {aspects.length > 0 && (
+            <p className="text-[9px] text-muted-foreground line-clamp-1 mb-0.5">{aspects.join(" • ")}</p>
+          )}
           <p className="font-bold text-sm text-primary">
             {product.currentBid ? product.currentBid.toLocaleString() : product.price.toLocaleString()} <span className="text-[10px] font-medium">د.ع</span>
           </p>
@@ -225,6 +237,8 @@ export default function Home() {
         category: l.category,
         views: l.views || 0,
         createdAt: l.createdAt,
+        condition: l.condition || undefined,
+        specifications: (l as any).specifications || undefined,
       }));
   }, [listings]);
 

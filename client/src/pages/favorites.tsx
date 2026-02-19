@@ -11,6 +11,8 @@ import { EmptyState } from "@/components/empty-state";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { AuctionCountdown } from "@/components/auction-countdown";
+import { useLanguage } from "@/lib/i18n";
+import { CONDITION_LABELS } from "@/lib/search-data";
 import type { Listing } from "@shared/schema";
 
 function getAuthHeaders(): HeadersInit {
@@ -24,6 +26,7 @@ function getAuthHeaders(): HeadersInit {
 
 export default function FavoritesPage() {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -135,7 +138,7 @@ export default function FavoritesPage() {
                 data-testid={`favorite-item-${listing.id}`}
               >
                 <Link href={`/product/${listing.id}`}>
-                  <div className="relative aspect-square overflow-hidden bg-muted/40">
+                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-muted/40">
                     <img
                       src={listing.images?.[0] || "https://via.placeholder.com/300"}
                       alt={listing.title}
@@ -154,6 +157,17 @@ export default function FavoritesPage() {
                       {listing.title}
                     </h3>
                   </Link>
+                  {(() => {
+                    const specs = (listing as any).specifications || {};
+                    const aspects = [
+                      listing.condition && (CONDITION_LABELS[listing.condition] ? (language === "ar" ? CONDITION_LABELS[listing.condition].ar : CONDITION_LABELS[listing.condition].ku) : listing.condition),
+                      specs.size || specs.shoeSize,
+                      specs.color,
+                    ].filter(Boolean);
+                    return aspects.length > 0 ? (
+                      <p className="text-xs text-muted-foreground line-clamp-1 mb-1">{aspects.join(" • ")}</p>
+                    ) : null;
+                  })()}
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-bold text-primary text-sm">
                       {formatPrice(listing.currentBid || listing.price)}

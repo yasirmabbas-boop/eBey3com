@@ -292,112 +292,49 @@ export function registerCartRoutes(app: Express): void {
         return res.status(400).json({ error: "السلة فارغة" });
       }
 
-      const transactions = [];
-      const errors = [];
+      const deliveryAddress = `${parsed.addressLine1}${parsed.addressLine2 ? ', ' + parsed.addressLine2 : ''}`;
 
-      // Process each cart item
-      for (const cartItem of cartItems) {
-        const listing = await storage.getListing(cartItem.listingId);
-        
-        if (!listing) {
-          errors.push(`المنتج غير موجود: ${cartItem.listingId}`);
-          continue;
-        }
+      // Process checkout in transaction (prevents oversell via row-level locking)
+      const { transactions, errors, processedItems } = await storage.processCheckout({
+        userId,
+        cartItems,
+        deliveryAddress,
+        deliveryPhone: parsed.phone,
+        deliveryCity: parsed.city,
+        calculateItemShipping,
+      });
 
-        if (!listing.isActive) {
-          errors.push(`المنتج غير متاح: ${listing.title}`);
-          continue;
-        }
-
-        if (listing.quantityAvailable < cartItem.quantity) {
-          errors.push(`الكمية غير متوفرة: ${listing.title}`);
-          continue;
-        }
-
-        if (listing.sellerId === userId) {
-          errors.push(`لا يمكنك شراء منتجك الخاص: ${listing.title}`);
-          continue;
-        }
-
-        if (!listing.sellerId) {
-          errors.push(`البائع غير معروف: ${listing.title}`);
-          continue;
-        }
-
-        // Determine the purchase amount
-        // For auctions with buyNowPrice, use the buyNowPrice
+      // Notifications (after successful transaction commit)
+      for (const { listing, transaction } of processedItems) {
         const isAuctionBuyNow = listing.saleType === "auction" && (listing as any).buyNowPrice;
-        const itemPrice = isAuctionBuyNow 
-          ? (listing as any).buyNowPrice 
-          : listing.price * cartItem.quantity;
 
-        // Calculate shipping server-side based on seller settings and city match
-        const itemShipping = calculateItemShipping(listing, cartItem.quantity, parsed.city);
-        const purchaseAmount = itemPrice + itemShipping;
-
-        // Create transaction
-        const transaction = await storage.createTransaction({
-          listingId: cartItem.listingId,
-          sellerId: listing.sellerId,
-          buyerId: userId,
-          amount: purchaseAmount,
-          status: "pending",
-          paymentMethod: "cash",
-          deliveryAddress: `${parsed.addressLine1}${parsed.addressLine2 ? ', ' + parsed.addressLine2 : ''}`,
-          deliveryPhone: parsed.phone,
-          deliveryCity: parsed.city,
-        });
-
-        transactions.push(transaction);
-
-        // Update listing quantity
-        const newQuantity = listing.quantityAvailable - cartItem.quantity;
-        if (newQuantity <= 0 || isAuctionBuyNow) {
-          // For auctions, always mark as sold when Buy Now is used
-          await storage.updateListing(cartItem.listingId, { 
-            isActive: false,
-            quantityAvailable: 0,
-            quantitySold: (listing.quantitySold || 0) + cartItem.quantity,
-            currentBid: isAuctionBuyNow ? (listing as any).buyNowPrice : listing.currentBid,
-          } as any);
-          
-          // For auction Buy Now, notify all bidders that auction ended
-          if (isAuctionBuyNow) {
-            const allBids = await storage.getBidsForListing(cartItem.listingId);
-            const uniqueBidderIds = Array.from(new Set(allBids.map(b => b.userId)));
-            
-            for (const bidderId of uniqueBidderIds) {
-              if (bidderId !== userId) { // Don't notify the buyer themselves
-                try {
-                  await storage.createNotification({
-                    userId: bidderId,
-                    type: "auction_ended",
-                    title: "انتهى المزاد",
-                    message: `تم بيع "${listing.title}" عبر خيار الشراء الفوري`,
-                    linkUrl: `/product/${cartItem.listingId}`,
-                    relatedId: cartItem.listingId,
-                  });
-
-                  await sendPushNotification(bidderId, {
-                    title: "انتهى المزاد",
-                    body: `تم بيع "${listing.title}" عبر خيار الشراء الفوري`,
-                    url: `/product/${cartItem.listingId}`,
-                    tag: `auction-ended-${cartItem.listingId}`,
-                  });
-                } catch (notifError) {
-                  console.error(`Failed to notify bidder ${bidderId}:`, notifError);
-                }
+        if (isAuctionBuyNow) {
+          const allBids = await storage.getBidsForListing(listing.id);
+          const uniqueBidderIds = Array.from(new Set(allBids.map(b => b.userId)));
+          for (const bidderId of uniqueBidderIds) {
+            if (bidderId !== userId) {
+              try {
+                await storage.createNotification({
+                  userId: bidderId,
+                  type: "auction_ended",
+                  title: "انتهى المزاد",
+                  message: `تم بيع "${listing.title}" عبر خيار الشراء الفوري`,
+                  linkUrl: `/product/${listing.id}`,
+                  relatedId: listing.id,
+                });
+                await sendPushNotification(bidderId, {
+                  title: "انتهى المزاد",
+                  body: `تم بيع "${listing.title}" عبر خيار الشراء الفوري`,
+                  url: `/product/${listing.id}`,
+                  tag: `auction-ended-${listing.id}`,
+                });
+              } catch (notifError) {
+                console.error(`Failed to notify bidder ${bidderId}:`, notifError);
               }
             }
           }
-        } else {
-          await storage.updateListing(cartItem.listingId, { 
-            quantityAvailable: newQuantity,
-            quantitySold: (listing.quantitySold || 0) + cartItem.quantity,
-          } as any);
         }
 
-        // Notify seller with deep link to sales tab
         if (listing.sellerId) {
           try {
             const notification = await storage.createNotification({
@@ -408,7 +345,6 @@ export function registerCartRoutes(app: Express): void {
               linkUrl: `/seller-dashboard?tab=sales&orderId=${transaction.id}`,
               relatedId: transaction.id,
             });
-
             sendToUser(listing.sellerId, "NOTIFICATION", {
               notification: {
                 id: notification.id,
@@ -418,7 +354,6 @@ export function registerCartRoutes(app: Express): void {
                 linkUrl: notification.linkUrl,
               },
             });
-
             await sendPushNotification(listing.sellerId, {
               title: "طلب جديد",
               body: `لديك طلب جديد على "${listing.title}"`,

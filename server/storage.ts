@@ -24,7 +24,7 @@ import {
   users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, sellerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, returnTemplates, returnApprovalRules, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, sql, lt, inArray, ne, isNotNull } from "drizzle-orm";
+import { eq, desc, and, or, sql, lt, inArray, ne, isNotNull} from "drizzle-orm";
 import { expandQuery } from "./services/query-expander";
 
 export interface UserPreferences {
@@ -215,6 +215,23 @@ export interface IStorage {
   updateCartItemQuantity(id: string, quantity: number): Promise<CartItem | undefined>;
   removeFromCart(id: string): Promise<boolean>;
   clearCart(userId: string): Promise<boolean>;
+
+  /**
+   * Process checkout in a database transaction with row-level locking to prevent oversell.
+   * Returns successful transactions, errors for failed items, and processed items for notifications.
+   */
+  processCheckout(params: {
+    userId: string;
+    cartItems: CartItem[];
+    deliveryAddress: string;
+    deliveryPhone: string;
+    deliveryCity: string;
+    calculateItemShipping: (listing: { shippingType: string | null; shippingCost: number | null; city: string | null }, quantity: number, buyerCity: string) => number;
+  }): Promise<{
+    transactions: Transaction[];
+    errors: string[];
+    processedItems: Array<{ listing: Listing; transaction: Transaction; cartQuantity: number }>;
+  }>;
   
   // View tracking
   incrementListingViews(listingId: string): Promise<number>;
@@ -534,7 +551,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Full-text search via search_vector (uses GIN index from migration 0003)
-      const ftsClause = sql`${listings.searchVector}::tsvector @@ to_tsquery('english', ${expanded.tsqueryString})`;
+      const ftsClause = sql`${listings.searchVector}::tsvector @@ to_tsquery('simple', ${expanded.tsqueryString})`;
 
       // Word-level trigram similarity for typo tolerance -- compares query against each
       // word in the title individually so short misspellings aren't drowned out
@@ -570,7 +587,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       searchRankSql = sql`(
-        COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('english', ${expanded.tsqueryString})), 0) * 40
+        COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('simple', ${expanded.tsqueryString})), 0) * 40
         + COALESCE((SELECT MAX(similarity(word, ${searchTrimmed})) FROM unnest(string_to_array(${listings.title}, ' ')) AS word), 0) * 10
         + CASE WHEN LOWER(${listings.title}) LIKE ${rawTerm} THEN 10 ELSE 0 END
         + CASE WHEN LOWER(COALESCE(${listings.brand}, '')) LIKE ${rawTerm} THEN 5 ELSE 0 END
@@ -684,6 +701,7 @@ export class DatabaseStorage implements IStorage {
       shippingCost: listings.shippingCost,
       shippingType: listings.shippingType,
       isFeatured: listings.isFeatured,
+      specifications: listings.specifications,
     };
 
     if (searchRankSql) {
@@ -750,28 +768,45 @@ export class DatabaseStorage implements IStorage {
         sql`LOWER(COALESCE(${listings.brand}, '')) LIKE ${patt}`,
       ];
     });
-    const ftsClause = sql`${listings.searchVector}::tsvector @@ to_tsquery('english', ${expanded.tsqueryString})`;
     const trigramClause = sql`EXISTS (SELECT 1 FROM unnest(string_to_array(${listings.title}, ' ')) AS word WHERE similarity(word, ${searchTerm}) > 0.35)`;
 
-    const productResults = await db.select({
-      title: listings.title,
-      category: listings.category,
-      relevance: sql<number>`(
-        COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('english', ${expanded.tsqueryString})), 0) * 10
-        + COALESCE((SELECT MAX(similarity(word, ${searchTerm})) FROM unnest(string_to_array(${listings.title}, ' ')) AS word), 0) * 5
-      )`,
-    })
-      .from(listings)
-      .where(and(
-        eq(listings.isDeleted, false),
-        availableListingCondition,
-        or(ftsClause, trigramClause, ...titleLikeClauses)
-      ))
-      .orderBy(sql`(
-        COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('english', ${expanded.tsqueryString})), 0) * 10
-        + COALESCE((SELECT MAX(similarity(word, ${searchTerm})) FROM unnest(string_to_array(${listings.title}, ' ')) AS word), 0) * 5
-      ) DESC`)
-      .limit(limit - suggestions.length);
+    let productResults: Array<{ title: string | null; category: string | null }>;
+    try {
+      const ftsClause = sql`${listings.searchVector}::tsvector @@ to_tsquery('simple', ${expanded.tsqueryString})`;
+      productResults = await db.select({
+        title: listings.title,
+        category: listings.category,
+        relevance: sql<number>`(
+          COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('simple', ${expanded.tsqueryString})), 0) * 10
+          + COALESCE((SELECT MAX(similarity(word, ${searchTerm})) FROM unnest(string_to_array(${listings.title}, ' ')) AS word), 0) * 5
+        )`,
+      })
+        .from(listings)
+        .where(and(
+          eq(listings.isDeleted, false),
+          availableListingCondition,
+          or(ftsClause, trigramClause, ...titleLikeClauses)
+        ))
+        .orderBy(sql`(
+          COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('simple', ${expanded.tsqueryString})), 0) * 10
+          + COALESCE((SELECT MAX(similarity(word, ${searchTerm})) FROM unnest(string_to_array(${listings.title}, ' ')) AS word), 0) * 5
+        ) DESC`)
+        .limit(limit - suggestions.length);
+    } catch (err) {
+      // Fallback when FTS throws (e.g. invalid tsquery for some Unicode/Arabic input)
+      console.error("[getSearchSuggestions] FTS failed, using trigram+LIKE fallback:", err);
+      productResults = await db.select({
+        title: listings.title,
+        category: listings.category,
+      })
+        .from(listings)
+        .where(and(
+          eq(listings.isDeleted, false),
+          availableListingCondition,
+          or(trigramClause, ...titleLikeClauses)
+        ))
+        .limit(limit - suggestions.length);
+    }
 
     productResults.forEach(row => {
       // Deduplicate by term
@@ -1833,6 +1868,112 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
+  async processCheckout(params: {
+    userId: string;
+    cartItems: CartItem[];
+    deliveryAddress: string;
+    deliveryPhone: string;
+    deliveryCity: string;
+    calculateItemShipping: (listing: { shippingType: string | null; shippingCost: number | null; city: string | null }, quantity: number, buyerCity: string) => number;
+  }): Promise<{
+    transactions: Transaction[];
+    errors: string[];
+    processedItems: Array<{ listing: Listing; transaction: Transaction; cartQuantity: number }>;
+  }> {
+    const { userId, cartItems, deliveryAddress, deliveryPhone, deliveryCity, calculateItemShipping } = params;
+    const createdTransactions: Transaction[] = [];
+    const errors: string[] = [];
+    const processedItems: Array<{ listing: Listing; transaction: Transaction; cartQuantity: number }> = [];
+
+    await db.transaction(async (tx) => {
+      for (const cartItem of cartItems) {
+        const [listing] = await tx
+          .select()
+          .from(listings)
+          .where(eq(listings.id, cartItem.listingId))
+          .for("update");
+
+        if (!listing) {
+          errors.push(`المنتج غير موجود: ${cartItem.listingId}`);
+          continue;
+        }
+
+        if (!listing.isActive) {
+          errors.push(`المنتج غير متاح: ${listing.title}`);
+          continue;
+        }
+
+        if (listing.quantityAvailable < cartItem.quantity) {
+          errors.push(`الكمية غير متوفرة: ${listing.title}`);
+          continue;
+        }
+
+        if (listing.sellerId === userId) {
+          errors.push(`لا يمكنك شراء منتجك الخاص: ${listing.title}`);
+          continue;
+        }
+
+        if (!listing.sellerId) {
+          errors.push(`البائع غير معروف: ${listing.title}`);
+          continue;
+        }
+
+        const isAuctionBuyNow = listing.saleType === "auction" && (listing as any).buyNowPrice;
+        const itemPrice = isAuctionBuyNow
+          ? (listing as any).buyNowPrice
+          : listing.price * cartItem.quantity;
+        const itemShipping = calculateItemShipping(listing, cartItem.quantity, deliveryCity);
+        const purchaseAmount = itemPrice + itemShipping;
+
+        const [txn] = await tx
+          .insert(transactions)
+          .values({
+            listingId: cartItem.listingId,
+            sellerId: listing.sellerId,
+            buyerId: userId,
+            amount: purchaseAmount,
+            status: "pending",
+            paymentMethod: "cash",
+            deliveryAddress,
+            deliveryPhone,
+            deliveryCity,
+          })
+          .returning();
+
+        if (!txn) continue;
+        createdTransactions.push(txn);
+
+        const newQuantity = listing.quantityAvailable - cartItem.quantity;
+        if (newQuantity <= 0 || isAuctionBuyNow) {
+          await tx
+            .update(listings)
+            .set({
+              isActive: false,
+              quantityAvailable: 0,
+              quantitySold: sql`${listings.quantitySold} + ${cartItem.quantity}`,
+              currentBid: isAuctionBuyNow ? (listing as any).buyNowPrice : listing.currentBid,
+            })
+            .where(eq(listings.id, cartItem.listingId));
+        } else {
+          await tx
+            .update(listings)
+            .set({
+              quantityAvailable: newQuantity,
+              quantitySold: sql`${listings.quantitySold} + ${cartItem.quantity}`,
+            })
+            .where(eq(listings.id, cartItem.listingId));
+        }
+
+        processedItems.push({
+          listing,
+          transaction: txn,
+          cartQuantity: cartItem.quantity,
+        });
+      }
+    });
+
+    return { transactions: createdTransactions, errors, processedItems };
+  }
 
   async incrementListingViews(listingId: string): Promise<number> {
     const [updated] = await db.update(listings)
@@ -2560,3 +2701,4 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+

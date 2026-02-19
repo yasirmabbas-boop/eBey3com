@@ -530,6 +530,15 @@ export const CATEGORY_SEARCH_FILTERS: Record<string, string[]> = {
   "تحف وأثاث": ["era", "material"],
 };
 
+// Short condition labels for cards (ar/ku)
+export const CONDITION_LABELS: Record<string, { ar: string; ku: string }> = {
+  "New": { ar: "جديد", ku: "نوێ" },
+  "Vintage": { ar: "فينتاج", ku: "ڤینتەیج" },
+  "Used - Like New": { ar: "شبه جديد", ku: "وەک نوێ" },
+  "Used - Good": { ar: "مستعمل", ku: "بەکارهاتوو" },
+  "Used - Fair": { ar: "مستعمل", ku: "بەکارهاتوو" },
+};
+
 // Field labels for form display
 export const SPECIFICATION_LABELS: Record<string, { ar: string; ku: string }> = {
   gender: { ar: "الفئة", ku: "جۆر" },

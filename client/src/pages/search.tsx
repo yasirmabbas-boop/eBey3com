@@ -39,7 +39,7 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { ProductGridSkeleton } from "@/components/optimized-image";
 import { EmptySearchState } from "@/components/empty-state";
 import { useLanguage } from "@/lib/i18n";
-import { CATEGORY_SEARCH_FILTERS, SPECIFICATION_OPTIONS, SPECIFICATION_LABELS } from "@/lib/search-data";
+import { CATEGORY_SEARCH_FILTERS, SPECIFICATION_OPTIONS, SPECIFICATION_LABELS, CONDITION_LABELS } from "@/lib/search-data";
 import type { Listing } from "@shared/schema";
 
 const CATEGORIES = [
@@ -923,30 +923,25 @@ export default function SearchPage() {
               {/* Responsive Grid View - 2 cols mobile, 3 tablet, 4-5 desktop */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
                 {displayedProducts.map((product) => {
-                  const isLastItem = product.quantityAvailable === 1 && (product.quantitySold || 0) > 0;
-                  const isEndingSoon = product.saleType === "auction" && product.auctionEndTime && 
-                    new Date(product.auctionEndTime).getTime() - Date.now() < 24 * 60 * 60 * 1000;
-                  const isHotItem = (product.views || 0) > 50 || ((product as any).totalBids || 0) > 5;
+                  const remaining = (product.quantityAvailable || 1) - (product.quantitySold || 0);
+                  const showLowStockBadge = product.isActive && remaining > 0 && remaining <= 3;
                   const shippingCost = product.shippingCost || 0;
                   const shippingType = (product as any).shippingType || "seller_pays";
                   
                   return (
                     <Link key={product.id} href={`/product/${product.id}`}>
                       <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group border-gray-200 bg-white active:scale-[0.98]" data-testid={`search-result-${product.id}`}>
-                        <div className="relative aspect-square overflow-hidden bg-gray-100">
+                        <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100">
                           <img 
                             src={product.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400"} 
                             alt={product.title} 
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"
                           />
-                          {/* Sold overlay only */}
-                          {!product.isActive && (
-                            <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
-                              <Badge className="bg-gray-700 text-white border-0 text-[9px] sm:text-xs shadow-md">
-                                {t("sold")}
-                              </Badge>
-                            </div>
+                          {product.saleType === "auction" && product.isActive && (
+                            <Badge className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-primary text-white border-0 text-[9px] sm:text-xs shadow-md">
+                              مزاد
+                            </Badge>
                           )}
                           {/* Favorite Button - Top Left */}
                           <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
@@ -963,24 +958,20 @@ export default function SearchPage() {
                           <h3 className="font-normal text-sm sm:text-base text-gray-700 line-clamp-2 group-hover:text-primary transition-colors leading-tight mb-1.5">
                             {product.title}
                           </h3>
-                          {/* Urgency Tags - In card body */}
-                          {product.isActive && (isEndingSoon || isLastItem || isHotItem) && (
-                            <div className="flex flex-wrap gap-1 mb-1.5">
-                              {isEndingSoon && (
-                                <Badge className="bg-red-500 text-white border-0 text-[8px] sm:text-[10px] px-1.5 py-0.5">
-                                  {t("endingSoon")}
-                                </Badge>
-                              )}
-                              {isLastItem && (
-                                <Badge className="bg-purple-500 text-white border-0 text-[8px] sm:text-[10px] px-1.5 py-0.5">
-                                  {t("lastItem")}
-                                </Badge>
-                              )}
-                              {isHotItem && !isEndingSoon && !isLastItem && (
-                                <Badge className="bg-orange-500 text-white border-0 text-[8px] sm:text-[10px] px-1.5 py-0.5">
-                                  {t("hotItem")}
-                                </Badge>
-                              )}
+                          {(product.condition || (product as any).specifications?.size || (product as any).specifications?.shoeSize || (product as any).specifications?.color) && (
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 mb-1">
+                              {[
+                                product.condition && (CONDITION_LABELS[product.condition] ? (language === "ar" ? CONDITION_LABELS[product.condition].ar : CONDITION_LABELS[product.condition].ku) : product.condition),
+                                (product as any).specifications?.size || (product as any).specifications?.shoeSize,
+                                (product as any).specifications?.color
+                              ].filter(Boolean).join(" • ")}
+                            </p>
+                          )}
+                          {showLowStockBadge && (
+                            <div className="mb-1.5">
+                              <Badge className="bg-amber-500 text-white border-0 text-[8px] sm:text-[10px] px-1.5 py-0.5">
+                                {remaining <= 1 ? (language === "ar" ? "آخر قطعة" : "یەک دانە ماوە") : (language === "ar" ? `آخر ${remaining} قطع` : `${remaining} دانە ماوە`)}
+                              </Badge>
                             </div>
                           )}
                           <div>

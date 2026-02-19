@@ -1136,6 +1136,13 @@ export default function SellWizardPage() {
                 onChange={(e) => handleInputChange("price", e.target.value)}
                 data-testid="input-price"
               />
+              <div className="space-y-2">
+                <Label htmlFor="quantityAvailable">{language === "ar" ? "الكمية المتوفرة" : "بڕی بەردەست"} *</Label>
+                <Input id="quantityAvailable" type="text" inputMode="numeric" pattern="[0-9٠-٩]*" placeholder="1" value={formData.quantityAvailable ?? "1"} onChange={(e) => handleInputChange("quantityAvailable", e.target.value)} data-testid="input-quantity" />
+                <p className="text-xs text-muted-foreground">{language === "ar" ? "عدد القطع المتوفرة للبيع" : "ژمارەی پارچەکان بۆ فرۆشتن"}</p>
+              </div>
+              <Input
+              />
               <p className="text-xs text-muted-foreground">
                 {language === "ar" ? "الحد الأدنى: 1,000 دينار" : "کەمترین: ١,٠٠٠ دینار"}
               </p>

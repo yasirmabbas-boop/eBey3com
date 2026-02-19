@@ -29,6 +29,7 @@ import { VerifiedBadge } from "@/components/verified-badge";
 import { MandatoryPhoneVerificationModal } from "@/components/mandatory-phone-verification-modal";
 import { ProductComments } from "@/components/product-comments";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram, shareToTwitter } from "@/lib/share-utils";
+import { SPECIFICATION_LABELS } from "@/lib/search-data";
 import { hapticSuccess, hapticError, hapticLight, saveToPhotos, isDespia } from "@/lib/despia";
 import type { Listing } from "@shared/schema";
 
@@ -86,6 +87,17 @@ export default function ProductPage() {
   // Buy Now confirmation dialog state
   const [buyNowDialogOpen, setBuyNowDialogOpen] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
+
+  // Quantity selector for fixed-price add to cart / buy now
+  const [addToCartQuantity, setAddToCartQuantity] = useState(1);
+
+  // Clamp quantity when product/remaining changes
+  const remainingQty = (product?.quantityAvailable ?? 1) - (product?.quantitySold ?? 0);
+  useEffect(() => {
+    if (remainingQty > 0 && addToCartQuantity > remainingQty) {
+      setAddToCartQuantity(remainingQty);
+    }
+  }, [remainingQty, addToCartQuantity]);
 
   // Image gallery state with carousel API for swipe support
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -564,8 +576,9 @@ export default function ProductPage() {
       return;
     }
     
+    const qty = addToCartQuantity || 1;
     try {
-      await addToCart({ listingId: listing.id, quantity: 1 });
+      await addToCart({ listingId: listing.id, quantity: qty });
       toast({
         title: language === "ar" ? "تم الإضافة للسلة" : "زیادکرا بۆ سەبەتە",
         description: language === "ar" ? "يمكنك الاستمرار في التصفح أو الذهاب للسلة." : "دەتوانیت بەردەوام بیت لە گەڕان یان بڕۆیت بۆ سەبەتە.",
@@ -595,8 +608,9 @@ export default function ProductPage() {
     
     if (!listing) return;
     
+    const qty = addToCartQuantity || 1;
     try {
-      await addToCart({ listingId: listing.id, quantity: 1 });
+      await addToCart({ listingId: listing.id, quantity: qty });
       hapticSuccess();
       toast({
         title: language === "ar" ? "تم إضافة المنتج للسلة" : "بەرهەم زیادکرا بۆ سەبەتە",
@@ -1201,6 +1215,17 @@ export default function ProductPage() {
                           </Button>
                         </div>
                       ) : (
+                        <>
+                        {remainingQty > 1 && (
+                          <div className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-lg mb-3">
+                            <span className="text-sm font-medium">{language === "ar" ? "الكمية" : "بڕ"}</span>
+                            <div className="flex items-center gap-2">
+                              <Button type="button" variant="outline" size="sm" className="h-9 w-9 p-0" onClick={() => setAddToCartQuantity(Math.max(1, addToCartQuantity - 1))} disabled={addToCartQuantity <= 1}>−</Button>
+                              <span className="w-10 text-center font-medium" data-testid="product-quantity">{addToCartQuantity}</span>
+                              <Button type="button" variant="outline" size="sm" className="h-9 w-9 p-0" onClick={() => setAddToCartQuantity(Math.min(remainingQty, addToCartQuantity + 1))} disabled={addToCartQuantity >= remainingQty}>+</Button>
+                            </div>
+                          </div>
+                        )}
                         <Button 
                           size="lg" 
                           className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90"
@@ -1217,6 +1242,7 @@ export default function ProductPage() {
                             language === "ar" ? "إتمام الطلب" : "تەواوکردنی داواکاری"
                           )}
                         </Button>
+                        </>
                       )}
 
                       <Button 
@@ -1429,10 +1455,6 @@ export default function ProductPage() {
         <div className="py-4 border-t">
           <h2 className="font-bold text-lg mb-3">{language === "ar" ? "المواصفات" : "تایبەتمەندییەکان"}</h2>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between py-2 border-b border-gray-100">
-              <span className="text-gray-500">{t("condition")}</span>
-              <span className="font-medium">{product.condition}</span>
-            </div>
             {product.brand && (
               <div className="flex justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-500">{language === "ar" ? "الماركة" : "مارکە"}</span>
@@ -1447,24 +1469,16 @@ export default function ProductPage() {
               <span className="text-gray-500">{t("productCode")}</span>
               <span className="font-medium text-xs">{product.productCode}</span>
             </div>
-            {product.city && (
-              <div className="flex justify-between py-2">
-                <span className="text-gray-500">{t("location")}</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{product.city}</span>
-                  {product.locationLat && product.locationLng && (
-                    <a
-                      href={product.mapUrl || `https://www.google.com/maps?q=${product.locationLat},${product.locationLng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary text-sm hover:underline flex items-center gap-1"
-                    >
-                      <MapPin className="h-3 w-3" />
-                    </a>
-                  )}
+            {listing?.specifications && Object.entries(listing.specifications).map(([key, value]) => {
+              if (value == null || value === "") return null;
+              const label = SPECIFICATION_LABELS[key as keyof typeof SPECIFICATION_LABELS]?.[language === "ar" ? "ar" : "ku"] ?? key;
+              return (
+                <div key={key} className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">{label}</span>
+                  <span className="font-medium">{String(value)}</span>
                 </div>
-              </div>
-            )}
+              );
+            })}
           </div>
         </div>
       </div>

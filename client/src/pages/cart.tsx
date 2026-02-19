@@ -137,7 +137,18 @@ export default function CartPage() {
                     {item.listing && !item.listing.isActive && (
                       <p className="text-red-500 text-sm mt-1">هذا المنتج لم يعد متاحاً</p>
                     )}
-                    
+                    {((a: number) => a === 0 ? (
+                        <div key="out" className="mt-2 p-2 rounded-lg bg-red-50 border border-red-200 flex flex-wrap items-center gap-2">
+                          <p className="text-red-700 text-sm">نفد من المخزون</p>
+                          <Button size="sm" variant="outline" className="h-7" onClick={() => removeFromCart(item.id)} disabled={isRemoving}>إزالة</Button>
+                        </div>
+                      ) : item.quantity > a && a > 0 ? (
+                        <div key="warn" className="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200 flex flex-wrap items-center gap-2">
+                          <p className="text-amber-800 text-sm">الكمية المتوفرة تغيرت. المتاح الآن: {a}</p>
+                          <Button size="sm" variant="outline" className="h-7" onClick={() => updateQuantity({ id: item.id, quantity: a })} disabled={isUpdating}>تحديث إلى {a}</Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-red-600" onClick={() => removeFromCart(item.id)} disabled={isRemoving}>إزالة</Button>
+                        </div>
+                      ) : null)(item.listing?.quantityAvailable ?? 0)}
                     <p className="text-sm text-gray-500 mt-1">
                       البائع: {item.listing?.sellerName || "غير معروف"}
                     </p>

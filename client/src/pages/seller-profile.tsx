@@ -13,6 +13,7 @@ import { Link } from "wouter";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram } from "@/lib/share-utils";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { useListings } from "@/hooks/use-listings";
+import { CONDITION_LABELS } from "@/lib/search-data";
 
 interface SellerInfo {
   id: string;
@@ -294,7 +295,7 @@ export default function SellerProfile() {
                 {activeListings.map((listing) => (
                   <Link key={listing.id} href={`/product/${listing.id}`}>
                     <Card className="overflow-hidden soft-border hover-elevate transition-shadow cursor-pointer">
-                      <div className="aspect-square relative">
+                      <div className="aspect-square relative overflow-hidden rounded-2xl">
                         <img
                           src={listing.images?.[0] || "/placeholder.png"}
                           alt={listing.title}
@@ -308,6 +309,17 @@ export default function SellerProfile() {
                       </div>
                       <CardContent className="p-3">
                         <h3 className="font-medium text-sm line-clamp-2 mb-1">{listing.title}</h3>
+                        {(() => {
+                          const specs = (listing as any).specifications || {};
+                          const aspects = [
+                            listing.condition && (CONDITION_LABELS[listing.condition] ? (language === "ar" ? CONDITION_LABELS[listing.condition].ar : CONDITION_LABELS[listing.condition].ku) : listing.condition),
+                            specs.size || specs.shoeSize,
+                            specs.color,
+                          ].filter(Boolean);
+                          return aspects.length > 0 ? (
+                            <p className="text-xs text-muted-foreground line-clamp-1 mb-1">{aspects.join(" • ")}</p>
+                          ) : null;
+                        })()}
                         <p className="font-bold text-primary">
                           {(listing.currentBid || listing.price).toLocaleString()} د.ع
                         </p>

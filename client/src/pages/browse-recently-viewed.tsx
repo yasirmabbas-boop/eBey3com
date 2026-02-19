@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/empty-state";
 import { useLanguage } from "@/lib/i18n";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { useListings } from "@/hooks/use-listings";
+import { CONDITION_LABELS } from "@/lib/search-data";
 import type { Listing } from "@shared/schema";
 
 export default function BrowseRecentlyViewed() {
@@ -76,7 +77,7 @@ export default function BrowseRecentlyViewed() {
                 className="overflow-hidden soft-border hover-elevate transition-shadow group"
               >
                 <Link href={`/product/${listing.id}`}>
-                  <div className="relative aspect-square overflow-hidden bg-muted/40">
+                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-muted/40">
                     <img
                       src={listing.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop"}
                       alt={listing.title}
@@ -95,6 +96,17 @@ export default function BrowseRecentlyViewed() {
                       {listing.title}
                     </h3>
                   </Link>
+                  {(() => {
+                    const specs = (listing as any).specifications || {};
+                    const aspects = [
+                      (listing as any).condition && (CONDITION_LABELS[(listing as any).condition] ? (language === "ar" ? CONDITION_LABELS[(listing as any).condition].ar : CONDITION_LABELS[(listing as any).condition].ku) : (listing as any).condition),
+                      specs.size || specs.shoeSize,
+                      specs.color,
+                    ].filter(Boolean);
+                    return aspects.length > 0 ? (
+                      <p className="text-xs text-muted-foreground line-clamp-1 mb-1">{aspects.join(" • ")}</p>
+                    ) : null;
+                  })()}
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-bold text-primary text-sm">
                       {formatPrice(listing.currentBid || listing.price)}

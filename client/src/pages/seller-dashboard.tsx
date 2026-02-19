@@ -332,7 +332,7 @@ export default function SellerDashboard() {
   const [salesFilter, setSalesFilter] = useState("all");
   const [offerFilter, setOfferFilter] = useState<"all" | "pending" | "accepted" | "rejected" | "expired">("all");
   const [timePeriod, setTimePeriod] = useState<"7" | "30" | "all">("30");
-  const [quickFilter, setQuickFilter] = useState<"pending_shipment" | "needs_reply" | "ending_soon" | "none">("none");
+  const [quickFilter, setQuickFilter] = useState<"pending_shipment" | "needs_reply" | "ending_soon" | "low_stock" | "none">("none");
   const [showShippingLabel, setShowShippingLabel] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<SellerProduct | null>(null);
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<SellerOrder | null>(null);
@@ -987,7 +987,8 @@ export default function SellerDashboard() {
     const matchesQuick =
       quickFilter === "none" ||
       (quickFilter === "pending_shipment" && product.status === "pending_shipment") ||
-      (quickFilter === "ending_soon" && !!product.auctionEndTime);
+      (quickFilter === "ending_soon" && !!product.auctionEndTime) ||
+      (quickFilter === "low_stock" && product.remainingStock > 0 && product.remainingStock <= 5);
     return matchesSearch && matchesStatus && matchesQuick;
   });
   const filteredMessages = quickFilter === "needs_reply"
@@ -1497,6 +1498,14 @@ export default function SellerDashboard() {
               >
                 {language === "ar" ? "بحاجة لرد" : "پێویستی بە وەڵام"}
               </Button>
+              <Button
+                size="sm"
+                variant={quickFilter === "low_stock" ? "default" : "outline"}
+                className="rounded-full"
+                onClick={() => setQuickFilter(prev => prev === "low_stock" ? "none" : "low_stock")}
+              >
+                {language === "ar" ? "مخزون منخفض" : "ئەنبارە کەم"}
+              </Button>
             </div>
 
             {/* Saved Local Drafts from wizard */}
@@ -1601,6 +1610,11 @@ export default function SellerDashboard() {
                           <Package className="h-4 w-4" />
                           {product.quantityAvailable} {language === "ar" ? "متاح" : "بەردەست"}
                         </span>
+                        {product.remainingStock > 0 && product.remainingStock <= 5 && (
+                          <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 text-xs">
+                            {language === "ar" ? "مخزون منخفض" : "ئەنبارە کەم"}
+                          </Badge>
+                        )}
                         {product.soldDate && (
                           <span className="flex items-center gap-1">
                             <CheckCircle className="h-4 w-4 text-green-500" />
@@ -1671,7 +1685,7 @@ export default function SellerDashboard() {
                           )}
                           
                           {/* Update Stock button - for partially sold items with remaining stock or to add more */}
-                          {product.quantitySold > 0 && (
+                          {(product.status === "active" || product.status === "draft") && (
                             <Button 
                               size="sm" 
                               variant="outline" 
@@ -2774,10 +2788,10 @@ export default function SellerDashboard() {
               <div className="space-y-4">
                 <div className="bg-muted/50 p-3 rounded-lg">
                   <p className="font-medium text-primary">{product.title}</p>
-                  <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                    <span>المبيعات: {product.quantitySold}</span>
-                    <span>الحالي: {product.quantityAvailable}</span>
-                    <span>المتبقي: {product.quantityAvailable - product.quantitySold}</span>
+                  <div className="flex flex-wrap gap-4 mt-2 text-sm text-muted-foreground">
+                    <span>{language === "ar" ? "إجمالي الكمية" : "کۆی گشتی"} {product.quantityAvailable + product.quantitySold}</span>
+                    <span>{language === "ar" ? "مباع" : "فرۆشرا"} {product.quantitySold}</span>
+                    <span>{language === "ar" ? "متاح" : "بەردەست"} {product.quantityAvailable}</span>
                   </div>
                 </div>
                 

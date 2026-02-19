@@ -262,13 +262,11 @@ export default function CheckoutPage() {
         return;
       }
       
-      // Check if error has details (Zod validation errors)
+      // Check if error has details (Zod validation or stock/listing errors)
       if (error.details && Array.isArray(error.details)) {
-        // Show field-specific errors
-        const errorMessages = error.details.map((err: any) => {
-          const fieldName = getFieldLabel(err.field);
-          return `${fieldName}: ${err.message}`;
-        }).join('\n');
+        const errorMessages = error.details.map((err: any) =>
+          typeof err === "string" ? err : `${getFieldLabel(err.field)}: ${err.message}`
+        ).join("\n");
         
         toast({
           title: "خطأ في البيانات",

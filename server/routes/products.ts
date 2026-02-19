@@ -1444,7 +1444,7 @@ export function registerProductRoutes(app: Express): void {
       res.json(suggestions);
     } catch (error) {
       console.error("Error getting search suggestions:", error);
-      res.status(500).json([]);
+      res.status(200).json([]);
     }
   });
 

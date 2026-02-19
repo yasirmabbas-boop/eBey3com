@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Camera, Layers, Tag, Clock } from "lucide-react";
+import { Search, Camera, Layers, Tag, Clock, TrendingUp } from "lucide-react";
+import { SEARCH_SUGGESTIONS } from "@/lib/search-data";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -35,10 +36,12 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
     return () => clearTimeout(timer);
   }, [query]);
 
-  const { data: suggestions = [] } = useQuery<Suggestion[]>({
+  const { data: suggestions = [], isFetching: isSuggestionsLoading } = useQuery<Suggestion[]>({
     queryKey: ["/api/search-suggestions", debouncedQuery],
     queryFn: async () => {
-      const res = await fetch(`/api/search-suggestions?q=${encodeURIComponent(debouncedQuery)}`);
+      const res = await fetch(`/api/search-suggestions?q=${encodeURIComponent(debouncedQuery)}`, {
+        credentials: "include",
+      });
       if (!res.ok) return [];
       return res.json();
     },
@@ -55,7 +58,9 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
   }>({
     queryKey: ["/api/account/preferences"],
     queryFn: async () => {
-      const res = await fetch("/api/account/preferences");
+      const res = await fetch("/api/account/preferences", {
+        credentials: "include",
+      });
       if (!res.ok) return null;
       return res.json();
     },
@@ -68,9 +73,15 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
     ? userPreferences.recentSearches
     : (() => { try { return JSON.parse(localStorage.getItem("previousSearches") || "[]").slice(0, 10); } catch { return []; } })()
   ) as string[];
-  // Show recent searches when input is empty and focused, otherwise show suggestions
+  const popularSearches = SEARCH_SUGGESTIONS.slice(0, 8).map((s) => s.ar);
   const showRecentSearches = query.length === 0 && recentSearches.length > 0;
-  const dropdownItemCount = showRecentSearches ? recentSearches.length : suggestions.length;
+  const showPopularSearches = query.length === 0 && recentSearches.length === 0;
+  const showSuggestions = debouncedQuery.length >= 2;
+  const dropdownItemCount = showRecentSearches
+    ? recentSearches.length
+    : showPopularSearches
+      ? popularSearches.length
+      : suggestions.length;
 
   const getTypeIcon = (type: Suggestion["type"]) => {
     switch (type) {
@@ -134,6 +145,10 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
         const term = recentSearches[selectedIndex];
         setQuery(term);
         handleSearch(term);
+      } else if (showPopularSearches) {
+        const term = popularSearches[selectedIndex];
+        setQuery(term);
+        handleSearch(term);
       } else {
         const item = suggestions[selectedIndex];
         setQuery(item.term);
@@ -162,12 +177,15 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
             setQuery(e.target.value);
             setSelectedIndex(-1);
             // Show dropdown when typing (for suggestions) or when empty (for recent searches)
-            if (e.target.value.length > 0 || recentSearches.length > 0) {
+            if (e.target.value.length > 0 || recentSearches.length > 0 || popularSearches.length > 0) {
               setShowDropdown(true);
             }
           }}
           onFocus={() => {
-            if ((query.length > 0 && suggestions.length > 0) || (query.length === 0 && recentSearches.length > 0)) {
+            if (
+              (query.length > 0 && suggestions.length > 0) ||
+              (query.length === 0 && (recentSearches.length > 0 || popularSearches.length > 0))
+            ) {
               setShowDropdown(true);
             }
           }}
@@ -190,7 +208,7 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
         )}
       </div>
 
-      {showDropdown && dropdownItemCount > 0 && (
+      {showDropdown && (dropdownItemCount > 0 || (showSuggestions && isSuggestionsLoading)) && (
         <div 
           ref={dropdownRef}
           className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto"
@@ -219,9 +237,38 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
                   </button>
                 ))}
               </>
+            ) : showPopularSearches ? (
+              <>
+                <div className="text-xs text-gray-500 px-3 py-1 font-medium">عمليات بحث شائعة</div>
+                {popularSearches.map((term, index) => (
+                  <button
+                    key={`popular-${term}-${index}`}
+                    type="button"
+                    onClick={() => handleSuggestionClick(term)}
+                    className={`w-full text-right px-3 py-2 rounded-md flex items-center justify-between hover:bg-blue-50 transition-colors ${
+                      selectedIndex === index ? "bg-blue-50" : ""
+                    }`}
+                    data-testid={`popular-search-${index}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-amber-500" />
+                      <span className="font-medium line-clamp-1">{term}</span>
+                    </div>
+                    <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded">
+                      شائع
+                    </span>
+                  </button>
+                ))}
+              </>
             ) : (
               <>
                 <div className="text-xs text-gray-500 px-3 py-1 font-medium">اقتراحات البحث</div>
+                {suggestions.length === 0 && isSuggestionsLoading ? (
+                  <div className="px-3 py-3 text-sm text-gray-500 flex items-center gap-2">
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+                    جاري البحث...
+                  </div>
+                ) : null}
                 {suggestions.map((item, index) => (
                   <button
                     key={`${item.term}-${index}`}
@@ -248,6 +295,12 @@ export function SmartSearch({ onImageSearchClick, className }: SmartSearchProps)
                     </div>
                   </button>
                 ))}
+                {suggestions.length > 0 && isSuggestionsLoading && (
+                  <div className="px-3 py-2 text-xs text-gray-500 flex items-center gap-2 border-t border-gray-100">
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+                    جاري البحث...
+                  </div>
+                )}
               </>
             )}
           </div>
