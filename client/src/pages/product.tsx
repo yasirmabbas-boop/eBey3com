@@ -31,6 +31,14 @@ import { ProductComments } from "@/components/product-comments";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram, shareToTwitter } from "@/lib/share-utils";
 import { SPECIFICATION_LABELS } from "@/lib/search-data";
 import { hapticSuccess, hapticError, hapticLight, saveToPhotos, isDespia } from "@/lib/despia";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 import type { Listing } from "@shared/schema";
 
 function getAuthHeaders(): HeadersInit {
@@ -41,15 +49,6 @@ function getAuthHeaders(): HeadersInit {
   }
   return headers;
 }
-
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from "@/components/ui/carousel";
 
 const SIMILAR_PRODUCTS = Array.from({ length: 20 }).map((_, i) => ({
   id: `sim-${i}`,
