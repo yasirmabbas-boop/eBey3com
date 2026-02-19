@@ -90,14 +90,6 @@ export default function ProductPage() {
   // Quantity selector for fixed-price add to cart / buy now
   const [addToCartQuantity, setAddToCartQuantity] = useState(1);
 
-  // Clamp quantity when product/remaining changes
-  const remainingQty = (product?.quantityAvailable ?? 1) - (product?.quantitySold ?? 0);
-  useEffect(() => {
-    if (remainingQty > 0 && addToCartQuantity > remainingQty) {
-      setAddToCartQuantity(remainingQty);
-    }
-  }, [remainingQty, addToCartQuantity]);
-
   // Image gallery state with carousel API for swipe support
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
@@ -336,6 +328,14 @@ export default function ProductPage() {
     locationLng: (listing as any).locationLng || null,
     mapUrl: (listing as any).mapUrl || null,
   } : null;
+
+  // Clamp quantity when product/remaining changes
+  const remainingQty = (product?.quantityAvailable ?? 1) - (product?.quantitySold ?? 0);
+  useEffect(() => {
+    if (remainingQty > 0 && addToCartQuantity > remainingQty) {
+      setAddToCartQuantity(remainingQty);
+    }
+  }, [remainingQty, addToCartQuantity]);
 
   // Track view when product loads - reset ref on listing change
   useEffect(() => {
