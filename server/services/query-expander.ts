@@ -142,7 +142,7 @@ export interface ExpandedQuery {
   model: string | null;
   /** Detected category if any */
   category: string | null;
-  /** Terms joined with ' | ' for use in to_tsquery */
+  /** Terms joined for use in websearch_to_tsquery */
   tsqueryString: string;
 }
 
@@ -352,14 +352,14 @@ export function expandQuery(rawQuery: string): ExpandedQuery {
     if (category) break;
   }
 
-  // Build tsquery string: escape special chars and join with ' | '
+  // Build tsquery string: strip operators and join with ' OR ' for websearch_to_tsquery
   const tsTerms = Array.from(allTerms)
     .filter(t => t.length >= 2) // skip single-char terms
-    .map(t => t.replace(/[&|!():*<>'\\]/g, "")) // strip tsquery special chars
+    .map(t => t.replace(/[&|!():*<>'\\]/g, "")) // strip tsquery operators
     .filter(t => t.length >= 2);
 
-  // Use a simplified approach: join individual words with |
-  const tsqueryString = tsTerms.length > 0 ? tsTerms.join(" | ") : raw;
+  // Use websearch syntax so raw user input is forgiving at DB runtime.
+  const tsqueryString = tsTerms.length > 0 ? tsTerms.join(" OR ") : raw;
 
   return {
     raw,

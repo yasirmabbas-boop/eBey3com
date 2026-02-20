@@ -39,7 +39,7 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { ProductGridSkeleton } from "@/components/optimized-image";
 import { EmptySearchState } from "@/components/empty-state";
 import { useLanguage } from "@/lib/i18n";
-import { CATEGORY_SEARCH_FILTERS, SPECIFICATION_OPTIONS, SPECIFICATION_LABELS, CONDITION_LABELS } from "@/lib/search-data";
+import { CATEGORY_SEARCH_FILTERS, SPECIFICATION_OPTIONS, SPECIFICATION_LABELS, CONDITION_LABELS, CATEGORY_KEYWORDS } from "@/lib/search-data";
 import type { Listing } from "@shared/schema";
 
 const CATEGORIES = [
@@ -59,6 +59,7 @@ const CONDITIONS = [
   { id: "Used - Like New", labelAr: "شبه جديد", labelKu: "وەک نوێ", aliases: ["Used - Like New", "شبه جديد"] },
   { id: "Used - Good", labelAr: "مستعمل - جيد", labelKu: "بەکارهاتوو - باش", aliases: ["Used - Good", "جيد", "مستعمل"] },
   { id: "Used - Fair", labelAr: "مستعمل - مقبول", labelKu: "بەکارهاتوو - قبوڵ", aliases: ["Used - Fair", "مقبول"] },
+  { id: "For Parts or Not Working", labelAr: "لا يعمل / لأجزاء", labelKu: "نایەوە کار / بۆ پارچەکان", aliases: ["For Parts or Not Working", "For Parts", "لا يعمل", "أجزاء"] },
 ];
 
 const CITIES = [
@@ -114,6 +115,12 @@ interface FilterState {
   specs: Record<string, string[]>;
 }
 
+interface SearchSuggestionItem {
+  term: string;
+  category: string;
+  type: "category" | "product";
+}
+
 export default function SearchPage() {
   const { language, t } = useLanguage();
   const [location] = useLocation();
@@ -149,8 +156,26 @@ export default function SearchPage() {
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // When the search query matches a category name or keyword, auto-apply that category filter
+    let detectedCategory: string | null = categoryParam;
+    if (!detectedCategory && searchQuery) {
+      const q = searchQuery.trim().toLowerCase();
+      // Exact match against category ids
+      const exactCat = CATEGORIES.find(c => c.id === searchQuery.trim() || c.nameAr === searchQuery.trim() || c.nameKu === searchQuery.trim());
+      if (exactCat) {
+        detectedCategory = exactCat.id;
+      } else {
+        // Keyword match via CATEGORY_KEYWORDS
+        for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+          if (keywords.some(kw => kw.toLowerCase() === q)) {
+            detectedCategory = cat;
+            break;
+          }
+        }
+      }
+    }
     const freshFilters: FilterState = {
-      category: categoryParam,
+      category: detectedCategory,
       conditions: [],
       saleTypes: [],
       cities: [],
@@ -162,7 +187,6 @@ export default function SearchPage() {
     setAppliedFilters(freshFilters);
     setDraftFilters(freshFilters);
     setSortBy(searchQuery ? "relevance" : "newest");
-    // Note: page reset and mergedListings reset handled by the appliedFilters effect
   }, [searchQuery, categoryParam]);
 
   // Save search to localStorage so SmartSearch dropdown shows recent searches for all users
@@ -193,6 +217,7 @@ export default function SearchPage() {
     category: appliedFilters.category || undefined,
     includeSold: appliedFilters.includeSold,
     q: searchQuery || undefined,
+    sortBy,
     minPrice: appliedFilters.priceMin || undefined,
     maxPrice: appliedFilters.priceMax || undefined,
     condition: appliedFilters.conditions.length > 0 ? appliedFilters.conditions : undefined,
@@ -272,41 +297,7 @@ export default function SearchPage() {
     return listings;
   }, [listings]);
 
-  const filteredProducts = useMemo(() => {
-    // For "relevance" sort, trust the server-side Best Match ranking order.
-    // For other sorts, apply client-side ordering.
-    if (sortBy === "relevance" || sortBy === "newest") {
-      // Server already returns results in Best Match / newest order
-      return allProducts;
-    }
-
-    const sortedProducts = [...allProducts];
-    switch (sortBy) {
-      case "price_low":
-        sortedProducts.sort((a, b) => (a.currentBid || a.price) - (b.currentBid || b.price));
-        break;
-      case "price_high":
-        sortedProducts.sort((a, b) => (b.currentBid || b.price) - (a.currentBid || a.price));
-        break;
-      case "ending_soon":
-        sortedProducts.sort((a, b) => {
-          if (!a.auctionEndTime) return 1;
-          if (!b.auctionEndTime) return -1;
-          return new Date(a.auctionEndTime).getTime() - new Date(b.auctionEndTime).getTime();
-        });
-        break;
-      case "most_bids":
-        sortedProducts.sort((a, b) => (b.totalBids || 0) - (a.totalBids || 0));
-        break;
-      case "views":
-        sortedProducts.sort((a, b) => (b.views || 0) - (a.views || 0));
-        break;
-      default:
-        break;
-    }
-
-    return sortedProducts;
-  }, [allProducts, sortBy]);
+  const filteredProducts = useMemo(() => allProducts, [allProducts]);
 
   const displayedProducts = filteredProducts;
   const hasMoreProducts = listingsData?.pagination?.hasMore ?? false;
@@ -318,6 +309,48 @@ export default function SearchPage() {
   const draftFilteredProducts = useMemo(() => {
     return allProducts;
   }, [allProducts]);
+
+  const noSearchResults = !isLoading && filteredProducts.length === 0 && !!searchQuery;
+
+  const { data: didYouMeanSuggestions = [] } = useQuery<SearchSuggestionItem[]>({
+    queryKey: ["/api/search-suggestions/empty-state", searchQuery],
+    queryFn: async () => {
+      if (!searchQuery) return [];
+      const res = await fetch(`/api/search-suggestions?q=${encodeURIComponent(searchQuery)}&limit=6`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: noSearchResults,
+    staleTime: 30000,
+  });
+
+  const { data: fallbackListings = [] } = useQuery<Listing[]>({
+    queryKey: ["/api/hot-listings/empty-state"],
+    queryFn: async () => {
+      const res = await fetch("/api/hot-listings?limit=6");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: noSearchResults,
+    staleTime: 60000,
+  });
+
+  const didYouMeanTerms = useMemo(() => {
+    if (!searchQuery) return [];
+    const normalized = searchQuery.trim().toLowerCase();
+    const uniq = new Set<string>();
+    const terms: string[] = [];
+    for (const item of didYouMeanSuggestions) {
+      const term = (item.term || "").trim();
+      if (!term) continue;
+      if (term.toLowerCase() === normalized) continue;
+      if (uniq.has(term.toLowerCase())) continue;
+      uniq.add(term.toLowerCase());
+      terms.push(term);
+      if (terms.length >= 4) break;
+    }
+    return terms;
+  }, [didYouMeanSuggestions, searchQuery]);
 
   // Server-side facet count helpers (accurate across full result set, not just loaded page)
   const getCategoryCount = (categoryId: string | null) => {
@@ -905,6 +938,8 @@ export default function SearchPage() {
                 query={searchQuery || undefined}
                 onClearFilters={activeFiltersCount > 0 ? () => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false, specs: {} }) : undefined}
                 language={language}
+                suggestions={didYouMeanTerms}
+                fallbackListings={fallbackListings}
               />
             ) : (
               <div className="text-center py-12">

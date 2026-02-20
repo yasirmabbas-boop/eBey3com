@@ -537,6 +537,7 @@ export const CONDITION_LABELS: Record<string, { ar: string; ku: string }> = {
   "Used - Like New": { ar: "شبه جديد", ku: "وەک نوێ" },
   "Used - Good": { ar: "مستعمل", ku: "بەکارهاتوو" },
   "Used - Fair": { ar: "مستعمل", ku: "بەکارهاتوو" },
+  "For Parts or Not Working": { ar: "لا يعمل / لأجزاء", ku: "نایەوە کار / بۆ پارچەکان" },
 };
 
 // Field labels for form display

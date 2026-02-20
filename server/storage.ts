@@ -24,7 +24,7 @@ import {
   users, listings, bids, watchlist, analytics, messages, offers, reviews, transactions, categories, buyerAddresses, sellerAddresses, cartItems, notifications, reports, verificationCodes, returnRequests, returnTemplates, returnApprovalRules, contactMessages, productComments, pushSubscriptions
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, sql, lt, inArray, ne, isNotNull} from "drizzle-orm";
+import { eq, desc, and, or, sql, lt, inArray, ne, isNotNull, asc} from "drizzle-orm";
 import { expandQuery } from "./services/query-expander";
 
 export interface UserPreferences {
@@ -551,7 +551,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Full-text search via search_vector (uses GIN index from migration 0003)
-      const ftsClause = sql`${listings.searchVector}::tsvector @@ to_tsquery('simple', ${expanded.tsqueryString})`;
+      const ftsClause = sql`${listings.searchVector}::tsvector @@ websearch_to_tsquery('simple', ${expanded.tsqueryString})`;
 
       // Word-level trigram similarity for typo tolerance -- compares query against each
       // word in the title individually so short misspellings aren't drowned out
@@ -587,7 +587,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       searchRankSql = sql`(
-        COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('simple', ${expanded.tsqueryString})), 0) * 40
+        COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, websearch_to_tsquery('simple', ${expanded.tsqueryString})), 0) * 40
         + COALESCE((SELECT MAX(similarity(word, ${searchTrimmed})) FROM unnest(string_to_array(${listings.title}, ' ')) AS word), 0) * 10
         + CASE WHEN LOWER(${listings.title}) LIKE ${rawTerm} THEN 10 ELSE 0 END
         + CASE WHEN LOWER(COALESCE(${listings.brand}, '')) LIKE ${rawTerm} THEN 5 ELSE 0 END
@@ -629,7 +629,7 @@ export class DatabaseStorage implements IStorage {
       for (const [key, values] of Object.entries(options.specs)) {
         if (values && values.length > 0) {
           const specClauses = values.map((v) =>
-            sql`${listings.specifications}->>${key} = ${v}`
+            sql`${listings.specifications}->>${sql.raw(`'${key}'`)} = ${v}`
           );
           conds.push(or(...specClauses));
         }
@@ -654,6 +654,7 @@ export class DatabaseStorage implements IStorage {
     cities?: string[];
     specs?: Record<string, string[]>;
     userId?: string;
+    sortBy?: string;
   }): Promise<{ listings: Listing[]; total: number }> {
     const { limit, offset, userId } = options;
 
@@ -708,20 +709,41 @@ export class DatabaseStorage implements IStorage {
       selectFields.relevanceScore = searchRankSql;
     }
 
-    // Order by Best Match score when searching, otherwise by created date
-    const results = searchRankSql
-      ? await db.select(selectFields)
-          .from(listings)
-          .where(whereClause)
-          .orderBy(desc(searchRankSql), desc(listings.createdAt))
-          .limit(limit)
-          .offset(offset)
-      : await db.select(selectFields)
-          .from(listings)
-          .where(whereClause)
-          .orderBy(desc(listings.createdAt))
-          .limit(limit)
-          .offset(offset);
+    const sortBy = options.sortBy || (searchRankSql ? "relevance" : "newest");
+
+    // Server-side sorting keeps the full paginated dataset ordered correctly.
+    let orderByClause: any[] = [];
+    switch (sortBy) {
+      case "price_low":
+        orderByClause = [asc(sql`COALESCE(${listings.currentBid}, ${listings.price})`), desc(listings.createdAt)];
+        break;
+      case "price_high":
+        orderByClause = [desc(sql`COALESCE(${listings.currentBid}, ${listings.price})`), desc(listings.createdAt)];
+        break;
+      case "views":
+        orderByClause = [desc(listings.views), desc(listings.createdAt)];
+        break;
+      case "ending_soon":
+        orderByClause = [sql`${listings.auctionEndTime} ASC NULLS LAST`, desc(listings.createdAt)];
+        break;
+      case "most_bids":
+        orderByClause = [desc(listings.totalBids), desc(listings.createdAt)];
+        break;
+      case "relevance":
+        orderByClause = searchRankSql ? [desc(searchRankSql), desc(listings.createdAt)] : [desc(listings.createdAt)];
+        break;
+      case "newest":
+      default:
+        orderByClause = [desc(listings.createdAt)];
+        break;
+    }
+
+    const results = await db.select(selectFields)
+      .from(listings)
+      .where(whereClause)
+      .orderBy(...orderByClause)
+      .limit(limit)
+      .offset(offset);
 
     return { listings: results as Listing[], total: countResult?.count || 0 };
   }
@@ -772,12 +794,12 @@ export class DatabaseStorage implements IStorage {
 
     let productResults: Array<{ title: string | null; category: string | null }>;
     try {
-      const ftsClause = sql`${listings.searchVector}::tsvector @@ to_tsquery('simple', ${expanded.tsqueryString})`;
+      const ftsClause = sql`${listings.searchVector}::tsvector @@ websearch_to_tsquery('simple', ${expanded.tsqueryString})`;
       productResults = await db.select({
         title: listings.title,
         category: listings.category,
         relevance: sql<number>`(
-          COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('simple', ${expanded.tsqueryString})), 0) * 10
+          COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, websearch_to_tsquery('simple', ${expanded.tsqueryString})), 0) * 10
           + COALESCE((SELECT MAX(similarity(word, ${searchTerm})) FROM unnest(string_to_array(${listings.title}, ' ')) AS word), 0) * 5
         )`,
       })
@@ -788,7 +810,7 @@ export class DatabaseStorage implements IStorage {
           or(ftsClause, trigramClause, ...titleLikeClauses)
         ))
         .orderBy(sql`(
-          COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, to_tsquery('simple', ${expanded.tsqueryString})), 0) * 10
+          COALESCE(ts_rank_cd(${listings.searchVector}::tsvector, websearch_to_tsquery('simple', ${expanded.tsqueryString})), 0) * 10
           + COALESCE((SELECT MAX(similarity(word, ${searchTerm})) FROM unnest(string_to_array(${listings.title}, ' ')) AS word), 0) * 5
         ) DESC`)
         .limit(limit - suggestions.length);

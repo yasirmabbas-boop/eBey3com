@@ -109,7 +109,7 @@ export function registerProductRoutes(app: Express): void {
   // List/search products
   app.get("/api/listings", async (req, res) => {
     try {
-      const { category, sellerId, page, limit: limitParam, saleType, includeSold, q, minPrice, maxPrice, condition, city } = req.query;
+      const { category, sellerId, page, limit: limitParam, saleType, includeSold, q, minPrice, maxPrice, condition, city, sort } = req.query;
       const saleTypes = Array.isArray(saleType)
         ? saleType.map(s => String(s))
         : typeof saleType === "string"
@@ -160,6 +160,7 @@ export function registerProductRoutes(app: Express): void {
         maxPrice: typeof maxPrice === "string" ? parseInt(maxPrice) : undefined,
         conditions,
         cities,
+        sortBy: typeof sort === "string" ? sort : undefined,
         specs: hasSpecs ? specs : undefined,
         userId: viewerId || undefined,
       });

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Language } from "@/lib/i18n";
+import type { Listing } from "@shared/schema";
 
 type EmptyStateType = 
   | "favorites"
@@ -121,17 +122,23 @@ export function EmptyState({
 export function EmptySearchState({ 
   query,
   onClearFilters,
-  language = "ar"
+  language = "ar",
+  suggestions = [],
+  fallbackListings = [],
 }: { 
   query?: string;
   onClearFilters?: () => void;
   language?: Language;
+  suggestions?: string[];
+  fallbackListings?: Listing[];
 }) {
   const texts = {
     ar: {
       noResults: "لم نجد نتائج",
       noResultsFor: "لم نجد نتائج لـ",
       suggestions: "جرب البحث بكلمات مختلفة أو تصفح الفئات",
+      didYouMean: "هل تقصد:",
+      popularNow: "منتجات شائعة الآن",
       clearFilters: "مسح الفلاتر",
       browseAll: "تصفح جميع المنتجات"
     },
@@ -139,6 +146,8 @@ export function EmptySearchState({
       noResults: "هیچ ئەنجامێک نەدۆزرایەوە",
       noResultsFor: "هیچ ئەنجامێک نەدۆزرایەوە بۆ",
       suggestions: "هەوڵ بدە بە وشەی جیاواز بگەڕێیت یان پۆلەکان ببینە",
+      didYouMean: "مەبەستت ئەمەیە:",
+      popularNow: "بەرهەمە باوەکانی ئێستا",
       clearFilters: "سڕینەوەی فلتەرەکان",
       browseAll: "بینینی هەموو بەرهەمەکان"
     }
@@ -162,6 +171,21 @@ export function EmptySearchState({
       <p className="text-gray-500 mb-6 max-w-sm mx-auto">
         {t.suggestions}
       </p>
+
+      {suggestions.length > 0 && (
+        <div className="mb-6">
+          <p className="text-sm text-gray-600 mb-3">{t.didYouMean}</p>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {suggestions.map((term) => (
+              <Link key={term} href={`/search?q=${encodeURIComponent(term)}`}>
+                <Button variant="outline" size="sm">
+                  {term}
+                </Button>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
       
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         {onClearFilters && (
@@ -175,6 +199,32 @@ export function EmptySearchState({
           </Button>
         </Link>
       </div>
+
+      {fallbackListings.length > 0 && (
+        <div className="mt-8 text-right">
+          <p className="text-sm font-medium text-gray-700 mb-3 text-center">{t.popularNow}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {fallbackListings.slice(0, 6).map((item) => (
+              <Link key={item.id} href={`/product/${item.id}`}>
+                <div className="rounded-lg border bg-white overflow-hidden hover:shadow-sm transition-shadow">
+                  <img
+                    src={item.images?.[0] || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300"}
+                    alt={item.title}
+                    className="w-full aspect-square object-cover"
+                    loading="lazy"
+                  />
+                  <div className="p-2">
+                    <p className="text-xs text-gray-700 line-clamp-1">{item.title}</p>
+                    <p className="text-xs font-semibold text-gray-900">
+                      {(item.currentBid || item.price || 0).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

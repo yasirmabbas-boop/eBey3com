@@ -9,6 +9,7 @@ export interface UseListingsOptions {
   category?: string;
   includeSold?: boolean;
   q?: string; // search query
+  sortBy?: string;
   minPrice?: string | number;
   maxPrice?: string | number;
   condition?: string[];
@@ -40,6 +41,7 @@ export function useListings(options?: UseListingsOptions) {
     category,
     includeSold,
     q,
+    sortBy,
     minPrice,
     maxPrice,
     condition,
@@ -57,6 +59,7 @@ export function useListings(options?: UseListingsOptions) {
       category,
       includeSold,
       q,
+      sortBy,
       minPrice,
       maxPrice,
       condition?.join(','),
@@ -84,6 +87,9 @@ export function useListings(options?: UseListingsOptions) {
       }
       if (q) {
         params.append("q", q);
+      }
+      if (sortBy) {
+        params.append("sort", sortBy);
       }
       if (minPrice) {
         params.append("minPrice", String(minPrice));

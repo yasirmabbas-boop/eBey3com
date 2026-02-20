@@ -72,6 +72,7 @@ export const translations: Translations = {
   usedGood: { ar: "مستعمل - جيد", ku: "بەکارهاتوو - باش", en: "Used - Good" },
   usedFair: { ar: "مستعمل - مقبول", ku: "بەکارهاتوو - قبوڵ", en: "Used - Fair" },
   vintage: { ar: "فنتج", ku: "کۆن", en: "Vintage" },
+  forPartsOrNotWorking: { ar: "لا يعمل / لأجزاء", ku: "نایەوە کار / بۆ پارچەکان", en: "For Parts or Not Working" },
   good: { ar: "جيد", ku: "باش", en: "Good" },
   fair: { ar: "مقبول", ku: "قبوڵ", en: "Fair" },
   

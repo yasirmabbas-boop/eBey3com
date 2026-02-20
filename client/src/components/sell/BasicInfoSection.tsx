@@ -124,6 +124,7 @@ export function BasicInfoSection({
                 <SelectItem value="Used - Good">{t("usedGood")}</SelectItem>
                 <SelectItem value="Used - Fair">{t("usedFair")}</SelectItem>
                 <SelectItem value="Vintage">{t("vintage")}</SelectItem>
+                <SelectItem value="For Parts or Not Working">{t("forPartsOrNotWorking")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
