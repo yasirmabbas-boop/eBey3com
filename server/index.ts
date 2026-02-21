@@ -1,4 +1,18 @@
 import 'dotenv/config';
+
+// Fail fast with clear message if Cloud Run required env vars are missing
+if (process.env.NODE_ENV === 'production') {
+  const required = ['DATABASE_URL', 'SESSION_SECRET'] as const;
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length > 0) {
+    console.error(
+      `[ebey3] FATAL: Cloud Run requires these environment variables: ${missing.join(', ')}. ` +
+        'Set them in: Cloud Run > ebey3-backend > Edit & Deploy > Variables & Secrets'
+    );
+    process.exit(1);
+  }
+}
+
 import './firebase';
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";

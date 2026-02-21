@@ -33,3 +33,16 @@ alwaysApply: true
 ## Publishing Changes
 
 To publish changes to the live site: **push to git** on the main branch. No Replit deploy button or manual steps—Git push triggers the full pipeline.
+
+## Required Cloud Run Environment Variables
+
+If the container fails to start ("failed to start and listen on the port"):
+
+1. Open **Cloud Run** → **ebey3-backend** → **Edit & Deploy** → **Variables & Secrets**
+2. Ensure these are set:
+   - **DATABASE_URL** – PostgreSQL connection. For Cloud SQL Unix socket:
+     `postgresql://USER:PASSWORD@/DATABASE?host=/cloudsql/PROJECT:REGION:INSTANCE`
+   - **SESSION_SECRET** – Long random string for session encryption
+   - **TWILIO_ACCOUNT_SID**, **TWILIO_AUTH_TOKEN**, **TWILIO_VERIFY_SERVICE_SID** (for OTP)
+
+3. If using **europe-west1**, the Cloud SQL instance connection name may differ. Update DATABASE_URL host path accordingly.
