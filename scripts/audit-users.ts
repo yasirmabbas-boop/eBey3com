@@ -1,7 +1,7 @@
 import { db } from "../server/db";
 import { users, type User } from "../shared/schema";
 import { like, asc } from "drizzle-orm";
-import { authStorage } from "../server/replit_integrations/auth/storage";
+import { authStorage } from "../server/integrations/auth/storage";
 
 type AuditFlags = {
   emailMissing: boolean;

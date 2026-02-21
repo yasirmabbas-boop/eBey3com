@@ -3,7 +3,7 @@
 # Date: 2026-01-25
 
 [INFRASTRUCTURE]
-Hosting Provider: Replit
+Hosting Provider: Google Cloud Run
 Underlying Cloud: Google Cloud Platform (GCP)
 Region: US-Central
 

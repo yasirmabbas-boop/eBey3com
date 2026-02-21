@@ -2,7 +2,7 @@ import type { Express } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { authStorage } from "./storage";
-import { isAuthenticated, isAuthenticatedUnified } from "./replitAuth";
+import { isAuthenticated, isAuthenticatedUnified } from "./sessionAuth";
 import { storage } from "../../storage";
 
 // In-memory store for pending 2FA tokens (maps pendingToken -> userId)

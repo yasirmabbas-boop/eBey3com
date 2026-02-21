@@ -85,10 +85,10 @@ grep VITE_SENTRY_DSN .env
 
 ---
 
-## ✅ STEP 5: Configure Replit Secrets (30 minutes)
+## ✅ STEP 5: Configure Environment Variables (30 minutes)
 
 **Tasks:**
-- [ ] In Replit: Tools → Secrets
+- [ ] Add secrets via your platform (Cloud Run Secret Manager, or .env locally)
 - [ ] Add `FCM_PROJECT_ID`
 - [ ] Add `FCM_CLIENT_EMAIL`
 - [ ] Add `FCM_PRIVATE_KEY` (keep \n characters!)
@@ -280,7 +280,7 @@ npx cap open ios
 http://localhost:5000
 
 # Or production URL
-https://your-app.replit.app
+https://your-app.run.app (or your Cloud Run URL)
 ```
 
 **In browser:**
@@ -338,12 +338,12 @@ git add .
 git commit -m "Implement push notifications with Kurdish support"
 git push origin main
 
-# Replit Deployments auto-deploys
+# Cloud Run auto-deploys on push (if configured)
 # Wait ~5 minutes for deployment
 ```
 
 **Verify deployment:**
-- [ ] Check deployment logs in Replit
+- [ ] Check deployment logs in Google Cloud Console
 - [ ] Visit production URL
 - [ ] Check logs for:
   - "✅ Firebase Admin SDK initialized successfully"
@@ -450,7 +450,7 @@ Before marking as complete:
 - [ ] APNS keys generated
 - [ ] Environment variables set
 - [ ] Database migration run
-- [ ] Replit Secrets configured
+- [ ] Environment variables / secrets configured
 
 **Testing:**
 - [ ] Android notifications work

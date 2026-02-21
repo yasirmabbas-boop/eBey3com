@@ -31,7 +31,7 @@ E-بيع serves as Iraq's first electronic auction marketplace, facilitating:
 - **Routing**: Wouter (lightweight React router)
 - **State Management**: TanStack React Query for server state caching and synchronization
 - **Styling**: Tailwind CSS v4 with shadcn/ui component library (Radix UI primitives)
-- **Build Tool**: Vite with custom Replit integration plugins
+- **Build Tool**: Vite
 - **RTL Support**: Full right-to-left layout support for Arabic text
 - **PWA Capabilities**: Progressive Web App with offline support
 - **Mobile Framework**: Capacitor for iOS and Android native apps
@@ -60,7 +60,7 @@ PostgreSQL database with comprehensive schema including:
 ## 3. Core Functionality & Features
 
 ### 3.1 User Management & Authentication
-- **Multi-Provider Auth**: Phone-based authentication (primary), Facebook OAuth, Replit Auth
+- **Multi-Provider Auth**: Phone-based authentication (primary), Facebook OAuth, Session Auth
 - **Phone Verification**: Twilio integration for SMS/WhatsApp OTP verification (Iraqi phone format support)
 - **Two-Factor Authentication**: Optional 2FA using TOTP authenticator apps
 - **User Roles**: Buyers, sellers, admins with role-based access control
@@ -190,7 +190,7 @@ PostgreSQL database with comprehensive schema including:
 - **Twilio**: SMS/WhatsApp OTP verification (Iraqi phone format support)
 - **Firebase Admin**: Push notification delivery
 - **Facebook OAuth**: Social login integration
-- **Replit Auth**: Platform-specific authentication
+- **Session Auth**: Platform-specific authentication
 - **Sentry**: Error tracking and performance monitoring
 - **Google Maps**: Location services for delivery addresses
 
@@ -225,7 +225,7 @@ PostgreSQL database with comprehensive schema including:
 7. **Scalability**: Current architecture may struggle with high concurrent user loads
 
 ### Technical Debt
-- Mixed authentication strategies (Replit Auth, Facebook, Phone)
+- Mixed authentication strategies (Session Auth, Facebook, Phone)
 - Large monolithic components that could be split
 - Client-side filtering instead of server-side for search
 - Limited error boundary coverage
@@ -304,7 +304,7 @@ PostgreSQL database with comprehensive schema including:
 ## 9. Deployment & Environment
 
 ### Deployment Platform
-- **Primary**: Replit hosting platform
+- **Primary**: Google Cloud Run
 - **Build Process**: Vite for frontend, esbuild for backend bundling
 - **Environment Variables**: Comprehensive configuration via .env files
 - **Port Configuration**: Single port (5000) serving both API and static files

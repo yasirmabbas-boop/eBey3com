@@ -52,7 +52,7 @@ class AuthStorage implements IAuthStorage {
         email: userData.email || null,
         displayName: displayName,
         avatar: userData.profileImageUrl || null,
-        authProvider: "replit",
+        authProvider: "oidc",
         authProviderId: userData.id,
       })
       .onConflictDoUpdate({

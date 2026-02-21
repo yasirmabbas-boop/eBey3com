@@ -198,7 +198,7 @@ Tier 3: Shipping Costs
 **Root Cause Analysis:**
 
 #### Issue 1: Authentication Token Expiration
-- **Location:** `server/replit_integrations/auth/routes.ts` (line 231)
+- **Location:** `server/integrations/auth/routes.ts` (line 231)
 - **Symptom:** `[api/auth/me] No user found for token`
 - **Cause:** Old tokens from before redeployment not recognized
 - **Impact:** Users logged out, can't complete checkout
@@ -250,7 +250,7 @@ if (error instanceof z.ZodError) {
 **Files to Review/Modify:**
 1. `server/routes/cart.ts` - Checkout endpoint
 2. `client/src/pages/checkout.tsx` - Checkout UI
-3. `server/replit_integrations/auth/routes.ts` - Auth token handling
+3. `server/integrations/auth/routes.ts` - Auth token handling
 4. `client/src/hooks/useAuth.ts` - Auth state management
 
 ---
@@ -313,7 +313,7 @@ sellerName: seller?.displayName || seller?.username || "بائع",
 **Root Cause Analysis:**
 
 #### Token Storage Mechanism
-- **Location:** `server/replit_integrations/auth/routes.ts` (line 226)
+- **Location:** `server/integrations/auth/routes.ts` (line 226)
 - **Method:** Token stored in `users.authToken` field
 - **Lookup:** `getUserByAuthToken(token)`
 
@@ -338,8 +338,8 @@ sellerName: seller?.displayName || seller?.username || "بائع",
 - [ ] Add migration to preserve existing tokens
 
 **Files to Review/Modify:**
-1. `server/replit_integrations/auth/routes.ts` - Auth endpoints
-2. `server/replit_integrations/auth/storage.ts` - Token storage
+1. `server/integrations/auth/routes.ts` - Auth endpoints
+2. `server/integrations/auth/storage.ts` - Token storage
 3. `server/otp-routes.ts` - OTP token generation
 4. `client/src/hooks/useAuth.ts` - Client-side auth handling
 5. `client/src/pages/checkout.tsx` - Auth header handling

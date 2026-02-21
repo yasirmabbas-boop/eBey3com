@@ -7,7 +7,7 @@ import type { Express } from "express";
 import { sendOTP, verifyOTP } from "./services/otp-service";
 import { storage } from "./storage";
 import jwt from "jsonwebtoken";
-import { isAuthenticatedUnified } from "./replit_integrations/auth";
+import { isAuthenticatedUnified } from "./integrations/auth";
 import { normalizePhone, normalizeOTPCode } from "@shared/digit-normalization";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";

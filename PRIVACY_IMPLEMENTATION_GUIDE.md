@@ -28,7 +28,7 @@
 
 #### ⏰ 30-Day Data Deletion Guarantee
 - Prominently displayed in red alert boxes
-- Explicitly states "hard deletion from Replit production database and all backups"
+- Explicitly states "hard deletion from production database and all backups"
 - Includes PostgreSQL-specific language
 
 #### 📞 Facebook Data Deletion Callback

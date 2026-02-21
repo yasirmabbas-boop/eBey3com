@@ -71,8 +71,7 @@ export default function Privacy() {
                 <div>
                   <h3 className="text-xl font-bold text-primary mb-3">Data Security</h3>
                   <p className="text-gray-700">
-                    We use SSL/TLS encryption for data transmission and AES-256 encryption for storage. Data is hosted on secure Replit servers 
-                    (Google Cloud Platform, US-Central) with restricted access controls.
+                    We use SSL/TLS encryption for data transmission and AES-256 encryption for storage. Data is hosted on Google Cloud Platform (US-Central) with restricted access controls.
                   </p>
                 </div>
 
@@ -198,7 +197,7 @@ export default function Privacy() {
                   </h3>
                   <p className="text-red-900 text-lg">
                     Once verified, we <strong>permanently delete all personal data from our production database and backups within 30 days</strong>. 
-                    This includes hard deletion from Replit's PostgreSQL database and all replicated systems.
+                    This includes hard deletion from our production database and all replicated systems.
                   </p>
                 </div>
 
@@ -332,8 +331,7 @@ export default function Privacy() {
                 <div>
                   <h3 className="text-xl font-bold text-primary mb-3">أمن البيانات</h3>
                   <p className="text-gray-700">
-                    نستخدم تشفير SSL/TLS لنقل البيانات وتشفير AES-256 للتخزين. يتم استضافة البيانات على خوادم Replit الآمنة 
-                    (Google Cloud Platform، منطقة US-Central) مع ضوابط وصول محدودة.
+                    نستخدم تشفير SSL/TLS لنقل البيانات وتشفير AES-256 للتخزين. يتم استضافة البيانات على منصة Google Cloud (منطقة US-Central) مع ضوابط وصول محدودة.
                   </p>
                 </div>
 

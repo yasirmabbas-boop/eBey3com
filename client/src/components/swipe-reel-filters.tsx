@@ -32,10 +32,14 @@ const CATEGORIES = [
   { id: "أخرى", nameAr: "أخرى", nameKu: "تر" },
 ];
 
+// Same 6 conditions as search page for unified filtering
 const CONDITIONS = [
   { id: "New", labelAr: "جديد", labelKu: "نوێ" },
-  { id: "Used", labelAr: "مستعمل", labelKu: "بەکارهاتوو" },
-  { id: "Vintage", labelAr: "فينتاج", labelKu: "ڤینتەیج" },
+  { id: "Vintage", labelAr: "فينتاج / أنتيك", labelKu: "ڤینتەیج / کۆن" },
+  { id: "Used - Like New", labelAr: "شبه جديد", labelKu: "وەک نوێ" },
+  { id: "Used - Good", labelAr: "مستعمل - جيد", labelKu: "بەکارهاتوو - باش" },
+  { id: "Used - Fair", labelAr: "مستعمل - مقبول", labelKu: "بەکارهاتوو - قبوڵ" },
+  { id: "For Parts or Not Working", labelAr: "لا يعمل / لأجزاء", labelKu: "نایەوە کار / بۆ پارچەکان" },
 ];
 
 export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: SwipeReelFiltersProps) {

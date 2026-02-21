@@ -199,7 +199,7 @@
 ### FIX-HIGH-09: No Rate Limiting on Auth Endpoints
 - **Finding ID:** S-03 (Phase 3)
 - **Severity:** High
-- **File:** `server/replit_integrations/auth/routes.ts:13` (login endpoint)
+- **File:** `server/integrations/auth/routes.ts:13` (login endpoint)
 - **Issue:** No rate limiting on login, vulnerable to brute force
 - **Fix:** Add rate limiting to `/api/auth/login` endpoint
 - **Effort:** 1 day

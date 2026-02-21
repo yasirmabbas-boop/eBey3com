@@ -221,7 +221,7 @@ Users may object to certain processing of their personal data, including for mar
 This Policy is designed to comply with applicable Iraqi data protection and privacy regulations, including financial recordkeeping requirements.
 
 ### 7.2 US Law Compliance
-As Ebey3's infrastructure is hosted in the United States (Google Cloud Platform, US-Central region via Replit), this Policy complies with applicable US federal and state privacy laws, including CCPA.
+As Ebey3's infrastructure is hosted in the United States (Google Cloud Platform, US-Central region), this Policy complies with applicable US federal and state privacy laws, including CCPA.
 
 ### 7.3 GDPR Compliance
 For users located in the European Economic Area (EEA), this Policy complies with the General Data Protection Regulation (GDPR).

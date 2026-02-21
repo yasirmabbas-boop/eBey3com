@@ -5,7 +5,7 @@ import axios from "axios";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
-import { authStorage } from "./replit_integrations/auth/storage";
+import { authStorage } from "./integrations/auth/storage";
 import type { User } from "@shared/schema";
 
 // Facebook OAuth - optional for local development (phone/password login still works)

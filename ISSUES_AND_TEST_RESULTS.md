@@ -11,7 +11,7 @@
 |-------|----------|--------|----------|
 | Order Placement Failure | 🔴 Critical | Identified | `server/routes/cart.ts` |
 | Seller Name "Unknown" | 🔴 Critical | Identified | `server/routes/cart.ts:59` |
-| Auth Token Expiration | 🔴 Critical | Identified | `server/replit_integrations/auth/routes.ts:231` |
+| Auth Token Expiration | 🔴 Critical | Identified | `server/integrations/auth/routes.ts:231` |
 | Auction Extension (2 vs 5 min) | 🟡 Medium | Verified Correct | `server/routes/products.ts:909` |
 | Commission Rate (8% → 5%) | 🟡 Medium | Ready to Change | `server/services/financial-service.ts:10` |
 | Returns System Gaps | 🟡 Medium | Documented | `server/routes/transactions.ts:577+` |
@@ -230,7 +230,7 @@ onError: (error: any) => {
 
 ### Issue 2: Authentication Token Problems
 
-**Location:** `server/replit_integrations/auth/routes.ts:231`
+**Location:** `server/integrations/auth/routes.ts:231`
 
 **Error Log:**
 ```
@@ -372,15 +372,15 @@ GET /api/account/profile 401 :: {"error":"غير مسجل الدخول"}
 #### Token Generation Points
 1. **OTP Verification:** `server/otp-routes.ts:149`
 2. **Facebook Auth:** `server/auth-facebook.ts:199`
-3. **Replit Auth Login:** `server/replit_integrations/auth/routes.ts:54`
-4. **Replit Auth OTP:** `server/replit_integrations/auth/routes.ts:108`
+3. **Auth Login:** `server/integrations/auth/routes.ts:54`
+4. **Auth OTP:** `server/integrations/auth/routes.ts:108`
 
 #### Token Storage
 - **Field:** `users.authToken` (varchar)
 - **Lookup:** `getUserByAuthToken(token)` in `server/storage.ts:305`
 
 #### Token Lookup
-**File:** `server/replit_integrations/auth/routes.ts:226`
+**File:** `server/integrations/auth/routes.ts:226`
 ```typescript
 const user = await authStorage.getUserByAuthToken(token);
 if (user) {

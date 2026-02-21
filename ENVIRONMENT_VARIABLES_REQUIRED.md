@@ -4,7 +4,7 @@
 
 **Migration Complete**: System has been migrated from Meta WhatsApp Business API to Twilio Verify service.
 
-### Required in Replit Secrets:
+### Required (env vars / Secret Manager):
 
 1. **`TWILIO_ACCOUNT_SID`** (REQUIRED for phone verification)
    - Your Twilio Account SID
@@ -55,7 +55,7 @@ const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
 
 ## Delivery API Configuration (Separate System)
 
-### Required in Replit Secrets:
+### Required (env vars / Secret Manager):
 
 1. **`DELIVERY_API_URL`** (OPTIONAL - has default)
    - URL for delivery partner API
@@ -70,7 +70,7 @@ const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
 
 **`DATABASE_URL`** (REQUIRED)
 - PostgreSQL connection string
-- Automatically provided by Replit
+- Set per your hosting platform (e.g. Cloud Run Secret Manager)
 - Example: `postgresql://user:password@host:5432/database`
 
 ## Session Configuration
@@ -96,16 +96,16 @@ const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
 - Debug logging (RAW META RESPONSE)
 
 ### ⚠️ Needs Configuration
-- `WA_PHONE_ID` - MUST be set in Replit Secrets
-- `WA_TOKEN` - MUST be set in Replit Secrets
+- `WA_PHONE_ID` - MUST be set in env vars
+- `WA_TOKEN` - MUST be set in env vars
 - `ebey3_auth_code` template - MUST be created and approved in Meta Business Manager
 
 ### 🔍 To Verify
-1. Check Replit Secrets has `WA_PHONE_ID` and `WA_TOKEN`
+1. Check env vars have `WA_PHONE_ID` and `WA_TOKEN`
 2. Values should match your Meta Business Manager credentials
 3. Template `ebey3_auth_code` must be approved (not pending)
 
-## How to Update Secrets in Replit
+## How to Update Secrets / Environment Variables
 
 1. Click the lock icon (🔒) in the left sidebar (or Tools → Secrets)
 2. Add or update these keys:
@@ -126,7 +126,7 @@ Replace `07501234567` with a real Iraqi WhatsApp number. You should receive an O
 ## Error Messages to Watch For
 
 ### "API credentials not configured"
-**Cause**: `WA_PHONE_ID` or `WA_TOKEN` not set in Replit Secrets
+**Cause**: `WA_PHONE_ID` or `WA_TOKEN` not set in environment
 **Fix**: Add both secrets and restart server
 
 ### "Template not found" or "Invalid template"

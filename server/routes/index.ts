@@ -11,7 +11,7 @@ import { registerCartRoutes } from "./cart";
 import { registerMessageRoutes } from "./messages";
 import { registerWalletRoutes } from "./wallet";
 import { registerReportsRoutes } from "./reports";
-import { registerObjectStorageRoutes } from "../replit_integrations/object_storage";
+import { registerObjectStorageRoutes } from "../integrations/object_storage";
 import { registerPushRoutes } from "./push";
 import { registerAnalyticsRoutes } from "./analytics";
 import { registerLogisticsRoutes } from "./logistics-api";

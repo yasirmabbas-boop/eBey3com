@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { insertBuyerAddressSchema, insertSellerAddressSchema } from "@shared/schema";
 import { storage } from "../storage";
 import { getUserIdFromRequest } from "./shared";
-import { ObjectStorageService } from "../replit_integrations/object_storage/objectStorage";
+import { ObjectStorageService } from "../integrations/object_storage/objectStorage";
 import { normalizePhone } from "@shared/digit-normalization";
 import { generateCsrfToken, validateCsrfToken } from "../middleware/csrf";
 

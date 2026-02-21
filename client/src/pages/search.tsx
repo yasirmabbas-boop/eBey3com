@@ -26,10 +26,8 @@ import {
   SlidersHorizontal,
   Gavel,
   ShoppingBag,
-  MapPin,
   X,
   ArrowUpDown,
-  Check,
   Eye,
   LayoutGrid
 } from "lucide-react";
@@ -62,28 +60,6 @@ const CONDITIONS = [
   { id: "For Parts or Not Working", labelAr: "لا يعمل / لأجزاء", labelKu: "نایەوە کار / بۆ پارچەکان", aliases: ["For Parts or Not Working", "For Parts", "لا يعمل", "أجزاء"] },
 ];
 
-const CITIES = [
-  { id: "بغداد", nameAr: "بغداد", nameKu: "بەغدا" },
-  { id: "البصرة", nameAr: "البصرة", nameKu: "بەسرە" },
-  { id: "أربيل", nameAr: "أربيل", nameKu: "هەولێر" },
-  { id: "السليمانية", nameAr: "السليمانية", nameKu: "سلێمانی" },
-  { id: "الموصل", nameAr: "الموصل", nameKu: "مووسڵ" },
-  { id: "النجف", nameAr: "النجف", nameKu: "نەجەف" },
-  { id: "كربلاء", nameAr: "كربلاء", nameKu: "کەربەلا" },
-  { id: "كركوك", nameAr: "كركوك", nameKu: "کەرکوک" },
-  { id: "دهوك", nameAr: "دهوك", nameKu: "دهۆک" },
-  { id: "الأنبار", nameAr: "الأنبار", nameKu: "ئەنبار" },
-  { id: "بابل", nameAr: "بابل", nameKu: "بابل" },
-  { id: "ديالى", nameAr: "ديالى", nameKu: "دیالە" },
-  { id: "ذي قار", nameAr: "ذي قار", nameKu: "زیقار" },
-  { id: "القادسية", nameAr: "القادسية", nameKu: "قادسیە" },
-  { id: "المثنى", nameAr: "المثنى", nameKu: "موسەننا" },
-  { id: "ميسان", nameAr: "ميسان", nameKu: "مەیسان" },
-  { id: "صلاح الدين", nameAr: "صلاح الدين", nameKu: "سەلاحەددین" },
-  { id: "واسط", nameAr: "واسط", nameKu: "واسط" },
-  { id: "نينوى", nameAr: "نينوى", nameKu: "نەینەوا" },
-];
-
 const SORT_OPTIONS = [
   { value: "relevance", labelAr: "الأكثر صلة", labelKu: "پەیوەندیدارترین" },
   { value: "newest", labelAr: "الأحدث", labelKu: "نوێترین" },
@@ -99,7 +75,6 @@ interface SearchFacets {
   categories: Array<{ value: string; count: number }>;
   conditions: Array<{ value: string; count: number }>;
   saleTypes: Array<{ value: string; count: number }>;
-  cities: Array<{ value: string; count: number }>;
   priceRange: { min: number; max: number };
   specFacets?: Record<string, Array<{ value: string; count: number }>>;
 }
@@ -108,7 +83,6 @@ interface FilterState {
   category: string | null;
   conditions: string[];
   saleTypes: string[];
-  cities: string[];
   priceMin: string;
   priceMax: string;
   includeSold: boolean;
@@ -123,30 +97,58 @@ interface SearchSuggestionItem {
 
 export default function SearchPage() {
   const { language, t } = useLanguage();
-  const [location] = useLocation();
+  const [, navigate] = useLocation();
   const searchString = useSearch();
   
   const params = useMemo(() => new URLSearchParams(searchString), [searchString]);
-  const categoryParam = params.get("category");
   const searchQuery = params.get("q");
   const sellerIdParam = params.get("sellerId");
-  const saleTypeParam = params.get("saleType");
   const exchangeParam = params.get("exchange");
-  const sortParam = params.get("sort");
   
-  const [appliedFilters, setAppliedFilters] = useState<FilterState>({
-    category: categoryParam,
-    conditions: [],
-    saleTypes: [],
-    cities: [],
-    priceMin: "",
-    priceMax: "",
-    includeSold: false,
-    specs: {},
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>(() => {
+    const categoryParam = params.get("category");
+    let category: string | null = categoryParam;
+    if (!category && searchQuery) {
+      const q = searchQuery.trim().toLowerCase();
+      const exactCat = CATEGORIES.find(c => c.id === searchQuery.trim() || c.nameAr === searchQuery.trim() || c.nameKu === searchQuery.trim());
+      if (exactCat) category = exactCat.id;
+      else {
+        for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+          if (keywords.some(kw => kw.toLowerCase() === q)) {
+            category = cat;
+            break;
+          }
+        }
+      }
+    }
+    const conditionParam = params.getAll("condition");
+    const conditions = conditionParam.length > 0 ? conditionParam : [];
+    const saleTypeParam = params.getAll("saleType");
+    const saleTypes = saleTypeParam.length > 0 ? saleTypeParam : [];
+    const minPrice = params.get("minPrice") || "";
+    const maxPrice = params.get("maxPrice") || "";
+    const includeSold = params.get("includeSold") === "true";
+    const specs: Record<string, string[]> = {};
+    for (const [key, val] of params) {
+      const match = key.match(/^specs\[(.+)\]$/);
+      if (match) {
+        const specKey = match[1];
+        if (!specs[specKey]) specs[specKey] = [];
+        specs[specKey].push(val);
+      }
+    }
+    return {
+      category,
+      conditions,
+      saleTypes,
+      priceMin: minPrice,
+      priceMax: maxPrice,
+      includeSold,
+      specs,
+    };
   });
-  
-  const [draftFilters, setDraftFilters] = useState<FilterState>(appliedFilters);
   const [sortBy, setSortBy] = useState(() => {
+    const sortParam = params.get("sort");
     if (sortParam) return sortParam;
     return searchQuery ? "relevance" : "newest";
   });
@@ -155,39 +157,47 @@ export default function SearchPage() {
   const [mergedListings, setMergedListings] = useState<Listing[]>([]);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
+  // When URL changes (e.g. new search, back/forward), parse and update state
   useEffect(() => {
-    // When the search query matches a category name or keyword, auto-apply that category filter
-    let detectedCategory: string | null = categoryParam;
-    if (!detectedCategory && searchQuery) {
-      const q = searchQuery.trim().toLowerCase();
-      // Exact match against category ids
-      const exactCat = CATEGORIES.find(c => c.id === searchQuery.trim() || c.nameAr === searchQuery.trim() || c.nameKu === searchQuery.trim());
-      if (exactCat) {
-        detectedCategory = exactCat.id;
-      } else {
-        // Keyword match via CATEGORY_KEYWORDS
+    const p = new URLSearchParams(searchString);
+    const q = p.get("q");
+    let category: string | null = p.get("category");
+    if (!category && q) {
+      const qLower = q.trim().toLowerCase();
+      const exactCat = CATEGORIES.find(c => c.id === q.trim() || c.nameAr === q.trim() || c.nameKu === q.trim());
+      if (exactCat) category = exactCat.id;
+      else {
         for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-          if (keywords.some(kw => kw.toLowerCase() === q)) {
-            detectedCategory = cat;
+          if (keywords.some(kw => kw.toLowerCase() === qLower)) {
+            category = cat;
             break;
           }
         }
       }
     }
-    const freshFilters: FilterState = {
-      category: detectedCategory,
-      conditions: [],
-      saleTypes: [],
-      cities: [],
-      priceMin: "",
-      priceMax: "",
-      includeSold: false,
-      specs: {},
-    };
-    setAppliedFilters(freshFilters);
-    setDraftFilters(freshFilters);
-    setSortBy(searchQuery ? "relevance" : "newest");
-  }, [searchQuery, categoryParam]);
+    const conditions = p.getAll("condition");
+    const saleTypes = p.getAll("saleType");
+    const specs: Record<string, string[]> = {};
+    for (const [key, val] of p) {
+      const match = key.match(/^specs\[(.+)\]$/);
+      if (match) {
+        const specKey = match[1];
+        if (!specs[specKey]) specs[specKey] = [];
+        specs[specKey].push(val);
+      }
+    }
+    setAppliedFilters({
+      category,
+      conditions,
+      saleTypes,
+      priceMin: p.get("minPrice") || "",
+      priceMax: p.get("maxPrice") || "",
+      includeSold: p.get("includeSold") === "true",
+      specs,
+    });
+    const sortVal = p.get("sort");
+    setSortBy(sortVal || (q ? "relevance" : "newest"));
+  }, [searchString]);
 
   // Save search to localStorage so SmartSearch dropdown shows recent searches for all users
   useEffect(() => {
@@ -202,12 +212,7 @@ export default function SearchPage() {
 
   const ITEMS_PER_PAGE = 20;
 
-  // Determine saleType array: use appliedFilters.saleTypes if available, otherwise fall back to saleTypeParam
-  const saleTypes = appliedFilters.saleTypes.length
-    ? appliedFilters.saleTypes
-    : saleTypeParam
-      ? [saleTypeParam]
-      : [];
+  const saleTypes = appliedFilters.saleTypes;
 
   // Use the standardized useListings hook for consistent data fetching and caching
   const { data: listingsData, isLoading, isFetching } = useListings({
@@ -222,7 +227,6 @@ export default function SearchPage() {
     maxPrice: appliedFilters.priceMax || undefined,
     condition: appliedFilters.conditions.length > 0 ? appliedFilters.conditions : undefined,
     saleType: saleTypes.length > 0 ? saleTypes : undefined,
-    city: appliedFilters.cities.length > 0 ? appliedFilters.cities : undefined,
     specs: Object.keys(appliedFilters.specs).length > 0 ? appliedFilters.specs : undefined,
   });
 
@@ -269,7 +273,7 @@ export default function SearchPage() {
 
   // Server-side facets for accurate filter counts across the entire result set
   const { data: facets } = useQuery<SearchFacets>({
-    queryKey: ["/api/listings/facets", searchQuery, appliedFilters.category, appliedFilters.priceMin, appliedFilters.priceMax, appliedFilters.conditions.join(","), appliedFilters.saleTypes.join(","), appliedFilters.cities.join(","), appliedFilters.includeSold, sellerIdParam, JSON.stringify(appliedFilters.specs)],
+    queryKey: ["/api/listings/facets", searchQuery, appliedFilters.category, appliedFilters.priceMin, appliedFilters.priceMax, appliedFilters.conditions.join(","), appliedFilters.saleTypes.join(","), appliedFilters.includeSold, sellerIdParam, JSON.stringify(appliedFilters.specs)],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchQuery) params.append("q", searchQuery);
@@ -280,12 +284,11 @@ export default function SearchPage() {
       if (sellerIdParam) params.append("sellerId", sellerIdParam);
       appliedFilters.conditions.forEach(c => params.append("condition", c));
       appliedFilters.saleTypes.forEach(s => params.append("saleType", s));
-      appliedFilters.cities.forEach(c => params.append("city", c));
       for (const [key, values] of Object.entries(appliedFilters.specs)) {
         values.forEach(v => params.append(`specs[${key}]`, v));
       }
       const res = await fetch(`/api/listings/facets?${params.toString()}`);
-      if (!res.ok) return { categories: [], conditions: [], saleTypes: [], cities: [], priceRange: { min: 0, max: 0 } };
+      if (!res.ok) return { categories: [], conditions: [], saleTypes: [], priceRange: { min: 0, max: 0 } };
       return res.json();
     },
     staleTime: 30000,
@@ -305,10 +308,6 @@ export default function SearchPage() {
     0,
     (listingsData?.pagination?.total ?? filteredProducts.length) - filteredProducts.length
   );
-
-  const draftFilteredProducts = useMemo(() => {
-    return allProducts;
-  }, [allProducts]);
 
   const noSearchResults = !isLoading && filteredProducts.length === 0 && !!searchQuery;
 
@@ -373,13 +372,8 @@ export default function SearchPage() {
     return facets.saleTypes.find(s => s.value === saleType)?.count || 0;
   };
 
-  const getCityCount = (city: string) => {
-    if (!facets) return 0;
-    return facets.cities.find(c => c.value.includes(city))?.count || 0;
-  };
-
-  const toggleDraftCondition = (condition: string) => {
-    setDraftFilters(prev => ({
+  const toggleAppliedCondition = (condition: string) => {
+    setAppliedFilters(prev => ({
       ...prev,
       conditions: prev.conditions.includes(condition)
         ? prev.conditions.filter(c => c !== condition)
@@ -387,8 +381,8 @@ export default function SearchPage() {
     }));
   };
 
-  const toggleDraftSaleType = (saleType: string) => {
-    setDraftFilters(prev => ({
+  const toggleAppliedSaleType = (saleType: string) => {
+    setAppliedFilters(prev => ({
       ...prev,
       saleTypes: prev.saleTypes.includes(saleType)
         ? prev.saleTypes.filter(t => t !== saleType)
@@ -396,17 +390,8 @@ export default function SearchPage() {
     }));
   };
 
-  const toggleDraftCity = (city: string) => {
-    setDraftFilters(prev => ({
-      ...prev,
-      cities: prev.cities.includes(city)
-        ? prev.cities.filter(c => c !== city)
-        : [...prev.cities, city]
-    }));
-  };
-
-  const toggleDraftSpec = (specKey: string, specValue: string) => {
-    setDraftFilters(prev => {
+  const toggleAppliedSpec = (specKey: string, specValue: string) => {
+    setAppliedFilters(prev => {
       const currentValues = prev.specs[specKey] || [];
       const newValues = currentValues.includes(specValue)
         ? currentValues.filter(v => v !== specValue)
@@ -421,22 +406,14 @@ export default function SearchPage() {
     });
   };
 
-  const applyFilters = () => {
-    setAppliedFilters(draftFilters);
-    setPage(1);
-    setMergedListings([]); // Clear merged listings when filters change
-    setIsFilterOpen(false);
-  };
-
   useEffect(() => {
     setPage(1);
   }, [searchQuery, sortBy]);
 
   // Auto-clear includeSold when search query is cleared
   useEffect(() => {
-    if (!searchQuery && (appliedFilters.includeSold || draftFilters.includeSold)) {
+    if (!searchQuery && appliedFilters.includeSold) {
       setAppliedFilters(prev => ({ ...prev, includeSold: false }));
-      setDraftFilters(prev => ({ ...prev, includeSold: false }));
     }
   }, [searchQuery]);
 
@@ -445,32 +422,47 @@ export default function SearchPage() {
       category: null,
       conditions: [],
       saleTypes: [],
-      cities: [],
       priceMin: "",
       priceMax: "",
       includeSold: false,
       specs: {},
     };
-    setDraftFilters(cleared);
+    setAppliedFilters(cleared);
   };
 
   // Reset pagination when filters change - use primitive deps to avoid unnecessary runs
-  const filterKey = `${appliedFilters.category}-${appliedFilters.includeSold}-${appliedFilters.priceMin}-${appliedFilters.priceMax}-${appliedFilters.conditions.join(',')}-${appliedFilters.saleTypes.join(',')}-${appliedFilters.cities.join(',')}-${JSON.stringify(appliedFilters.specs)}`;
+  const filterKey = `${appliedFilters.category}-${appliedFilters.includeSold}-${appliedFilters.priceMin}-${appliedFilters.priceMax}-${appliedFilters.conditions.join(',')}-${appliedFilters.saleTypes.join(',')}-${JSON.stringify(appliedFilters.specs)}`;
   useEffect(() => {
     setPage(1);
     setMergedListings([]);
-  }, [filterKey, searchQuery, saleTypeParam, sellerIdParam]);
+  }, [filterKey, searchQuery, sellerIdParam]);
 
-  const openFilters = () => {
-    setDraftFilters(appliedFilters);
-    setIsFilterOpen(true);
-  };
+  const syncFiltersToUrl = useCallback((filters: FilterState, sort: string) => {
+    const p = new URLSearchParams();
+    if (searchQuery) p.set("q", searchQuery);
+    if (sellerIdParam) p.set("sellerId", sellerIdParam);
+    if (filters.category) p.set("category", filters.category);
+    if (sort) p.set("sort", sort);
+    filters.conditions.forEach(c => p.append("condition", c));
+    filters.saleTypes.forEach(s => p.append("saleType", s));
+    if (filters.priceMin) p.set("minPrice", filters.priceMin);
+    if (filters.priceMax) p.set("maxPrice", filters.priceMax);
+    if (filters.includeSold) p.set("includeSold", "true");
+    for (const [key, values] of Object.entries(filters.specs)) {
+      values.forEach(v => p.append(`specs[${key}]`, v));
+    }
+    const query = p.toString();
+    navigate(`/search${query ? `?${query}` : ""}`, { replace: true });
+  }, [searchQuery, sellerIdParam, navigate]);
+
+  useEffect(() => {
+    syncFiltersToUrl(appliedFilters, sortBy);
+  }, [appliedFilters, sortBy, syncFiltersToUrl]);
 
   const activeFiltersCount = [
     appliedFilters.category ? 1 : 0,
     appliedFilters.conditions.length,
     appliedFilters.saleTypes.length,
-    appliedFilters.cities.length,
     appliedFilters.priceMin || appliedFilters.priceMax ? 1 : 0,
     appliedFilters.includeSold ? 1 : 0,
     Object.values(appliedFilters.specs).reduce((sum, vals) => sum + vals.length, 0),
@@ -528,7 +520,7 @@ export default function SearchPage() {
         )}
 
         {/* Compact Search Header */}
-        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/40">
+        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-bold text-foreground truncate" data-testid="search-title">
               {getPageTitle()}
@@ -557,7 +549,6 @@ export default function SearchPage() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={openFilters}
                 className="gap-1 h-8 px-2"
                 data-testid="open-filters"
               >
@@ -567,20 +558,20 @@ export default function SearchPage() {
                 )}
               </Button>
             </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:w-96 p-0 flex flex-col" dir="rtl">
+            <SheetContent side="right" className="w-full sm:w-96 p-0 flex flex-col" dir="rtl">
                 <SheetHeader className="p-4 border-b border-border/60 bg-muted/60">
                   <SheetTitle className="flex items-center gap-2 text-xl">
                     <Filter className="h-5 w-5 text-primary" />
                     {t("filters")}
                   </SheetTitle>
                   <p className="text-sm text-muted-foreground">
-                    {draftFilteredProducts.length} {t("productAvailable")}
+                    {listingsData?.pagination?.total ?? filteredProducts.length} {t("productAvailable")}
                   </p>
                 </SheetHeader>
 
                 <ScrollArea className="flex-1 p-4">
                   <div className="space-y-6">
-                    {(draftFilters.category || draftFilters.conditions.length > 0 || draftFilters.saleTypes.length > 0 || draftFilters.cities.length > 0 || draftFilters.priceMin || draftFilters.priceMax) && (
+                    {(appliedFilters.category || appliedFilters.conditions.length > 0 || appliedFilters.saleTypes.length > 0 || appliedFilters.priceMin || appliedFilters.priceMax) && (
                       <Button 
                         variant="outline" 
                         className="w-full text-red-600 border-red-200 hover:bg-red-50"
@@ -599,9 +590,9 @@ export default function SearchPage() {
                       </h3>
                       <div className="space-y-2">
                         <Button
-                          variant={draftFilters.category === null ? "default" : "ghost"}
+                          variant={appliedFilters.category === null ? "default" : "ghost"}
                           className="w-full justify-between"
-                          onClick={() => setDraftFilters(prev => ({ ...prev, category: null, specs: {} }))}
+                          onClick={() => setAppliedFilters(prev => ({ ...prev, category: null, specs: {} }))}
                           data-testid="filter-category-all"
                         >
                           <span>{t("allCategories")}</span>
@@ -610,9 +601,9 @@ export default function SearchPage() {
                         {CATEGORIES.map((cat) => (
                           <Button
                             key={cat.id}
-                            variant={draftFilters.category === cat.id ? "default" : "ghost"}
+                            variant={appliedFilters.category === cat.id ? "default" : "ghost"}
                             className="w-full justify-between"
-                            onClick={() => setDraftFilters(prev => ({ ...prev, category: cat.id, specs: prev.category !== cat.id ? {} : prev.specs }))}
+                            onClick={() => setAppliedFilters(prev => ({ ...prev, category: cat.id, specs: prev.category !== cat.id ? {} : prev.specs }))}
                             data-testid={`filter-category-${cat.id}`}
                           >
                             <span className="flex items-center gap-2">
@@ -635,8 +626,8 @@ export default function SearchPage() {
                           <div className="flex items-center space-x-2 space-x-reverse">
                             <Checkbox 
                               id="auction" 
-                              checked={draftFilters.saleTypes.includes("auction")}
-                              onCheckedChange={() => toggleDraftSaleType("auction")}
+                              checked={appliedFilters.saleTypes.includes("auction")}
+                              onCheckedChange={() => toggleAppliedSaleType("auction")}
                               data-testid="filter-sale-auction"
                             />
                             <Label htmlFor="auction" className="flex items-center gap-2 cursor-pointer">
@@ -650,8 +641,8 @@ export default function SearchPage() {
                           <div className="flex items-center space-x-2 space-x-reverse">
                             <Checkbox 
                               id="fixed" 
-                              checked={draftFilters.saleTypes.includes("fixed")}
-                              onCheckedChange={() => toggleDraftSaleType("fixed")}
+                              checked={appliedFilters.saleTypes.includes("fixed")}
+                              onCheckedChange={() => toggleAppliedSaleType("fixed")}
                               data-testid="filter-sale-fixed"
                             />
                             <Label htmlFor="fixed" className="flex items-center gap-2 cursor-pointer">
@@ -665,8 +656,8 @@ export default function SearchPage() {
                           <div className="flex items-center space-x-2 space-x-reverse">
                             <Checkbox 
                               id="includeSold" 
-                              checked={draftFilters.includeSold}
-                              onCheckedChange={(checked) => setDraftFilters(prev => ({ ...prev, includeSold: !!checked }))}
+                              checked={appliedFilters.includeSold}
+                              onCheckedChange={(checked) => setAppliedFilters(prev => ({ ...prev, includeSold: !!checked }))}
                               data-testid="filter-include-sold"
                               disabled={!searchQuery}
                             />
@@ -694,13 +685,13 @@ export default function SearchPage() {
                         {t("conditionLabel")}
                       </h3>
                       <div className="space-y-3">
-                        {CONDITIONS.map((condition) => (
+                          {CONDITIONS.map((condition) => (
                           <div key={condition.id} className="flex items-center justify-between">
                             <div className="flex items-center space-x-2 space-x-reverse">
                               <Checkbox 
                                 id={condition.id}
-                                checked={draftFilters.conditions.includes(condition.id)}
-                                onCheckedChange={() => toggleDraftCondition(condition.id)}
+                                checked={appliedFilters.conditions.includes(condition.id)}
+                                onCheckedChange={() => toggleAppliedCondition(condition.id)}
                                 data-testid={`filter-condition-${condition.id}`}
                               />
                               <Label htmlFor={condition.id} className="cursor-pointer">{language === "ar" ? condition.labelAr : condition.labelKu}</Label>
@@ -723,8 +714,8 @@ export default function SearchPage() {
                             <Input
                               type="number"
                               placeholder="0"
-                              value={draftFilters.priceMin}
-                              onChange={(e) => setDraftFilters(prev => ({ ...prev, priceMin: e.target.value }))}
+                              value={appliedFilters.priceMin}
+                              onChange={(e) => setAppliedFilters(prev => ({ ...prev, priceMin: e.target.value }))}
                               className="mt-1"
                               data-testid="filter-price-min"
                             />
@@ -734,8 +725,8 @@ export default function SearchPage() {
                             <Input
                               type="number"
                               placeholder="∞"
-                              value={draftFilters.priceMax}
-                              onChange={(e) => setDraftFilters(prev => ({ ...prev, priceMax: e.target.value }))}
+                              value={appliedFilters.priceMax}
+                              onChange={(e) => setAppliedFilters(prev => ({ ...prev, priceMax: e.target.value }))}
                               className="mt-1"
                               data-testid="filter-price-max"
                             />
@@ -745,32 +736,9 @@ export default function SearchPage() {
                       </div>
                     </div>
 
-                    <div className="bg-white p-4 rounded-lg border">
-                      <h3 className="font-bold mb-4 flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        {t("cityLabel")}
-                      </h3>
-                      <div className="space-y-3 max-h-48 overflow-y-auto">
-                        {CITIES.map((city) => (
-                          <div key={city.id} className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2 space-x-reverse">
-                              <Checkbox 
-                                id={`city-${city.id}`}
-                                checked={draftFilters.cities.includes(city.id)}
-                                onCheckedChange={() => toggleDraftCity(city.id)}
-                                data-testid={`filter-city-${city.id}`}
-                              />
-                              <Label htmlFor={`city-${city.id}`} className="cursor-pointer">{language === "ar" ? city.nameAr : city.nameKu}</Label>
-                            </div>
-                            <Badge variant="outline" className="text-xs">{getCityCount(city.id)}</Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {draftFilters.category && CATEGORY_SEARCH_FILTERS[draftFilters.category] && (
+                    {appliedFilters.category && CATEGORY_SEARCH_FILTERS[appliedFilters.category] && (
                       <>
-                        {CATEGORY_SEARCH_FILTERS[draftFilters.category].map((specField) => {
+                        {CATEGORY_SEARCH_FILTERS[appliedFilters.category].map((specField) => {
                           const options = SPECIFICATION_OPTIONS[specField as keyof typeof SPECIFICATION_OPTIONS];
                           if (!options || !Array.isArray(options)) return null;
                           
@@ -798,8 +766,8 @@ export default function SearchPage() {
                                       <div className="flex items-center space-x-2 space-x-reverse">
                                         <Checkbox
                                           id={`spec-${specField}-${option.value}`}
-                                          checked={(draftFilters.specs[specField] || []).includes(option.value)}
-                                          onCheckedChange={() => toggleDraftSpec(specField, option.value)}
+                                          checked={(appliedFilters.specs[specField] || []).includes(option.value)}
+                                          onCheckedChange={() => toggleAppliedSpec(specField, option.value)}
                                           data-testid={`filter-spec-${specField}-${option.value}`}
                                         />
                                         <Label htmlFor={`spec-${specField}-${option.value}`} className="cursor-pointer text-sm">
@@ -823,16 +791,61 @@ export default function SearchPage() {
 
                 <SheetFooter className="p-4 pb-20 border-t bg-gray-50">
                   <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-6"
-                    onClick={applyFilters}
-                    data-testid="apply-filters"
+                    className="w-full"
+                    onClick={() => setIsFilterOpen(false)}
+                    data-testid="close-filters"
                   >
-                    <Check className="h-5 w-5 ml-2" />
-                    {t("applyFilters")} ({draftFilteredProducts.length} {t("product")})
+                    {t("close")}
                   </Button>
                 </SheetFooter>
               </SheetContent>
             </Sheet>
+        </div>
+
+        {/* Quick Filter Chips - Sale type + Category */}
+        <div className="overflow-x-auto scrollbar-hide py-2 mb-2">
+          <div className="flex gap-2 min-w-max">
+            <button
+              onClick={() => quickToggleSaleType("auction")}
+              className={`
+                flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
+                ${saleTypes.includes("auction")
+                  ? "bg-orange-500 text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }
+              `}
+            >
+              {language === "ar" ? "مزاد" : "مزایدە"}
+            </button>
+            <button
+              onClick={() => quickToggleSaleType("fixed")}
+              className={`
+                flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
+                ${saleTypes.includes("fixed")
+                  ? "bg-green-500 text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }
+              `}
+            >
+              {language === "ar" ? "شراء فوري" : "کڕینی خێرا"}
+            </button>
+            <div className="w-px h-6 bg-border flex-shrink-0 self-center" />
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => quickToggleCategory(cat.id)}
+                className={`
+                  flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
+                  ${appliedFilters.category === cat.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }
+                `}
+              >
+                {language === "ar" ? cat.nameAr : cat.nameKu}
+              </button>
+            ))}
+          </div>
         </div>
 
         {activeFiltersCount > 0 && (
@@ -862,17 +875,6 @@ export default function SearchPage() {
                 <Badge key={cond} variant="secondary" className="gap-1 px-3 py-1">
                   {condition ? (language === "ar" ? condition.labelAr : condition.labelKu) : cond}
                   <button onClick={() => setAppliedFilters(prev => ({ ...prev, conditions: prev.conditions.filter(c => c !== cond) }))}>
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              );
-            })}
-            {appliedFilters.cities.map(cityId => {
-              const city = CITIES.find(c => c.id === cityId);
-              return (
-                <Badge key={cityId} variant="secondary" className="gap-1 px-3 py-1">
-                  {city ? (language === "ar" ? city.nameAr : city.nameKu) : cityId}
-                  <button onClick={() => setAppliedFilters(prev => ({ ...prev, cities: prev.cities.filter(c => c !== cityId) }))}>
                     <X className="h-3 w-3" />
                   </button>
                 </Badge>
@@ -920,7 +922,7 @@ export default function SearchPage() {
               variant="ghost" 
               size="sm" 
               className="text-red-600"
-              onClick={() => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false, specs: {} })}
+              onClick={() => setAppliedFilters({ category: null, conditions: [], saleTypes: [], priceMin: "", priceMax: "", includeSold: false, specs: {} })}
             >
               {t("clearAll")}
             </Button>
@@ -936,7 +938,7 @@ export default function SearchPage() {
             (activeFiltersCount > 0 || searchQuery) ? (
               <EmptySearchState 
                 query={searchQuery || undefined}
-                onClearFilters={activeFiltersCount > 0 ? () => setAppliedFilters({ category: null, conditions: [], saleTypes: [], cities: [], priceMin: "", priceMax: "", includeSold: false, specs: {} }) : undefined}
+                onClearFilters={activeFiltersCount > 0 ? () => setAppliedFilters({ category: null, conditions: [], saleTypes: [], priceMin: "", priceMax: "", includeSold: false, specs: {} }) : undefined}
                 language={language}
                 suggestions={didYouMeanTerms}
                 fallbackListings={fallbackListings}

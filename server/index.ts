@@ -6,7 +6,7 @@ import path from "path";
 import { registerRoutes } from "./routes/index";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { setupAuth, registerAuthRoutes } from "./integrations/auth";
 import { setupFacebookAuth } from "./auth-facebook";
 import { setupWebSocket } from "./websocket";
 import { startAuctionProcessor } from "./auction-processor";

@@ -207,7 +207,7 @@ export async function socialMetaMiddleware(
   <meta name="twitter:image" content="${ogImageUrl}" />
   <meta name="twitter:url" content="${productUrl}" />
   <meta name="twitter:domain" content="${domain}" />
-  <meta name="twitter:site" content="@replit" />
+  <meta name="twitter:site" content="@ebey3" />
   
   <!-- Price display for messaging apps -->
   <meta name="description" content="${isAuction ? "🏷️ مزاد" : "💰 سعر ثابت"}: ${price} - ${description}" />

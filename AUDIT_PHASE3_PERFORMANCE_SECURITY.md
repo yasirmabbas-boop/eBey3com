@@ -310,7 +310,7 @@ This phase audits performance bottlenecks, security vulnerabilities, scalability
 **Session Management:**
 
 **Finding S-01: Session Configuration**
-- **Location:** `server/replit_integrations/auth/replitAuth.ts:21-42`
+- **Location:** `server/integrations/auth/sessionAuth.ts:21-42`
 - **Configuration:**
   - TTL: 30 days
   - Store: PostgreSQL (`connect-pg-simple`)
@@ -329,7 +329,7 @@ This phase audits performance bottlenecks, security vulnerabilities, scalability
 **Password Security:**
 
 **Finding S-03: Password Hashing**
-- **Location:** `server/replit_integrations/auth/routes.ts` (login route)
+- **Location:** `server/integrations/auth/routes.ts` (login route)
 - **Method:** bcryptjs (verified in code)
 - **Status:** ✅ Secure
 - **Severity:** N/A
@@ -344,7 +344,7 @@ This phase audits performance bottlenecks, security vulnerabilities, scalability
 **2FA Implementation:**
 
 **Finding S-05: Two-Factor Authentication**
-- **Location:** `server/replit_integrations/auth/routes.ts:9` (pending2FATokens)
+- **Location:** `server/integrations/auth/routes.ts:9` (pending2FATokens)
 - **Implementation:** TOTP-based 2FA
 - **Status:** ✅ Implemented
 - **Severity:** N/A
@@ -522,7 +522,7 @@ This phase audits performance bottlenecks, security vulnerabilities, scalability
 
 **Limitation SC-05: Image Storage**
 - **Issue:** Google Cloud Storage, no CDN mentioned
-- **Location:** `server/replit_integrations/object_storage/`
+- **Location:** `server/integrations/object_storage/`
 - **Impact:** May be slow for users far from storage region
 - **Severity:** Low-Medium
 - **Fix:** Consider CDN (Cloudflare, Cloud CDN) for image delivery
@@ -545,7 +545,7 @@ This phase audits performance bottlenecks, security vulnerabilities, scalability
 
 **Concern SC-07: Session Storage**
 - **Issue:** PostgreSQL session store
-- **Location:** `server/replit_integrations/auth/replitAuth.ts:24`
+- **Location:** `server/integrations/auth/sessionAuth.ts:24`
 - **Impact:** Database load, may need Redis for scale
 - **Severity:** Low-Medium
 - **Fix:** Consider Redis for session storage at scale (10,000+ concurrent users)
