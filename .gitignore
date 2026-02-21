@@ -3,6 +3,17 @@ dist
 .DS_Store
 server/public
 vite.config.ts.*
-*.tar.gzebey3-67950-firebase-adminsdk-fbsvc-cf76a606aa.json
+*.tar.gz
+ebey3-67950-firebase-adminsdk-fbsvc-cf76a606aa.json
 ebey3_backup.sql
 *.sql
+
+# Replit artifacts
+.replit
+replit.md
+.cache/replit/
+.local/state/replit/
+.config/replit/
+
+# Firebase
+.firebase/
