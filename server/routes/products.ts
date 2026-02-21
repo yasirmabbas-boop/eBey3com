@@ -14,7 +14,7 @@ import {
   cleanListingPhotoWithGemini,
   UNCLEAR_SUBJECT_TOKEN,
 } from "../services/gemini-photo-cleanup";
-import { ObjectNotFoundError, ObjectStorageService, objectStorageClient } from "../replit_integrations/object_storage/objectStorage";
+import { ObjectNotFoundError, ObjectStorageService, objectStorageClient } from "../integrations/object_storage/objectStorage";
 import {
   getUserIdFromRequest,
   setCacheHeaders,
@@ -109,7 +109,7 @@ export function registerProductRoutes(app: Express): void {
   // List/search products
   app.get("/api/listings", async (req, res) => {
     try {
-      const { category, sellerId, page, limit: limitParam, saleType, includeSold, q, minPrice, maxPrice, condition, city, sort } = req.query;
+      const { category, sellerId, page, limit: limitParam, saleType, includeSold, q, minPrice, maxPrice, condition, sort } = req.query;
       const saleTypes = Array.isArray(saleType)
         ? saleType.map(s => String(s))
         : typeof saleType === "string"
@@ -119,11 +119,6 @@ export function registerProductRoutes(app: Express): void {
         ? condition.map(c => String(c))
         : typeof condition === "string"
           ? [condition]
-          : undefined;
-      const cities = Array.isArray(city)
-        ? city.map(c => String(c))
-        : typeof city === "string"
-          ? [city]
           : undefined;
       // Parse specification filters: specs[gender]=men&specs[gender]=women&specs[size]=M
       const specs: Record<string, string[]> = {};
@@ -159,7 +154,6 @@ export function registerProductRoutes(app: Express): void {
         minPrice: typeof minPrice === "string" ? parseInt(minPrice) : undefined,
         maxPrice: typeof maxPrice === "string" ? parseInt(maxPrice) : undefined,
         conditions,
-        cities,
         sortBy: typeof sort === "string" ? sort : undefined,
         specs: hasSpecs ? specs : undefined,
         userId: viewerId || undefined,
@@ -183,7 +177,6 @@ export function registerProductRoutes(app: Express): void {
               filters: {
                 saleTypes,
                 conditions,
-                cities,
                 priceRange: minPrice || maxPrice ? { min: minPrice, max: maxPrice } : undefined
               }
             })
@@ -265,16 +258,13 @@ export function registerProductRoutes(app: Express): void {
   // MUST be registered before any /api/listings/:id routes
   app.get("/api/listings/facets", async (req, res) => {
     try {
-      const { category, saleType, includeSold, q, minPrice, maxPrice, condition, city, sellerId } = req.query;
+      const { category, saleType, includeSold, q, minPrice, maxPrice, condition, sellerId } = req.query;
       const saleTypes = Array.isArray(saleType)
         ? saleType.map(s => String(s))
         : typeof saleType === "string" ? [saleType] : undefined;
       const conditions = Array.isArray(condition)
         ? condition.map(c => String(c))
         : typeof condition === "string" ? [condition] : undefined;
-      const cities = Array.isArray(city)
-        ? city.map(c => String(c))
-        : typeof city === "string" ? [city] : undefined;
 
       // Parse specification filters: specs[gender]=men&specs[gender]=women&specs[size]=M
       const specs: Record<string, string[]> = {};
@@ -300,14 +290,13 @@ export function registerProductRoutes(app: Express): void {
         minPrice: typeof minPrice === "string" ? parseInt(minPrice) : undefined,
         maxPrice: typeof maxPrice === "string" ? parseInt(maxPrice) : undefined,
         conditions,
-        cities,
         specs: hasSpecs ? specs : undefined,
       });
 
       res.json(facets);
     } catch (error) {
       console.error("Error getting search facets:", error);
-      res.status(500).json({ categories: [], conditions: [], saleTypes: [], cities: [], priceRange: { min: 0, max: 0 } });
+      res.status(500).json({ categories: [], conditions: [], saleTypes: [], priceRange: { min: 0, max: 0 } });
     }
   });
 
@@ -1325,10 +1314,110 @@ export function registerProductRoutes(app: Express): void {
       }
       
       const views = await storage.incrementListingViews(req.params.id);
+
+      // Track view to analytics for personalization (similar items, preferences)
+      try {
+        const sessionId = (req.session as any)?.id || "anonymous";
+        await storage.trackAnalytics({
+          sessionId,
+          userId: viewerId || undefined,
+          eventType: "view",
+          listingId: listing.id,
+          category: listing.category || undefined,
+        });
+      } catch (analyticsError) {
+        console.error("Error tracking view analytics:", analyticsError);
+      }
+
       res.json({ views });
     } catch (error) {
       console.error("Error tracking view:", error);
       res.status(500).json({ error: "Failed to track view" });
+    }
+  });
+
+  // Similar items for a listing (same category, similar price, excludes sold)
+  app.get("/api/listings/:id/similar", async (req, res) => {
+    try {
+      const listingId = req.params.id;
+      const limit = Math.min(parseInt(req.query.limit as string) || 12, 24);
+      const listing = await storage.getListing(listingId);
+      if (!listing) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+      const seedPrice = listing.currentBid ?? listing.price;
+      const margin = Math.max(Math.floor(seedPrice * 0.25), 1000);
+      const minPrice = Math.max(0, seedPrice - margin);
+      const maxPrice = seedPrice + margin;
+      const { listings: similarListings } = await storage.getListingsPaginated({
+        category: listing.category,
+        minPrice,
+        maxPrice,
+        excludeListingId: listingId,
+        limit: limit + 5,
+        offset: 0,
+        sortBy: "newest",
+      });
+      const mapListing = (l: any) => ({
+        id: l.id,
+        title: l.title,
+        price: l.price,
+        currentBid: l.currentBid,
+        image: l.images?.[0] || "",
+        saleType: l.saleType,
+        auctionEndTime: l.auctionEndTime,
+        views: l.views || 0,
+        condition: l.condition,
+        specifications: l.specifications,
+      });
+      const result = similarListings.slice(0, limit).map(mapListing);
+      res.json({ similar: result });
+    } catch (error) {
+      console.error("Error fetching similar listings:", error);
+      res.status(500).json({ similar: [] });
+    }
+  });
+
+  // Seller cards for home page (eBay-style: seller + 4-5 items per card)
+  app.get("/api/seller-cards", async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 5, 10);
+      const trending = await storage.getTrendingSellers(limit);
+      const sellerCards: Array<{
+        sellerId: string;
+        sellerName: string;
+        avatar: string | null;
+        rating: number | null;
+        listings: any[];
+      }> = [];
+      for (const { sellerId } of trending) {
+        const seller = await storage.getUser(sellerId);
+        const sellerListings = await storage.getListingsBySeller(sellerId, 5);
+        if (sellerListings.length === 0) continue;
+        const mapListing = (l: any) => ({
+          id: l.id,
+          title: l.title,
+          price: l.price,
+          currentBid: l.currentBid,
+          image: l.images?.[0] || "",
+          saleType: l.saleType,
+          auctionEndTime: l.auctionEndTime,
+          views: l.views || 0,
+          condition: l.condition,
+          specifications: l.specifications,
+        });
+        sellerCards.push({
+          sellerId,
+          sellerName: seller?.displayName || (sellerListings[0] as any)?.sellerName || "Seller",
+          avatar: seller?.avatar || null,
+          rating: seller?.rating ?? null,
+          listings: sellerListings.map(mapListing),
+        });
+      }
+      res.json({ sellerCards });
+    } catch (error) {
+      console.error("Error fetching seller cards:", error);
+      res.status(500).json({ sellerCards: [] });
     }
   });
 
@@ -1357,13 +1446,13 @@ export function registerProductRoutes(app: Express): void {
         "أخرى": { ar: "منتجات مقترحة", ku: "بەرهەمی پێشنیارکراو" },
       };
 
-      // Category-based recommendations -- up to 3 top categories, 8 listings each
+      // Category-based recommendations -- up to 3 top categories, 12 listings each
       const categoryRecommendations: Array<{ category: string; label: string; listings: any[] }> = [];
       const topCategories = preferences.topCategories.slice(0, 3);
       for (const cat of topCategories) {
         const { listings: catListings } = await storage.getListingsPaginated({
           category: cat,
-          limit: 8,
+          limit: 12,
           offset: 0,
           userId,
         });
@@ -1390,7 +1479,7 @@ export function registerProductRoutes(app: Express): void {
       let recommended: any[] = [];
       if (preferences.topCategories.length > 0) {
         const { listings: recListings } = await storage.getListingsPaginated({
-          limit: 12,
+          limit: 15,
           offset: 0,
           category: preferences.topCategories[0],
           userId,
@@ -1412,7 +1501,7 @@ export function registerProductRoutes(app: Express): void {
       const user = await storage.getUser(userId);
       if (user?.city) {
         const { listings: areaListings } = await storage.getListingsPaginated({
-          limit: 12,
+          limit: 15,
           offset: 0,
           cities: [user.city],
           userId,

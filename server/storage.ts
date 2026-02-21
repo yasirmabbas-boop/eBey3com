@@ -32,6 +32,7 @@ export interface UserPreferences {
   recentSearches: string[];       // e.g. ["rolex", "iphone 15"]
   priceRange: { low: number; high: number } | null;
   topBrands: string[];            // extracted from search queries via expandQuery
+  topViewedListingIds: string[];  // last N distinct viewed listing IDs for similar-items seeding
 }
 
 // Extended report type with related entity details for admin view
@@ -93,6 +94,7 @@ export interface IStorage {
     cities?: string[];
     specs?: Record<string, string[]>;
     userId?: string;
+    excludeListingId?: string;
   }): Promise<{ listings: Listing[]; total: number }>;
   getSearchSuggestions(query: string, limit?: number): Promise<Array<{ term: string; category: string; type: "category" | "product" }>>;
   getSearchFacets(options: {
@@ -104,18 +106,17 @@ export interface IStorage {
     minPrice?: number;
     maxPrice?: number;
     conditions?: string[];
-    cities?: string[];
     specs?: Record<string, string[]>;
   }): Promise<{
     categories: Array<{ value: string; count: number }>;
     conditions: Array<{ value: string; count: number }>;
     saleTypes: Array<{ value: string; count: number }>;
-    cities: Array<{ value: string; count: number }>;
     priceRange: { min: number; max: number };
     specFacets?: Record<string, Array<{ value: string; count: number }>>;
   }>;
   getListingsByCategory(category: string): Promise<Listing[]>;
-  getListingsBySeller(sellerId: string): Promise<Listing[]>;
+  getListingsBySeller(sellerId: string, limit?: number): Promise<Listing[]>;
+  getTrendingSellers(limit: number): Promise<Array<{ sellerId: string; listingCount: number }>>;
   getListing(id: string): Promise<Listing | undefined>;
   getListingsByIds(ids: string[]): Promise<Listing[]>;
   getDeletedListings(): Promise<Listing[]>;
@@ -520,10 +521,12 @@ export class DatabaseStorage implements IStorage {
     cities?: string[];
     specs?: Record<string, string[]>;
     userPreferences?: UserPreferences | null;
+    excludeListingId?: string;
   }): { where: any; searchRankSql: any; expanded: ReturnType<typeof expandQuery> | null } {
-    const { category, saleTypes, sellerId, includeSold, searchQuery, minPrice, maxPrice, conditions: conditionFilters, cities, userPreferences } = options;
+    const { category, saleTypes, sellerId, includeSold, searchQuery, minPrice, maxPrice, conditions: conditionFilters, cities, userPreferences, excludeListingId } = options;
 
     const conds: any[] = [eq(listings.isDeleted, false)];
+    if (excludeListingId) conds.push(ne(listings.id, excludeListingId));
     if (!includeSold) {
       conds.push(availableListingCondition);
     }
@@ -853,20 +856,18 @@ export class DatabaseStorage implements IStorage {
     minPrice?: number;
     maxPrice?: number;
     conditions?: string[];
-    cities?: string[];
     specs?: Record<string, string[]>;
   }): Promise<{
     categories: Array<{ value: string; count: number }>;
     conditions: Array<{ value: string; count: number }>;
     saleTypes: Array<{ value: string; count: number }>;
-    cities: Array<{ value: string; count: number }>;
     priceRange: { min: number; max: number };
     specFacets?: Record<string, Array<{ value: string; count: number }>>;
   }> {
     const { where: whereClause } = this.buildSearchConditions(options);
 
     // Run all aggregations in parallel for speed
-    const [catRows, condRows, saleRows, cityRows, priceRow] = await Promise.all([
+    const [catRows, condRows, saleRows, priceRow] = await Promise.all([
       db.select({
         value: listings.category,
         count: sql<number>`count(*)::int`,
@@ -881,11 +882,6 @@ export class DatabaseStorage implements IStorage {
         value: listings.saleType,
         count: sql<number>`count(*)::int`,
       }).from(listings).where(whereClause).groupBy(listings.saleType).orderBy(sql`count(*) DESC`).limit(10),
-
-      db.select({
-        value: listings.city,
-        count: sql<number>`count(*)::int`,
-      }).from(listings).where(whereClause).groupBy(listings.city).orderBy(sql`count(*) DESC`).limit(30),
 
       db.select({
         min: sql<number>`COALESCE(MIN(COALESCE(${listings.currentBid}, ${listings.price})), 0)::int`,
@@ -935,7 +931,6 @@ export class DatabaseStorage implements IStorage {
       categories: catRows.filter(r => r.value).map(r => ({ value: r.value!, count: r.count })),
       conditions: condRows.filter(r => r.value).map(r => ({ value: r.value!, count: r.count })),
       saleTypes: saleRows.filter(r => r.value).map(r => ({ value: r.value!, count: r.count })),
-      cities: cityRows.filter(r => r.value).map(r => ({ value: r.value!, count: r.count })),
       priceRange: { min: priceRow[0]?.min || 0, max: priceRow[0]?.max || 0 },
       specFacets,
     };
@@ -1051,10 +1046,33 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(listings.createdAt));
   }
 
-  async getListingsBySeller(sellerId: string): Promise<Listing[]> {
-    return db.select().from(listings)
-      .where(and(eq(listings.sellerId, sellerId), eq(listings.isDeleted, false)))
+  async getListingsBySeller(sellerId: string, limit?: number): Promise<Listing[]> {
+    const baseQuery = db.select().from(listings)
+      .where(and(
+        eq(listings.sellerId, sellerId),
+        eq(listings.isDeleted, false),
+        availableListingCondition
+      ))
       .orderBy(desc(listings.createdAt));
+    const results = limit != null && limit > 0
+      ? await baseQuery.limit(limit)
+      : await baseQuery;
+    return results;
+  }
+
+  async getTrendingSellers(limitNum: number): Promise<Array<{ sellerId: string; listingCount: number }>> {
+    const rows = await db.execute(sql`
+      SELECT seller_id AS "sellerId", COUNT(*)::int AS "listingCount"
+      FROM listings
+      WHERE seller_id IS NOT NULL
+        AND is_deleted = false
+        AND is_active = true
+        AND quantity_sold < quantity_available
+      GROUP BY seller_id
+      ORDER BY SUM(COALESCE(views, 0)) DESC, COUNT(*) DESC
+      LIMIT ${limitNum}
+    `);
+    return (rows.rows as any[]).filter((r: any) => r.sellerId);
   }
 
   async getListing(id: string): Promise<Listing | undefined> {
@@ -1305,11 +1323,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserPreferences(userId: string): Promise<UserPreferences> {
-    // Top 5 categories the user searches/views in the last 90 days
+    // Top 5 categories from both search and view events (last 90 days)
     const topCategoriesResult = await db.execute(sql`
       SELECT category, COUNT(*)::int as cnt
       FROM analytics
       WHERE user_id = ${userId} AND category IS NOT NULL AND category != ''
+        AND event_type IN ('search', 'view')
         AND created_at > NOW() - INTERVAL '90 days'
       GROUP BY category ORDER BY cnt DESC LIMIT 5
     `);
@@ -1328,13 +1347,13 @@ export class DatabaseStorage implements IStorage {
     `);
     const recentSearches = (recentSearchesResult.rows as any[]).map((r: any) => r.search_query as string);
 
-    // Typical price range (25th to 75th percentile from viewed/searched listings)
+    // Typical price range (25th to 75th percentile from viewed listings - view events have listing_id)
     const priceRangeResult = await db.execute(sql`
       SELECT
         PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY l.price) as price_low,
         PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY l.price) as price_high
       FROM analytics a JOIN listings l ON a.listing_id = l.id
-      WHERE a.user_id = ${userId} AND a.created_at > NOW() - INTERVAL '90 days'
+      WHERE a.user_id = ${userId} AND a.event_type = 'view' AND a.created_at > NOW() - INTERVAL '90 days'
     `);
     const priceRow = (priceRangeResult.rows as any[])[0];
     const priceRange = priceRow?.price_low != null && priceRow?.price_high != null
@@ -1355,7 +1374,27 @@ export class DatabaseStorage implements IStorage {
       .slice(0, 5)
       .map(([brand]) => brand);
 
-    return { topCategories, recentSearches, priceRange, topBrands };
+    // Last 10 distinct viewed listing IDs (for similar-items seeding)
+    const viewedIdsResult = await db.execute(sql`
+      SELECT listing_id
+      FROM analytics
+      WHERE user_id = ${userId} AND event_type = 'view' AND listing_id IS NOT NULL
+        AND created_at > NOW() - INTERVAL '30 days'
+      ORDER BY created_at DESC
+      LIMIT 20
+    `);
+    const seen = new Set<string>();
+    const topViewedListingIds: string[] = [];
+    for (const row of (viewedIdsResult.rows as any[])) {
+      const id = row?.listing_id;
+      if (id && !seen.has(id)) {
+        seen.add(id);
+        topViewedListingIds.push(id);
+        if (topViewedListingIds.length >= 10) break;
+      }
+    }
+
+    return { topCategories, recentSearches, priceRange, topBrands, topViewedListingIds };
   }
 
   async getMessages(userId: string): Promise<Message[]> {

@@ -7,9 +7,11 @@ import { CONDITION_LABELS } from "@/lib/search-data";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Clock, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel, TrendingUp, Timer, MapPin, Star } from "lucide-react";
+import { Eye, Clock, Tag, Zap, Sparkles, Heart, ShoppingBag, Gavel, TrendingUp, Timer, MapPin, Star, ThumbsUp } from "lucide-react";
 import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
+import { HeroBanner } from "@/components/hero-banner";
+import { SellerCards } from "@/components/seller-cards";
 import type { Listing } from "@shared/schema";
 
 const CATEGORIES = [
@@ -220,6 +222,19 @@ export default function Home() {
     enabled: !!user?.id,
   });
 
+  // Similar items for "Because you viewed X" - use first recently viewed as seed
+  const seedId = recentlyViewedIds[0];
+  const { data: similarData } = useQuery<{ similar: any[] }>({
+    queryKey: ["/api/listings", seedId, "similar"],
+    queryFn: async () => {
+      const res = await fetch(`/api/listings/${seedId}/similar?limit=12`);
+      if (!res.ok) return { similar: [] };
+      return res.json();
+    },
+    enabled: !!seedId,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const displayProducts = useMemo(() => {
     return listings
       .filter(l => {
@@ -243,13 +258,13 @@ export default function Home() {
   }, [listings]);
 
   const recentlyViewedProducts = useMemo(() => {
-    return displayProducts.filter(p => recentlyViewedIds.includes(p.id)).slice(0, 10);
+    return displayProducts.filter(p => recentlyViewedIds.includes(p.id)).slice(0, 12);
   }, [displayProducts, recentlyViewedIds]);
 
   const favoriteProducts = useMemo(() => {
     if (!watchlistData || !Array.isArray(watchlistData)) return [];
     const watchlistIds = watchlistData.map((w: any) => w.listingId);
-    return displayProducts.filter(p => watchlistIds.includes(p.id)).slice(0, 10);
+    return displayProducts.filter(p => watchlistIds.includes(p.id)).slice(0, 12);
   }, [displayProducts, watchlistData]);
 
   const newArrivals = useMemo(() => {
@@ -261,7 +276,7 @@ export default function Home() {
     }
     return filtered
       .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-      .slice(0, 10);
+      .slice(0, 15);
   }, [displayProducts, userPreferredCategories]);
 
   const endingSoon = useMemo(() => {
@@ -278,7 +293,7 @@ export default function Home() {
     }
     return auctions
       .sort((a, b) => new Date(a.auctionEndTime!).getTime() - new Date(b.auctionEndTime!).getTime())
-      .slice(0, 10);
+      .slice(0, 12);
   }, [displayProducts, userPreferredCategories]);
 
   const mostViewed = useMemo(() => {
@@ -288,7 +303,7 @@ export default function Home() {
       const others = filtered.filter(p => !userPreferredCategories.includes(p.category || ""));
       filtered = [...inPreferred, ...others];
     }
-    return filtered.sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 10);
+    return filtered.sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 15);
   }, [displayProducts, userPreferredCategories]);
 
   return (
@@ -315,6 +330,11 @@ export default function Home() {
             })}
           </div>
         </div>
+      </section>
+
+      {/* Hero carousel - featured / popular listings */}
+      <section className="container mx-auto px-3 py-4">
+        <HeroBanner />
       </section>
 
       <div className="min-h-screen bg-background">
@@ -349,6 +369,25 @@ export default function Home() {
             ))}
           </Section>
         )}
+
+        {/* Because you viewed X - similar items */}
+        {similarData?.similar && similarData.similar.length > 0 && (
+          <Section
+            title={language === "ar" ? "منتجات مشابهة لَمَا شاهدته" : "بەرهەمی هاوشێوە بۆ ئەوەی بینیت"}
+            icon={<ThumbsUp className="h-4 w-4 text-emerald-600" />}
+            seeAllLink="/search"
+            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+          >
+            {similarData.similar.map((product: any) => (
+              <div key={product.id} className="snap-start">
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </Section>
+        )}
+
+        {/* Seller cards - eBay-style shops */}
+        <SellerCards />
 
         {/* Category recommendations -- subtle, per-category rows */}
         {recommendations?.categoryRecommendations?.map((group) => {
