@@ -8,15 +8,15 @@ import jwksClient from "jwks-rsa";
 import { authStorage } from "./replit_integrations/auth/storage";
 import type { User } from "@shared/schema";
 
-// Validate environment variables
-if (!process.env.FB_APP_ID || !process.env.FB_APP_SECRET) {
-  throw new Error(
-    "Missing Facebook OAuth environment variables. Please set FB_APP_ID and FB_APP_SECRET"
+// Facebook OAuth - optional for local development (phone/password login still works)
+const FB_APP_ID = process.env.FB_APP_ID || "";
+const FB_APP_SECRET = process.env.FB_APP_SECRET || "";
+
+if (!FB_APP_ID || !FB_APP_SECRET) {
+  console.warn(
+    "[Facebook Auth] FB_APP_ID/FB_APP_SECRET not set - Facebook login disabled. Phone/password login still works."
   );
 }
-
-const FB_APP_ID = process.env.FB_APP_ID;
-const FB_APP_SECRET = process.env.FB_APP_SECRET;
 // CRITICAL: Use hardcoded production URL - DO NOT change to env var (breaks production)
 const FB_CALLBACK_URL = "https://ebey3.com/auth/facebook/callback";
 
@@ -113,6 +113,10 @@ async function exchangeForLongLivedToken(shortLivedToken: string): Promise<strin
  * Setup Facebook OAuth authentication routes and strategy
  */
 export function setupFacebookAuth(app: Express): void {
+  if (!FB_APP_ID || !FB_APP_SECRET) {
+    return; // Skip Facebook auth when credentials not configured (e.g. local dev)
+  }
+
   // Configure Facebook Passport Strategy
   passport.use(
     new FacebookStrategy(
