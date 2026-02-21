@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "235938056398",
+    "project_id": "ebey3-67950",
+    "storage_bucket": "ebey3-67950.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:235938056398:android:6ba25817bdf0be6385a89f",
+        "android_client_info": {
+          "package_name": "iq.ebay3.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmtCbmONyhldi1UfUe0RL-vGUg_gwvRDA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
