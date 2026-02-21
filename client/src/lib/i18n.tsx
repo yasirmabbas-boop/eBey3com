@@ -361,7 +361,7 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
-const supportedLanguages = ["ar", "ku"] as const;
+const supportedLanguages = ["ar", "ku", "en"] as const;
 type SupportedLanguage = (typeof supportedLanguages)[number];
 const normalizeLanguage = (value: string | null): SupportedLanguage =>
   supportedLanguages.includes(value as SupportedLanguage) ? (value as SupportedLanguage) : "ar";
