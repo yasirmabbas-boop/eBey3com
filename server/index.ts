@@ -10,6 +10,7 @@ import { setupFacebookAuth } from "./auth-facebook";
 import { setupWebSocket } from "./websocket";
 import { startAuctionProcessor } from "./auction-processor";
 import { socialMetaMiddleware } from "./social-meta";
+import { initDb } from "./db";
 import { registerOtpRoutes } from "./otp-routes";
 import { startOtpCleanupCron } from "./otp-cron";
 import { startOfferExpirationCron } from "./offer-cron";
@@ -141,7 +142,7 @@ app.use((req, res, next) => {
 
   // IMPORTANT: Middleware order is critical
   // Setup static file serving or Vite dev server AFTER all API routes
-  if (app.get("env") === "development") {
+  if (process.env.NODE_ENV === "development") {
     // In Dev: Vite handles the index.html fallback internally
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
@@ -151,11 +152,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
+  // Cloud Run sets PORT; default 8080 for local/dev compatibility.
+  const port = parseInt(process.env.PORT || "8080", 10);
   
   httpServer.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {
@@ -166,15 +164,13 @@ app.use((req, res, next) => {
     }
   });
 
-  httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-      startAuctionProcessor();
-    },
-  );
+  httpServer.listen(port, "0.0.0.0", () => {
+    log(`serving on port ${port}`);
+    console.log(`[ebey3] Server is awake and listening on 0.0.0.0:${port}`);
+    // DB connection is lazy—init only after server is up so slow Cloud SQL socket mount doesn't crash startup
+    setImmediate(() => {
+      initDb().catch((err) => console.error("[DB] Init failed:", err.message));
+    });
+    startAuctionProcessor();
+  });
 })();
