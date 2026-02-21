@@ -96,8 +96,8 @@ export function registerObjectStorageRoutes(app: Express): void {
    */
   app.get("/objects/:objectPath(*)", async (req, res) => {
     try {
-      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
-      await objectStorageService.downloadObject(objectFile, res);
+      const objectPath = req.params.objectPath; const privateObjectDir = objectStorageService.getPrivateObjectDir(); const { bucketName } = parseObjectPath(privateObjectDir); const gcsUrl = "https://storage.googleapis.com/" + bucketName + "/" + objectPath; res.redirect(301, gcsUrl); return;
+      
     } catch (error) {
       console.error("Error serving object:", error);
       if (error instanceof ObjectNotFoundError) {
@@ -140,7 +140,7 @@ export function registerObjectStorageRoutes(app: Express): void {
         const mainId = randomUUID();
         const mainPath = `${privateObjectDir}/uploads/${mainId}.webp`.replace(/^\//, "");
         const mainObjectName = mainPath.split("/").slice(1).join("/");
-        const mainUrl = `/objects/uploads/${mainId}.webp`;
+        const mainUrl = `https://storage.googleapis.com/${bucketName}/uploads/${mainId}.webp`;
 
         const uploadPromises: Promise<void>[] = [];
 
@@ -159,7 +159,7 @@ export function registerObjectStorageRoutes(app: Express): void {
           const thumbId = `${mainId}_thumb`;
           const thumbPath = `${privateObjectDir}/uploads/${thumbId}.webp`.replace(/^\//, "");
           const thumbObjectName = thumbPath.split("/").slice(1).join("/");
-          thumbnailUrl = `/objects/uploads/${thumbId}.webp`;
+          thumbnailUrl = `https://storage.googleapis.com/${bucketName}/uploads/${thumbId}.webp`;
 
           uploadPromises.push(
             bucket.file(thumbObjectName).save(thumbnail.buffer, {
