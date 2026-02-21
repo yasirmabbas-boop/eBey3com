@@ -1,0 +1,54 @@
+server: {
+  androidScheme: 'https',
+  // url: 'https://ebey3.com',
+  cleartext: true,
+},import type { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'iq.ebay3.app',
+  appName: 'E-بيع',
+  webDir: 'dist/public',
+  ios: {
+    // Let iOS manage safe-area insets for the WebView.
+    // Combined with StatusBar.overlaysWebView=false, this prevents content
+    // from rendering under the notch / Dynamic Island area.
+    contentInset: 'automatic'
+  },
+  server: {
+    androidScheme: 'https',
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 2000,
+      backgroundColor: "#000000",
+      showSpinner: false,
+      androidSpinnerStyle: 'small',
+      iosSpinnerStyle: 'small',
+      androidScaleType: 'CENTER_INSIDE',
+      splashFullScreen: false,
+      splashImmersive: false,
+    },
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"]
+    },
+    Keyboard: {
+      resize: 'body',
+      resizeOnFullScreen: true,
+    },
+    StatusBar: {
+      // Critical for devices with notch / Dynamic Island:
+      // do NOT render the WebView under the status bar area.
+      overlaysWebView: false,
+      style: 'LIGHT',
+      backgroundColor: '#000000',
+    },
+    FacebookLogin: {
+      appId: '2254913588327228',
+      clientToken: '03a6c8eae3cbaa91dd284f80d086417a',
+      displayName: 'E-بيع',
+    }
+}
+
+};
+
+export default config;
