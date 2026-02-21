@@ -1,0 +1,35 @@
+---
+description: Production deployment workflow - Google Cloud only (Replit no longer used)
+globs: 
+alwaysApply: true
+---
+
+# Deployment: Google Cloud Only
+
+**We no longer work on Replit. The project is deployed entirely on Google Cloud services.**
+
+## Architecture
+
+- **Backend**: Google Cloud Run (`ebey3-backend`) in `us-central1`
+- **Hosting**: Firebase Hosting (rewrites to Cloud Run)
+- **Database**: Cloud SQL (`ebey3-main-db` in us-central1)
+- **Build**: Cloud Build (`cloudbuild.yaml`)
+
+## Deployment Flow
+
+1. **Push to git** (main branch) triggers deployment
+2. Cloud Build runs `cloudbuild.yaml`:
+   - Builds from source (`--source=.`)
+   - Deploys to Cloud Run
+   - Connects to Cloud SQL instance
+3. Firebase Hosting serves `dist/public` and rewrites API requests to Cloud Run
+
+## Key Files
+
+- `cloudbuild.yaml` - Cloud Build config (deploys ebey3-backend)
+- `firebase.json` - Firebase Hosting config (rewrites → Cloud Run)
+- `Dockerfile` - Used by Cloud Build for container image
+
+## Publishing Changes
+
+To publish changes to the live site: **push to git** on the main branch. No Replit deploy button or manual steps—Git push triggers the full pipeline.

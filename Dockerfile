@@ -5,19 +5,19 @@ RUN apt-get update -y && apt-get install -y openssl
 
 WORKDIR /app
 
-# The "Magic" line you identified
-ENV NODE_ENV=production
-
-# Use npm ci for a cleaner, faster install in the cloud
+# Install all deps (including devDependencies) needed for build (tsx, vite, esbuild, etc.)
 COPY package*.json ./
 RUN npm ci
 
-# Copy sources and build the "Engine"
+# Copy sources and build
 COPY . .
 RUN npm run build
 
-# Only prune if your app doesn't need devDependencies (like Vite) at runtime
-# RUN npm prune --production
+# Remove devDependencies to reduce image size
+RUN npm prune --production
+
+# Production runtime
+ENV NODE_ENV=production
 
 EXPOSE 8080
 CMD ["node", "dist/index.js"]
