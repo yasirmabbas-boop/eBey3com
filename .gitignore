@@ -10,3 +10,6 @@ ebey3_backup.sql
 
 # Firebase
 .firebase/
+
+# Mobile app (separate project, do not push)
+ebey3-mobile
