@@ -4,3 +4,5 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gzebey3-67950-firebase-adminsdk-fbsvc-cf76a606aa.json
+ebey3_backup.sql
+*.sql
