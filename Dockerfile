@@ -6,8 +6,9 @@ RUN apt-get update -y && apt-get install -y openssl
 WORKDIR /app
 
 # Install all deps (including devDependencies) needed for build (tsx, vite, esbuild, etc.)
+# NODE_ENV=production would cause npm ci to skip devDeps; ensure dev deps are installed
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 # Copy sources and build
 COPY . .
