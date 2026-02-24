@@ -140,7 +140,7 @@ export function registerObjectStorageRoutes(app: Express): void {
         const mainId = randomUUID();
         const mainPath = `${privateObjectDir}/uploads/${mainId}.webp`.replace(/^\//, "");
         const mainObjectName = mainPath.split("/").slice(1).join("/");
-        const mainUrl = `https://storage.googleapis.com/${bucketName}/uploads/${mainId}.webp`;
+        const mainUrl = `https://storage.googleapis.com/${bucketName}/${mainObjectName}`;
 
         const uploadPromises: Promise<void>[] = [];
 
@@ -159,7 +159,7 @@ export function registerObjectStorageRoutes(app: Express): void {
           const thumbId = `${mainId}_thumb`;
           const thumbPath = `${privateObjectDir}/uploads/${thumbId}.webp`.replace(/^\//, "");
           const thumbObjectName = thumbPath.split("/").slice(1).join("/");
-          thumbnailUrl = `https://storage.googleapis.com/${bucketName}/uploads/${thumbId}.webp`;
+          thumbnailUrl = `https://storage.googleapis.com/${bucketName}/${thumbObjectName}`;
 
           uploadPromises.push(
             bucket.file(thumbObjectName).save(thumbnail.buffer, {
