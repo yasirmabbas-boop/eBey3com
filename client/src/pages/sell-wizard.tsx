@@ -584,25 +584,14 @@ export default function SellWizardPage() {
     setIsAnalyzingImage(true);
 
     try {
-      // Fetch the first image as blob
+      // Send image URL to server - server fetches (avoids CORS when image is on GCS)
       const imageUrl = images[0];
-      // Handle both relative and absolute URLs
       const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${window.location.origin}${imageUrl}`;
-      const response = await fetch(fullImageUrl);
-      
-      if (!response.ok) {
-        throw new Error('فشل تحميل الصورة');
-      }
-      
-      const blob = await response.blob();
-      
-      const formData = new FormData();
-      formData.append('image', blob, 'product.jpg');
-      formData.append('language', language);
-      
+
       const aiResponse = await fetch('/api/analyze-image', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: fullImageUrl, language }),
       });
       
       if (!aiResponse.ok) {

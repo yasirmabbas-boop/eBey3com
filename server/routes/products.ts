@@ -611,23 +611,40 @@ export function registerProductRoutes(app: Express): void {
   });
 
   // AI-powered image analysis for product listing
+  // Supports both: (1) multipart image file, (2) JSON with imageUrl (server fetches - avoids CORS)
   app.post("/api/analyze-image", imageUpload.single("image"), async (req, res) => {
     try {
-      if (!req.file) {
-        return res.status(400).json({ error: "Image file is required" });
-      }
-
-      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!allowedMimeTypes.includes(req.file.mimetype)) {
-        return res.status(400).json({ 
-          error: "Invalid image format. Only JPEG, PNG, and WebP are supported" 
-        });
-      }
-
+      let imageBuffer: Buffer;
       const language = (req.body?.language as string) || 'ar';
-      console.log(`[analyze-image] Processing image: ${req.file.mimetype}, ${(req.file.size / 1024).toFixed(1)}KB, language: ${language}`);
 
-      const analysis = await analyzeProductImage(req.file.buffer, language);
+      if (req.body?.imageUrl && typeof req.body.imageUrl === "string") {
+        // Server-side fetch (avoids CORS when image is on GCS or external domain)
+        const baseUrl = buildBaseUrl(req);
+        const absoluteUrl = resolveAbsoluteUrl(req.body.imageUrl.trim(), baseUrl);
+        console.log(`[analyze-image] Fetching image from URL: ${absoluteUrl}`);
+        const buffer = await fetchImageBuffer(absoluteUrl);
+        if (!buffer || buffer.length === 0) {
+          return res.status(400).json({
+            error: "Failed to load image from URL. Please try again.",
+          });
+        }
+        imageBuffer = buffer;
+        console.log(`[analyze-image] Fetched ${(imageBuffer.length / 1024).toFixed(1)}KB from URL`);
+      } else if (req.file) {
+        const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (!allowedMimeTypes.includes(req.file.mimetype)) {
+          return res.status(400).json({ 
+            error: "Invalid image format. Only JPEG, PNG, and WebP are supported" 
+          });
+        }
+        imageBuffer = req.file.buffer;
+        console.log(`[analyze-image] Processing uploaded image: ${req.file.mimetype}, ${(req.file.size / 1024).toFixed(1)}KB, language: ${language}`);
+      } else {
+        return res.status(400).json({ error: "Image file or imageUrl is required" });
+      }
+
+      console.log(`[analyze-image] Analyzing image, language: ${language}`);
+      const analysis = await analyzeProductImage(imageBuffer, language);
 
       console.log(`[analyze-image] Analysis complete: ${analysis.title} - ${analysis.category}`);
 
