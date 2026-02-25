@@ -31,6 +31,11 @@ interface ReturnRequest {
   autoApproved?: boolean;
   adminInitiatedBy?: string;
   adminNotes?: string;
+  adminResolution?: string;
+  adminResolvedAt?: string;
+  escalationImages?: string[];
+  escalationDetails?: string;
+  escalatedAt?: string;
   transaction?: {
     id: string;
     amount: number;
@@ -76,6 +81,7 @@ export function ReturnDetailDialog({
   const queryClient = useQueryClient();
   const [statusUpdate, setStatusUpdate] = useState<string>("");
   const [adminNotes, setAdminNotes] = useState<string>("");
+  const [adminResolution, setAdminResolution] = useState<string>("");
 
   const updateMutation = useMutation({
     mutationFn: async (updates: { status?: string; adminNotes?: string }) => {
@@ -89,10 +95,11 @@ export function ReturnDetailDialog({
       return res.json();
     },
     onSuccess: () => {
-      toast({ title: "تم تحديث حالة الطلب بنجاح" });
+      toast({ title: "تم تحديث حالة الطلب بنجاح — تم إشعار المشتري والبائع" });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/returns"] });
       setStatusUpdate("");
       setAdminNotes("");
+      setAdminResolution("");
     },
     onError: () => {
       toast({ title: "فشل في تحديث الطلب", variant: "destructive" });
@@ -335,6 +342,45 @@ export function ReturnDetailDialog({
             </div>
           )}
 
+          {/* Escalation Evidence (shown when escalated) */}
+          {returnRequest.status === "escalated" && (returnRequest.escalationImages?.length || returnRequest.escalationDetails) && (
+            <div className="border-2 border-orange-200 rounded-lg p-4 space-y-3 bg-orange-50">
+              <h3 className="font-semibold text-orange-800 flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                أدلة المشتري عند التصعيد
+              </h3>
+              {returnRequest.escalationDetails && (
+                <p className="text-sm text-orange-700">{returnRequest.escalationDetails}</p>
+              )}
+              {returnRequest.escalationImages && returnRequest.escalationImages.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {returnRequest.escalationImages.map((url: string, i: number) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer">
+                      <img
+                        src={url}
+                        alt={`دليل ${i + 1}`}
+                        className="w-24 h-24 object-cover rounded-lg border-2 border-orange-300 hover:border-orange-500 transition-colors cursor-pointer"
+                      />
+                    </a>
+                  ))}
+                </div>
+              )}
+              {returnRequest.escalatedAt && (
+                <p className="text-xs text-orange-600">
+                  تاريخ التصعيد: {new Date(returnRequest.escalatedAt).toLocaleDateString("ar-IQ")}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Seller response */}
+          {returnRequest.sellerResponse && (
+            <div className="border rounded-lg p-4 space-y-1 bg-gray-50">
+              <h3 className="text-sm font-semibold text-gray-700">رد البائع</h3>
+              <p className="text-sm text-gray-600">{returnRequest.sellerResponse}</p>
+            </div>
+          )}
+
           {/* Admin Actions */}
           <div className="border rounded-lg p-4 space-y-4">
             <h3 className="font-semibold">إجراءات الإدارة</h3>
@@ -348,36 +394,60 @@ export function ReturnDetailDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pending">قيد الانتظار</SelectItem>
-                  <SelectItem value="approved">موافق عليه</SelectItem>
-                  <SelectItem value="rejected">مرفوض</SelectItem>
-                  <SelectItem value="escalated">مصعّد من المشتري</SelectItem>
+                  <SelectItem value="approved">✅ موافق عليه (يُشعر المشتري والبائع)</SelectItem>
+                  <SelectItem value="rejected">❌ مرفوض (يُشعر المشتري والبائع)</SelectItem>
+                  <SelectItem value="escalated">🔶 مصعّد من المشتري</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Admin Notes */}
+            {/* Admin Resolution Message — shown to both parties */}
+            {(statusUpdate === "approved" || statusUpdate === "rejected") && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">رسالة القرار (تُرسل للمشتري والبائع)</label>
+                <Textarea
+                  value={adminResolution}
+                  onChange={(e) => setAdminResolution(e.target.value)}
+                  placeholder="اكتب قرارك النهائي وسبب الموافقة أو الرفض..."
+                  rows={3}
+                  className="border-blue-200 focus:border-blue-400"
+                />
+                <p className="text-xs text-muted-foreground">
+                  هذه الرسالة ستظهر للمشتري والبائع في إشعاراتهم.
+                </p>
+              </div>
+            )}
+
+            {/* Internal Admin Notes */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">ملاحظات الإدارة</label>
+              <label className="text-sm font-medium">ملاحظات داخلية (للإدارة فقط)</label>
               <Textarea
                 value={adminNotes}
                 onChange={(e) => setAdminNotes(e.target.value)}
-                placeholder="أضف ملاحظات..."
-                rows={3}
+                placeholder="ملاحظات داخلية غير مرئية للمستخدمين..."
+                rows={2}
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {statusUpdate && (
                 <Button
-                  onClick={() => updateMutation.mutate({ status: statusUpdate, adminNotes: adminNotes || undefined })}
+                  onClick={() => updateMutation.mutate({
+                    status: statusUpdate,
+                    adminNotes: adminNotes || undefined,
+                    adminResolution: adminResolution || undefined,
+                  } as any)}
                   disabled={updateMutation.isPending}
+                  className={statusUpdate === "approved" ? "bg-green-600 hover:bg-green-700" : statusUpdate === "rejected" ? "bg-red-600 hover:bg-red-700" : ""}
                 >
                   {updateMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin ml-2" />
                   ) : (
                     <CheckCircle className="h-4 w-4 ml-2" />
                   )}
-                  تحديث الحالة
+                  {statusUpdate === "approved" ? "موافقة وإشعار الطرفين" :
+                   statusUpdate === "rejected" ? "رفض وإشعار الطرفين" :
+                   "تحديث الحالة"}
                 </Button>
               )}
 
@@ -385,14 +455,14 @@ export function ReturnDetailDialog({
                 <Button
                   onClick={() => refundMutation.mutate()}
                   disabled={refundMutation.isPending}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-emerald-600 hover:bg-emerald-700"
                 >
                   {refundMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin ml-2" />
                   ) : (
                     <DollarSign className="h-4 w-4 ml-2" />
                   )}
-                  معالجة الاسترجاع
+                  معالجة الاسترجاع وإشعار الطرفين
                 </Button>
               )}
             </div>

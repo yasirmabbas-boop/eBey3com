@@ -1168,11 +1168,20 @@ export function registerTransactionsRoutes(app: Express): void {
         return res.status(400).json({ error: "يمكن تصعيد الطلبات المرفوضة فقط" });
       }
 
-      // Update status to escalated
+      // Accept optional evidence images and escalation explanation from buyer
+      const { images, details } = req.body;
+      const escalationImages: string[] = Array.isArray(images)
+        ? images.filter((u: unknown) => typeof u === "string" && u.startsWith("http"))
+        : [];
+
+      // Update status to escalated, save evidence
       await storage.updateReturnRequestByAdmin(req.params.id, {
         status: "escalated",
+        escalationImages: escalationImages.length > 0 ? escalationImages : undefined,
+        escalationDetails: typeof details === "string" && details.trim() ? details.trim() : undefined,
+        escalatedAt: new Date(),
         adminNotes: `Escalated by buyer on ${new Date().toISOString()}. Seller response: ${request.sellerResponse || "N/A"}`,
-      });
+      } as any);
 
       // Re-lock payout permission (was unlocked when seller rejected)
       try {

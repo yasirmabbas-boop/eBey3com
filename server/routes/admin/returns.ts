@@ -248,6 +248,11 @@ router.patch("/returns/:id", requireAdmin, async (req, res) => {
       updates.adminNotes = updates.adminNotes || `Status changed from ${oldStatus} to ${updates.status} by admin`;
       updates.processedBy = adminUser.id;
       updates.processedAt = new Date();
+      // Save admin resolution message if provided (used in notifications)
+      if (updates.adminResolution) {
+        updates.adminResolution = updates.adminResolution;
+        updates.adminResolvedAt = new Date();
+      }
     }
 
     const updated = await storage.updateReturnRequestByAdmin(returnId, updates);
@@ -273,32 +278,86 @@ router.patch("/returns/:id", requireAdmin, async (req, res) => {
         console.error(`[AdminReturns] Failed to update payout permission: ${payoutError}`);
       }
 
-      // Notify buyer of admin decision
+      // Notify both buyer AND seller of admin decision
       try {
+        const { sendToUser, sendPushNotification } = await import("../../websocket").then(m => ({
+          sendToUser: m.sendToUser,
+          sendPushNotification: (uid: string, payload: any) => import("../../push-notifications").then(p => p.sendPushNotification(uid, payload)).catch(() => {}),
+        }));
+
         const listing = await storage.getListing(returnRequest.listingId);
         const listingTitle = (listing as any)?.title || "المنتج";
+        const resolution = updates.adminResolution || updates.adminNotes || "";
 
         if (updates.status === "approved") {
+          // Buyer: good news
           await storage.createNotification({
             userId: returnRequest.buyerId,
             type: "return_approved",
-            title: "الإدارة وافقت على طلب الإرجاع",
-            message: `وافقت الإدارة على إرجاع "${listingTitle}". سيتم معالجة المبلغ المسترجع قريباً.`,
+            title: "✅ الإدارة وافقت على طلب الإرجاع",
+            message: `وافقت الإدارة على إرجاع "${listingTitle}". سيتم معالجة المبلغ المسترجع قريباً.${resolution ? ` — ${resolution}` : ""}`,
             linkUrl: `/buyer-dashboard?tab=returns&returnId=${returnId}`,
             relatedId: returnId,
           });
+          sendToUser(returnRequest.buyerId, "NOTIFICATION", { type: "return_approved" });
+          await sendPushNotification(returnRequest.buyerId, {
+            title: "وافقت الإدارة على طلب الإرجاع ✅",
+            body: `سيتم استرداد مبلغ "${listingTitle}" قريباً.`,
+            url: `/buyer-dashboard?tab=returns&returnId=${returnId}`,
+            tag: `return-approved-${returnId}`,
+          });
+          // Seller: inform that payout is on hold
+          await storage.createNotification({
+            userId: returnRequest.sellerId,
+            type: "return_approved_seller",
+            title: "⚠️ الإدارة وافقت على طلب إرجاع أحد مبيعاتك",
+            message: `وافقت الإدارة على إرجاع "${listingTitle}". سيتم خصم المبلغ من رصيدك عند معالجة الاسترداد.${resolution ? ` — ${resolution}` : ""}`,
+            linkUrl: `/seller-dashboard?tab=returns&returnId=${returnId}`,
+            relatedId: returnId,
+          });
+          sendToUser(returnRequest.sellerId, "NOTIFICATION", { type: "return_approved_seller" });
+          await sendPushNotification(returnRequest.sellerId, {
+            title: "الإدارة وافقت على طلب إرجاع ⚠️",
+            body: `طلب إرجاع "${listingTitle}" تمت الموافقة عليه. سيتم خصم المبلغ من رصيدك.`,
+            url: `/seller-dashboard?tab=returns&returnId=${returnId}`,
+            tag: `return-approved-seller-${returnId}`,
+          });
         } else if (updates.status === "rejected") {
+          // Buyer: admin upheld seller's rejection
           await storage.createNotification({
             userId: returnRequest.buyerId,
             type: "return_rejected",
-            title: "الإدارة رفضت طلب الإرجاع",
-            message: `بعد المراجعة، تم رفض طلب إرجاع "${listingTitle}". ${updates.adminNotes || ""}`,
+            title: "❌ الإدارة رفضت طلب الإرجاع",
+            message: `بعد المراجعة، تم رفض طلب إرجاع "${listingTitle}".${resolution ? ` — ${resolution}` : ""}`,
             linkUrl: `/buyer-dashboard?tab=returns&returnId=${returnId}`,
             relatedId: returnId,
           });
+          sendToUser(returnRequest.buyerId, "NOTIFICATION", { type: "return_rejected" });
+          await sendPushNotification(returnRequest.buyerId, {
+            title: "تم رفض طلب الإرجاع ❌",
+            body: resolution || `قررت الإدارة رفض طلب إرجاع "${listingTitle}".`,
+            url: `/buyer-dashboard?tab=returns&returnId=${returnId}`,
+            tag: `return-rejected-${returnId}`,
+          });
+          // Seller: good news — payout unlocked
+          await storage.createNotification({
+            userId: returnRequest.sellerId,
+            type: "return_rejected_seller",
+            title: "✅ الإدارة رفضت طلب إرجاع المشتري — مبيعتك محفوظة",
+            message: `رفضت الإدارة طلب إرجاع "${listingTitle}" بعد المراجعة. سيتم إتاحة مدفوعاتك قريباً.${resolution ? ` — ${resolution}` : ""}`,
+            linkUrl: `/seller-dashboard?tab=returns&returnId=${returnId}`,
+            relatedId: returnId,
+          });
+          sendToUser(returnRequest.sellerId, "NOTIFICATION", { type: "return_rejected_seller" });
+          await sendPushNotification(returnRequest.sellerId, {
+            title: "طلب الإرجاع رُفض — مبيعتك محفوظة ✅",
+            body: resolution || `الإدارة أيّدت قرارك برفض إرجاع "${listingTitle}".`,
+            url: `/seller-dashboard?tab=returns&returnId=${returnId}`,
+            tag: `return-rejected-seller-${returnId}`,
+          });
         }
       } catch (notifError) {
-        console.error("[AdminReturns] Failed to notify buyer:", notifError);
+        console.error("[AdminReturns] Failed to notify parties:", notifError);
       }
     }
 

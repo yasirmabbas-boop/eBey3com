@@ -80,21 +80,48 @@ router.post("/returns/:id/finalize-refund", requireAdmin, async (req, res) => {
       console.log(`[AdminRefund] Payout permission BLOCKED for transaction: ${transaction.id}`);
     });
 
-    // 5. Notify buyer
+    // 5. Notify buyer AND seller
     try {
+      const { sendToUser } = await import("../../websocket");
+      const { sendPushNotification } = await import("../../push-notifications");
       const listing = await storage.getListing(transaction.listingId);
       const listingTitle = (listing as any)?.title || "المنتج";
 
+      // Buyer: wallet credited
       await storage.createNotification({
         userId: transaction.buyerId,
         type: "refund_processed",
-        title: "تم إرجاع المبلغ",
+        title: "✅ تم إرجاع المبلغ إلى محفظتك",
         message: `تم إرجاع ${transaction.amount.toLocaleString()} د.ع إلى محفظتك لطلب "${listingTitle}"`,
         linkUrl: `/buyer-dashboard?tab=wallet`,
         relatedId: returnRequestId,
       });
+      sendToUser(transaction.buyerId, "NOTIFICATION", { type: "refund_processed" });
+      await sendPushNotification(transaction.buyerId, {
+        title: "تم استرداد المبلغ ✅",
+        body: `${transaction.amount.toLocaleString()} د.ع أُضيفت إلى محفظتك لطلب "${listingTitle}"`,
+        url: `/buyer-dashboard?tab=wallet`,
+        tag: `refund-${returnRequestId}`,
+      }).catch(() => {});
+
+      // Seller: inform that payout has been permanently blocked due to refund
+      await storage.createNotification({
+        userId: transaction.sellerId,
+        type: "refund_deducted_seller",
+        title: "⚠️ تم خصم مبلغ الإرجاع من حسابك",
+        message: `تمت معالجة استرداد ${transaction.amount.toLocaleString()} د.ع للمشتري بسبب إرجاع "${listingTitle}". لن تتلقى دفعة لهذه المعاملة.`,
+        linkUrl: `/seller-dashboard?tab=returns&returnId=${returnRequestId}`,
+        relatedId: returnRequestId,
+      });
+      sendToUser(transaction.sellerId, "NOTIFICATION", { type: "refund_deducted_seller" });
+      await sendPushNotification(transaction.sellerId, {
+        title: "تم خصم مبلغ الإرجاع ⚠️",
+        body: `${transaction.amount.toLocaleString()} د.ع خُصمت بسبب إرجاع "${listingTitle}".`,
+        url: `/seller-dashboard?tab=returns&returnId=${returnRequestId}`,
+        tag: `refund-seller-${returnRequestId}`,
+      }).catch(() => {});
     } catch (notifError) {
-      console.error("[AdminRefund] Failed to send buyer notification:", notifError);
+      console.error("[AdminRefund] Failed to send notifications:", notifError);
     }
 
     res.json({

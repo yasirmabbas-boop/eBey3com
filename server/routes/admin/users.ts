@@ -8,7 +8,11 @@ const router = Router();
 
 router.get("/users", requireAdmin, async (req, res) => {
   try {
-    const users = await storage.getAllUsers();
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+    const offset = (page - 1) * limit;
+
+    const { users, total } = await storage.getUsersPaginated({ limit, offset });
     const enrichedUsers = users.map((user: any) => ({
       id: user.id,
       phone: user.phone,
@@ -30,7 +34,16 @@ router.get("/users", requireAdmin, async (req, res) => {
       createdAt: user.createdAt,
       eligibleForBlueCheck: isEligibleForBlueCheck(user),
     }));
-    res.json(enrichedUsers);
+    res.json({
+      users: enrichedUsers,
+      pagination: {
+        page,
+        limit,
+        total,
+        hasMore: offset + limit < total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ error: "Failed to fetch users" });

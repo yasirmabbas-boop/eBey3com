@@ -500,6 +500,11 @@ export const returnRequests = pgTable("return_requests", {
   category: text("category"),
   listingPrice: integer("listing_price"),
   returnDeliveryOrderId: varchar("return_delivery_order_id"), // Reference to delivery_orders for return shipment
+  escalationImages: text("escalation_images").array(), // Photos uploaded by buyer when escalating a rejected return
+  escalationDetails: text("escalation_details"), // Buyer's explanation when escalating
+  escalatedAt: timestamp("escalated_at"), // When buyer escalated
+  adminResolution: text("admin_resolution"), // Admin's final resolution message sent to both parties
+  adminResolvedAt: timestamp("admin_resolved_at"), // When admin closed the case
 });
 
 export const insertReturnRequestSchema = createInsertSchema(returnRequests).omit({

@@ -85,6 +85,11 @@ interface ReturnRequest {
   category?: string;
   createdAt: string;
   returnDeliveryOrderId?: string;
+  escalationImages?: string[];
+  escalationDetails?: string;
+  escalatedAt?: string;
+  adminResolution?: string;
+  adminResolvedAt?: string;
   listing?: {
     id: string;
     title: string;
@@ -468,9 +473,16 @@ export default function BuyerDashboard() {
     },
   });
 
+  // Escalation dialog state
+  const [escalateDialogOpen, setEscalateDialogOpen] = useState(false);
+  const [escalateTarget, setEscalateTarget] = useState<ReturnRequest | null>(null);
+  const [escalateDetails, setEscalateDetails] = useState("");
+  const [escalateImages, setEscalateImages] = useState<string[]>([]);
+  const [escalateUploading, setEscalateUploading] = useState(false);
+
   // Escalate return request mutation
   const escalateReturnMutation = useMutation({
-    mutationFn: async (returnRequestId: string) => {
+    mutationFn: async ({ returnRequestId, details, images }: { returnRequestId: string; details?: string; images?: string[] }) => {
       const res = await fetch(`/api/return-requests/${returnRequestId}/escalate`, {
         method: "POST",
         headers: {
@@ -478,6 +490,7 @@ export default function BuyerDashboard() {
           ...getAuthHeaders(),
         },
         credentials: "include",
+        body: JSON.stringify({ details, images }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -488,11 +501,43 @@ export default function BuyerDashboard() {
     onSuccess: () => {
       toast({ title: "تم", description: "تم تصعيد طلب الإرجاع للإدارة. سيتم مراجعته خلال 24-48 ساعة." });
       queryClient.invalidateQueries({ queryKey: ["/api/return-requests/my"] });
+      setEscalateDialogOpen(false);
+      setEscalateTarget(null);
+      setEscalateDetails("");
+      setEscalateImages([]);
     },
     onError: (error: Error) => {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
     },
   });
+
+  // Upload an evidence image for escalation via presigned URL
+  const handleEscalateImageUpload = async (file: File) => {
+    if (!file) return;
+    setEscalateUploading(true);
+    try {
+      // Step 1: get presigned URL
+      const urlRes = await fetch("/api/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        credentials: "include",
+        body: JSON.stringify({ contentType: file.type, fileName: file.name }),
+      });
+      if (!urlRes.ok) throw new Error("فشل في رفع الصورة");
+      const { uploadURL, objectPath } = await urlRes.json();
+      // Step 2: upload directly to GCS
+      await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      // Derive public URL from objectPath
+      const bucket = objectPath.match(/\/b\/([^/]+)\//)?.[1] || "";
+      const obj = objectPath.match(/\/o\/(.+)$/)?.[1] || objectPath;
+      const publicUrl = `https://storage.googleapis.com/${bucket}/${obj}`;
+      setEscalateImages(prev => [...prev, publicUrl]);
+    } catch {
+      toast({ title: "خطأ", description: "فشل في رفع الصورة", variant: "destructive" });
+    } finally {
+      setEscalateUploading(false);
+    }
+  };
 
   // Report issue mutation
   const reportIssueMutation = useMutation({
@@ -980,9 +1025,33 @@ export default function BuyerDashboard() {
 
                     {/* Escalated status info */}
                     {ret.status === "escalated" && (
-                      <div className="bg-orange-50 rounded-lg p-2 text-xs text-orange-700 flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3" />
-                        تم تصعيد الطلب للإدارة — جارٍ المراجعة
+                      <div className="bg-orange-50 rounded-lg p-2 text-xs text-orange-700 space-y-1">
+                        <div className="flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          تم تصعيد الطلب للإدارة — جارٍ المراجعة
+                        </div>
+                        {ret.escalationImages && ret.escalationImages.length > 0 && (
+                          <div className="flex gap-1 flex-wrap mt-1">
+                            {ret.escalationImages.map((url, i) => (
+                              <img key={i} src={url} alt="" className="w-10 h-10 object-cover rounded border border-orange-200" />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Admin resolution message */}
+                    {ret.adminResolution && (
+                      <div className={`rounded-lg p-3 text-sm ${
+                        ret.status === "approved" ? "bg-emerald-50 border border-emerald-200" :
+                        ret.status === "rejected" ? "bg-rose-50 border border-rose-200" :
+                        "bg-blue-50 border border-blue-200"
+                      }`}>
+                        <p className="text-xs font-semibold mb-1">قرار الإدارة:</p>
+                        <p className="text-xs">{ret.adminResolution}</p>
+                        {ret.adminResolvedAt && (
+                          <p className="text-xs opacity-60 mt-1">{new Date(ret.adminResolvedAt).toLocaleDateString("ar-IQ")}</p>
+                        )}
                       </div>
                     )}
 
@@ -991,17 +1060,20 @@ export default function BuyerDashboard() {
                       <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 space-y-2">
                         <p className="text-xs text-orange-800">
                           <AlertTriangle className="h-3 w-3 inline ml-1" />
-                          هل تعتقد أن هذا القرار غير عادل؟ يمكنك تصعيد الطلب للإدارة للمراجعة.
+                          هل تعتقد أن هذا القرار غير عادل؟ يمكنك تصعيد الطلب للإدارة مع إرفاق صور كأدلة.
                         </p>
                         <Button
                           size="sm"
                           variant="outline"
                           className="w-full text-xs border-orange-300 text-orange-700 hover:bg-orange-100"
-                          onClick={() => escalateReturnMutation.mutate(ret.id)}
-                          disabled={escalateReturnMutation.isPending}
+                          onClick={() => {
+                            setEscalateTarget(ret);
+                            setEscalateDetails("");
+                            setEscalateImages([]);
+                            setEscalateDialogOpen(true);
+                          }}
                         >
-                          {escalateReturnMutation.isPending && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
-                          تصعيد للإدارة
+                          تصعيد للإدارة مع إرفاق أدلة
                         </Button>
                       </div>
                     )}
@@ -1495,6 +1567,89 @@ export default function BuyerDashboard() {
             }}
           />
         )}
+
+        {/* Escalation Evidence Dialog */}
+        <Dialog open={escalateDialogOpen} onOpenChange={(open) => {
+          setEscalateDialogOpen(open);
+          if (!open) { setEscalateTarget(null); setEscalateDetails(""); setEscalateImages([]); }
+        }}>
+          <DialogContent className="max-w-sm z-[100010]" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>تصعيد طلب الإرجاع للإدارة</DialogTitle>
+              <DialogDescription>
+                أرفق صوراً كأدلة (اختياري) وأضف تفاصيل تدعم طلبك. سيراجع الإداريون قرار البائع.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Evidence images */}
+              <div className="space-y-2">
+                <Label>صور الأدلة (اختياري، حتى 3 صور)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {escalateImages.map((url, i) => (
+                    <div key={i} className="relative w-16 h-16">
+                      <img src={url} alt="" className="w-16 h-16 object-cover rounded-lg border" />
+                      <button
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center"
+                        onClick={() => setEscalateImages(prev => prev.filter((_, j) => j !== i))}
+                      >×</button>
+                    </div>
+                  ))}
+                  {escalateImages.length < 3 && (
+                    <label className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary text-xs text-gray-500">
+                      {escalateUploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Printer className="h-4 w-4 mb-0.5 opacity-50" />
+                          رفع
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={escalateUploading}
+                        onChange={(e) => { if (e.target.files?.[0]) handleEscalateImageUpload(e.target.files[0]); }}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+              {/* Extra details */}
+              <div className="space-y-2">
+                <Label>تفاصيل إضافية للإدارة (اختياري)</Label>
+                <Textarea
+                  placeholder="اشرح لماذا تعتقد أن قرار البائع غير صحيح..."
+                  value={escalateDetails}
+                  onChange={(e) => setEscalateDetails(e.target.value)}
+                  className="resize-none"
+                  rows={3}
+                />
+              </div>
+              <div className="bg-amber-50 rounded-lg p-3 text-xs text-amber-700">
+                سيتلقى الإداريون إشعاراً فورياً وسيراجعون طلبك خلال 24-48 ساعة.
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1"
+                  onClick={() => {
+                    if (!escalateTarget) return;
+                    escalateReturnMutation.mutate({
+                      returnRequestId: escalateTarget.id,
+                      details: escalateDetails || undefined,
+                      images: escalateImages.length > 0 ? escalateImages : undefined,
+                    });
+                  }}
+                  disabled={escalateReturnMutation.isPending || escalateUploading}
+                >
+                  {escalateReturnMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                  إرسال للإدارة
+                </Button>
+                <Button variant="outline" onClick={() => setEscalateDialogOpen(false)}>إلغاء</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Report Issue Dialog */}
         <Dialog open={issueDialogOpen} onOpenChange={setIssueDialogOpen}>

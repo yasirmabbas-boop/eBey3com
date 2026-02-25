@@ -2206,14 +2206,13 @@ export class DatabaseStorage implements IStorage {
 
   async getReportsPaginatedWithDetails(options: { limit: number; offset: number }): Promise<{ reports: ReportWithDetails[]; total: number }> {
     const { limit, offset } = options;
-    
+
     // Get total count
     const [totalResult] = await db.select({ count: sql<number>`count(*)::int` }).from(reports);
     const total = totalResult?.count || 0;
-    
-    // Get paginated reports with reporter info, listing info, and seller info
+
+    // Get paginated reports with reporter info and listing info (for listing-type reports)
     const results = await db.select({
-      // Report fields
       id: reports.id,
       reporterId: reports.reporterId,
       reportType: reports.reportType,
@@ -2226,15 +2225,13 @@ export class DatabaseStorage implements IStorage {
       resolvedBy: reports.resolvedBy,
       resolvedAt: reports.resolvedAt,
       createdAt: reports.createdAt,
-      // Reporter info (join with users)
       reporterName: sql<string>`reporter.display_name`,
       reporterPhone: sql<string>`reporter.phone`,
-      // Listing info (join with listings when targetType = 'listing')
+      // Listing info only when targetType = 'listing'
       listingTitle: listings.title,
       listingImage: sql<string>`(${listings.images})[1]`,
       listingPrice: listings.price,
       sellerId: listings.sellerId,
-      // Seller name (join with users as seller)
       sellerName: sql<string>`seller.display_name`,
     })
     .from(reports)
@@ -2247,6 +2244,61 @@ export class DatabaseStorage implements IStorage {
     .orderBy(desc(reports.createdAt))
     .limit(limit)
     .offset(offset);
+
+    // Enrich transaction-type and return-type reports with related entity data
+    const enrichedResults = await Promise.all(results.map(async (r) => {
+      if (r.targetType === 'transaction' || r.targetType === 'order') {
+        try {
+          const tx = await this.getTransactionById(r.targetId);
+          if (tx) {
+            const [txBuyer, txSeller, txListing] = await Promise.all([
+              tx.buyerId ? this.getUser(tx.buyerId) : null,
+              tx.sellerId ? this.getUser(tx.sellerId) : null,
+              tx.listingId ? this.getListing(tx.listingId) : null,
+            ]);
+            return {
+              ...r,
+              listingTitle: (txListing as any)?.title || `طلب #${r.targetId.slice(0, 8)}`,
+              listingImage: (txListing as any)?.images?.[0] || null,
+              listingPrice: tx.amount || null,
+              sellerId: tx.sellerId || null,
+              sellerName: (txSeller as any)?.displayName || (txSeller as any)?.username || null,
+              // Extra context for transaction reports
+              buyerName: (txBuyer as any)?.displayName || (txBuyer as any)?.username || null,
+              buyerPhone: (txBuyer as any)?.phone || null,
+              transactionStatus: tx.status || null,
+            };
+          }
+        } catch (e) {
+          // Fall through to base result if enrichment fails
+        }
+      }
+      if (r.targetType === 'return_request') {
+        try {
+          const ret = await this.getReturnRequestById(r.targetId);
+          if (ret) {
+            const [retBuyer, retSeller, retListing] = await Promise.all([
+              ret.buyerId ? this.getUser(ret.buyerId) : null,
+              ret.sellerId ? this.getUser(ret.sellerId) : null,
+              ret.listingId ? this.getListing(ret.listingId) : null,
+            ]);
+            return {
+              ...r,
+              listingTitle: (retListing as any)?.title || `إرجاع #${r.targetId.slice(0, 8)}`,
+              listingImage: (retListing as any)?.images?.[0] || null,
+              listingPrice: (retListing as any)?.price || null,
+              sellerId: ret.sellerId || null,
+              sellerName: (retSeller as any)?.displayName || (retSeller as any)?.username || null,
+              buyerName: (retBuyer as any)?.displayName || (retBuyer as any)?.username || null,
+              buyerPhone: (retBuyer as any)?.phone || null,
+            };
+          }
+        } catch (e) {
+          // Fall through
+        }
+      }
+      return r;
+    }));
 
     // Get report counts for each target to help prioritize
     const pendingReportCounts = await db.select({
@@ -2267,13 +2319,13 @@ export class DatabaseStorage implements IStorage {
     const pendingMap = new Map(pendingReportCounts.map(r => [r.targetId, r.count]));
     const totalMap = new Map(totalReportCounts.map(r => [r.targetId, r.count]));
 
-    const reportsWithDetails = results.map(r => ({
+    const reportsWithDetails = enrichedResults.map(r => ({
       ...r,
       totalReportsOnTarget: totalMap.get(r.targetId) || 1,
       pendingReportsOnTarget: pendingMap.get(r.targetId) || 0,
     }));
 
-    return { reports: reportsWithDetails, total };
+    return { reports: reportsWithDetails as ReportWithDetails[], total };
   }
 
   async updateReportStatus(id: string, status: string, adminNotes?: string, resolvedBy?: string): Promise<Report | undefined> {

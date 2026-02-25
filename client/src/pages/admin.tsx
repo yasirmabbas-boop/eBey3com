@@ -2071,25 +2071,6 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Returns Tab */}
-      {activeTab === "returns" && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">إدارة طلبات الإرجاع</h2>
-            <Button onClick={() => setShowCreateReturn(true)}>
-              <Plus className="h-4 w-4 ml-2" />
-              إنشاء طلب إرجاع
-            </Button>
-          </div>
-          <ReturnsTable
-            onViewDetail={(returnReq) => {
-              setSelectedReturn(returnReq);
-              setShowReturnDetail(true);
-            }}
-          />
-        </div>
-      )}
-
       {/* Return Detail Dialog */}
       {showReturnDetail && selectedReturn && (
         <ReturnDetailDialog
