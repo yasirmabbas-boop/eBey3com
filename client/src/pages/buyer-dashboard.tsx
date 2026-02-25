@@ -33,7 +33,9 @@ import {
   User,
   ChevronLeft,
   ExternalLink,
+  Printer,
 } from "lucide-react";
+import { ShippingLabel } from "@/components/shipping-label";
 
 interface BuyerSummary {
   totalPurchases: number;
@@ -82,14 +84,29 @@ interface ReturnRequest {
   autoApproved?: boolean;
   category?: string;
   createdAt: string;
+  returnDeliveryOrderId?: string;
   listing?: {
     id: string;
     title: string;
     images: string[];
+    productCode?: string;
   };
   transaction?: {
     amount: number;
     createdAt: string;
+  };
+  seller?: {
+    displayName: string;
+    phone: string;
+    city?: string;
+    addressLine1?: string;
+  };
+  buyer?: {
+    displayName: string;
+    phone: string;
+    city?: string;
+    district?: string;
+    addressLine1?: string;
   };
 }
 
@@ -205,9 +222,14 @@ const RETURN_REASON_LABELS: Record<string, string> = {
   changed_mind: "غيرت رأيي",
   damaged: "المنتج تالف أو مكسور",
   different_from_description: "المنتج مختلف عن الوصف",
+  not_as_described: "المنتج مختلف عن الوصف",
   missing_parts: "ناقص أجزاء أو ملحقات",
   wrong_item: "استلمت منتج خاطئ",
   not_as_expected: "لم يلبِ توقعاتي",
+  defective: "المنتج معيب",
+  quality_issue: "مشكلة في الجودة",
+  found_cheaper: "وجدت سعراً أفضل",
+  other: "سبب آخر",
 };
 
 function OfferCountdown({ expiresAt }: { expiresAt: string | Date }) {
@@ -302,6 +324,10 @@ export default function BuyerDashboard() {
   const [issueDialogOpen, setIssueDialogOpen] = useState(false);
   const [issueReason, setIssueReason] = useState("");
   const [issueDetails, setIssueDetails] = useState("");
+
+  // Return shipping label state
+  const [showReturnLabel, setShowReturnLabel] = useState(false);
+  const [selectedReturnForLabel, setSelectedReturnForLabel] = useState<ReturnRequest | null>(null);
 
   const openOrderDetail = (order: Purchase) => {
     setSelectedOrder(order);
@@ -928,6 +954,22 @@ export default function BuyerDashboard() {
                       </div>
                     )}
 
+                    {/* Print return shipping label (when approved and has delivery order) */}
+                    {ret.status === "approved" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                        onClick={() => {
+                          setSelectedReturnForLabel(ret);
+                          setShowReturnLabel(true);
+                        }}
+                      >
+                        <Printer className="h-3 w-3 ml-1" />
+                        طباعة إيصال الإرجاع
+                      </Button>
+                    )}
+
                     {/* Pending status info */}
                     {ret.status === "pending" && (
                       <div className="bg-amber-50 rounded-lg p-2 text-xs text-amber-700 flex items-center gap-1">
@@ -1424,6 +1466,35 @@ export default function BuyerDashboard() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Return Shipping Label Dialog */}
+        {selectedReturnForLabel && (
+          <ShippingLabel
+            open={showReturnLabel}
+            onOpenChange={(open) => {
+              setShowReturnLabel(open);
+              if (!open) setSelectedReturnForLabel(null);
+            }}
+            isReturn={true}
+            orderDetails={{
+              orderId: selectedReturnForLabel.returnDeliveryOrderId || selectedReturnForLabel.id,
+              productTitle: selectedReturnForLabel.listing?.title || "منتج",
+              productCode: selectedReturnForLabel.listing?.productCode || "",
+              buyerName: selectedReturnForLabel.buyer?.displayName || user?.displayName || "",
+              buyerPhone: selectedReturnForLabel.buyer?.phone || user?.phone || "",
+              city: selectedReturnForLabel.buyer?.city || "",
+              district: selectedReturnForLabel.buyer?.district,
+              deliveryAddress: selectedReturnForLabel.buyer?.addressLine1 || "",
+              sellerName: selectedReturnForLabel.seller?.displayName || "",
+              sellerPhone: selectedReturnForLabel.seller?.phone || "",
+              sellerCity: selectedReturnForLabel.seller?.city || "",
+              sellerAddress: selectedReturnForLabel.seller?.addressLine1,
+              price: selectedReturnForLabel.transaction?.amount || 0,
+              paymentMethod: "COD",
+              saleDate: new Date(selectedReturnForLabel.createdAt),
+            }}
+          />
+        )}
 
         {/* Report Issue Dialog */}
         <Dialog open={issueDialogOpen} onOpenChange={setIssueDialogOpen}>

@@ -812,7 +812,7 @@ class DeliveryService {
    * Reschedule delivery for a no-answer order (buyer action within 24h grace window).
    * Resets the transaction to pending and creates a new delivery order.
    */
-  async rescheduleDelivery(transactionId: string, buyerId: string): Promise<{ success: boolean; error?: string }> {
+  async rescheduleDelivery(transactionId: string, userId: string): Promise<{ success: boolean; error?: string }> {
     const [transaction] = await db
       .select()
       .from(transactions)
@@ -823,7 +823,8 @@ class DeliveryService {
       return { success: false, error: "الطلب غير موجود" };
     }
 
-    if (transaction.buyerId !== buyerId) {
+    // Allow both buyer and seller to reschedule
+    if (transaction.buyerId !== userId && transaction.sellerId !== userId) {
       return { success: false, error: "غير مصرح لك بهذا الإجراء" };
     }
 
@@ -873,7 +874,8 @@ class DeliveryService {
       console.error(`[DeliveryService] Failed to notify seller about reschedule:`, err);
     }
 
-    // Notify buyer confirmation
+    // Notify buyer confirmation (always notify the actual buyer)
+    const buyerId = transaction.buyerId;
     try {
       const notification = await storage.createNotification({
         userId: buyerId,

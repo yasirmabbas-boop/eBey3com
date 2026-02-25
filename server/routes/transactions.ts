@@ -849,21 +849,37 @@ export function registerTransactionsRoutes(app: Express): void {
 
       const requests = await storage.getReturnRequestsForBuyer(userId);
       
-      // Enrich with listing details
+      // Enrich with listing, transaction, buyer, and seller details
       const enrichedRequests = await Promise.all(
         requests.map(async (request) => {
           const listing = await storage.getListing(request.listingId);
           const transaction = await storage.getTransactionById(request.transactionId);
+          const seller = transaction?.sellerId ? await storage.getUser(transaction.sellerId) : null;
+          const buyer = transaction?.buyerId ? await storage.getUser(transaction.buyerId) : null;
           return {
             ...request,
             listing: listing ? {
               id: (listing as any).id,
               title: (listing as any).title,
               images: (listing as any).images,
+              productCode: (listing as any).productCode || "",
             } : null,
             transaction: transaction ? {
               amount: transaction.amount,
               createdAt: transaction.createdAt,
+            } : null,
+            seller: seller ? {
+              displayName: (seller as any).displayName || (seller as any).username || "",
+              phone: (seller as any).phone || "",
+              city: (seller as any).city || "",
+              addressLine1: (seller as any).addressLine1 || "",
+            } : null,
+            buyer: buyer ? {
+              displayName: (buyer as any).displayName || (buyer as any).username || "",
+              phone: (buyer as any).phone || "",
+              city: (buyer as any).city || "",
+              district: (buyer as any).district || "",
+              addressLine1: (buyer as any).addressLine1 || "",
             } : null,
           };
         })

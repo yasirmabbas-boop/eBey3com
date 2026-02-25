@@ -284,17 +284,17 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 overflow-hidden" dir="rtl">
-        <DialogHeader className="p-4 pb-0">
+      <DialogContent className="max-w-md p-0 flex flex-col max-h-[90vh]" dir="rtl">
+        <DialogHeader className="p-4 pb-0 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Package className={`h-5 w-5 ${isReturn ? 'text-red-600' : 'text-blue-600'}`} />
             {isReturn ? "إيصال الإرجاع" : "إيصال التوصيل"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="p-4 bg-gray-100">
+        <div className="p-4 bg-gray-100 overflow-y-auto flex-1 min-h-0">
           <div ref={printRef}>
-            <div className="label-container" style={{ width: sizeConfig.width, height: sizeConfig.height, padding: isCompact ? "2mm" : "3mm" }}>
+            <div className="label-container mx-auto" style={{ width: "100%", maxWidth: "340px", aspectRatio: `${parseInt(sizeConfig.width)} / ${parseInt(sizeConfig.height)}`, padding: isCompact ? "2mm" : "3mm" }}>
               <div className="label bg-white border-2 border-black h-full flex flex-col" style={{ fontFamily: "'Segoe UI', Tahoma, sans-serif", padding: isCompact ? "6px" : "12px" }}>
                 
                 <div className="header flex justify-between items-start border-b-2 border-black pb-2 mb-2">
@@ -434,7 +434,7 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
           </div>
         </div>
 
-        <div className="p-4 border-t space-y-3">
+        <div className="p-4 border-t space-y-3 flex-shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 whitespace-nowrap">حجم الإيصال:</span>
             <select

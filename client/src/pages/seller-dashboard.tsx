@@ -30,6 +30,7 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   ShoppingBag,
   Gavel,
   BarChart3,
@@ -235,6 +236,8 @@ const getDeliveryBadge = (status: string, language: "ar" | "ku" | "en") => {
     pending_shipment: { ar: "بانتظار الشحن", ku: "چاوەڕێی ناردن", en: "Pending Shipment" },
     shipped: { ar: "تم الشحن", ku: "نێردرا", en: "Shipped" },
     delivered: { ar: "تم التسليم", ku: "گەیەندرا", en: "Delivered" },
+    no_answer_pending: { ar: "لم يرد - بانتظار إعادة الجدولة", ku: "وەڵام نەدرایەوە", en: "No Answer - Pending Reschedule" },
+    cancelled: { ar: "ملغي", ku: "هەڵوەشاوە", en: "Cancelled" },
   };
   switch (status) {
     case "pending_payment":
@@ -247,6 +250,10 @@ const getDeliveryBadge = (status: string, language: "ar" | "ku" | "en") => {
     case "delivered":
     case "completed":
       return <Badge className="bg-emerald-50 text-emerald-700 border-0">{labels.delivered[language]}</Badge>;
+    case "no_answer_pending":
+      return <Badge className="bg-red-50 text-red-700 border-0">{labels.no_answer_pending[language]}</Badge>;
+    case "cancelled":
+      return <Badge className="bg-gray-100 text-gray-600 border-0">{labels.cancelled[language]}</Badge>;
     default:
       return <Badge className="bg-muted text-muted-foreground border-0">{status}</Badge>;
   }
@@ -674,12 +681,18 @@ export default function SellerDashboard() {
   }, [deepLinkListingId, listings, scrollToElement]);
 
   const getReturnReasonLabel = (reason: string) => {
-    const labels: Record<string, { ar: string; ku: string }> = {
-      defective: { ar: "المنتج معيب أو تالف", ku: "بەرهەم خراپ یان تێکچوو" },
-      not_as_described: { ar: "المنتج مختلف عن الوصف", ku: "بەرهەم جیاوازە لە وەسف" },
-      wrong_item: { ar: "استلمت منتجاً خاطئاً", ku: "بەرهەمێکی هەڵەم وەرگرت" },
-      changed_mind: { ar: "غيرت رأيي", ku: "بڕیارم گۆڕی" },
-      other: { ar: "سبب آخر", ku: "هۆکاری تر" },
+    const labels: Record<string, { ar: string; ku: string; en: string }> = {
+      defective: { ar: "المنتج معيب أو تالف", ku: "بەرهەم خراپ یان تێکچوو", en: "Defective" },
+      damaged: { ar: "المنتج تالف أو مكسور", ku: "بەرهەم تێکچوو یان شکاو", en: "Damaged" },
+      not_as_described: { ar: "المنتج مختلف عن الوصف", ku: "بەرهەم جیاوازە لە وەسف", en: "Not as described" },
+      different_from_description: { ar: "المنتج مختلف عن الوصف", ku: "بەرهەم جیاوازە لە وەسف", en: "Different from description" },
+      wrong_item: { ar: "استلمت منتجاً خاطئاً", ku: "بەرهەمێکی هەڵەم وەرگرت", en: "Wrong item" },
+      changed_mind: { ar: "غيرت رأيي", ku: "بڕیارم گۆڕی", en: "Changed mind" },
+      missing_parts: { ar: "ناقص أجزاء أو ملحقات", ku: "پارچە یان پاشکۆکان کەمن", en: "Missing parts" },
+      not_as_expected: { ar: "لم يلبِ توقعاتي", ku: "وەک چاوەڕوانیم نەبوو", en: "Not as expected" },
+      quality_issue: { ar: "مشكلة في الجودة", ku: "کێشەی کوالیتی", en: "Quality issue" },
+      found_cheaper: { ar: "وجدت سعراً أفضل", ku: "نرخێکی باشترم دۆزییەوە", en: "Found cheaper" },
+      other: { ar: "سبب آخر", ku: "هۆکاری تر", en: "Other" },
     };
     return labels[reason]?.[language] || reason;
   };
@@ -919,6 +932,33 @@ export default function SellerDashboard() {
     },
     onError: () => {
       toast({ title: "خطأ", description: "فشل في تسجيل المشكلة", variant: "destructive" });
+    },
+  });
+
+  // Seller reschedule delivery for no-answer orders
+  const sellerRescheduleMutation = useMutation({
+    mutationFn: async (transactionId: string) => {
+      const authToken = localStorage.getItem("authToken");
+      const res = await fetch(`/api/orders/${transactionId}/reschedule`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
+        },
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "فشل في إعادة جدولة التوصيل");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم", description: "تمت إعادة جدولة التوصيل. سيتم إرسال سائق جديد." });
+      queryClient.invalidateQueries({ queryKey: ["/api/account/seller-orders"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
     },
   });
 
@@ -2158,6 +2198,7 @@ export default function SellerDashboard() {
                   <SelectItem value="pending">بانتظار الشحن</SelectItem>
                   <SelectItem value="shipped">تم الشحن</SelectItem>
                   <SelectItem value="delivered">تم التسليم</SelectItem>
+                  <SelectItem value="no_answer_pending">لم يرد</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -2180,6 +2221,7 @@ export default function SellerDashboard() {
                   else if (salesFilter === "pending") matchesStatus = order.status === "pending" || order.status === "processing";
                   else if (salesFilter === "shipped") matchesStatus = order.status === "shipped";
                   else if (salesFilter === "delivered") matchesStatus = order.status === "delivered" || order.status === "completed";
+                  else if (salesFilter === "no_answer_pending") matchesStatus = order.status === "no_answer_pending";
                 }
                 
                 // Time period filter
@@ -2209,6 +2251,39 @@ export default function SellerDashboard() {
               
               return (
               <div className="grid gap-4">
+                {/* No-answer pending orders: show urgent reschedule banner for seller */}
+                {filteredOrders.filter(o => o.status === "no_answer_pending").map(order => (
+                  <div key={`no-answer-seller-${order.id}`} className="p-4 bg-red-50 border-2 border-red-300 rounded-xl">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="font-bold text-sm text-red-800 mb-1">
+                          المشتري لم يرد على السائق!
+                        </p>
+                        <p className="text-xs text-red-700 mb-1">
+                          طلب "{order.listing?.title || 'منتج'}" - المشتري: {order.buyer?.displayName || "مشتري"}
+                        </p>
+                        <p className="text-xs text-red-600 mb-3">
+                          لدى المشتري 24 ساعة لإعادة الجدولة. يمكنك أيضاً إعادة جدولة التوصيل نيابة عنه.
+                        </p>
+                        <Button
+                          size="sm"
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                          disabled={sellerRescheduleMutation.isPending}
+                          onClick={() => sellerRescheduleMutation.mutate(order.id)}
+                        >
+                          {sellerRescheduleMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin ml-1" />
+                          ) : (
+                            <RotateCcw className="h-4 w-4 ml-1" />
+                          )}
+                          إعادة جدولة التوصيل
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
                 {filteredOrders.map(order => (
                   <Card key={order.id} className="overflow-hidden hover:shadow-lg transition-shadow" data-testid={`order-card-${order.id}`}>
                     <div className="flex flex-col md:flex-row">
