@@ -105,8 +105,8 @@ export function registerOtpRoutes(app: Express) {
         });
       }
 
-      // Verify OTP using in-memory service
-      const isValid = verifyOTP(normalizedInput, code);
+      // Verify OTP using database-backed service
+      const isValid = await verifyOTP(normalizedInput, code);
 
       if (!isValid) {
         return res.status(400).json({
@@ -216,7 +216,7 @@ export function registerOtpRoutes(app: Express) {
 
       // Normalize OTP code (phone is already normalized in database)
       const normalizedCode = normalizeOTPCode(code);
-      const isValid = verifyOTP(user.phone, normalizedCode);
+      const isValid = await verifyOTP(user.phone, normalizedCode);
       if (!isValid) {
         return res.status(400).json({ error: "رمز التحقق غير صحيح أو منتهي الصلاحية" });
       }

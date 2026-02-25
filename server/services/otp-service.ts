@@ -1,23 +1,17 @@
 /**
- * Simple In-Memory OTP Service
- * Stores OTP codes in a Map for verification
+ * Database-backed OTP Service
+ * Stores OTP codes in verification_codes table for persistence across Cloud Run instances
  */
 
 import { normalizeIraqiPhone, generateOTPCode, sendWhatsAppOTP } from "../whatsapp";
-
-interface OTPEntry {
-  code: string;
-  expiresAt: Date;
-  attempts: number;
-}
-
-const otpMap = new Map<string, OTPEntry>();
+import { storage } from "../storage";
 
 const OTP_EXPIRY_MINUTES = 5;
 const MAX_ATTEMPTS = 5;
+const OTP_TYPE = "otp_login";
 
 /**
- * Normalize phone number to ensure consistent Map keys
+ * Normalize phone number to ensure consistent database keys
  */
 function normalizePhone(phone: string): string {
   return normalizeIraqiPhone(phone);
@@ -25,30 +19,30 @@ function normalizePhone(phone: string): string {
 
 /**
  * Send OTP to a phone number via WhatsApp
- * Generates code, stores it, and sends via VerifyWay
+ * Generates code, stores it in DB, and sends via VerifyWay
  */
 export async function sendOTP(phone: string): Promise<boolean> {
   const normalizedPhone = normalizePhone(phone);
   const code = generateOTPCode();
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-  
+
   console.log(`[OTP Service] Generating OTP for ${normalizedPhone}`);
-  console.log(`[OTP Service] Code: ${code}, Expires: ${expiresAt.toISOString()}`);
-  
-  otpMap.set(normalizedPhone, {
-    code,
-    expiresAt,
-    attempts: 0
-  });
-  
-  const result = await sendWhatsAppOTP(phone, code);
-  
-  if (!result.success) {
-    console.error(`[OTP Service] Failed to send OTP: ${result.error}`);
-    otpMap.delete(normalizedPhone);
+
+  // Store in database (persistent across Cloud Run instances)
+  try {
+    await storage.createVerificationCode(normalizedPhone, code, OTP_TYPE, expiresAt);
+  } catch (dbError) {
+    console.error(`[OTP Service] Failed to store OTP in database:`, dbError);
     return false;
   }
-  
+
+  const result = await sendWhatsAppOTP(phone, code);
+
+  if (!result.success) {
+    console.error(`[OTP Service] Failed to send OTP: ${result.error}`);
+    return false;
+  }
+
   console.log(`[OTP Service] OTP sent successfully to ${normalizedPhone}`);
   return true;
 }
@@ -56,67 +50,46 @@ export async function sendOTP(phone: string): Promise<boolean> {
 /**
  * Verify an OTP code for a phone number
  * Returns true if valid, false otherwise
- * Deletes the code on successful verification
+ * Marks the code as used on successful verification
  */
-export function verifyOTP(phone: string, code: string): boolean {
+export async function verifyOTP(phone: string, code: string): Promise<boolean> {
   const normalizedPhone = normalizePhone(phone);
-  const entry = otpMap.get(normalizedPhone);
-  
+
   console.log(`[OTP Service] Verifying OTP for ${normalizedPhone}`);
-  
-  if (!entry) {
-    console.log(`[OTP Service] No OTP found for ${normalizedPhone}`);
+
+  try {
+    const entry = await storage.getValidVerificationCode(normalizedPhone, code, OTP_TYPE);
+
+    if (!entry) {
+      console.log(`[OTP Service] No valid OTP found for ${normalizedPhone}`);
+      return false;
+    }
+
+    // Mark as used so it can't be reused
+    await storage.markVerificationCodeUsed(entry.id);
+    console.log(`[OTP Service] OTP verified successfully for ${normalizedPhone}`);
+    return true;
+  } catch (dbError) {
+    console.error(`[OTP Service] Database error during verification:`, dbError);
     return false;
   }
-  
-  if (new Date() > entry.expiresAt) {
-    console.log(`[OTP Service] OTP expired for ${normalizedPhone}`);
-    otpMap.delete(normalizedPhone);
-    return false;
-  }
-  
-  if (entry.attempts >= MAX_ATTEMPTS) {
-    console.log(`[OTP Service] Max attempts exceeded for ${normalizedPhone}`);
-    otpMap.delete(normalizedPhone);
-    return false;
-  }
-  
-  if (entry.code !== code) {
-    entry.attempts++;
-    console.log(`[OTP Service] Invalid code for ${normalizedPhone}. Attempts: ${entry.attempts}/${MAX_ATTEMPTS}`);
-    return false;
-  }
-  
-  console.log(`[OTP Service] OTP verified successfully for ${normalizedPhone}`);
-  otpMap.delete(normalizedPhone);
-  return true;
 }
 
 /**
- * Clear expired OTPs from memory
+ * Clear expired OTPs from database
  */
-export function cleanupExpiredOTPs(): number {
-  const now = new Date();
-  let count = 0;
-  
-  const entries = Array.from(otpMap.entries());
-  for (const [phone, entry] of entries) {
-    if (now > entry.expiresAt) {
-      otpMap.delete(phone);
-      count++;
-    }
+export async function cleanupExpiredOTPs(): Promise<number> {
+  try {
+    return await storage.deleteExpiredVerificationCodes();
+  } catch (error) {
+    console.error(`[OTP Service] Failed to cleanup expired OTPs:`, error);
+    return 0;
   }
-  
-  if (count > 0) {
-    console.log(`[OTP Service] Cleaned up ${count} expired OTPs`);
-  }
-  
-  return count;
 }
 
 /**
  * Get the number of active OTPs (for debugging)
  */
 export function getActiveOTPCount(): number {
-  return otpMap.size;
+  return 0; // No longer tracked in memory
 }
