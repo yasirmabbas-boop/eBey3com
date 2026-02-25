@@ -77,6 +77,38 @@ const guestCheckoutSchema = z.object({
   amount: z.number().int().positive(),
 });
 
+const issueSchema = z.object({
+  issueType: z.enum(["no_response", "wrong_address", "customer_refused", "other"]),
+  issueNote: z.string().optional(),
+  status: z.string().optional(),
+});
+
+const ratingSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  feedback: z.string().max(1000).optional(),
+});
+
+const cancelSchema = z.object({
+  reason: z.string().max(500).optional(),
+});
+
+const returnRequestSchema = z.object({
+  transactionId: z.string().min(1),
+  reason: z.enum(["damaged", "different_from_description", "missing_parts", "changed_mind", "other"]),
+  details: z.string().max(2000).optional(),
+  images: z.array(z.string().url()).max(5).optional(),
+});
+
+const returnRespondSchema = z.object({
+  status: z.enum(["approved", "rejected"]),
+  sellerResponse: z.string().max(1000).optional(),
+});
+
+const escalateSchema = z.object({
+  images: z.array(z.string().url()).max(5).optional(),
+  details: z.string().max(2000).optional(),
+});
+
 export function registerTransactionsRoutes(app: Express): void {
   // Apply CSRF validation to all transaction routes except GET requests
   app.use("/api/transactions", validateCsrfToken);
@@ -234,7 +266,7 @@ export function registerTransactionsRoutes(app: Express): void {
             relatedId: transactionId,
             linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
           });
-        });
+        }).catch(err => console.error("Error sending ship notification:", err));
       }
 
       return res.json(updated);
@@ -334,7 +366,7 @@ export function registerTransactionsRoutes(app: Express): void {
             linkUrl: `/seller-dashboard?tab=sales&orderId=${transactionId}`,
           });
         }
-      });
+      }).catch(err => console.error("Error sending delivery notification:", err));
 
       return res.json(updated);
     } catch (error) {
@@ -352,14 +384,10 @@ export function registerTransactionsRoutes(app: Express): void {
       }
 
       const transactionId = req.params.id;
-      const { issueType, issueNote, status } = req.body;
-      
-      if (!issueType) {
-        return res.status(400).json({ error: "نوع المشكلة مطلوب" });
-      }
+      const parsed = issueSchema.parse(req.body);
 
       const transaction = await storage.getTransactionById(transactionId);
-      
+
       if (!transaction) {
         return res.status(404).json({ error: "الطلب غير موجود" });
       }
@@ -371,9 +399,9 @@ export function registerTransactionsRoutes(app: Express): void {
 
       // Update transaction with issue
       const updated = await storage.updateTransactionWithIssue(transactionId, {
-        status: status || "issue",
-        issueType,
-        issueNote,
+        status: parsed.status || "issue",
+        issueType: parsed.issueType,
+        issueNote: parsed.issueNote,
       });
       
       // Get listing for notification message
@@ -388,40 +416,22 @@ export function registerTransactionsRoutes(app: Express): void {
       };
       
       // Notify buyer about the issue with deep link
-      try {
-        if (transaction.buyerId) {
-          const notification = await storage.createNotification({
-            userId: transaction.buyerId,
-            type: "order_issue",
-            title: "مشكلة في طلبك ⚠️",
-            message: `واجه البائع مشكلة في توصيل "${listing?.title || "المنتج"}": ${issueLabels[issueType] || issueType}`,
-            relatedId: transactionId,
-            linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
-          });
-          
-          sendToUser(transaction.buyerId, "NOTIFICATION", {
-            notification: {
-              id: notification.id,
-              type: notification.type,
-              title: notification.title,
-              message: notification.message,
-              linkUrl: notification.linkUrl,
-            },
-          });
-
-          await sendPushNotification(transaction.buyerId, {
-            title: "مشكلة في طلبك ⚠️",
-            body: `واجه البائع مشكلة في توصيل "${listing?.title || "المنتج"}": ${issueLabels[issueType] || issueType}`,
-            url: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
-            tag: `order-issue-${transactionId}`,
-          });
-        }
-      } catch (notifError) {
-        console.error("Failed to send notification for order issue:", notifError);
+      if (transaction.buyerId) {
+        sendNotificationAsync({
+          userId: transaction.buyerId,
+          type: "order_issue",
+          title: "مشكلة في طلبك ⚠️",
+          message: `واجه البائع مشكلة في توصيل "${listing?.title || "المنتج"}": ${issueLabels[parsed.issueType] || parsed.issueType}`,
+          relatedId: transactionId,
+          linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
+        });
       }
 
       return res.json(updated);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "بيانات غير صالحة", details: error.errors });
+      }
       console.error("Error reporting issue:", error);
       return res.status(500).json({ error: "فشل في تسجيل المشكلة" });
     }
@@ -436,14 +446,10 @@ export function registerTransactionsRoutes(app: Express): void {
       }
 
       const transactionId = req.params.id;
-      const { rating, feedback } = req.body;
-      
-      if (!rating || rating < 1 || rating > 5) {
-        return res.status(400).json({ error: "التقييم يجب أن يكون بين 1 و 5" });
-      }
+      const parsed = ratingSchema.parse(req.body);
 
       const transaction = await storage.getTransactionById(transactionId);
-      
+
       if (!transaction) {
         return res.status(404).json({ error: "الطلب غير موجود" });
       }
@@ -459,10 +465,13 @@ export function registerTransactionsRoutes(app: Express): void {
       }
 
       // Update transaction with rating
-      const updated = await storage.rateBuyer(transactionId, rating, feedback);
+      const updated = await storage.rateBuyer(transactionId, parsed.rating, parsed.feedback);
 
       return res.json(updated);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "التقييم يجب أن يكون بين 1 و 5", details: error.errors });
+      }
       console.error("Error rating buyer:", error);
       return res.status(500).json({ error: "فشل في تسجيل التقييم" });
     }
@@ -477,14 +486,10 @@ export function registerTransactionsRoutes(app: Express): void {
       }
 
       const transactionId = req.params.id;
-      const { rating, feedback } = req.body;
-      
-      if (!rating || rating < 1 || rating > 5) {
-        return res.status(400).json({ error: "التقييم يجب أن يكون بين 1 و 5" });
-      }
+      const parsed = ratingSchema.parse(req.body);
 
       const transaction = await storage.getTransactionById(transactionId);
-      
+
       if (!transaction) {
         return res.status(404).json({ error: "الطلب غير موجود" });
       }
@@ -500,12 +505,12 @@ export function registerTransactionsRoutes(app: Express): void {
       }
 
       // Update transaction with rating
-      const updated = await storage.rateSeller(transactionId, rating, feedback);
+      const updated = await storage.rateSeller(transactionId, parsed.rating, parsed.feedback);
 
       // Notify seller about the rating (without revealing stars to prevent retaliation)
       if (transaction.sellerId) {
         const listing = transaction.listingId ? await storage.getListing(transaction.listingId) : null;
-        const notification = await storage.createNotification({
+        sendNotificationAsync({
           userId: transaction.sellerId,
           type: "new_rating",
           title: "تقييم جديد",
@@ -513,20 +518,13 @@ export function registerTransactionsRoutes(app: Express): void {
           relatedId: transactionId,
           linkUrl: `/seller-dashboard?tab=sales&orderId=${transactionId}`,
         });
-        
-        sendToUser(transaction.sellerId, "NOTIFICATION", {
-          notification: {
-            id: notification.id,
-            type: notification.type,
-            title: notification.title,
-            message: notification.message,
-            linkUrl: notification.linkUrl,
-          },
-        });
       }
 
       return res.json(updated);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "التقييم يجب أن يكون بين 1 و 5", details: error.errors });
+      }
       console.error("Error rating seller:", error);
       return res.status(500).json({ error: "فشل في تسجيل التقييم" });
     }
@@ -541,10 +539,10 @@ export function registerTransactionsRoutes(app: Express): void {
       }
 
       const transactionId = req.params.id;
-      const { reason } = req.body;
-      
+      const parsed = cancelSchema.parse(req.body);
+
       const transaction = await storage.getTransactionById(transactionId);
-      
+
       if (!transaction) {
         return res.status(404).json({ error: "الطلب غير موجود" });
       }
@@ -566,57 +564,39 @@ export function registerTransactionsRoutes(app: Express): void {
 
       if (transaction.sellerId === userId) {
         // Seller cancelling
-        updated = await storage.cancelTransactionBySeller(transactionId, reason || "تم الإلغاء من قبل البائع");
+        updated = await storage.cancelTransactionBySeller(transactionId, parsed.reason || "تم الإلغاء من قبل البائع");
         notifyUserId = transaction.buyerId;
         notificationTitle = "تم إلغاء طلبك ❌";
-        notificationMessage = `قام البائع بإلغاء طلبك على "${listing?.title || "المنتج"}"${reason ? `: ${reason}` : ""}`;
+        notificationMessage = `قام البائع بإلغاء طلبك على "${listing?.title || "المنتج"}"${parsed.reason ? `: ${parsed.reason}` : ""}`;
         notificationLink = `/buyer-dashboard?tab=purchases&orderId=${transactionId}`;
       } else if (transaction.buyerId === userId) {
         // Buyer cancelling
-        updated = await storage.cancelTransactionByBuyer(transactionId, reason || "تم الإلغاء من قبل المشتري");
+        updated = await storage.cancelTransactionByBuyer(transactionId, parsed.reason || "تم الإلغاء من قبل المشتري");
         notifyUserId = transaction.sellerId;
         notificationTitle = "تم إلغاء الطلب ❌";
-        notificationMessage = `قام المشتري بإلغاء طلبه على "${listing?.title || "المنتج"}"${reason ? `: ${reason}` : ""}`;
+        notificationMessage = `قام المشتري بإلغاء طلبه على "${listing?.title || "المنتج"}"${parsed.reason ? `: ${parsed.reason}` : ""}`;
         notificationLink = `/seller-dashboard?tab=sales&orderId=${transactionId}`;
       } else {
         return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
       }
       
       // Notify the other party
-      try {
-        if (notifyUserId) {
-          const notification = await storage.createNotification({
-            userId: notifyUserId,
-            type: "order_cancelled",
-            title: notificationTitle,
-            message: notificationMessage,
-            relatedId: transactionId,
-            linkUrl: notificationLink,
-          });
-          
-          sendToUser(notifyUserId, "NOTIFICATION", {
-            notification: {
-              id: notification.id,
-              type: notification.type,
-              title: notification.title,
-              message: notification.message,
-              linkUrl: notification.linkUrl,
-            },
-          });
-
-          await sendPushNotification(notifyUserId, {
-            title: notificationTitle,
-            body: notificationMessage,
-            url: notificationLink,
-            tag: `order-cancelled-${transactionId}`,
-          });
-        }
-      } catch (notifError) {
-        console.error("Failed to send notification for cancellation:", notifError);
+      if (notifyUserId) {
+        sendNotificationAsync({
+          userId: notifyUserId,
+          type: "order_cancelled",
+          title: notificationTitle,
+          message: notificationMessage,
+          relatedId: transactionId,
+          linkUrl: notificationLink,
+        });
       }
 
       return res.json(updated);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "بيانات غير صالحة", details: error.errors });
+      }
       console.error("Error cancelling order:", error);
       return res.status(500).json({ error: "فشل في إلغاء الطلب" });
     }
@@ -644,11 +624,8 @@ export function registerTransactionsRoutes(app: Express): void {
         return res.status(401).json({ error: "غير مسجل الدخول" });
       }
 
-      const { transactionId, reason, details, images } = req.body;
-
-      if (!transactionId || !reason) {
-        return res.status(400).json({ error: "بيانات ناقصة" });
-      }
+      const parsed = returnRequestSchema.parse(req.body);
+      const { transactionId, reason, details, images } = parsed;
 
       // Get transaction
       const transaction = await storage.getTransactionById(transactionId);
@@ -697,10 +674,6 @@ export function registerTransactionsRoutes(app: Express): void {
       }
 
       // Create return request
-      const validImages: string[] = Array.isArray(images)
-        ? images.filter((u: unknown) => typeof u === "string" && u.startsWith("http")).slice(0, 5)
-        : [];
-
       const returnRequest = await storage.createReturnRequest({
         transactionId,
         buyerId: userId,
@@ -708,7 +681,7 @@ export function registerTransactionsRoutes(app: Express): void {
         listingId: transaction.listingId,
         reason,
         details: details || null,
-        images: validImages.length > 0 ? validImages : undefined,
+        images: images && images.length > 0 ? images : undefined,
       } as any);
 
       // PHASE 2: Lock payout permission immediately (kill-switch)
@@ -728,9 +701,7 @@ export function registerTransactionsRoutes(app: Express): void {
       try {
         const { returnRulesEngine } = await import("../services/return-rules-engine");
         
-        // Calculate days after delivery for rules evaluation
-        const deliveredAt = transaction.completedAt || transaction.createdAt;
-        const daysAfterDelivery = Math.floor((Date.now() - new Date(deliveredAt).getTime()) / (1000 * 60 * 60 * 24));
+        // Reuse daysSinceDelivery computed above for rules evaluation
         
         // Get seller rating if available
         const seller = await storage.getUser(transaction.sellerId);
@@ -741,7 +712,7 @@ export function registerTransactionsRoutes(app: Express): void {
           transactionAmount: transaction.amount,
           listingCategory: listing.category || null,
           sellerRating,
-          daysAfterDelivery,
+          daysAfterDelivery: daysSinceDelivery,
         });
         
         autoApprovalAttempted = true;
@@ -774,38 +745,20 @@ export function registerTransactionsRoutes(app: Express): void {
       // ===== END RULES ENGINE INTEGRATION =====
 
       // Send notification to seller with deep link to returns tab
-      try {
-        const notification = await storage.createNotification({
-          userId: transaction.sellerId,
-          type: "return_request",
-          title: "طلب إرجاع جديد",
-          message: `لديك طلب إرجاع جديد للمنتج "${(listing as any).title}"`,
-          linkUrl: `/seller-dashboard?tab=returns&returnId=${returnRequest.id}`,
-          relatedId: returnRequest.id,
-        });
-
-        sendToUser(transaction.sellerId, "NOTIFICATION", {
-          notification: {
-            id: notification.id,
-            type: notification.type,
-            title: notification.title,
-            message: notification.message,
-            linkUrl: notification.linkUrl,
-          },
-        });
-
-        await sendPushNotification(transaction.sellerId, {
-          title: "طلب إرجاع جديد",
-          body: `لديك طلب إرجاع جديد للمنتج "${(listing as any).title}"`,
-          url: `/seller-dashboard?tab=returns&returnId=${returnRequest.id}`,
-          tag: `return-request-${returnRequest.id}`,
-        });
-      } catch (notifError) {
-        console.error("Failed to send notification for return request:", notifError);
-      }
+      sendNotificationAsync({
+        userId: transaction.sellerId,
+        type: "return_request",
+        title: "طلب إرجاع جديد",
+        message: `لديك طلب إرجاع جديد للمنتج "${(listing as any).title}"`,
+        linkUrl: `/seller-dashboard?tab=returns&returnId=${returnRequest.id}`,
+        relatedId: returnRequest.id,
+      });
 
       return res.status(201).json(returnRequest);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "بيانات غير صالحة", details: error.errors });
+      }
       console.error("Error creating return request:", error);
       return res.status(500).json({ error: "فشل في إنشاء طلب الإرجاع" });
     }
@@ -1010,11 +963,7 @@ export function registerTransactionsRoutes(app: Express): void {
         return res.status(401).json({ error: "غير مسجل الدخول" });
       }
 
-      const { status, sellerResponse } = req.body;
-      
-      if (!status || !["approved", "rejected"].includes(status)) {
-        return res.status(400).json({ error: "حالة غير صالحة" });
-      }
+      const { status, sellerResponse } = returnRespondSchema.parse(req.body);
 
       // Get return request
       const request = await storage.getReturnRequestById(req.params.id);
@@ -1080,37 +1029,19 @@ export function registerTransactionsRoutes(app: Express): void {
       try {
         const listing = await storage.getListing(request.listingId);
         const listingTitle = (listing as any)?.title || "المنتج";
-        
+
         const notificationTitle = status === "approved" ? "طلب الإرجاع قيد المراجعة" : "تم رفض طلب الإرجاع";
-        const notificationMessage = status === "approved" 
+        const notificationMessage = status === "approved"
           ? `وافق البائع على إرجاع "${listingTitle}". الإدارة تراجع الطلب الآن وسيتم معالجة المبلغ المسترجع خلال 24-48 ساعة.`
           : `تم رفض طلب إرجاع "${listingTitle}". ${sellerResponse || ""}`;
-        
-        const notification = await storage.createNotification({
+
+        sendNotificationAsync({
           userId: request.buyerId,
           type: status === "approved" ? "return_approved" : "return_rejected",
           title: notificationTitle,
           message: notificationMessage,
           linkUrl: `/buyer-dashboard?tab=returns&returnId=${request.id}`,
           relatedId: request.id,
-        });
-
-        // Send WebSocket notification to buyer
-        sendToUser(
-          request.buyerId,
-          status === "approved" ? "return_approved" : "return_rejected",
-          {
-            returnRequestId: request.id,
-            listingTitle,
-            sellerResponse,
-          }
-        );
-
-        await sendPushNotification(request.buyerId, {
-          title: notificationTitle,
-          body: notificationMessage,
-          url: `/buyer-dashboard?tab=returns&returnId=${request.id}`,
-          tag: `return-response-${request.id}`,
         });
       } catch (notifError) {
         console.error("Failed to send notification for return response:", notifError);
@@ -1123,9 +1054,7 @@ export function registerTransactionsRoutes(app: Express): void {
           const listingTitle = (listing as any)?.title || "المنتج";
           const transaction = await storage.getTransactionById(request.transactionId);
           
-          // Get all admin users
-          const allUsers = await storage.getAllUsers();
-          const adminUsers = allUsers.filter((u: any) => u.isAdmin);
+          const adminUsers = await storage.getAdminUsers();
 
           // Notify each admin
           for (const admin of adminUsers) {
@@ -1145,6 +1074,9 @@ export function registerTransactionsRoutes(app: Express): void {
 
       return res.json(updatedRequest);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "بيانات غير صالحة", details: error.errors });
+      }
       console.error("Error responding to return request:", error);
       return res.status(500).json({ error: "فشل في الرد على طلب الإرجاع" });
     }
@@ -1174,16 +1106,13 @@ export function registerTransactionsRoutes(app: Express): void {
       }
 
       // Accept optional evidence images and escalation explanation from buyer
-      const { images, details } = req.body;
-      const escalationImages: string[] = Array.isArray(images)
-        ? images.filter((u: unknown) => typeof u === "string" && u.startsWith("http"))
-        : [];
+      const parsed = escalateSchema.parse(req.body);
 
       // Update status to escalated, save evidence
       await storage.updateReturnRequestByAdmin(req.params.id, {
         status: "escalated",
-        escalationImages: escalationImages.length > 0 ? escalationImages : undefined,
-        escalationDetails: typeof details === "string" && details.trim() ? details.trim() : undefined,
+        escalationImages: parsed.images && parsed.images.length > 0 ? parsed.images : undefined,
+        escalationDetails: parsed.details?.trim() || undefined,
         escalatedAt: new Date(),
         adminNotes: `Escalated by buyer on ${new Date().toISOString()}. Seller response: ${request.sellerResponse || "N/A"}`,
       } as any);
@@ -1204,8 +1133,7 @@ export function registerTransactionsRoutes(app: Express): void {
 
       // Notify all admins
       try {
-        const allUsers = await storage.getAllUsers();
-        const adminUsers = allUsers.filter((u: any) => u.isAdmin);
+        const adminUsers = await storage.getAdminUsers();
 
         for (const admin of adminUsers) {
           await storage.createNotification({
@@ -1222,47 +1150,30 @@ export function registerTransactionsRoutes(app: Express): void {
       }
 
       // Notify seller that buyer escalated
-      try {
-        await storage.createNotification({
-          userId: request.sellerId,
-          type: "return_escalated",
-          title: "تم تصعيد طلب الإرجاع",
-          message: `المشتري صعّد طلب إرجاع "${listingTitle}" للإدارة للمراجعة.`,
-          linkUrl: `/seller-dashboard?tab=returns&returnId=${request.id}`,
-          relatedId: request.id,
-        });
-      } catch (sellerNotifError) {
-        console.error("Failed to notify seller of escalation:", sellerNotifError);
-      }
+      sendNotificationAsync({
+        userId: request.sellerId,
+        type: "return_escalated",
+        title: "تم تصعيد طلب الإرجاع",
+        message: `المشتري صعّد طلب إرجاع "${listingTitle}" للإدارة للمراجعة.`,
+        linkUrl: `/seller-dashboard?tab=returns&returnId=${request.id}`,
+        relatedId: request.id,
+      });
 
       // Notify buyer confirmation
-      try {
-        await storage.createNotification({
-          userId: request.buyerId,
-          type: "return_escalated",
-          title: "تم تصعيد طلبك",
-          message: `تم تصعيد طلب إرجاع "${listingTitle}" للإدارة. سيتم مراجعته خلال 24-48 ساعة.`,
-          linkUrl: `/buyer-dashboard?tab=returns&returnId=${request.id}`,
-          relatedId: request.id,
-        });
-
-        sendToUser(request.buyerId, "return_escalated", {
-          returnRequestId: request.id,
-          listingTitle,
-        });
-
-        await sendPushNotification(request.buyerId, {
-          title: "تم تصعيد طلبك",
-          body: `تم تصعيد طلب إرجاع "${listingTitle}" للإدارة. سيتم مراجعته خلال 24-48 ساعة.`,
-          url: `/buyer-dashboard?tab=returns&returnId=${request.id}`,
-          tag: `return-escalated-${request.id}`,
-        });
-      } catch (buyerNotifError) {
-        console.error("Failed to send buyer escalation confirmation:", buyerNotifError);
-      }
+      sendNotificationAsync({
+        userId: request.buyerId,
+        type: "return_escalated",
+        title: "تم تصعيد طلبك",
+        message: `تم تصعيد طلب إرجاع "${listingTitle}" للإدارة. سيتم مراجعته خلال 24-48 ساعة.`,
+        linkUrl: `/buyer-dashboard?tab=returns&returnId=${request.id}`,
+        relatedId: request.id,
+      });
 
       return res.json({ success: true, message: "تم تصعيد الطلب للإدارة بنجاح" });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "بيانات غير صالحة", details: error.errors });
+      }
       console.error("Error escalating return request:", error);
       return res.status(500).json({ error: "فشل في تصعيد طلب الإرجاع" });
     }
