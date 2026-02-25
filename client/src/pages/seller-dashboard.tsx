@@ -516,15 +516,18 @@ export default function SellerDashboard() {
     createdAt: string;
   }
 
-  interface WeeklyPayout {
+  interface PayoutRecord {
     id: string;
-    weekStartDate: string;
-    weekEndDate: string;
-    netPayout: number;
-    status: string;
-    paymentMethod?: string;
-    paymentReference?: string;
-    paidAt?: string;
+    transactionId: string;
+    listingTitle: string;
+    payoutAmount: number;
+    deliveredAt: string;
+    clearedAt: string | null;
+    paidAt: string | null;
+    permissionStatus: string;
+    payoutReference: string | null;
+    paymentMethod: string | null;
+    blockedReason: string | null;
   }
 
   const { data: walletBalance, isLoading: walletLoading } = useQuery<WalletBalance>({
@@ -555,7 +558,7 @@ export default function SellerDashboard() {
     enabled: !!user?.id,
   });
 
-  const { data: payouts = [], isLoading: payoutsLoading } = useQuery<WeeklyPayout[]>({
+  const { data: payouts = [], isLoading: payoutsLoading } = useQuery<PayoutRecord[]>({
     queryKey: ["/api/wallet/payouts"],
     queryFn: async () => {
       const token = localStorage.getItem("authToken");
@@ -565,7 +568,7 @@ export default function SellerDashboard() {
       });
       if (!res.ok) throw new Error("Failed to fetch payouts");
       const data = await res.json();
-      return data.payouts || [];
+      return data.payouts || [];  // payout_permissions per seller
     },
     enabled: !!user?.id,
   });
@@ -2751,37 +2754,47 @@ export default function SellerDashboard() {
                           {language === "ar" ? "لا توجد دفعات بعد" : "هێشتا هیچ دفعەیەک نییە"}
                         </p>
                         <p className="text-sm text-gray-400 mt-1">
-                          {language === "ar" ? "ستظهر الدفعات هنا بعد الجدولة الأسبوعية" : "دفعەکان لێرە دەردەکەون لە دوای دەربهێنانی هەفتانە"}
+                          {language === "ar" ? "ستظهر الدفعات هنا بعد تأكيد التسليم" : "دفعەکان لێرە دەردەکەون لە دوای پشتڕاستکردنەوەی گەیاندن"}
                         </p>
                       </div>
                     ) : (
                       <div className="divide-y">
-                        {payouts.map((payout) => (
-                          <div key={payout.id} className="py-3 flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-sm">
-                                {new Date(payout.weekStartDate).toLocaleDateString(language === "ar" ? "ar-IQ" : "ckb-IQ")}{" "}
-                                -{" "}
-                                {new Date(payout.weekEndDate).toLocaleDateString(language === "ar" ? "ar-IQ" : "ckb-IQ")}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {payout.paymentMethod || "-"}
-                              </p>
+                        {payouts.map((payout) => {
+                          const statusColor =
+                            payout.permissionStatus === "paid" ? "bg-green-100 text-green-800" :
+                            payout.permissionStatus === "cleared" ? "bg-blue-100 text-blue-800" :
+                            payout.permissionStatus === "blocked" ? "bg-red-100 text-red-800" :
+                            "bg-yellow-100 text-yellow-800";
+                          const statusLabel =
+                            payout.permissionStatus === "paid"
+                              ? (language === "ar" ? "مدفوع" : "دراو")
+                            : payout.permissionStatus === "cleared"
+                              ? (language === "ar" ? "جاهز للدفع" : "ئامادەی دراو")
+                            : payout.permissionStatus === "locked"
+                              ? (language === "ar" ? "موقوف - مرتجع" : "هەڵگیراو")
+                            : payout.permissionStatus === "blocked"
+                              ? (language === "ar" ? "ملغي" : "هەڵوەشاوە")
+                            : (language === "ar" ? "فترة الانتظار" : "ماوەی چاوەڕوان");
+                          return (
+                            <div key={payout.id} className="py-3 flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm truncate">{payout.listingTitle}</p>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(payout.deliveredAt).toLocaleDateString(language === "ar" ? "ar-IQ" : "ckb-IQ")}
+                                  {payout.paidAt && ` · ${language === "ar" ? "دُفع" : "دراو"}: ${new Date(payout.paidAt).toLocaleDateString(language === "ar" ? "ar-IQ" : "ckb-IQ")}`}
+                                  {payout.payoutReference && ` · ${payout.payoutReference}`}
+                                </p>
+                                {payout.blockedReason && (
+                                  <p className="text-xs text-red-500 mt-0.5">{payout.blockedReason}</p>
+                                )}
+                              </div>
+                              <div className="text-left shrink-0">
+                                <p className="font-bold">{payout.payoutAmount.toLocaleString()} د.ع</p>
+                                <Badge className={`text-xs ${statusColor}`}>{statusLabel}</Badge>
+                              </div>
                             </div>
-                            <div className="text-left">
-                              <p className="font-bold">
-                                {payout.netPayout.toLocaleString()} د.ع
-                              </p>
-                              <Badge variant="outline" className="text-xs">
-                                {payout.status === "paid"
-                                  ? (language === "ar" ? "مدفوع" : "دراو")
-                                  : payout.status === "pending"
-                                  ? (language === "ar" ? "قيد الانتظار" : "چاوەڕوان")
-                                  : payout.status}
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </CardContent>

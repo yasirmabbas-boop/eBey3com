@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import { payoutPermissionService } from "./services/payout-permission-service";
+import { financialService } from "./services/financial-service";
 import { db } from "./db";
 import { payoutPermissions, users } from "@shared/schema";
 import { eq, and, lt, sql } from "drizzle-orm";
@@ -7,25 +8,23 @@ import { storage } from "./storage";
 
 /**
  * PHASE 5: Automated Payout Permission Processing
- * 
+ *
  * This cron system handles:
- * 1. Grace period expiry (hourly) - clears withheld permissions
- * 2. Debt enforcement (daily) - suspends accounts with overdue debt
- * 3. Admin alerts (daily) - notifies admins of high debt
+ * 1. Grace period expiry (hourly) - clears withheld payout permissions
+ * 2. Wallet hold release (hourly, offset by 5 min) - moves pending wallet_transactions to available
+ * 3. Debt enforcement (daily) - suspends accounts with overdue debt
+ * 4. Admin alerts (daily) - notifies admins of high debt
  */
 
 /**
  * Process Expired Grace Periods
- * Runs every hour, moves 'withheld' -> 'cleared' when grace period expires
+ * Runs every hour at :00, moves 'withheld' -> 'cleared' when grace period expires
  */
 function startGracePeriodProcessor() {
-  // Run every hour at minute 0
   cron.schedule("0 * * * *", async () => {
     console.log("[PayoutCron] Starting grace period processor...");
-    
     try {
       const clearedCount = await payoutPermissionService.processExpiredGracePeriods();
-      
       if (clearedCount > 0) {
         console.log(`[PayoutCron] ✅ Cleared ${clearedCount} expired permissions`);
       } else {
@@ -35,8 +34,30 @@ function startGracePeriodProcessor() {
       console.error("[PayoutCron] ERROR processing grace periods:", error);
     }
   });
+  console.log("[PayoutCron] Grace period processor scheduled (hourly at :00)");
+}
 
-  console.log("[PayoutCron] Grace period processor scheduled (hourly)");
+/**
+ * Release Expired Wallet Holds
+ * Runs every hour at :05, moves wallet_transactions from 'pending' -> 'available'
+ * when the 2-day holdUntil timestamp has passed.
+ * This is the counterpart to grace period clearance — both run automatically.
+ */
+function startWalletHoldReleaser() {
+  cron.schedule("5 * * * *", async () => {
+    console.log("[PayoutCron] Starting wallet hold release...");
+    try {
+      const released = await financialService.processHoldPeriodExpiry();
+      if (released > 0) {
+        console.log(`[PayoutCron] 💰 Released ${released} wallet transactions from hold`);
+      } else {
+        console.log("[PayoutCron] No wallet holds to release");
+      }
+    } catch (error) {
+      console.error("[PayoutCron] ERROR releasing wallet holds:", error);
+    }
+  });
+  console.log("[PayoutCron] Wallet hold releaser scheduled (hourly at :05)");
 }
 
 /**
@@ -281,6 +302,7 @@ export function startPayoutPermissionCrons(): void {
   console.log("[PayoutCron] Initializing payout permission cron jobs...");
 
   startGracePeriodProcessor();
+  startWalletHoldReleaser();
   startDebtEnforcer();
   startNoAnswerExpiryProcessor();
 

@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { getUserIdFromRequest } from "./shared";
 import { financialService } from "../services/financial-service";
+import { payoutPermissionService } from "../services/payout-permission-service";
 
 const FREE_SALES_PER_MONTH = 15;
 
@@ -14,7 +15,7 @@ export function registerWalletRoutes(app: Express) {
 
       const balance = await financialService.getWalletBalance(userId);
       const monthlyStats = await financialService.getMonthlyStats(userId);
-      
+
       const freeSalesUsed = monthlyStats?.freeSalesUsed || 0;
       const freeSalesRemaining = Math.max(0, FREE_SALES_PER_MONTH - freeSalesUsed);
 
@@ -53,6 +54,9 @@ export function registerWalletRoutes(app: Express) {
     }
   });
 
+  // /api/wallet/payouts — seller payout history from payout_permissions
+  // Each entry corresponds to a single delivered order.
+  // Statuses: withheld (in grace period), cleared (ready), paid, blocked (reversed).
   app.get("/api/wallet/payouts", async (req, res) => {
     try {
       const userId = await getUserIdFromRequest(req);
@@ -60,15 +64,11 @@ export function registerWalletRoutes(app: Express) {
         return res.status(401).json({ error: "غير مسجل الدخول" });
       }
 
-      const payouts = await financialService.getSellerPayouts(userId);
-      const nextPayoutDate = financialService.getNextPayoutDate();
+      const limit = Math.min(parseInt((req.query.limit as string) || "30"), 100);
+      const payouts = await payoutPermissionService.getSellerPayoutHistory(userId, limit);
       const holdDays = financialService.getHoldDays();
 
-      return res.json({
-        payouts,
-        nextPayoutDate,
-        holdDays,
-      });
+      return res.json({ payouts, holdDays });
     } catch (error) {
       console.error("Error fetching wallet payouts:", error);
       return res.status(500).json({ error: "فشل في جلب سجل المدفوعات" });

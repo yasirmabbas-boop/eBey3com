@@ -306,26 +306,38 @@ export default function AdminPage() {
     enabled: !authLoading && (user as any)?.isAdmin && activeTab === "cancellations",
   });
 
-  interface AdminPayout {
+  // ── Payout reconciliation types ──────────────────────────────────────────
+  interface PayoutPermissionDetail {
     id: string;
+    transactionId: string;
+    listingId: string;
+    listingTitle: string;
+    payoutAmount: number;
+    deliveredAt: string;
+    clearedAt: string | null;
+    permissionStatus: string;
+    notes: string | null;
+  }
+  interface SellerPayoutGroup {
     sellerId: string;
     sellerName: string;
-    sellerPhone: string;
-    weekStartDate: string;
-    weekEndDate: string;
-    totalEarnings: number;
-    totalCommission: number;
-    totalShipping: number;
-    totalReturns: number;
-    netPayout: number;
-    status: string;
-    paidAt?: string;
-    paidBy?: string;
-    paymentMethod?: string;
-    paymentReference?: string;
+    sellerPhone: string | null;
+    clearedCount: number;
+    totalAmount: number;
+    oldestClearedAt: string | null;
+    permissions: PayoutPermissionDetail[];
   }
 
-  const { data: pendingPayouts, isLoading: payoutsLoading } = useQuery<AdminPayout[]>({
+  const [expandedSellers, setExpandedSellers] = useState<Set<string>>(new Set());
+  const [payoutDialog, setPayoutDialog] = useState<{
+    open: boolean; sellerId: string; sellerName: string; totalAmount: number; permissionIds: string[];
+  }>({ open: false, sellerId: "", sellerName: "", totalAmount: 0, permissionIds: [] });
+  const [payoutMethod, setPayoutMethod] = useState("cash");
+  const [payoutRef, setPayoutRef] = useState("");
+  const [reverseDialog, setReverseDialog] = useState<{ open: boolean; permissionId: string; listingTitle: string }>({ open: false, permissionId: "", listingTitle: "" });
+  const [reverseReason, setReverseReason] = useState("");
+
+  const { data: payoutGroups = [], isLoading: payoutsLoading } = useQuery<SellerPayoutGroup[]>({
     queryKey: ["/api/admin/payouts"],
     queryFn: async () => {
       const res = await fetchWithAuth("/api/admin/payouts");
@@ -333,58 +345,43 @@ export default function AdminPage() {
       return res.json();
     },
     enabled: !authLoading && (user as any)?.isAdmin && activeTab === "payouts",
+    refetchInterval: 60_000,
   });
 
-  const generatePayoutsMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetchWithAuth("/api/admin/payouts/generate", {
+  const paySellerMutation = useMutation({
+    mutationFn: async ({ sellerId, paymentMethod, paymentReference }: { sellerId: string; paymentMethod: string; paymentReference?: string }) => {
+      const res = await fetchWithAuth(`/api/admin/payouts/seller/${sellerId}/pay`, {
         method: "POST",
+        body: JSON.stringify({ paymentMethod, paymentReference }),
       });
-      if (!res.ok) throw new Error("Failed to generate payouts");
+      if (!res.ok) throw new Error("Failed to pay seller");
       return res.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/payouts"] });
-      toast({ title: `تم إنشاء ${data.payoutsCreated} دفعة جديدة` });
+      setPayoutDialog({ open: false, sellerId: "", sellerName: "", totalAmount: 0, permissionIds: [] });
+      setPayoutRef("");
+      toast({ title: `✅ تم تأكيد الدفع لـ ${data.paid} طلب` });
     },
-    onError: () => {
-      toast({ title: "فشل في إنشاء الدفعات", variant: "destructive" });
-    },
+    onError: () => toast({ title: "فشل في تأكيد الدفع", variant: "destructive" }),
   });
 
-  const markPayoutPaidMutation = useMutation({
-    mutationFn: async ({ id, paymentMethod, paymentReference }: { id: string; paymentMethod: string; paymentReference?: string }) => {
-      const res = await fetchWithAuth(`/api/admin/payouts/${id}/pay`, {
+  const reversePermissionMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const res = await fetchWithAuth(`/api/admin/payouts/${id}/reverse`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentMethod, paymentReference }),
+        body: JSON.stringify({ reason }),
       });
-      if (!res.ok) throw new Error("Failed to mark payout as paid");
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || "Failed"); }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/payouts"] });
-      toast({ title: "تم تحديث حالة الدفع بنجاح" });
+      setReverseDialog({ open: false, permissionId: "", listingTitle: "" });
+      setReverseReason("");
+      toast({ title: "تم إلغاء الدفعة وتسجيل الديون" });
     },
-    onError: () => {
-      toast({ title: "فشل في تحديث حالة الدفع", variant: "destructive" });
-    },
-  });
-
-  const processHoldsMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetchWithAuth("/api/admin/financial/process-holds", {
-        method: "POST",
-      });
-      if (!res.ok) throw new Error("Failed to process holds");
-      return res.json();
-    },
-    onSuccess: (data) => {
-      toast({ title: `تم تحرير ${data.releasedTransactions} معاملة من فترة الانتظار` });
-    },
-    onError: () => {
-      toast({ title: "فشل في معالجة فترات الانتظار", variant: "destructive" });
-    },
+    onError: (e: any) => toast({ title: e.message || "فشل في الإلغاء", variant: "destructive" }),
   });
 
   const walletAdjustmentMutation = useMutation({
@@ -404,19 +401,11 @@ export default function AdminPage() {
       return res.json();
     },
     onSuccess: () => {
-      setWalletAdjustment({
-        targetUserId: "",
-        accountType: "seller",
-        amount: "",
-        description: "",
-      });
+      setWalletAdjustment({ targetUserId: "", accountType: "seller", amount: "", description: "" });
       toast({ title: "تم تحديث الرصيد بنجاح" });
     },
-    onError: () => {
-      toast({ title: "فشل في تعديل الرصيد", variant: "destructive" });
-    },
+    onError: () => toast({ title: "فشل في تعديل الرصيد", variant: "destructive" }),
   });
-
   const markMessageReadMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetchWithAuth(`/api/admin/contact-messages/${id}/read`, {
@@ -713,9 +702,9 @@ export default function AdminPage() {
                   >
                     <Wallet className="h-5 w-5" />
                     المدفوعات الأسبوعية
-                    {pendingPayouts?.filter(p => p.status === "pending").length ? (
+                    {payoutGroups?.length ? (
                       <Badge variant="secondary" className="mr-auto bg-green-100 text-green-800">
-                        {pendingPayouts.filter(p => p.status === "pending").length}
+                        {payoutGroups.length}
                       </Badge>
                     ) : null}
                   </button>
@@ -1764,60 +1753,32 @@ export default function AdminPage() {
 
             {activeTab === "payouts" && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold">المدفوعات الأسبوعية</h2>
-                    <p className="text-muted-foreground">إدارة دفعات البائعين الأسبوعية</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => processHoldsMutation.mutate()}
-                      disabled={processHoldsMutation.isPending}
-                      data-testid="button-process-holds"
-                    >
-                      {processHoldsMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                      ) : (
-                        <Clock className="h-4 w-4 ml-2" />
-                      )}
-                      معالجة فترات الانتظار
-                    </Button>
-                    <Button
-                      onClick={() => generatePayoutsMutation.mutate()}
-                      disabled={generatePayoutsMutation.isPending}
-                      data-testid="button-generate-payouts"
-                    >
-                      {generatePayoutsMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                      ) : (
-                        <BanknoteIcon className="h-4 w-4 ml-2" />
-                      )}
-                      إنشاء دفعات الأسبوع
-                    </Button>
-                  </div>
+                <div>
+                  <h2 className="text-2xl font-bold">مراجعة المدفوعات</h2>
+                  <p className="text-muted-foreground">
+                    الدفعات تُنشأ تلقائياً عند انتهاء فترة الانتظار — راجع وأكّد الدفع لكل بائع
+                  </p>
                 </div>
 
+                {/* Wallet Adjustment Tool */}
                 <Card className="soft-border">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Wallet className="h-5 w-5" />
-                      تعديل رصيد المحفظة
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Wallet className="h-4 w-4" />
+                      تعديل رصيد يدوي
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <Input
                         placeholder="معرف المستخدم"
                         value={walletAdjustment.targetUserId}
                         onChange={(e) => setWalletAdjustment(prev => ({ ...prev, targetUserId: e.target.value }))}
-                        data-testid="input-wallet-target-user"
                       />
                       <select
                         className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                         value={walletAdjustment.accountType}
                         onChange={(e) => setWalletAdjustment(prev => ({ ...prev, accountType: e.target.value }))}
-                        data-testid="select-wallet-account-type"
                       >
                         <option value="seller">بائع</option>
                         <option value="buyer">مشتري</option>
@@ -1827,139 +1788,200 @@ export default function AdminPage() {
                         placeholder="المبلغ (سالب للخصم)"
                         value={walletAdjustment.amount}
                         onChange={(e) => setWalletAdjustment(prev => ({ ...prev, amount: e.target.value }))}
-                        data-testid="input-wallet-amount"
                       />
                       <Input
                         placeholder="وصف مختصر"
                         value={walletAdjustment.description}
                         onChange={(e) => setWalletAdjustment(prev => ({ ...prev, description: e.target.value }))}
-                        data-testid="input-wallet-description"
                       />
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-end mt-3">
                       <Button
+                        size="sm"
                         onClick={() => walletAdjustmentMutation.mutate()}
-                        disabled={
-                          walletAdjustmentMutation.isPending ||
-                          !walletAdjustment.targetUserId ||
-                          walletAdjustment.amount.trim() === "" ||
-                          Number.isNaN(Number(walletAdjustment.amount))
-                        }
-                        data-testid="button-wallet-adjust"
+                        disabled={walletAdjustmentMutation.isPending || !walletAdjustment.targetUserId || walletAdjustment.amount.trim() === "" || Number.isNaN(Number(walletAdjustment.amount))}
                       >
-                        {walletAdjustmentMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                        ) : (
-                          <CheckCircle className="h-4 w-4 ml-2" />
-                        )}
+                        {walletAdjustmentMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle className="h-4 w-4 ml-2" />}
                         تطبيق التعديل
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* Reconciliation list */}
                 {payoutsLoading ? (
-                  <div className="flex justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                ) : pendingPayouts && pendingPayouts.length > 0 ? (
+                  <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : payoutGroups.length === 0 ? (
+                  <Card className="soft-border">
+                    <CardContent className="py-12 text-center">
+                      <Wallet className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-muted-foreground">لا توجد دفعات جاهزة حالياً</p>
+                      <p className="text-sm text-gray-400 mt-1">ستظهر الدفعات هنا تلقائياً بعد انتهاء فترة الانتظار</p>
+                    </CardContent>
+                  </Card>
+                ) : (
                   <div className="space-y-4">
-                    {pendingPayouts.map((payout) => (
-                      <Card 
-                        key={payout.id} 
-                        className={payout.status === "pending" ? "border-green-200" : "border-gray-200"}
-                        data-testid={`card-payout-${payout.id}`}
-                      >
+                    {payoutGroups.map((group) => (
+                      <Card key={group.sellerId} className="soft-border border-green-200">
                         <CardContent className="py-4">
-                          <div className="flex flex-col md:flex-row md:items-start gap-4 justify-between">
-                            <div className="flex-1 space-y-3">
-                              <div className="flex items-center gap-3">
-                                <Wallet className="h-5 w-5 text-green-600" />
-                                <span className="font-bold text-lg">{payout.sellerName}</span>
-                                <Badge className={payout.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"}>
-                                  {payout.status === "pending" ? "قيد الانتظار" : "مدفوع"}
-                                </Badge>
+                          {/* Seller header */}
+                          <div className="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+                            <div className="flex items-center gap-3">
+                              <Wallet className="h-5 w-5 text-green-600 shrink-0" />
+                              <div>
+                                <p className="font-bold text-lg">{group.sellerName}</p>
+                                {group.sellerPhone && <p className="text-sm text-muted-foreground">📱 {group.sellerPhone}</p>}
                               </div>
-                              
-                              {payout.sellerPhone && (
-                                <p className="text-sm text-muted-foreground">
-                                  📱 {payout.sellerPhone}
-                                </p>
-                              )}
-
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                                <div className="bg-gray-50 p-2 rounded">
-                                  <span className="text-muted-foreground block">الأرباح</span>
-                                  <span className="font-medium text-green-600">{payout.totalEarnings.toLocaleString()} د.ع</span>
-                                </div>
-                                <div className="bg-gray-50 p-2 rounded">
-                                  <span className="text-muted-foreground block">العمولة (5%)</span>
-                                  <span className="font-medium text-red-600">-{payout.totalCommission.toLocaleString()} د.ع</span>
-                                </div>
-                                <div className="bg-gray-50 p-2 rounded">
-                                  <span className="text-muted-foreground block">الشحن</span>
-                                  <span className="font-medium text-red-600">-{payout.totalShipping.toLocaleString()} د.ع</span>
-                                </div>
-                                <div className="bg-gray-50 p-2 rounded">
-                                  <span className="text-muted-foreground block">المرتجعات</span>
-                                  <span className="font-medium text-red-600">-{payout.totalReturns.toLocaleString()} د.ع</span>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-4 text-sm">
-                                <div>
-                                  <Calendar className="h-4 w-4 inline ml-1 text-muted-foreground" />
-                                  <span className="text-muted-foreground">فترة الدفع: </span>
-                                  <span>{new Date(payout.weekStartDate).toLocaleDateString("ar-IQ")} - {new Date(payout.weekEndDate).toLocaleDateString("ar-IQ")}</span>
-                                </div>
-                              </div>
+                              <Badge className="bg-yellow-100 text-yellow-800">
+                                {group.clearedCount} {group.clearedCount === 1 ? "طلب" : "طلبات"}
+                              </Badge>
                             </div>
-
-                            <div className="flex flex-col items-end gap-3">
+                            <div className="flex items-center gap-3">
                               <div className="text-left">
-                                <p className="text-sm text-muted-foreground">صافي الدفع</p>
-                                <p className="text-2xl font-bold text-green-600">{payout.netPayout.toLocaleString()} د.ع</p>
+                                <p className="text-xs text-muted-foreground">إجمالي المستحق</p>
+                                <p className="text-2xl font-bold text-green-600">{group.totalAmount.toLocaleString()} د.ع</p>
                               </div>
-                              
-                              {payout.status === "pending" && (
-                                <Button
-                                  onClick={() => markPayoutPaidMutation.mutate({ 
-                                    id: payout.id, 
-                                    paymentMethod: "cash" 
-                                  })}
-                                  disabled={markPayoutPaidMutation.isPending}
-                                  className="bg-green-600 hover:bg-green-700"
-                                  data-testid={`button-mark-paid-${payout.id}`}
-                                >
-                                  {markPayoutPaidMutation.isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                                  ) : (
-                                    <CheckCircle className="h-4 w-4 ml-2" />
-                                  )}
-                                  تأكيد الدفع
-                                </Button>
-                              )}
-
-                              {payout.status === "paid" && payout.paidAt && (
-                                <div className="text-sm text-muted-foreground text-left">
-                                  <p>تم الدفع: {new Date(payout.paidAt).toLocaleDateString("ar-IQ")}</p>
-                                  {payout.paymentMethod && <p>طريقة الدفع: {payout.paymentMethod}</p>}
-                                </div>
-                              )}
+                              <Button
+                                className="bg-green-600 hover:bg-green-700 shrink-0"
+                                onClick={() => setPayoutDialog({
+                                  open: true,
+                                  sellerId: group.sellerId,
+                                  sellerName: group.sellerName,
+                                  totalAmount: group.totalAmount,
+                                  permissionIds: group.permissions.map(p => p.id),
+                                })}
+                              >
+                                <BanknoteIcon className="h-4 w-4 ml-2" />
+                                دفع للبائع
+                              </Button>
                             </div>
                           </div>
+
+                          {/* Expand/collapse individual orders */}
+                          <button
+                            className="mt-3 text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+                            onClick={() => setExpandedSellers(prev => {
+                              const next = new Set(prev);
+                              next.has(group.sellerId) ? next.delete(group.sellerId) : next.add(group.sellerId);
+                              return next;
+                            })}
+                          >
+                            {expandedSellers.has(group.sellerId) ? "▲ إخفاء التفاصيل" : "▼ عرض الطلبات"}
+                          </button>
+
+                          {expandedSellers.has(group.sellerId) && (
+                            <div className="mt-3 divide-y border rounded-md">
+                              {group.permissions.map((perm) => (
+                                <div key={perm.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                                  <div>
+                                    <p className="font-medium">{perm.listingTitle}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      تسليم: {new Date(perm.deliveredAt).toLocaleDateString("ar-IQ")}
+                                      {perm.clearedAt && ` · تصفية: ${new Date(perm.clearedAt).toLocaleDateString("ar-IQ")}`}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-green-600">{perm.payoutAmount.toLocaleString()} د.ع</span>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-red-600 border-red-200 hover:bg-red-50 h-7 px-2"
+                                      onClick={() => setReverseDialog({ open: true, permissionId: perm.id, listingTitle: perm.listingTitle })}
+                                    >
+                                      <RotateCcw className="h-3 w-3 ml-1" />
+                                      إلغاء
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     ))}
                   </div>
-                ) : (
-                  <Card>
-                    <CardContent className="py-12 text-center text-muted-foreground">
-                      <Wallet className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>لا توجد دفعات معلقة</p>
-                      <p className="text-sm mt-2">اضغط على "إنشاء دفعات الأسبوع" لإنشاء دفعات جديدة للبائعين</p>
-                    </CardContent>
-                  </Card>
+                )}
+
+                {/* Pay Seller Dialog */}
+                {payoutDialog.open && (
+                  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <Card className="w-full max-w-md">
+                      <CardHeader>
+                        <CardTitle>تأكيد الدفع — {payoutDialog.sellerName}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="bg-green-50 rounded-lg p-3 text-center">
+                          <p className="text-sm text-muted-foreground">المبلغ الإجمالي</p>
+                          <p className="text-3xl font-bold text-green-600">{payoutDialog.totalAmount.toLocaleString()} د.ع</p>
+                          <p className="text-xs text-muted-foreground mt-1">{payoutDialog.permissionIds.length} طلب</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">طريقة الدفع</label>
+                          <select
+                            className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                            value={payoutMethod}
+                            onChange={(e) => setPayoutMethod(e.target.value)}
+                          >
+                            <option value="cash">نقداً</option>
+                            <option value="bank_transfer">تحويل بنكي</option>
+                            <option value="mobile_wallet">محفظة إلكترونية</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">رقم المرجع / الإيصال (اختياري)</label>
+                          <Input
+                            placeholder="رقم المرجع أو رقم الإيصال"
+                            value={payoutRef}
+                            onChange={(e) => setPayoutRef(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="outline" onClick={() => setPayoutDialog(p => ({ ...p, open: false }))}>إلغاء</Button>
+                          <Button
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={() => paySellerMutation.mutate({ sellerId: payoutDialog.sellerId, paymentMethod: payoutMethod, paymentReference: payoutRef || undefined })}
+                            disabled={paySellerMutation.isPending}
+                          >
+                            {paySellerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <CheckCircle className="h-4 w-4 ml-2" />}
+                            تأكيد الدفع
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {/* Reverse Permission Dialog */}
+                {reverseDialog.open && (
+                  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <Card className="w-full max-w-md">
+                      <CardHeader>
+                        <CardTitle className="text-red-600">إلغاء الدفعة</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <p className="text-sm">هل تريد إلغاء دفعة <strong>{reverseDialog.listingTitle}</strong>؟ سيتم تسجيلها كدين على البائع.</p>
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">سبب الإلغاء <span className="text-red-500">*</span></label>
+                          <Input
+                            placeholder="مثال: مرتجع غير معالج، شكوى المشتري..."
+                            value={reverseReason}
+                            onChange={(e) => setReverseReason(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="outline" onClick={() => setReverseDialog(p => ({ ...p, open: false }))}>تراجع</Button>
+                          <Button
+                            variant="destructive"
+                            onClick={() => reversePermissionMutation.mutate({ id: reverseDialog.permissionId, reason: reverseReason })}
+                            disabled={reversePermissionMutation.isPending || !reverseReason.trim()}
+                          >
+                            {reversePermissionMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <XCircle className="h-4 w-4 ml-2" />}
+                            تأكيد الإلغاء
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 )}
               </div>
             )}

@@ -1,11 +1,50 @@
 import { db } from "../db";
-import { eq, and, lt, gte, sql } from "drizzle-orm";
+import { eq, and, lt, gte, sql, inArray, desc } from "drizzle-orm";
 import {
   payoutPermissions,
   transactions,
   listings,
+  walletTransactions,
   type InsertPayoutPermission,
 } from "@shared/schema";
+
+// ─── Types for admin reconciliation view ──────────────────────────────────────
+
+export interface AdminPermissionDetail {
+  id: string;
+  transactionId: string;
+  listingId: string;
+  listingTitle: string;
+  payoutAmount: number;
+  deliveredAt: Date;
+  clearedAt: Date | null;
+  permissionStatus: string;
+  notes: string | null;
+}
+
+export interface AdminPayoutGroup {
+  sellerId: string;
+  sellerName: string;
+  sellerPhone: string | null;
+  clearedCount: number;
+  totalAmount: number;
+  oldestClearedAt: Date | null;
+  permissions: AdminPermissionDetail[];
+}
+
+export interface SellerPayoutHistory {
+  id: string;
+  transactionId: string;
+  listingTitle: string;
+  payoutAmount: number;
+  deliveredAt: Date;
+  clearedAt: Date | null;
+  paidAt: Date | null;
+  permissionStatus: string;
+  payoutReference: string | null;
+  paymentMethod: string | null;
+  blockedReason: string | null;
+}
 
 /**
  * PayoutPermissionService
@@ -318,6 +357,309 @@ class PayoutPermissionService {
       );
 
     console.log(`[PayoutPermission] PAID transaction ${transactionId}: ref=${payoutReference}`);
+  }
+
+  // ─── Admin Reconciliation Methods ─────────────────────────────────────────
+
+  /**
+   * Get all cleared permissions grouped by seller — the admin reconciliation view.
+   * Returns only permissions in 'cleared' status that are ready to be paid.
+   * Enriches each record with listing title.
+   */
+  async getAdminPayoutGroups(
+    sellerId?: string
+  ): Promise<AdminPayoutGroup[]> {
+    const whereClause = sellerId
+      ? and(
+          eq(payoutPermissions.permissionStatus, "cleared"),
+          eq(payoutPermissions.isCleared, true),
+          eq(payoutPermissions.sellerId, sellerId)
+        )
+      : and(
+          eq(payoutPermissions.permissionStatus, "cleared"),
+          eq(payoutPermissions.isCleared, true)
+        );
+
+    const cleared = await db
+      .select()
+      .from(payoutPermissions)
+      .where(whereClause)
+      .orderBy(payoutPermissions.clearedAt);
+
+    // Enrich with listing titles
+    const enriched: AdminPermissionDetail[] = await Promise.all(
+      cleared.map(async (p) => {
+        const [listing] = await db
+          .select({ title: listings.title })
+          .from(listings)
+          .where(eq(listings.id, p.listingId))
+          .limit(1);
+        return {
+          id: p.id,
+          transactionId: p.transactionId,
+          listingId: p.listingId,
+          listingTitle: listing?.title || `طلب #${p.transactionId.slice(0, 8)}`,
+          payoutAmount: p.payoutAmount,
+          deliveredAt: p.deliveredAt,
+          clearedAt: p.clearedAt,
+          permissionStatus: p.permissionStatus,
+          notes: p.notes,
+        };
+      })
+    );
+
+    // Group by seller
+    const grouped = new Map<string, AdminPayoutGroup>();
+    for (const item of enriched) {
+      const perm = cleared.find((p) => p.id === item.id)!;
+      if (!grouped.has(perm.sellerId)) {
+        grouped.set(perm.sellerId, {
+          sellerId: perm.sellerId,
+          sellerName: "",
+          sellerPhone: null,
+          clearedCount: 0,
+          totalAmount: 0,
+          oldestClearedAt: item.clearedAt,
+          permissions: [],
+        });
+      }
+      const group = grouped.get(perm.sellerId)!;
+      group.clearedCount++;
+      group.totalAmount += item.payoutAmount;
+      group.permissions.push(item);
+      if (
+        item.clearedAt &&
+        (!group.oldestClearedAt || item.clearedAt < group.oldestClearedAt)
+      ) {
+        group.oldestClearedAt = item.clearedAt;
+      }
+    }
+
+    return Array.from(grouped.values());
+  }
+
+  /**
+   * Admin marks one or more permissions as paid.
+   * Also updates the corresponding wallet_transactions to 'paid' status
+   * so the seller's wallet balance reflects the payment.
+   */
+  async adminMarkAsPaid(
+    permissionIds: string[],
+    adminId: string,
+    paymentMethod: string,
+    paymentReference?: string
+  ): Promise<number> {
+    if (permissionIds.length === 0) return 0;
+    const now = new Date();
+
+    // Fetch the permissions to get transaction IDs
+    const perms = await db
+      .select()
+      .from(payoutPermissions)
+      .where(
+        and(
+          inArray(payoutPermissions.id, permissionIds),
+          eq(payoutPermissions.permissionStatus, "cleared")
+        )
+      );
+
+    if (perms.length === 0) return 0;
+
+    const transactionIds = perms.map((p) => p.transactionId);
+
+    // Mark permissions as paid
+    await db
+      .update(payoutPermissions)
+      .set({
+        permissionStatus: "paid",
+        paidAt: now,
+        paidBy: adminId,
+        payoutReference: paymentReference || null,
+        notes: sql`CONCAT(COALESCE(${payoutPermissions.notes}, ''), '\n', ${`Admin paid via ${paymentMethod} at ${now.toISOString()}`})`,
+        updatedAt: now,
+      })
+      .where(inArray(payoutPermissions.id, permissionIds));
+
+    // Sync wallet_transactions — move available → paid for these transactions
+    await db
+      .update(walletTransactions)
+      .set({
+        status: "paid",
+        weeklyPayoutId: null, // no longer tied to weekly batch
+      })
+      .where(
+        and(
+          inArray(walletTransactions.transactionId, transactionIds),
+          eq(walletTransactions.status, "available")
+        )
+      );
+
+    console.log(
+      `[PayoutPermission] Admin ${adminId} paid ${perms.length} permissions via ${paymentMethod}` +
+        (paymentReference ? `, ref: ${paymentReference}` : "")
+    );
+
+    return perms.length;
+  }
+
+  /**
+   * Admin reverses/blocks a cleared permission.
+   * Creates a return_reversal wallet entry to reduce the seller's available balance.
+   */
+  async adminReversePermission(
+    permissionId: string,
+    adminId: string,
+    reason: string
+  ): Promise<void> {
+    const now = new Date();
+
+    const [perm] = await db
+      .select()
+      .from(payoutPermissions)
+      .where(eq(payoutPermissions.id, permissionId))
+      .limit(1);
+
+    if (!perm) throw new Error("Permission not found");
+    if (!["cleared", "withheld"].includes(perm.permissionStatus)) {
+      throw new Error(`Cannot reverse permission with status: ${perm.permissionStatus}`);
+    }
+
+    // Block the permission
+    await db
+      .update(payoutPermissions)
+      .set({
+        permissionStatus: "blocked",
+        blockedAt: now,
+        blockedReason: reason,
+        blockedBy: adminId,
+        debtAmount: perm.payoutAmount,
+        debtDueDate: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000), // 5 days
+        debtStatus: "pending",
+        notes: sql`CONCAT(COALESCE(${payoutPermissions.notes}, ''), '\n', ${`REVERSED by admin ${adminId}: ${reason} at ${now.toISOString()}`})`,
+        updatedAt: now,
+      })
+      .where(eq(payoutPermissions.id, permissionId));
+
+    // Reverse the wallet_transactions entries for this transaction
+    const txns = await db
+      .select()
+      .from(walletTransactions)
+      .where(
+        and(
+          eq(walletTransactions.transactionId, perm.transactionId),
+          eq(walletTransactions.status, "available")
+        )
+      );
+
+    for (const txn of txns) {
+      // Mark original as reversed
+      await db
+        .update(walletTransactions)
+        .set({ status: "reversed" })
+        .where(eq(walletTransactions.id, txn.id));
+
+      // Create offsetting reversal entry
+      if (txn.amount !== 0) {
+        await db.insert(walletTransactions).values({
+          sellerId: txn.sellerId,
+          transactionId: perm.transactionId,
+          type: "return_reversal",
+          amount: -txn.amount,
+          description: `إلغاء من قبل الإدارة: ${reason}`,
+          status: "available",
+        });
+      }
+    }
+
+    console.log(
+      `[PayoutPermission] Admin ${adminId} REVERSED permission ${permissionId} for transaction ${perm.transactionId}: ${reason}`
+    );
+  }
+
+  /**
+   * Get payout history for admin or seller view.
+   * Returns paid + blocked permissions with enriched listing titles.
+   */
+  async getPayoutHistory(
+    sellerId?: string,
+    limit = 50
+  ): Promise<SellerPayoutHistory[]> {
+    const whereClause = sellerId
+      ? and(
+          inArray(payoutPermissions.permissionStatus, ["paid", "blocked"]),
+          eq(payoutPermissions.sellerId, sellerId)
+        )
+      : inArray(payoutPermissions.permissionStatus, ["paid", "blocked"]);
+
+    const records = await db
+      .select()
+      .from(payoutPermissions)
+      .where(whereClause)
+      .orderBy(desc(payoutPermissions.paidAt))
+      .limit(limit);
+
+    return Promise.all(
+      records.map(async (p) => {
+        const [listing] = await db
+          .select({ title: listings.title })
+          .from(listings)
+          .where(eq(listings.id, p.listingId))
+          .limit(1);
+        return {
+          id: p.id,
+          transactionId: p.transactionId,
+          listingTitle: listing?.title || `طلب #${p.transactionId.slice(0, 8)}`,
+          payoutAmount: p.payoutAmount,
+          deliveredAt: p.deliveredAt,
+          clearedAt: p.clearedAt,
+          paidAt: p.paidAt,
+          permissionStatus: p.permissionStatus,
+          payoutReference: p.payoutReference,
+          paymentMethod: p.paidBy
+            ? p.notes?.match(/paid via (\S+)/)?.[1] || null
+            : null,
+          blockedReason: p.blockedReason,
+        };
+      })
+    );
+  }
+
+  /**
+   * Get a seller's full payout history for the seller dashboard.
+   * Includes all statuses (withheld, locked, cleared, paid, blocked).
+   */
+  async getSellerPayoutHistory(sellerId: string, limit = 30): Promise<SellerPayoutHistory[]> {
+    const records = await db
+      .select()
+      .from(payoutPermissions)
+      .where(eq(payoutPermissions.sellerId, sellerId))
+      .orderBy(desc(payoutPermissions.deliveredAt))
+      .limit(limit);
+
+    return Promise.all(
+      records.map(async (p) => {
+        const [listing] = await db
+          .select({ title: listings.title })
+          .from(listings)
+          .where(eq(listings.id, p.listingId))
+          .limit(1);
+        return {
+          id: p.id,
+          transactionId: p.transactionId,
+          listingTitle: listing?.title || `طلب #${p.transactionId.slice(0, 8)}`,
+          payoutAmount: p.payoutAmount,
+          deliveredAt: p.deliveredAt,
+          clearedAt: p.clearedAt,
+          paidAt: p.paidAt,
+          permissionStatus: p.permissionStatus,
+          payoutReference: p.payoutReference,
+          paymentMethod: p.paidBy
+            ? p.notes?.match(/paid via (\S+)/)?.[1] || null
+            : null,
+          blockedReason: p.blockedReason,
+        };
+      })
+    );
   }
 }
 
