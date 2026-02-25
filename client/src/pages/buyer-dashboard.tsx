@@ -324,11 +324,15 @@ export default function BuyerDashboard() {
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [returnReason, setReturnReason] = useState("");
   const [returnDetails, setReturnDetails] = useState("");
+  const [returnImages, setReturnImages] = useState<string[]>([]);
+  const [returnUploading, setReturnUploading] = useState(false);
 
   // Report issue state
   const [issueDialogOpen, setIssueDialogOpen] = useState(false);
   const [issueReason, setIssueReason] = useState("");
   const [issueDetails, setIssueDetails] = useState("");
+  const [issueImages, setIssueImages] = useState<string[]>([]);
+  const [issueUploading, setIssueUploading] = useState(false);
 
   // Return shipping label state
   const [showReturnLabel, setShowReturnLabel] = useState(false);
@@ -417,15 +421,15 @@ export default function BuyerDashboard() {
 
   // Return request mutation
   const returnRequestMutation = useMutation({
-    mutationFn: async ({ transactionId, reason, details }: { transactionId: string; reason: string; details?: string }) => {
+    mutationFn: async ({ transactionId, reason, details, images }: { transactionId: string; reason: string; details?: string; images?: string[] }) => {
       const res = await fetch("/api/return-requests", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
         credentials: "include",
-        body: JSON.stringify({ transactionId, reason, details }),
+        body: JSON.stringify({ transactionId, reason, details, images }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -439,6 +443,7 @@ export default function BuyerDashboard() {
       setOrderDetailOpen(false);
       setReturnReason("");
       setReturnDetails("");
+      setReturnImages([]);
       queryClient.invalidateQueries({ queryKey: ["/api/account/purchases"] });
       queryClient.invalidateQueries({ queryKey: ["/api/return-requests/my"] });
     },
@@ -587,12 +592,47 @@ export default function BuyerDashboard() {
     setIssueDialogOpen(true);
   };
 
+  const handleReturnImageUpload = async (file: File) => {
+    if (!file || returnImages.length >= 5) return;
+    setReturnUploading(true);
+    try {
+      const urlRes = await fetch("/api/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ contentType: file.type, fileName: file.name }),
+      });
+      const { uploadURL, objectPath } = await urlRes.json();
+      await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      const publicUrl = `https://storage.googleapis.com/${objectPath}`;
+      setReturnImages(prev => [...prev, publicUrl]);
+    } catch { /* silent */ } finally { setReturnUploading(false); }
+  };
+
+  const handleIssueImageUpload = async (file: File) => {
+    if (!file || issueImages.length >= 5) return;
+    setIssueUploading(true);
+    try {
+      const urlRes = await fetch("/api/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ contentType: file.type, fileName: file.name }),
+      });
+      const { uploadURL, objectPath } = await urlRes.json();
+      await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      const publicUrl = `https://storage.googleapis.com/${objectPath}`;
+      setIssueImages(prev => [...prev, publicUrl]);
+    } catch { /* silent */ } finally { setIssueUploading(false); }
+  };
+
   const submitReturnRequest = () => {
     if (!selectedOrder || !returnReason) return;
     returnRequestMutation.mutate({
       transactionId: selectedOrder.id,
       reason: returnReason,
       details: returnDetails || undefined,
+      images: returnImages.length > 0 ? returnImages : undefined,
     });
   };
 
@@ -1515,6 +1555,27 @@ export default function BuyerDashboard() {
                 />
               </div>
 
+              {/* Evidence image upload */}
+              <div className="space-y-2">
+                <Label>صور توضيحية (اختياري، حتى 5 صور)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {returnImages.map((img, i) => (
+                    <div key={i} className="relative w-16 h-16">
+                      <img src={img} alt="" className="w-16 h-16 object-cover rounded border" />
+                      <button onClick={() => setReturnImages(prev => prev.filter((_, idx) => idx !== i))}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">×</button>
+                    </div>
+                  ))}
+                  {returnImages.length < 5 && (
+                    <label className="w-16 h-16 border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-primary text-gray-400 text-2xl">
+                      {returnUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : "+"}
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={(e) => { if (e.target.files?.[0]) handleReturnImageUpload(e.target.files[0]); e.target.value = ""; }} />
+                    </label>
+                  )}
+                </div>
+              </div>
+
               {selectedOrder?.listing?.returnPolicy && (
                 <div className="bg-blue-50 rounded-lg p-3 text-sm">
                   <p className="font-medium text-blue-800">سياسة الإرجاع للمنتج</p>
@@ -1526,7 +1587,7 @@ export default function BuyerDashboard() {
                 <Button
                   className="flex-1"
                   onClick={submitReturnRequest}
-                  disabled={!returnReason || returnRequestMutation.isPending}
+                  disabled={!returnReason || returnRequestMutation.isPending || returnUploading}
                 >
                   {returnRequestMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                   إرسال الطلب

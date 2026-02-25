@@ -644,7 +644,7 @@ export function registerTransactionsRoutes(app: Express): void {
         return res.status(401).json({ error: "غير مسجل الدخول" });
       }
 
-      const { transactionId, reason, details } = req.body;
+      const { transactionId, reason, details, images } = req.body;
 
       if (!transactionId || !reason) {
         return res.status(400).json({ error: "بيانات ناقصة" });
@@ -697,6 +697,10 @@ export function registerTransactionsRoutes(app: Express): void {
       }
 
       // Create return request
+      const validImages: string[] = Array.isArray(images)
+        ? images.filter((u: unknown) => typeof u === "string" && u.startsWith("http")).slice(0, 5)
+        : [];
+
       const returnRequest = await storage.createReturnRequest({
         transactionId,
         buyerId: userId,
@@ -704,7 +708,8 @@ export function registerTransactionsRoutes(app: Express): void {
         listingId: transaction.listingId,
         reason,
         details: details || null,
-      });
+        images: validImages.length > 0 ? validImages : undefined,
+      } as any);
 
       // PHASE 2: Lock payout permission immediately (kill-switch)
       try {

@@ -74,23 +74,46 @@ router.post("/reports/:id/resolve", requireAdmin, async (req, res) => {
   try {
     const { action, adminNotes } = req.body;
     const adminUser = (req as any).adminUser;
-    
+
     const report = await storage.getReportById(req.params.id);
     if (!report) {
       return res.status(404).json({ error: "Report not found" });
     }
-    
+
     await storage.updateReportStatus(
       req.params.id,
       action === "dismiss" ? "dismissed" : "resolved",
       adminNotes,
       adminUser.id
     );
-    
+
     res.json({ success: true });
   } catch (error) {
     console.error("Error resolving report:", error);
     res.status(500).json({ error: "Failed to resolve report" });
+  }
+});
+
+// PUT /reports/:id — used by the admin frontend mutation (updateReportMutation)
+router.put("/reports/:id", requireAdmin, async (req, res) => {
+  try {
+    const { status, adminNotes } = req.body;
+    const adminUser = (req as any).adminUser;
+
+    const report = await storage.getReportById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ error: "Report not found" });
+    }
+
+    const validStatuses = ["pending", "resolved", "dismissed", "rejected"];
+    const finalStatus = validStatuses.includes(status) ? status : "resolved";
+
+    await storage.updateReportStatus(req.params.id, finalStatus, adminNotes, adminUser.id);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error updating report:", error);
+    res.status(500).json({ error: "Failed to update report" });
   }
 });
 

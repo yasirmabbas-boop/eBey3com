@@ -412,6 +412,7 @@ export const reports = pgTable("reports", {
   targetType: text("target_type").notNull(),
   reason: text("reason").notNull(),
   details: text("details"),
+  images: text("images").array(), // Evidence photos attached by reporter
   status: text("status").notNull().default("pending"),
   adminNotes: text("admin_notes"),
   resolvedBy: varchar("resolved_by"),
@@ -482,6 +483,7 @@ export const returnRequests = pgTable("return_requests", {
   listingId: varchar("listing_id").notNull(),
   reason: text("reason").notNull(),
   details: text("details"),
+  images: text("images").array(), // Evidence photos attached by buyer when submitting the return
   status: text("status").notNull().default("pending"),
   sellerResponse: text("seller_response"),
   respondedAt: timestamp("responded_at"),

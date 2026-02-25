@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getSecureHeaders } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { Layout } from "@/components/layout";
@@ -119,17 +120,19 @@ interface ContactMessage {
   createdAt: string;
 }
 
-function getAuthToken(): string | null {
-  return localStorage.getItem("authToken");
-}
-
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  const authToken = getAuthToken();
-  const headers: HeadersInit = { ...options.headers };
-  if (authToken) {
-    (headers as Record<string, string>)["Authorization"] = `Bearer ${authToken}`;
+  const method = (options.method || "GET").toUpperCase();
+  const isMutation = !["GET", "HEAD", "OPTIONS"].includes(method);
+  // Use getSecureHeaders so mutations always include CSRF token + Bearer token
+  const secureHdrs = await getSecureHeaders(isMutation);
+  const mergedHeaders: Record<string, string> = {
+    ...secureHdrs,
+    ...(options.headers as Record<string, string> || {}),
+  };
+  if (isMutation && options.body && !mergedHeaders["Content-Type"] && !(options.body instanceof FormData)) {
+    mergedHeaders["Content-Type"] = "application/json";
   }
-  return fetch(url, { ...options, credentials: "include", headers });
+  return fetch(url, { ...options, credentials: "include", headers: mergedHeaders });
 }
 
 export default function AdminPage() {

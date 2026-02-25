@@ -82,6 +82,8 @@ export default function ProductPage() {
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
+  const [reportImages, setReportImages] = useState<string[]>([]);
+  const [reportUploading, setReportUploading] = useState(false);
 
   // Buy Now confirmation dialog state
   const [buyNowDialogOpen, setBuyNowDialogOpen] = useState(false);
@@ -168,9 +170,23 @@ export default function ProductPage() {
     },
   });
 
+  const handleReportImageUpload = async (file: File) => {
+    if (!file || reportImages.length >= 5) return;
+    setReportUploading(true);
+    try {
+      const urlRes = await secureRequest("/api/uploads/request-url", {
+        method: "POST",
+        body: JSON.stringify({ contentType: file.type, fileName: file.name }),
+      });
+      const { uploadURL, objectPath } = await urlRes.json();
+      await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      setReportImages(prev => [...prev, `https://storage.googleapis.com/${objectPath}`]);
+    } catch { /* silent */ } finally { setReportUploading(false); }
+  };
+
   // Report listing mutation
   const reportMutation = useMutation({
-    mutationFn: async (data: { reportType: string; targetId: string; targetType: string; reason: string; details?: string }) => {
+    mutationFn: async (data: { reportType: string; targetId: string; targetType: string; reason: string; details?: string; images?: string[] }) => {
       const res = await secureRequest("/api/reports", {
         method: "POST",
         body: JSON.stringify(data),
@@ -189,6 +205,7 @@ export default function ProductPage() {
       setReportDialogOpen(false);
       setReportReason("");
       setReportDetails("");
+      setReportImages([]);
     },
     onError: (error: Error) => {
       toast({
@@ -1608,6 +1625,26 @@ export default function ProductPage() {
                 data-testid="input-report-details"
               />
             </div>
+            {/* Evidence photos */}
+            <div className="space-y-2">
+              <Label>{language === "ar" ? "صور توضيحية (اختياري، حتى 5 صور)" : "وێنەی بەڵگە (هەڵبژاردەیی، تا 5 وێنە)"}</Label>
+              <div className="flex flex-wrap gap-2">
+                {reportImages.map((img, i) => (
+                  <div key={i} className="relative w-16 h-16">
+                    <img src={img} alt="" className="w-16 h-16 object-cover rounded border" />
+                    <button onClick={() => setReportImages(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">×</button>
+                  </div>
+                ))}
+                {reportImages.length < 5 && (
+                  <label className="w-16 h-16 border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-primary text-gray-400 text-2xl">
+                    {reportUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : "+"}
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={(e) => { if (e.target.files?.[0]) handleReportImageUpload(e.target.files[0]); e.target.value = ""; }} />
+                  </label>
+                )}
+              </div>
+            </div>
           </div>
           <DialogFooter className="flex gap-2 sm:gap-0">
             <Button
@@ -1627,9 +1664,10 @@ export default function ProductPage() {
                   targetType: "listing",
                   reason: reportReason,
                   details: reportDetails || undefined,
+                  images: reportImages.length > 0 ? reportImages : undefined,
                 });
               }}
-              disabled={!reportReason || reportMutation.isPending}
+              disabled={!reportReason || reportMutation.isPending || reportUploading}
               data-testid="button-submit-report"
             >
               {reportMutation.isPending ? (

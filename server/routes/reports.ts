@@ -120,12 +120,19 @@ export function registerReportsRoutes(app: Express): void {
         return res.status(401).json({ error: "يجب تسجيل الدخول لإرسال بلاغ" });
       }
 
+      const validImages: string[] = Array.isArray(req.body.images)
+        ? req.body.images.filter((u: unknown) => typeof u === "string" && u.startsWith("http")).slice(0, 5)
+        : [];
+
       const parsed = insertReportSchema.parse({
         ...req.body,
         reporterId: userId,
       });
 
-      const report = await storage.createReport(parsed);
+      const report = await storage.createReport({
+        ...parsed,
+        ...(validImages.length > 0 ? { images: validImages } : {}),
+      } as any);
       const caseNumber = generateCaseNumber();
 
       const user = await storage.getUser(userId);
