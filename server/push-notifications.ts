@@ -70,10 +70,10 @@ export async function sendPushNotification(userId: string, payload: PushPayload)
           return true;
         } catch (error: any) {
           // Handle token cleanup for invalid/expired tokens
-          if (error.statusCode === 410 || error.statusCode === 404) {
-            // Web push subscription expired
+          if (error.statusCode === 410 || error.statusCode === 404 || error.statusCode === 403) {
+            // 410/404: subscription expired, 403: VAPID key mismatch (stale subscription)
             await storage.deletePushSubscription(sub.endpoint);
-            console.log(`[push] Removed expired web push subscription for user ${userId}`);
+            console.log(`[push] Removed stale web push subscription for user ${userId} (HTTP ${error.statusCode})`);
           } else if (error.code === 'messaging/invalid-registration-token' ||
                      error.code === 'messaging/registration-token-not-registered') {
             // FCM token invalid

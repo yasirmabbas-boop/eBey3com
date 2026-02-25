@@ -9,6 +9,7 @@ import { secureRequest } from "@/lib/queryClient";
 
 const DISMISSED_KEY = "push-notification-dismissed";
 const SUBSCRIBED_KEY = "push-notification-subscribed";
+const VAPID_KEY_HASH = "push-vapid-key-hash";
 
 export function PushNotificationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -56,8 +57,7 @@ export function PushNotificationPrompt() {
             if (response.ok) {
               const responseData = await response.json();
               console.log("[Push] Backend response data:", responseData);
-              localStorage.setItem(SUBSCRIBED_KEY, "true");
-              setShowPrompt(false);
+              // SUBSCRIBED_KEY is set after initNativePushNotifications returns
             } else {
               const errorText = await response.text();
               console.error("[Push] Backend registration failed:", response.status, errorText);
@@ -78,10 +78,13 @@ export function PushNotificationPrompt() {
         );
 
         console.log("[Push] initNativePushNotifications returned:", success);
-        if (!success) {
-          console.error("[Push] Failed to initialize native push notifications");
+        if (success) {
+          localStorage.setItem(SUBSCRIBED_KEY, "true");
           setShowPrompt(false);
-          localStorage.setItem(DISMISSED_KEY, "true");
+        } else {
+          console.error("[Push] Failed to initialize native push notifications");
+          // Don't set DISMISSED — allow retry on next app open
+          setShowPrompt(false);
         }
       } else {
         // Handle web push notifications
@@ -162,9 +165,10 @@ export function PushNotificationPrompt() {
           throw new Error("Backend subscription save returned non-success");
         }
 
-        // FIX #1: Only set localStorage AFTER confirming DB save succeeded
+        // Only set localStorage AFTER confirming DB save succeeded
         console.log("[Push] Subscription saved successfully, updating localStorage");
         localStorage.setItem(SUBSCRIBED_KEY, "true");
+        localStorage.setItem(VAPID_KEY_HASH, publicKey);
         setShowPrompt(false);
       }
     } catch (error) {
@@ -199,29 +203,48 @@ export function PushNotificationPrompt() {
       willShowPrompt: !dismissed && !subscribed
     });
     
-    // FIX #1: Verify localStorage subscription matches DB state
+    // Verify localStorage subscription matches DB state (works for both web and native)
     const verifySubscription = async () => {
-      if (subscribed === "true" && !isNative) {
-        // For web/PWA, verify subscription exists in DB
-        try {
-          const subscriptionsResponse = await secureRequest("/api/push/subscriptions");
-          if (subscriptionsResponse.ok) {
-            const subscriptions = await subscriptionsResponse.json();
-            const hasWebSubscription = subscriptions.some((sub: any) => sub.platform === 'web');
-            
-            if (!hasWebSubscription) {
-              console.warn("[Push] localStorage says subscribed but DB has no web subscription - clearing localStorage");
+      try {
+        // Check if VAPID key changed (forces re-registration for web subscriptions)
+        if (!isNative) {
+          const vapidResponse = await secureRequest("/api/push/vapid-public-key");
+          if (vapidResponse.ok) {
+            const { publicKey } = await vapidResponse.json();
+            const storedHash = localStorage.getItem(VAPID_KEY_HASH);
+            if (storedHash && storedHash !== publicKey) {
+              console.warn("[Push] VAPID key changed — clearing old subscription to force re-register");
               localStorage.removeItem(SUBSCRIBED_KEY);
-              // Don't return - allow prompt to show
-            } else {
-              console.log("[Push] Verified: subscription exists in DB");
-              return true; // Subscription verified
+              localStorage.removeItem(DISMISSED_KEY);
+              localStorage.setItem(VAPID_KEY_HASH, publicKey);
+              return false;
             }
           }
-        } catch (err) {
-          console.error("[Push] Failed to verify subscription:", err);
-          // On error, don't clear localStorage - might be network issue
         }
+
+        if (subscribed !== "true") return false;
+
+        const subscriptionsResponse = await secureRequest("/api/push/subscriptions");
+        if (subscriptionsResponse.ok) {
+          const subscriptions = await subscriptionsResponse.json();
+          const expectedPlatform = isNative ? platform : 'web';
+          const hasSubscription = subscriptions.some((sub: any) =>
+            isNative ? (sub.platform === 'ios' || sub.platform === 'android') : sub.platform === 'web'
+          );
+
+          if (!hasSubscription) {
+            console.warn(`[Push] localStorage says subscribed but DB has no ${expectedPlatform} subscription - clearing localStorage`);
+            localStorage.removeItem(SUBSCRIBED_KEY);
+            localStorage.removeItem(DISMISSED_KEY);
+            return false;
+          } else {
+            console.log("[Push] Verified: subscription exists in DB");
+            return true;
+          }
+        }
+      } catch (err) {
+        console.error("[Push] Failed to verify subscription:", err);
+        // On error, don't clear localStorage - might be network issue
       }
       return false;
     };

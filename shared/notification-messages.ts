@@ -190,7 +190,25 @@ export const NOTIFICATION_MESSAGES = {
     }
   },
 
-  // 14. Saved Search Match
+  // 14. Order Received (Buyer confirmation)
+  order_received: {
+    ar: {
+      title: "تم استلام طلبك! 🛒",
+      body: (data: { title: string; itemCount?: number }) =>
+        data.itemCount && data.itemCount > 1
+          ? `تم استلام طلبك (${data.itemCount} منتجات). سنرسل لك تحديثات عند شحن مشترياتك.`
+          : `تم استلام طلبك على "${data.title}". سنرسل لك تحديثات عند شحن مشترياتك.`
+    },
+    ku: {
+      title: "داواکارییەکەت وەرگیرا! 🛒",
+      body: (data: { title: string; itemCount?: number }) =>
+        data.itemCount && data.itemCount > 1
+          ? `داواکارییەکەت وەرگیرا (${data.itemCount} بەرهەم). نوێکارییەکان بۆت دەنێرین کاتێک کڕینەکانت دەنێردرێن.`
+          : `داواکارییەکەت لەسەر "${data.title}" وەرگیرا. نوێکارییەکان بۆت دەنێرین کاتێک کڕینەکانت دەنێردرێن.`
+    }
+  },
+
+  // 15. Saved Search Match
   saved_search_match: {
     ar: {
       title: "منتج جديد يطابق بحثك 🔍",

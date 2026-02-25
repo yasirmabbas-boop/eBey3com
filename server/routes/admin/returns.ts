@@ -235,21 +235,73 @@ router.patch("/returns/:id", requireAdmin, async (req, res) => {
     const adminUser = (req as any).adminUser;
     const returnId = req.params.id;
     const updates = req.body;
-    
+
     const returnRequest = await storage.getReturnRequestById(returnId);
     if (!returnRequest) {
       return res.status(404).json({ error: "Return request not found" });
     }
-    
+
+    const oldStatus = returnRequest.status;
+
     // Add admin notes if status is being changed
-    if (updates.status && updates.status !== returnRequest.status) {
-      updates.adminNotes = updates.adminNotes || `Status changed from ${returnRequest.status} to ${updates.status} by admin`;
+    if (updates.status && updates.status !== oldStatus) {
+      updates.adminNotes = updates.adminNotes || `Status changed from ${oldStatus} to ${updates.status} by admin`;
       updates.processedBy = adminUser.id;
       updates.processedAt = new Date();
     }
-    
+
     const updated = await storage.updateReturnRequestByAdmin(returnId, updates);
-    
+
+    // Handle payout permission changes on status override
+    if (updates.status && updates.status !== oldStatus) {
+      try {
+        const { payoutPermissionService } = await import("../../services/payout-permission-service");
+
+        if (updates.status === "approved" && (oldStatus === "rejected" || oldStatus === "escalated")) {
+          // Admin overriding rejection/escalation → lock payout for refund processing
+          await payoutPermissionService.lockPermissionForReturn(returnRequest.transactionId, returnId);
+          console.log(`[AdminReturns] Payout permission LOCKED (admin override to approved) for transaction: ${returnRequest.transactionId}`);
+        } else if (updates.status === "rejected" && (oldStatus === "escalated" || oldStatus === "approved" || oldStatus === "pending")) {
+          // Admin rejecting → unlock payout so seller can get paid
+          await payoutPermissionService.unlockPermission(
+            returnRequest.transactionId,
+            `Admin rejected return request ${returnId}: ${updates.adminNotes || "No reason"}`
+          );
+          console.log(`[AdminReturns] Payout permission UNLOCKED (admin rejected) for transaction: ${returnRequest.transactionId}`);
+        }
+      } catch (payoutError) {
+        console.error(`[AdminReturns] Failed to update payout permission: ${payoutError}`);
+      }
+
+      // Notify buyer of admin decision
+      try {
+        const listing = await storage.getListing(returnRequest.listingId);
+        const listingTitle = (listing as any)?.title || "المنتج";
+
+        if (updates.status === "approved") {
+          await storage.createNotification({
+            userId: returnRequest.buyerId,
+            type: "return_approved",
+            title: "الإدارة وافقت على طلب الإرجاع",
+            message: `وافقت الإدارة على إرجاع "${listingTitle}". سيتم معالجة المبلغ المسترجع قريباً.`,
+            linkUrl: `/buyer-dashboard?tab=returns&returnId=${returnId}`,
+            relatedId: returnId,
+          });
+        } else if (updates.status === "rejected") {
+          await storage.createNotification({
+            userId: returnRequest.buyerId,
+            type: "return_rejected",
+            title: "الإدارة رفضت طلب الإرجاع",
+            message: `بعد المراجعة، تم رفض طلب إرجاع "${listingTitle}". ${updates.adminNotes || ""}`,
+            linkUrl: `/buyer-dashboard?tab=returns&returnId=${returnId}`,
+            relatedId: returnId,
+          });
+        }
+      } catch (notifError) {
+        console.error("[AdminReturns] Failed to notify buyer:", notifError);
+      }
+    }
+
     res.json({
       success: true,
       returnRequest: updated,

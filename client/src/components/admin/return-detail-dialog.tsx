@@ -126,6 +126,7 @@ export function ReturnDetailDialog({
       pending: "bg-yellow-100 text-yellow-800",
       approved: "bg-green-100 text-green-800",
       rejected: "bg-red-100 text-red-800",
+      escalated: "bg-orange-100 text-orange-800",
       processing: "bg-blue-100 text-blue-800",
     };
     return variants[status] || "bg-gray-100 text-gray-800";
@@ -136,6 +137,7 @@ export function ReturnDetailDialog({
       pending: "قيد الانتظار",
       approved: "موافق عليه",
       rejected: "مرفوض",
+      escalated: "مصعّد من المشتري",
       processing: "قيد المعالجة",
     };
     return labels[status] || status;
@@ -348,6 +350,7 @@ export function ReturnDetailDialog({
                   <SelectItem value="pending">قيد الانتظار</SelectItem>
                   <SelectItem value="approved">موافق عليه</SelectItem>
                   <SelectItem value="rejected">مرفوض</SelectItem>
+                  <SelectItem value="escalated">مصعّد من المشتري</SelectItem>
                 </SelectContent>
               </Select>
             </div>

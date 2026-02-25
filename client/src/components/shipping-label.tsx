@@ -1,9 +1,17 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import Barcode from "react-barcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, X, Package } from "lucide-react";
+
+type LabelSize = "a6" | "thermal-100" | "thermal-80";
+
+const LABEL_SIZES: Record<LabelSize, { width: string; height: string; label: string }> = {
+  "a6": { width: "105mm", height: "148mm", label: "A6 (105×148mm)" },
+  "thermal-100": { width: "100mm", height: "150mm", label: "حراري 100×150mm" },
+  "thermal-80": { width: "80mm", height: "120mm", label: "حراري 80×120mm" },
+};
 
 interface ShippingLabelProps {
   open: boolean;
@@ -32,6 +40,11 @@ interface ShippingLabelProps {
 
 export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = false }: ShippingLabelProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [labelSize, setLabelSize] = useState<LabelSize>("a6");
+
+  const sizeConfig = LABEL_SIZES[labelSize];
+  const isCompact = labelSize === "thermal-80";
+  const totalCOD = orderDetails.price + (orderDetails.shippingCost || 0);
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -39,6 +52,11 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
 
     const printWindow = window.open("", "_blank", "width=420,height=600");
     if (!printWindow) return;
+
+    const headerFontSize = isCompact ? "16px" : "20px";
+    const codFontSize = isCompact ? "20px" : "24px";
+    const basePadding = isCompact ? "2mm" : "3mm";
+    const innerPadding = isCompact ? "6px" : "10px";
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -53,26 +71,26 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
             box-sizing: border-box;
           }
           @page {
-            size: 105mm 148mm;
+            size: ${sizeConfig.width} ${sizeConfig.height};
             margin: 0;
           }
           body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #fff;
             direction: rtl;
-            width: 105mm;
-            height: 148mm;
+            width: ${sizeConfig.width};
+            height: ${sizeConfig.height};
           }
           .label-container {
-            width: 105mm;
-            height: 148mm;
-            padding: 3mm;
+            width: ${sizeConfig.width};
+            height: ${sizeConfig.height};
+            padding: ${basePadding};
             position: relative;
           }
           .label {
             border: 2px solid #000;
             height: 100%;
-            padding: 10px;
+            padding: ${innerPadding};
             display: flex;
             flex-direction: column;
           }
@@ -81,25 +99,25 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
             justify-content: space-between;
             align-items: flex-start;
             border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
+            padding-bottom: ${isCompact ? "6px" : "10px"};
+            margin-bottom: ${isCompact ? "6px" : "10px"};
           }
           .header-left {
             text-align: right;
           }
           .header-left h1 {
-            font-size: 20px;
+            font-size: ${headerFontSize};
             font-weight: 900;
             margin-bottom: 2px;
           }
           .header-left .subtitle {
-            font-size: 10px;
+            font-size: ${isCompact ? "8px" : "10px"};
             color: #666;
             text-transform: uppercase;
             letter-spacing: 2px;
           }
           .header-left .date {
-            font-size: 9px;
+            font-size: ${isCompact ? "8px" : "9px"};
             color: #999;
             margin-top: 3px;
           }
@@ -107,29 +125,29 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
             border: 2px solid #000;
             padding: 3px 8px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: ${isCompact ? "13px" : "16px"};
             text-align: center;
           }
           .cod-badge span {
             display: block;
-            font-size: 8px;
+            font-size: ${isCompact ? "7px" : "8px"};
             font-weight: normal;
           }
           .barcode-section {
             text-align: center;
-            margin: 8px 0;
+            margin: ${isCompact ? "4px 0" : "8px 0"};
           }
           .addresses {
             display: flex;
-            gap: 8px;
+            gap: ${isCompact ? "4px" : "8px"};
             flex: 1;
-            margin-bottom: 8px;
+            margin-bottom: ${isCompact ? "4px" : "8px"};
           }
           .address-box {
             flex: 1;
             border: 1px solid #ccc;
             border-radius: 6px;
-            padding: 8px;
+            padding: ${isCompact ? "4px" : "8px"};
           }
           .address-box.buyer {
             border: 2px solid #000;
@@ -140,18 +158,18 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
             align-items: center;
             gap: 5px;
             font-weight: bold;
-            font-size: 11px;
-            padding-bottom: 5px;
+            font-size: ${isCompact ? "9px" : "11px"};
+            padding-bottom: ${isCompact ? "3px" : "5px"};
             border-bottom: 1px solid #ddd;
-            margin-bottom: 5px;
+            margin-bottom: ${isCompact ? "3px" : "5px"};
           }
           .address-content {
-            font-size: 10px;
+            font-size: ${isCompact ? "8px" : "10px"};
             line-height: 1.4;
           }
           .address-content .name {
             font-weight: bold;
-            font-size: 12px;
+            font-size: ${isCompact ? "10px" : "12px"};
             margin-bottom: 3px;
           }
           .address-content .phone {
@@ -163,19 +181,24 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
             background: #FEF3C7;
             border: 2px solid #F59E0B;
             border-radius: 6px;
-            padding: 10px;
+            padding: ${isCompact ? "6px" : "10px"};
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: ${isCompact ? "4px" : "8px"};
           }
           .cod-amount .label-text {
-            font-size: 9px;
+            font-size: ${isCompact ? "8px" : "9px"};
             color: #92400E;
             margin-bottom: 3px;
           }
           .cod-amount .amount {
-            font-size: 24px;
+            font-size: ${codFontSize};
             font-weight: 900;
             color: #78350F;
+          }
+          .cod-amount .breakdown {
+            font-size: ${isCompact ? "7px" : "8px"};
+            color: #92400E;
+            margin-top: 2px;
           }
           .footer-section {
             display: flex;
@@ -186,30 +209,30 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
             flex: 1;
           }
           .product-info .label-text {
-            font-size: 8px;
+            font-size: ${isCompact ? "7px" : "8px"};
             color: #999;
           }
           .product-info .title {
-            font-size: 10px;
+            font-size: ${isCompact ? "8px" : "10px"};
             font-weight: 500;
           }
           .product-info .weight {
-            font-size: 8px;
+            font-size: ${isCompact ? "7px" : "8px"};
             color: #666;
           }
           .qr-code {
-            margin-right: 10px;
+            margin-right: ${isCompact ? "5px" : "10px"};
           }
           .company-footer {
             text-align: center;
-            font-size: 8px;
+            font-size: ${isCompact ? "7px" : "8px"};
             color: #999;
-            padding-top: 5px;
+            padding-top: ${isCompact ? "3px" : "5px"};
             border-top: 1px solid #eee;
-            margin-top: 5px;
+            margin-top: ${isCompact ? "3px" : "5px"};
           }
           @media print {
-            body { 
+            body {
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
@@ -224,9 +247,20 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
 
     printWindow.document.close();
     printWindow.focus();
+
+    // Close window after print dialog completes using afterprint event
+    let closed = false;
+    const closeWindow = () => {
+      if (closed) return;
+      closed = true;
+      clearTimeout(fallbackTimeout);
+      try { printWindow.close(); } catch (_) {}
+    };
+    const fallbackTimeout = setTimeout(closeWindow, 60000);
+    printWindow.addEventListener('afterprint', closeWindow);
+
     setTimeout(() => {
       printWindow.print();
-      printWindow.close();
     }, 500);
   };
 
@@ -244,7 +278,7 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
 
   const qrData = JSON.stringify({
     id: orderDetails.orderId,
-    cod: orderDetails.price,
+    cod: totalCOD,
     d: formatDate(orderDetails.saleDate)
   });
 
@@ -260,8 +294,8 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
 
         <div className="p-4 bg-gray-100">
           <div ref={printRef}>
-            <div className="label-container" style={{ width: "105mm", height: "148mm", padding: "3mm" }}>
-              <div className="label bg-white border-2 border-black h-full p-3 flex flex-col" style={{ fontFamily: "'Segoe UI', Tahoma, sans-serif" }}>
+            <div className="label-container" style={{ width: sizeConfig.width, height: sizeConfig.height, padding: isCompact ? "2mm" : "3mm" }}>
+              <div className="label bg-white border-2 border-black h-full flex flex-col" style={{ fontFamily: "'Segoe UI', Tahoma, sans-serif", padding: isCompact ? "6px" : "12px" }}>
                 
                 <div className="header flex justify-between items-start border-b-2 border-black pb-2 mb-2">
                   <div className="header-left text-right">
@@ -282,13 +316,13 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
                   )}
                 </div>
 
-                <div className="barcode-section text-center my-2">
-                  <Barcode 
-                    value={orderDetails.orderId} 
-                    width={1.5} 
-                    height={40} 
-                    fontSize={10} 
-                    displayValue={true} 
+                <div className="barcode-section text-center my-1">
+                  <Barcode
+                    value={orderDetails.orderId}
+                    width={isCompact ? 1.2 : 1.5}
+                    height={isCompact ? 30 : 40}
+                    fontSize={isCompact ? 8 : 10}
+                    displayValue={true}
                     background="transparent"
                     margin={0}
                   />
@@ -361,32 +395,34 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
                 </div>
 
                 {isReturn ? (
-                  <div className="cod-amount bg-gray-100 border-2 border-gray-400 rounded-md p-3 text-center mb-2">
+                  <div className="cod-amount bg-gray-100 border-2 border-gray-400 rounded-md p-2 text-center mb-2">
                     <div className="label-text text-[9px] text-gray-600 mb-1">طلب إرجاع - لا يوجد مبلغ للتحصيل</div>
                     <div className="amount text-lg font-bold text-gray-700">
                       إرجاع بدون رسوم
                     </div>
                   </div>
                 ) : (
-                  <div className="cod-amount bg-amber-100 border-2 border-amber-500 rounded-md p-3 text-center mb-2">
+                  <div className="cod-amount bg-amber-100 border-2 border-amber-500 rounded-md p-2 text-center mb-2">
                     <div className="label-text text-[9px] text-amber-700 mb-1">المبلغ المطلوب (الدفع عند الاستلام)</div>
-                    <div className="amount text-2xl font-black text-amber-900">
-                      {formatPrice(orderDetails.price)} د.ع
+                    <div className={`amount font-black text-amber-900 ${isCompact ? 'text-xl' : 'text-2xl'}`}>
+                      {formatPrice(totalCOD)} د.ع
                     </div>
+                    {!isReturn && orderDetails.shippingCost != null && orderDetails.shippingCost > 0 && (
+                      <div className="breakdown text-[8px] text-amber-700 mt-1">
+                        سعر المنتج: {formatPrice(orderDetails.price)} | الشحن: {formatPrice(orderDetails.shippingCost)}
+                      </div>
+                    )}
                   </div>
                 )}
 
                 <div className="footer-section flex justify-between items-end">
                   <div className="product-info flex-1">
-                    <div className="label-text text-[8px] text-gray-400">المحتويات:</div>
-                    <div className="title text-[10px] font-medium">{orderDetails.productTitle}</div>
-                    {orderDetails.weight && <div className="weight text-[8px] text-gray-500">الوزن: {orderDetails.weight}</div>}
-                    {!isReturn && orderDetails.shippingCost != null && orderDetails.shippingCost > 0 && (
-                      <div className="weight text-[8px] text-gray-600 mt-0.5">الشحن: {formatPrice(orderDetails.shippingCost)} د.ع</div>
-                    )}
+                    <div className={`label-text text-gray-400 ${isCompact ? 'text-[7px]' : 'text-[8px]'}`}>المحتويات:</div>
+                    <div className={`title font-medium ${isCompact ? 'text-[8px]' : 'text-[10px]'}`}>{orderDetails.productTitle}</div>
+                    {orderDetails.weight && <div className={`weight text-gray-500 ${isCompact ? 'text-[7px]' : 'text-[8px]'}`}>الوزن: {orderDetails.weight}</div>}
                   </div>
-                  <div className="qr-code mr-2">
-                    <QRCodeSVG value={qrData} size={50} level="M" />
+                  <div className={`qr-code ${isCompact ? 'mr-1' : 'mr-2'}`}>
+                    <QRCodeSVG value={qrData} size={isCompact ? 38 : 50} level="M" />
                   </div>
                 </div>
 
@@ -398,23 +434,37 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
           </div>
         </div>
 
-        <div className="flex gap-3 p-4 border-t">
-          <Button 
-            onClick={handlePrint}
-            className="flex-1 bg-black hover:bg-gray-800 text-white font-bold py-6"
-            data-testid="button-print-label"
-          >
-            <Printer className="h-5 w-5 ml-2" />
-            طباعة الإيصال
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="px-4"
-            data-testid="button-close-label"
-          >
-            <X className="h-5 w-5" />
-          </Button>
+        <div className="p-4 border-t space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 whitespace-nowrap">حجم الإيصال:</span>
+            <select
+              value={labelSize}
+              onChange={(e) => setLabelSize(e.target.value as LabelSize)}
+              className="flex-1 text-sm border border-gray-300 rounded-md px-2 py-1.5 bg-white"
+            >
+              {Object.entries(LABEL_SIZES).map(([key, val]) => (
+                <option key={key} value={key}>{val.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              onClick={handlePrint}
+              className="flex-1 bg-black hover:bg-gray-800 text-white font-bold py-6"
+              data-testid="button-print-label"
+            >
+              <Printer className="h-5 w-5 ml-2" />
+              طباعة الإيصال
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="px-4"
+              data-testid="button-close-label"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

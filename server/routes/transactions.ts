@@ -1070,7 +1070,7 @@ export function registerTransactionsRoutes(app: Express): void {
           type: status === "approved" ? "return_approved" : "return_rejected",
           title: notificationTitle,
           message: notificationMessage,
-          linkUrl: `/buyer-dashboard?tab=purchases&orderId=${request.transactionId}`,
+          linkUrl: `/buyer-dashboard?tab=returns&returnId=${request.id}`,
           relatedId: request.id,
         });
 
@@ -1088,7 +1088,7 @@ export function registerTransactionsRoutes(app: Express): void {
         await sendPushNotification(request.buyerId, {
           title: notificationTitle,
           body: notificationMessage,
-          url: `/buyer-dashboard?tab=purchases&orderId=${request.transactionId}`,
+          url: `/buyer-dashboard?tab=returns&returnId=${request.id}`,
           tag: `return-response-${request.id}`,
         });
       } catch (notifError) {
@@ -1126,6 +1126,142 @@ export function registerTransactionsRoutes(app: Express): void {
     } catch (error) {
       console.error("Error responding to return request:", error);
       return res.status(500).json({ error: "فشل في الرد على طلب الإرجاع" });
+    }
+  });
+
+  // Buyer escalates a rejected return request to admin
+  app.post("/api/return-requests/:id/escalate", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "غير مسجل الدخول" });
+      }
+
+      const request = await storage.getReturnRequestById(req.params.id);
+      if (!request) {
+        return res.status(404).json({ error: "طلب الإرجاع غير موجود" });
+      }
+
+      // Only the buyer can escalate
+      if (request.buyerId !== userId) {
+        return res.status(403).json({ error: "غير مصرح لك بهذا الإجراء" });
+      }
+
+      // Can only escalate rejected returns
+      if (request.status !== "rejected") {
+        return res.status(400).json({ error: "يمكن تصعيد الطلبات المرفوضة فقط" });
+      }
+
+      // Update status to escalated
+      await storage.updateReturnRequestByAdmin(req.params.id, {
+        status: "escalated",
+        adminNotes: `Escalated by buyer on ${new Date().toISOString()}. Seller response: ${request.sellerResponse || "N/A"}`,
+      });
+
+      // Re-lock payout permission (was unlocked when seller rejected)
+      try {
+        const { payoutPermissionService } = await import("../services/payout-permission-service");
+        await payoutPermissionService.lockPermissionForReturn(request.transactionId, request.id);
+        console.log(`[ReturnEscalation] Payout permission RE-LOCKED for transaction: ${request.transactionId}`);
+      } catch (lockError) {
+        console.error(`[ReturnEscalation] Failed to re-lock payout permission: ${lockError}`);
+      }
+
+      // Get listing info for notifications
+      const listing = await storage.getListing(request.listingId);
+      const listingTitle = (listing as any)?.title || "المنتج";
+      const transaction = await storage.getTransactionById(request.transactionId);
+
+      // Notify all admins
+      try {
+        const allUsers = await storage.getAllUsers();
+        const adminUsers = allUsers.filter((u: any) => u.isAdmin);
+
+        for (const admin of adminUsers) {
+          await storage.createNotification({
+            userId: admin.id,
+            type: "return_escalated",
+            title: "تصعيد طلب إرجاع",
+            message: `المشتري صعّد طلب إرجاع "${listingTitle}" (${transaction?.amount?.toLocaleString() || "?"} د.ع) بعد رفض البائع. يرجى المراجعة.`,
+            linkUrl: `/admin?tab=returns&returnId=${request.id}`,
+            relatedId: request.id,
+          });
+        }
+      } catch (adminNotifError) {
+        console.error("Failed to notify admins of escalation:", adminNotifError);
+      }
+
+      // Notify seller that buyer escalated
+      try {
+        await storage.createNotification({
+          userId: request.sellerId,
+          type: "return_escalated",
+          title: "تم تصعيد طلب الإرجاع",
+          message: `المشتري صعّد طلب إرجاع "${listingTitle}" للإدارة للمراجعة.`,
+          linkUrl: `/seller-dashboard?tab=returns&returnId=${request.id}`,
+          relatedId: request.id,
+        });
+      } catch (sellerNotifError) {
+        console.error("Failed to notify seller of escalation:", sellerNotifError);
+      }
+
+      // Notify buyer confirmation
+      try {
+        await storage.createNotification({
+          userId: request.buyerId,
+          type: "return_escalated",
+          title: "تم تصعيد طلبك",
+          message: `تم تصعيد طلب إرجاع "${listingTitle}" للإدارة. سيتم مراجعته خلال 24-48 ساعة.`,
+          linkUrl: `/buyer-dashboard?tab=returns&returnId=${request.id}`,
+          relatedId: request.id,
+        });
+
+        sendToUser(request.buyerId, "return_escalated", {
+          returnRequestId: request.id,
+          listingTitle,
+        });
+
+        await sendPushNotification(request.buyerId, {
+          title: "تم تصعيد طلبك",
+          body: `تم تصعيد طلب إرجاع "${listingTitle}" للإدارة. سيتم مراجعته خلال 24-48 ساعة.`,
+          url: `/buyer-dashboard?tab=returns&returnId=${request.id}`,
+          tag: `return-escalated-${request.id}`,
+        });
+      } catch (buyerNotifError) {
+        console.error("Failed to send buyer escalation confirmation:", buyerNotifError);
+      }
+
+      return res.json({ success: true, message: "تم تصعيد الطلب للإدارة بنجاح" });
+    } catch (error) {
+      console.error("Error escalating return request:", error);
+      return res.status(500).json({ error: "فشل في تصعيد طلب الإرجاع" });
+    }
+  });
+
+  // Reschedule delivery for no-answer orders (buyer action within 24h grace window)
+  app.post("/api/orders/:id/reschedule", async (req, res) => {
+    try {
+      const userId = await getUserIdFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: "يجب تسجيل الدخول" });
+      }
+
+      const transactionId = req.params.id;
+      if (!transactionId) {
+        return res.status(400).json({ error: "معرف الطلب مطلوب" });
+      }
+
+      const { deliveryService } = await import("../services/delivery-service");
+      const result = await deliveryService.rescheduleDelivery(transactionId, userId);
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      return res.json({ success: true, message: "تمت إعادة جدولة التوصيل بنجاح" });
+    } catch (error) {
+      console.error("Error rescheduling delivery:", error);
+      return res.status(500).json({ error: "فشل في إعادة جدولة التوصيل" });
     }
   });
 }

@@ -5,10 +5,17 @@
 
 import { db } from "../db";
 import { deliveryOrders, deliveryStatusLog, transactions, users, listings } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, lt, sql } from "drizzle-orm";
 import { deliveryApi, DeliveryWebhookPayload } from "./delivery-api";
 import { financialService } from "./financial-service";
 import { storage } from "../storage";
+import { sendPushNotification } from "../push-notifications";
+import { sendToUser } from "../websocket";
+
+// No-answer grace window: 24 hours for buyer to reschedule
+const NO_ANSWER_GRACE_HOURS = 24;
+// Temporary order ban duration after no-answer expiry: 7 days
+const NO_ANSWER_BAN_DAYS = 7;
 
 export interface CreateDeliveryRequest {
   transactionId: string;
@@ -515,6 +522,12 @@ class DeliveryService {
     const reasonLabel = CANCELLATION_REASON_LABELS[reason]?.ar || reason;
     const statusMessage = `إلغاء من السائق: ${reasonLabel}${driverNotes ? ` - ${driverNotes}` : ""}`;
 
+    // NO-ANSWER / NO-SHOW: Enter 24h grace window instead of immediate cancellation
+    if (reason === "no_answer" || reason === "no_show") {
+      return this.handleNoAnswerGraceWindow(deliveryOrder, reason, reasonLabel, statusMessage, driverNotes, latitude, longitude);
+    }
+
+    // All other reasons: immediate cancellation (existing behavior)
     await this.logStatus(
       deliveryOrder.id,
       "cancelled",
@@ -551,6 +564,345 @@ class DeliveryService {
     await financialService.reverseSettlement(deliveryOrder.transactionId, `إلغاء من السائق: ${reasonLabel}`);
 
     console.log(`[DeliveryService] Driver cancellation processed for order: ${deliveryOrder.id}`);
+    return { success: true };
+  }
+
+  /**
+   * Handle no-answer / no-show: give buyer a 24h grace window to reschedule
+   * instead of immediately cancelling the order.
+   */
+  private async handleNoAnswerGraceWindow(
+    deliveryOrder: typeof deliveryOrders.$inferSelect,
+    reason: DriverCancellationReason,
+    reasonLabel: string,
+    statusMessage: string,
+    driverNotes?: string,
+    latitude?: number,
+    longitude?: number
+  ): Promise<{ success: boolean; error?: string }> {
+    const deadline = new Date(Date.now() + NO_ANSWER_GRACE_HOURS * 60 * 60 * 1000);
+
+    await this.logStatus(
+      deliveryOrder.id,
+      "no_answer",
+      statusMessage,
+      true,
+      latitude,
+      longitude,
+      driverNotes,
+      undefined,
+      JSON.stringify({ reason, driverNotes, latitude, longitude, noAnswerDeadline: deadline.toISOString() })
+    );
+
+    // Mark delivery order as on hold (not cancelled yet)
+    await db
+      .update(deliveryOrders)
+      .set({
+        status: "cancelled", // delivery attempt is done, but transaction is in grace window
+        returnReason: reasonLabel,
+        updatedAt: new Date(),
+        currentLat: latitude,
+        currentLng: longitude,
+        lastLocationUpdate: latitude || longitude ? new Date() : undefined,
+      })
+      .where(eq(deliveryOrders.id, deliveryOrder.id));
+
+    // Set transaction to no_answer_pending with deadline stored in issueNote
+    await db
+      .update(transactions)
+      .set({
+        status: "no_answer_pending",
+        deliveryStatus: "no_answer",
+        issueType: `driver_cancellation:${reason}`,
+        issueNote: JSON.stringify({ noAnswerDeadline: deadline.toISOString(), reason }),
+      })
+      .where(eq(transactions.id, deliveryOrder.transactionId));
+
+    // Get transaction to find the buyer
+    const [transaction] = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, deliveryOrder.transactionId))
+      .limit(1);
+
+    if (transaction) {
+      const buyerId = transaction.buyerId;
+      const warningTitle = "السائق لم يتمكن من الوصول إليك! ⚠️";
+      const warningMessage = reason === "no_answer"
+        ? `لم يتمكن السائق من التواصل معك لتسليم طلبك. لديك 24 ساعة لإعادة جدولة التوصيل، وإلا سيتم إلغاء الطلب وتعليق حسابك من الطلب لمدة 7 أيام.`
+        : `لم يجدك السائق في عنوان التوصيل. لديك 24 ساعة لإعادة جدولة التوصيل، وإلا سيتم إلغاء الطلب وتعليق حسابك من الطلب لمدة 7 أيام.`;
+
+      // In-app notification
+      try {
+        const notification = await storage.createNotification({
+          userId: buyerId,
+          type: "no_answer_warning",
+          title: warningTitle,
+          message: warningMessage,
+          linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transaction.id}`,
+          relatedId: transaction.id,
+        });
+        sendToUser(buyerId, "NOTIFICATION", {
+          notification: {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            linkUrl: notification.linkUrl,
+          },
+        });
+      } catch (err) {
+        console.error(`[DeliveryService] Failed to create no-answer notification:`, err);
+      }
+
+      // Push notification
+      try {
+        await sendPushNotification(buyerId, {
+          title: warningTitle,
+          body: warningMessage,
+          url: `/buyer-dashboard?tab=purchases&orderId=${transaction.id}`,
+          tag: `no-answer-${transaction.id}`,
+        });
+      } catch (err) {
+        console.error(`[DeliveryService] Failed to send no-answer push:`, err);
+      }
+
+      // Also notify the seller
+      try {
+        await storage.createNotification({
+          userId: transaction.sellerId,
+          type: "no_answer_warning",
+          title: "المشتري لم يرد على السائق",
+          message: `لم يتمكن السائق من تسليم الطلب (${reasonLabel}). تم إعطاء المشتري 24 ساعة لإعادة الجدولة.`,
+          linkUrl: `/seller-dashboard?tab=sales&orderId=${transaction.id}`,
+          relatedId: transaction.id,
+        });
+      } catch (err) {
+        console.error(`[DeliveryService] Failed to notify seller about no-answer:`, err);
+      }
+    }
+
+    console.log(`[DeliveryService] No-answer grace window started for order: ${deliveryOrder.id}, deadline: ${deadline.toISOString()}`);
+    return { success: true };
+  }
+
+  /**
+   * Process expired no-answer orders (called by cron job hourly).
+   * Orders past the 24h grace window get cancelled and buyer gets a 7-day order ban.
+   */
+  async processExpiredNoAnswerOrders(): Promise<number> {
+    const now = new Date();
+    let processedCount = 0;
+
+    // Find all transactions in no_answer_pending status
+    const pendingOrders = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.status, "no_answer_pending"));
+
+    for (const tx of pendingOrders) {
+      try {
+        // Parse the deadline from issueNote
+        let deadline: Date | null = null;
+        try {
+          const noteData = JSON.parse(tx.issueNote || "{}");
+          deadline = noteData.noAnswerDeadline ? new Date(noteData.noAnswerDeadline) : null;
+        } catch {
+          // If issueNote is not valid JSON, treat as expired
+          deadline = new Date(0);
+        }
+
+        if (!deadline || deadline > now) {
+          continue; // Not expired yet
+        }
+
+        console.log(`[DeliveryService] No-answer grace expired for transaction: ${tx.id}`);
+
+        // Cancel the order
+        await db
+          .update(transactions)
+          .set({
+            status: "cancelled",
+            deliveryStatus: "cancelled",
+            cancelledAt: now,
+            issueNote: JSON.stringify({
+              ...JSON.parse(tx.issueNote || "{}"),
+              expiredAt: now.toISOString(),
+              action: "no_answer_auto_cancelled",
+            }),
+          })
+          .where(eq(transactions.id, tx.id));
+
+        // Reverse any settlement
+        try {
+          await financialService.reverseSettlement(tx.id, "إلغاء تلقائي: عدم الرد خلال 24 ساعة");
+        } catch (err) {
+          console.error(`[DeliveryService] Settlement reversal error for ${tx.id}:`, err);
+        }
+
+        // Apply 7-day order ban to the buyer
+        const banUntil = new Date(now.getTime() + NO_ANSWER_BAN_DAYS * 24 * 60 * 60 * 1000);
+        await db
+          .update(users)
+          .set({
+            orderBanUntil: banUntil,
+            orderBanReason: "تم تعليق حسابك من الطلب بسبب عدم الرد على التوصيل",
+            noAnswerCount: sql`${users.noAnswerCount} + 1`,
+          })
+          .where(eq(users.id, tx.buyerId));
+
+        // Notify buyer about cancellation and ban
+        const banTitle = "تم إلغاء طلبك وتعليق حسابك ⛔";
+        const banMessage = `تم إلغاء طلبك بسبب عدم الرد على السائق خلال 24 ساعة. تم تعليق حسابك من الطلب لمدة ${NO_ANSWER_BAN_DAYS} أيام.`;
+        try {
+          const notification = await storage.createNotification({
+            userId: tx.buyerId,
+            type: "no_answer_cancelled",
+            title: banTitle,
+            message: banMessage,
+            linkUrl: `/buyer-dashboard?tab=purchases`,
+            relatedId: tx.id,
+          });
+          sendToUser(tx.buyerId, "NOTIFICATION", {
+            notification: {
+              id: notification.id,
+              type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              linkUrl: notification.linkUrl,
+            },
+          });
+          await sendPushNotification(tx.buyerId, {
+            title: banTitle,
+            body: banMessage,
+            url: `/buyer-dashboard?tab=purchases`,
+            tag: `no-answer-ban-${tx.id}`,
+          });
+        } catch (err) {
+          console.error(`[DeliveryService] Failed to send ban notification:`, err);
+        }
+
+        // Notify seller about final cancellation
+        try {
+          await storage.createNotification({
+            userId: tx.sellerId,
+            type: "no_answer_cancelled",
+            title: "تم إلغاء الطلب نهائياً",
+            message: `تم إلغاء الطلب نهائياً بسبب عدم رد المشتري خلال 24 ساعة. تم تعليق حساب المشتري.`,
+            linkUrl: `/seller-dashboard?tab=sales&orderId=${tx.id}`,
+            relatedId: tx.id,
+          });
+        } catch (err) {
+          console.error(`[DeliveryService] Failed to notify seller:`, err);
+        }
+
+        processedCount++;
+      } catch (err) {
+        console.error(`[DeliveryService] Error processing expired no-answer for ${tx.id}:`, err);
+      }
+    }
+
+    if (processedCount > 0) {
+      console.log(`[DeliveryService] Processed ${processedCount} expired no-answer orders`);
+    }
+    return processedCount;
+  }
+
+  /**
+   * Reschedule delivery for a no-answer order (buyer action within 24h grace window).
+   * Resets the transaction to pending and creates a new delivery order.
+   */
+  async rescheduleDelivery(transactionId: string, buyerId: string): Promise<{ success: boolean; error?: string }> {
+    const [transaction] = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, transactionId))
+      .limit(1);
+
+    if (!transaction) {
+      return { success: false, error: "الطلب غير موجود" };
+    }
+
+    if (transaction.buyerId !== buyerId) {
+      return { success: false, error: "غير مصرح لك بهذا الإجراء" };
+    }
+
+    if (transaction.status !== "no_answer_pending") {
+      return { success: false, error: "هذا الطلب ليس في حالة انتظار إعادة الجدولة" };
+    }
+
+    // Check if grace window has expired
+    try {
+      const noteData = JSON.parse(transaction.issueNote || "{}");
+      const deadline = noteData.noAnswerDeadline ? new Date(noteData.noAnswerDeadline) : null;
+      if (deadline && deadline < new Date()) {
+        return { success: false, error: "انتهت مهلة إعادة الجدولة (24 ساعة)" };
+      }
+    } catch {
+      return { success: false, error: "خطأ في بيانات الطلب" };
+    }
+
+    // Reset transaction to pending for a new delivery attempt
+    await db
+      .update(transactions)
+      .set({
+        status: "pending",
+        deliveryStatus: "pending_pickup",
+        issueType: null,
+        issueNote: JSON.stringify({
+          rescheduledAt: new Date().toISOString(),
+          previousStatus: "no_answer_pending",
+        }),
+      })
+      .where(eq(transactions.id, transactionId));
+
+    // Create a new delivery order
+    const newDelivery = await this.createDeliveryOrder(transactionId);
+
+    // Notify seller about the rescheduled delivery
+    try {
+      await storage.createNotification({
+        userId: transaction.sellerId,
+        type: "delivery_rescheduled",
+        title: "تمت إعادة جدولة التوصيل 🔄",
+        message: `قام المشتري بإعادة جدولة التوصيل للطلب. سيتم إرسال سائق جديد قريباً.`,
+        linkUrl: `/seller-dashboard?tab=sales&orderId=${transactionId}`,
+        relatedId: transactionId,
+      });
+    } catch (err) {
+      console.error(`[DeliveryService] Failed to notify seller about reschedule:`, err);
+    }
+
+    // Notify buyer confirmation
+    try {
+      const notification = await storage.createNotification({
+        userId: buyerId,
+        type: "delivery_rescheduled",
+        title: "تمت إعادة جدولة التوصيل بنجاح ✅",
+        message: `تمت إعادة جدولة توصيل طلبك. سيتم إرسال سائق جديد قريباً. يرجى التأكد من تواجدك وتوفر هاتفك.`,
+        linkUrl: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
+        relatedId: transactionId,
+      });
+      sendToUser(buyerId, "NOTIFICATION", {
+        notification: {
+          id: notification.id,
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+          linkUrl: notification.linkUrl,
+        },
+      });
+      await sendPushNotification(buyerId, {
+        title: "تمت إعادة جدولة التوصيل بنجاح ✅",
+        body: "سيتم إرسال سائق جديد قريباً. يرجى التأكد من تواجدك.",
+        url: `/buyer-dashboard?tab=purchases&orderId=${transactionId}`,
+        tag: `reschedule-${transactionId}`,
+      });
+    } catch (err) {
+      console.error(`[DeliveryService] Failed to send reschedule confirmation:`, err);
+    }
+
+    console.log(`[DeliveryService] Delivery rescheduled for transaction: ${transactionId}, new delivery: ${newDelivery?.id || "pending"}`);
     return { success: true };
   }
 

@@ -248,14 +248,42 @@ async function sendHighDebtAlerts(): Promise<void> {
 }
 
 /**
+ * Process Expired No-Answer Orders
+ * Runs every hour — cancels no_answer_pending orders past 24h grace window
+ * and applies a 7-day order ban to the buyer.
+ */
+function startNoAnswerExpiryProcessor() {
+  // Run every hour at minute 30 (offset from grace period processor at :00)
+  cron.schedule("30 * * * *", async () => {
+    console.log("[PayoutCron] Starting no-answer expiry processor...");
+
+    try {
+      const { deliveryService } = await import("./services/delivery-service");
+      const processedCount = await deliveryService.processExpiredNoAnswerOrders();
+
+      if (processedCount > 0) {
+        console.log(`[PayoutCron] ⛔ Processed ${processedCount} expired no-answer orders`);
+      } else {
+        console.log("[PayoutCron] No expired no-answer orders found");
+      }
+    } catch (error) {
+      console.error("[PayoutCron] ❌ Error processing no-answer expiry:", error);
+    }
+  });
+
+  console.log("[PayoutCron] 📅 No-answer expiry processor: Every hour at :30");
+}
+
+/**
  * Start all payout permission cron jobs
  */
 export function startPayoutPermissionCrons(): void {
   console.log("[PayoutCron] Initializing payout permission cron jobs...");
-  
+
   startGracePeriodProcessor();
   startDebtEnforcer();
-  
+  startNoAnswerExpiryProcessor();
+
   console.log("[PayoutCron] ✅ All cron jobs initialized successfully");
 }
 

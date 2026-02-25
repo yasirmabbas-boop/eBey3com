@@ -76,11 +76,20 @@ interface ReturnRequest {
   details?: string;
   status: string;
   sellerResponse?: string;
+  respondedAt?: string;
+  refundAmount?: number;
+  refundProcessed?: boolean;
+  autoApproved?: boolean;
+  category?: string;
   createdAt: string;
   listing?: {
     id: string;
     title: string;
     images: string[];
+  };
+  transaction?: {
+    amount: number;
+    createdAt: string;
   };
 }
 
@@ -145,6 +154,12 @@ const StatusBadge = ({ status }: { status: string }) => {
     case "processing":
     case "pending":
       return <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">قيد التجهيز</span>;
+    case "no_answer_pending":
+      return <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700">بانتظار إعادة الجدولة</span>;
+    case "cancelled":
+      return <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">ملغي</span>;
+    case "refused":
+      return <span className="text-xs px-2 py-1 rounded-full bg-rose-100 text-rose-700">مرفوض</span>;
     default:
       return <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">{status}</span>;
   }
@@ -165,6 +180,34 @@ const OfferStatusBadge = ({ status }: { status: string }) => {
     default:
       return <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">{status}</span>;
   }
+};
+
+const ReturnStatusBadge = ({ status }: { status: string }) => {
+  switch (status) {
+    case "pending":
+      return <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">قيد المراجعة</span>;
+    case "approved":
+      return <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">تمت الموافقة</span>;
+    case "rejected":
+      return <span className="text-xs px-2 py-1 rounded-full bg-rose-100 text-rose-700">مرفوض</span>;
+    case "escalated":
+      return <span className="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700">تم التصعيد للإدارة</span>;
+    case "completed":
+      return <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">مكتمل</span>;
+    case "refunded":
+      return <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">تم الاسترداد</span>;
+    default:
+      return <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">{status}</span>;
+  }
+};
+
+const RETURN_REASON_LABELS: Record<string, string> = {
+  changed_mind: "غيرت رأيي",
+  damaged: "المنتج تالف أو مكسور",
+  different_from_description: "المنتج مختلف عن الوصف",
+  missing_parts: "ناقص أجزاء أو ملحقات",
+  wrong_item: "استلمت منتج خاطئ",
+  not_as_expected: "لم يلبِ توقعاتي",
 };
 
 function OfferCountdown({ expiresAt }: { expiresAt: string | Date }) {
@@ -373,6 +416,58 @@ export default function BuyerDashboard() {
     },
   });
 
+  // Reschedule delivery mutation (for no-answer orders)
+  const rescheduleMutation = useMutation({
+    mutationFn: async (transactionId: string) => {
+      const res = await fetch(`/api/orders/${transactionId}/reschedule`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "فشل في إعادة جدولة التوصيل");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم", description: "تمت إعادة جدولة التوصيل بنجاح. سيتم إرسال سائق جديد قريباً." });
+      queryClient.invalidateQueries({ queryKey: ["/api/account/purchases"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Escalate return request mutation
+  const escalateReturnMutation = useMutation({
+    mutationFn: async (returnRequestId: string) => {
+      const res = await fetch(`/api/return-requests/${returnRequestId}/escalate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "فشل في تصعيد الطلب");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "تم", description: "تم تصعيد طلب الإرجاع للإدارة. سيتم مراجعته خلال 24-48 ساعة." });
+      queryClient.invalidateQueries({ queryKey: ["/api/return-requests/my"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Report issue mutation
   const reportIssueMutation = useMutation({
     mutationFn: async ({ transactionId, reason, details }: { transactionId: string; reason: string; details?: string }) => {
@@ -495,6 +590,19 @@ export default function BuyerDashboard() {
     enabled: !!user?.id,
   });
 
+  const { data: myReturns = [], isLoading: returnsLoading } = useQuery<ReturnRequest[]>({
+    queryKey: ["/api/return-requests/my"],
+    queryFn: async () => {
+      const res = await fetch("/api/return-requests/my", {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch returns");
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
+
   // Auto-open order detail when deep linked from notification
   useEffect(() => {
     if (deepLinkOrderId && purchases.length > 0) {
@@ -505,6 +613,18 @@ export default function BuyerDashboard() {
       }
     }
   }, [deepLinkOrderId, purchases]);
+
+  // Auto-scroll to return request when deep linked
+  useEffect(() => {
+    if (deepLinkReturnId && myReturns.length > 0) {
+      const el = document.getElementById(`return-${deepLinkReturnId}`);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 300);
+      }
+    }
+  }, [deepLinkReturnId, myReturns]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -571,11 +691,17 @@ export default function BuyerDashboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full grid grid-cols-3 mb-4" dir="rtl">
+          <TabsList className="w-full grid grid-cols-4 mb-4" dir="rtl">
             <TabsTrigger value="orders" className="text-sm">
               الطلبات
               {(summary?.pendingOrders || 0) > 0 && (
                 <span className="mr-1 text-xs bg-blue-500 text-white px-1.5 rounded-full">{summary?.pendingOrders}</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="returns" className="text-sm">
+              المرتجعات
+              {myReturns.filter(r => r.status === "pending").length > 0 && (
+                <span className="mr-1 text-xs bg-amber-500 text-white px-1.5 rounded-full">{myReturns.filter(r => r.status === "pending").length}</span>
               )}
             </TabsTrigger>
             <TabsTrigger value="offers" className="text-sm">
@@ -603,10 +729,47 @@ export default function BuyerDashboard() {
               </div>
             ) : (
               <div className="space-y-3">
+                {/* No-answer pending orders: show urgent reschedule banner */}
+                {purchases.filter(p => p.status === "no_answer_pending").map((purchase) => (
+                  <div
+                    key={`no-answer-${purchase.id}`}
+                    className="p-4 bg-red-50 border-2 border-red-300 rounded-xl"
+                  >
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="font-bold text-sm text-red-800 mb-1">
+                          السائق لم يتمكن من الوصول إليك!
+                        </p>
+                        <p className="text-xs text-red-700 mb-3">
+                          لديك 24 ساعة لإعادة جدولة التوصيل لطلب "{purchase.listing?.title || 'منتج'}". إذا لم تقم بإعادة الجدولة، سيتم إلغاء الطلب وتعليق حسابك من الطلب لمدة 7 أيام.
+                        </p>
+                        <Button
+                          size="sm"
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                          disabled={rescheduleMutation.isPending}
+                          onClick={() => rescheduleMutation.mutate(purchase.id)}
+                        >
+                          {rescheduleMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin ml-1" />
+                          ) : (
+                            <RotateCcw className="h-4 w-4 ml-1" />
+                          )}
+                          إعادة جدولة التوصيل
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
                 {purchases.map((purchase) => (
-                  <div 
-                    key={purchase.id} 
-                    className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border/50 hover:border-border transition-colors cursor-pointer active:bg-muted/50"
+                  <div
+                    key={purchase.id}
+                    className={`flex items-center gap-3 p-3 bg-card rounded-xl border transition-colors cursor-pointer active:bg-muted/50 ${
+                      purchase.status === "no_answer_pending"
+                        ? "border-red-300 bg-red-50/30"
+                        : "border-border/50 hover:border-border"
+                    }`}
                     onClick={() => openOrderDetail(purchase)}
                     data-testid={`order-${purchase.id}`}
                   >
@@ -660,6 +823,146 @@ export default function BuyerDashboard() {
                         </div>
                       )}
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Returns Tab */}
+          <TabsContent value="returns" className="mt-0">
+            {returnsLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : myReturns.length === 0 ? (
+              <div className="text-center py-12">
+                <RotateCcw className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-muted-foreground">لا توجد طلبات إرجاع</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {myReturns.map((ret) => (
+                  <div
+                    key={ret.id}
+                    className={`bg-white border rounded-xl p-4 space-y-3 ${deepLinkReturnId === ret.id ? "ring-2 ring-primary" : ""}`}
+                    id={`return-${ret.id}`}
+                  >
+                    {/* Product info row */}
+                    <div className="flex items-start gap-3">
+                      {ret.listing?.images?.[0] ? (
+                        <img
+                          src={ret.listing.images[0]}
+                          alt={ret.listing?.title || ""}
+                          className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                          <Package className="h-6 w-6 text-muted-foreground/40" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{ret.listing?.title || "منتج"}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {RETURN_REASON_LABELS[ret.reason] || ret.reason}
+                        </p>
+                        {ret.transaction?.amount && (
+                          <p className="text-xs text-muted-foreground">
+                            المبلغ: {ret.transaction.amount.toLocaleString()} د.ع
+                          </p>
+                        )}
+                      </div>
+                      <ReturnStatusBadge status={ret.status} />
+                    </div>
+
+                    {/* Date */}
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>{new Date(ret.createdAt).toLocaleDateString("ar-IQ")}</span>
+                    </div>
+
+                    {/* Details if provided */}
+                    {ret.details && (
+                      <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700">
+                        <p className="text-xs text-muted-foreground mb-1">تفاصيل الطلب:</p>
+                        {ret.details}
+                      </div>
+                    )}
+
+                    {/* Seller response */}
+                    {ret.sellerResponse && (
+                      <div className={`rounded-lg p-3 text-sm ${
+                        ret.status === "approved" ? "bg-emerald-50 text-emerald-800" :
+                        ret.status === "rejected" ? "bg-rose-50 text-rose-800" :
+                        "bg-blue-50 text-blue-800"
+                      }`}>
+                        <p className="text-xs font-medium mb-1">
+                          <MessageCircle className="h-3 w-3 inline ml-1" />
+                          رد البائع:
+                        </p>
+                        {ret.sellerResponse}
+                        {ret.respondedAt && (
+                          <p className="text-xs opacity-70 mt-1">
+                            {new Date(ret.respondedAt).toLocaleDateString("ar-IQ")}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Auto-approved notice */}
+                    {ret.autoApproved && (
+                      <div className="bg-emerald-50 rounded-lg p-2 text-xs text-emerald-700 flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        تمت الموافقة تلقائياً وفقاً لسياسة الإرجاع
+                      </div>
+                    )}
+
+                    {/* Refund info */}
+                    {ret.refundAmount && ret.refundAmount > 0 && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <Wallet className="h-3 w-3 text-emerald-600" />
+                        <span className="text-emerald-700">
+                          مبلغ الاسترداد: {ret.refundAmount.toLocaleString()} د.ع
+                          {ret.refundProcessed ? " (تم)" : " (قيد المعالجة)"}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Pending status info */}
+                    {ret.status === "pending" && (
+                      <div className="bg-amber-50 rounded-lg p-2 text-xs text-amber-700 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        بانتظار رد البائع على طلب الإرجاع
+                      </div>
+                    )}
+
+                    {/* Escalated status info */}
+                    {ret.status === "escalated" && (
+                      <div className="bg-orange-50 rounded-lg p-2 text-xs text-orange-700 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        تم تصعيد الطلب للإدارة — جارٍ المراجعة
+                      </div>
+                    )}
+
+                    {/* Escalate button for rejected returns */}
+                    {ret.status === "rejected" && (
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 space-y-2">
+                        <p className="text-xs text-orange-800">
+                          <AlertTriangle className="h-3 w-3 inline ml-1" />
+                          هل تعتقد أن هذا القرار غير عادل؟ يمكنك تصعيد الطلب للإدارة للمراجعة.
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-xs border-orange-300 text-orange-700 hover:bg-orange-100"
+                          onClick={() => escalateReturnMutation.mutate(ret.id)}
+                          disabled={escalateReturnMutation.isPending}
+                        >
+                          {escalateReturnMutation.isPending && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
+                          تصعيد للإدارة
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

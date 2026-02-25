@@ -5,7 +5,7 @@ import { isNative } from './capacitor';
  * Initialize native push notifications (iOS/Android)
  */
 export const initNativePushNotifications = async (
-  onToken: (token: string) => void,
+  onToken: (token: string) => void | Promise<void>,
   onNotificationReceived?: (notification: PushNotificationSchema) => void,
   onNotificationTapped?: (notification: ActionPerformed) => void
 ): Promise<boolean> => {
@@ -33,20 +33,28 @@ export const initNativePushNotifications = async (
       return false;
     }
 
-    // IMPORTANT: Set up all listeners BEFORE calling register()
-    // This ensures we don't miss the token callback
-    console.log('[Push] Setting up registration listener...');
-    await PushNotifications.addListener('registration', (token: Token) => {
-      console.log('[Push] Registration listener fired! Token received:', token.value);
-      console.log('[Push] Token length:', token.value?.length || 0);
-      console.log('[Push] Calling onToken callback with token...');
-      onToken(token.value);
-    });
+    // Remove any existing listeners to prevent duplicates on re-registration
+    await PushNotifications.removeAllListeners();
+    console.log('[Push] Cleared existing listeners');
 
-    console.log('[Push] Setting up registrationError listener...');
-    await PushNotifications.addListener('registrationError', (error: any) => {
-      console.error('[Push] Registration error listener fired! Error:', error);
-      console.error('[Push] Error details:', JSON.stringify(error, null, 2));
+    // Use a promise to wait for the token instead of fire-and-forget callback
+    const tokenPromise = new Promise<string>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('FCM token registration timed out after 15 seconds'));
+      }, 15000);
+
+      PushNotifications.addListener('registration', (token: Token) => {
+        clearTimeout(timeout);
+        console.log('[Push] Registration listener fired! Token received:', token.value);
+        console.log('[Push] Token length:', token.value?.length || 0);
+        resolve(token.value);
+      });
+
+      PushNotifications.addListener('registrationError', (error: any) => {
+        clearTimeout(timeout);
+        console.error('[Push] Registration error listener fired! Error:', error);
+        reject(new Error(`FCM registration failed: ${JSON.stringify(error)}`));
+      });
     });
 
     // Listen for push notifications received while app is in foreground
@@ -74,13 +82,19 @@ export const initNativePushNotifications = async (
     }
 
     console.log('[Push] All listeners set up, now calling register()...');
-    
-    // NOW register with Apple / Google to receive push via APNS/FCM
-    // The token will be received via the 'registration' listener above
-    await PushNotifications.register();
-    console.log('[Push] PushNotifications.register() called successfully');
 
-    console.log('[Push] Returning true from initNativePushNotifications');
+    // Register with Apple / Google to receive push via APNS/FCM
+    await PushNotifications.register();
+    console.log('[Push] PushNotifications.register() called, waiting for token...');
+
+    // Wait for the token to actually arrive before returning
+    const token = await tokenPromise;
+    console.log('[Push] Token obtained, calling onToken callback...');
+
+    // Call onToken and wait for it (it sends the token to the backend)
+    await onToken(token);
+    console.log('[Push] onToken callback completed successfully');
+
     return true;
   } catch (error) {
     console.error('[Push] Error initializing native push notifications:', error);

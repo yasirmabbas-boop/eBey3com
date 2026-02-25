@@ -87,25 +87,80 @@ function SocketNotificationsWrapper() {
   return null;
 }
 
+// Scroll position map: stores scrollY keyed by a unique history entry key
+// Limited to 50 entries to prevent unbounded memory growth
+const scrollPositions = new Map<string, number>();
+const MAX_SCROLL_ENTRIES = 50;
+let currentHistoryKey = Math.random().toString(36).slice(2, 8);
+
+function saveScrollPosition(key: string, y: number) {
+  scrollPositions.set(key, y);
+  // Evict oldest entries if over limit
+  if (scrollPositions.size > MAX_SCROLL_ENTRIES) {
+    const firstKey = scrollPositions.keys().next().value;
+    if (firstKey) scrollPositions.delete(firstKey);
+  }
+}
+
 function ScrollToTop() {
   useEffect(() => {
-    // Listen to popstate events (browser back/forward)
-    const handlePopState = () => {
-      window.scrollTo(0, 0);
-    };
+    // Use manual scroll restoration so we control it
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
 
-    // Intercept pushState and replaceState to scroll on navigation
+    // Assign a key to the initial history entry if it doesn't have one
+    if (!history.state?._scrollKey) {
+      history.replaceState({ ...history.state, _scrollKey: currentHistoryKey }, "");
+    } else {
+      currentHistoryKey = history.state._scrollKey;
+    }
+
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
 
+    // On forward navigation (pushState): save current scroll, scroll new page to top
     history.pushState = function(...args) {
+      // Save scroll position for the page we're leaving
+      saveScrollPosition(currentHistoryKey, window.scrollY);
+
+      // Generate a new key for the destination page
+      const newKey = Math.random().toString(36).slice(2, 8);
+      const stateObj = (args[0] && typeof args[0] === 'object') ? args[0] : {};
+      args[0] = { ...stateObj, _scrollKey: newKey };
+      currentHistoryKey = newKey;
+
       originalPushState.apply(history, args);
       setTimeout(() => window.scrollTo(0, 0), 0);
     };
 
+    // replaceState: keep current key, don't scroll
     history.replaceState = function(...args) {
+      const stateObj = (args[0] && typeof args[0] === 'object') ? args[0] : {};
+      args[0] = { ...stateObj, _scrollKey: currentHistoryKey };
       originalReplaceState.apply(history, args);
-      setTimeout(() => window.scrollTo(0, 0), 0);
+    };
+
+    // On back/forward (popstate): restore saved scroll position
+    const handlePopState = (e: PopStateEvent) => {
+      // Save scroll position for the page we're leaving
+      saveScrollPosition(currentHistoryKey, window.scrollY);
+
+      // Get the key for the page we're going to
+      const targetKey = e.state?._scrollKey;
+      if (targetKey) {
+        currentHistoryKey = targetKey;
+        const savedY = scrollPositions.get(targetKey);
+        if (savedY != null && savedY > 0) {
+          // Delay to allow lazy-loaded page content to render before restoring scroll
+          // Use multiple attempts since Suspense/lazy pages may take time to mount
+          const restore = () => window.scrollTo(0, savedY);
+          setTimeout(restore, 50);
+          setTimeout(restore, 150);
+          setTimeout(restore, 400);
+        }
+        // If no saved position, don't scroll — page will be at wherever it was
+      }
     };
 
     window.addEventListener('popstate', handlePopState);

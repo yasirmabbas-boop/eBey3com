@@ -212,6 +212,8 @@ export default function CheckoutPage() {
         errorObj.summary = error.summary;
         errorObj.requiresPhoneVerification = error.requiresPhoneVerification;
         errorObj.phone = error.phone;
+        errorObj.orderBanned = error.error === "order_banned";
+        errorObj.banUntil = error.banUntil;
         errorObj.message = error.message || error.error;
         throw errorObj;
       }
@@ -257,6 +259,17 @@ export default function CheckoutPage() {
           title: "تحقق من رقم الهاتف مطلوب",
           description: error.message || "يجب التحقق من رقم هاتفك قبل إتمام الطلب",
           variant: "default",
+          duration: 10000,
+        });
+        return;
+      }
+
+      // Check for order ban
+      if (error.orderBanned) {
+        toast({
+          title: "حسابك محظور مؤقتاً من الطلب",
+          description: error.message || "حسابك محظور من الطلب مؤقتاً بسبب عدم الرد على التوصيل",
+          variant: "destructive",
           duration: 10000,
         });
         return;

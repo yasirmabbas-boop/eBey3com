@@ -59,6 +59,9 @@ export const users = pgTable("users", {
   phoneVerified: boolean("phone_verified").notNull().default(false),
   biddingLimit: integer("bidding_limit").notNull().default(0), // Deprecated - no bidding limits
   completedPurchases: integer("completed_purchases").notNull().default(0),
+  orderBanUntil: timestamp("order_ban_until"),          // null = no ban, future date = temporarily banned from ordering
+  orderBanReason: text("order_ban_reason"),              // reason for the temporary order ban
+  noAnswerCount: integer("no_answer_count").notNull().default(0), // lifetime no-answer delivery count
 }, (table) => ({
   usersPhoneIdx: index("users_phone_idx").on(table.phone),
   usersFacebookIdIdx: index("users_facebook_id_idx").on(table.facebookId),

@@ -271,11 +271,21 @@ export function registerCartRoutes(app: Express): void {
       // Check if user has verified their phone (consistent with cart requirement)
       const user = await storage.getUser(userId);
       if (!user?.phoneVerified) {
-        return res.status(403).json({ 
+        return res.status(403).json({
           error: "يجب التحقق من رقم هاتفك قبل إتمام الطلب",
           requiresPhoneVerification: true,
           phone: user?.phone, // Include phone for frontend
           message: `يرجى التحقق من رقم هاتفك ${user?.phone} عبر واتساب لإتمام الطلب`
+        });
+      }
+
+      // Check if buyer has a temporary order ban (no-answer penalty)
+      if (user.orderBanUntil && new Date(user.orderBanUntil) > new Date()) {
+        const banDate = new Intl.DateTimeFormat("ar-IQ", { year: "numeric", month: "long", day: "numeric" }).format(new Date(user.orderBanUntil));
+        return res.status(403).json({
+          error: "order_banned",
+          message: `حسابك محظور من الطلب مؤقتاً بسبب عدم الرد على التوصيل. سيتم رفع الحظر في ${banDate}`,
+          banUntil: user.orderBanUntil,
         });
       }
 
@@ -363,6 +373,43 @@ export function registerCartRoutes(app: Express): void {
           } catch (notifError) {
             console.error(`Failed to notify seller ${listing.sellerId}:`, notifError);
           }
+        }
+      }
+
+      // Notify the BUYER that their order was received
+      if (transactions.length > 0) {
+        try {
+          const firstTitle = processedItems[0]?.listing?.title || "";
+          const itemCount = transactions.length;
+          const buyerMessage = itemCount > 1
+            ? `تم استلام طلبك (${itemCount} منتجات). سنرسل لك تحديثات عند شحن مشترياتك.`
+            : `تم استلام طلبك على "${firstTitle}". سنرسل لك تحديثات عند شحن مشترياتك.`;
+
+          const buyerNotification = await storage.createNotification({
+            userId,
+            type: "order_received",
+            title: "تم استلام طلبك! 🛒",
+            message: buyerMessage,
+            linkUrl: `/buyer-dashboard?tab=purchases`,
+            relatedId: transactions[0].id,
+          });
+          sendToUser(userId, "NOTIFICATION", {
+            notification: {
+              id: buyerNotification.id,
+              type: buyerNotification.type,
+              title: buyerNotification.title,
+              message: buyerNotification.message,
+              linkUrl: buyerNotification.linkUrl,
+            },
+          });
+          await sendPushNotification(userId, {
+            title: "تم استلام طلبك! 🛒",
+            body: buyerMessage,
+            url: `/buyer-dashboard?tab=purchases`,
+            tag: `order-received-${transactions[0].id}`,
+          });
+        } catch (notifError) {
+          console.error(`Failed to notify buyer ${userId}:`, notifError);
         }
       }
 
