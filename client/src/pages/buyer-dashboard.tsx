@@ -546,20 +546,21 @@ export default function BuyerDashboard() {
 
   // Report issue mutation
   const reportIssueMutation = useMutation({
-    mutationFn: async ({ transactionId, reason, details }: { transactionId: string; reason: string; details?: string }) => {
+    mutationFn: async ({ transactionId, reason, details, images }: { transactionId: string; reason: string; details?: string; images?: string[] }) => {
       const res = await fetch("/api/reports", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
         credentials: "include",
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           reportType: "transaction_issue",
-          targetId: transactionId, 
+          targetId: transactionId,
           targetType: "transaction",
-          reason, 
-          details 
+          reason,
+          details,
+          images,
         }),
       });
       if (!res.ok) {
@@ -642,6 +643,7 @@ export default function BuyerDashboard() {
       transactionId: selectedOrder.id,
       reason: issueReason,
       details: issueDetails || undefined,
+      images: issueImages.length > 0 ? issueImages : undefined,
     });
   };
 
@@ -1749,6 +1751,27 @@ export default function BuyerDashboard() {
                 />
               </div>
 
+              {/* Evidence image upload */}
+              <div className="space-y-2">
+                <Label>صور توضيحية (اختياري، حتى 5 صور)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {issueImages.map((img, i) => (
+                    <div key={i} className="relative w-16 h-16">
+                      <img src={img} alt="" className="w-16 h-16 object-cover rounded border" />
+                      <button onClick={() => setIssueImages(prev => prev.filter((_, idx) => idx !== i))}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">×</button>
+                    </div>
+                  ))}
+                  {issueImages.length < 5 && (
+                    <label className="w-16 h-16 border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-primary text-gray-400 text-2xl">
+                      {issueUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : "+"}
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={(e) => { if (e.target.files?.[0]) handleIssueImageUpload(e.target.files[0]); e.target.value = ""; }} />
+                    </label>
+                  )}
+                </div>
+              </div>
+
               <div className="bg-amber-50 rounded-lg p-3 text-sm">
                 <p className="text-amber-700">
                   سيتم مراجعة بلاغك خلال 24-48 ساعة وسنتواصل معك
@@ -1759,7 +1782,7 @@ export default function BuyerDashboard() {
                 <Button
                   className="flex-1"
                   onClick={submitIssueReport}
-                  disabled={!issueReason || !issueDetails || reportIssueMutation.isPending}
+                  disabled={!issueReason || !issueDetails || reportIssueMutation.isPending || issueUploading}
                 >
                   {reportIssueMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                   إرسال البلاغ
