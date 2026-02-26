@@ -13,3 +13,8 @@ ebey3_backup.sql
 
 # Mobile app (separate project, do not push)
 ebey3-mobile
+
+# Android signing credentials (never commit these)
+android/key.properties
+release-key.jks
+*.jks

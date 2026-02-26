@@ -10,7 +10,6 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     url: 'https://ebey3.com',
-    cleartext: true,
   },
   plugins: {
     SplashScreen: {
