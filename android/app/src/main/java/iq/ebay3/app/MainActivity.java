@@ -24,6 +24,7 @@ public class MainActivity extends BridgeActivity {
             );
             defaultChannel.setDescription("إشعارات المزادات والرسائل والطلبات");
             defaultChannel.enableVibration(true);
+            defaultChannel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
             manager.createNotificationChannel(defaultChannel);
         }
     }

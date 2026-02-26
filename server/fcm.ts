@@ -1,5 +1,5 @@
   // server/fcm.ts
-  import admin from './firebase'; 
+  import admin from './firebase';
 
   export function isFCMReady() {
     return true;
@@ -7,7 +7,15 @@
 
   export async function sendFCMNotification(token: string, payload: any) {
     try {
-      // Send FCM push notification
+      // Build data payload — FCM data values must be strings
+      const data: Record<string, string> = {};
+      if (payload.url) data.url = payload.url;
+      if (payload.tag) data.type = payload.tag;
+      if (payload.data) {
+        Object.entries(payload.data).forEach(([key, value]) => {
+          data[key] = String(value);
+        });
+      }
 
       const response = await admin.messaging().send({
         token: token,
@@ -15,7 +23,7 @@
           title: payload.title,
           body: payload.body,
         },
-        data: payload.data || {},
+        data,
         android: {
           priority: 'high',
           notification: {
@@ -24,6 +32,7 @@
             color: '#E85D26',
             channelId: 'ebey3_default',
             tag: `ebey3_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            visibility: 'public',
           },
         },
         apns: {
