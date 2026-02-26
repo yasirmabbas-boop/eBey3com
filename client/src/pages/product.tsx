@@ -180,7 +180,8 @@ export default function ProductPage() {
       });
       const { uploadURL, objectPath } = await urlRes.json();
       await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-      setReportImages(prev => [...prev, `https://storage.googleapis.com/${objectPath}`]);
+      // Use the proxy route path instead of direct GCS URL
+      setReportImages(prev => [...prev, objectPath]);
     } catch { /* silent */ } finally { setReportUploading(false); }
   };
 
@@ -220,20 +221,11 @@ export default function ProductPage() {
     queryKey: ["/api/listings", params?.id],
     queryFn: async () => {
       const url = `/api/listings/${params?.id}`;
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:listing-query',message:'listing-detail-request',data:{listingId:params?.id,url},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H12'})}).catch(()=>{});
-      // #endregion
       const res = await secureRequest(url, { method: "GET" });
       if (!res.ok) {
-        // #region agent log
-        fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:listing-query',message:'listing-detail-error',data:{listingId:params?.id,status:res.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H13'})}).catch(()=>{});
-        // #endregion
         throw new Error("Listing not found");
       }
       const data = await res.json();
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:listing-query',message:'listing-detail-success',data:{listingId:params?.id,isDeleted:data?.isDeleted,isActive:data?.isActive,quantitySold:data?.quantitySold,quantityAvailable:data?.quantityAvailable},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H14'})}).catch(()=>{});
-      // #endregion
       return data;
     },
     enabled: !!params?.id,
@@ -268,30 +260,15 @@ export default function ProductPage() {
   const { data: purchaseStatus = { hasPurchased: false } } = useQuery<{ hasPurchased: boolean }>({
     queryKey: ["/api/listings", params?.id, "purchase-status", user?.id],
     queryFn: async () => {
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:purchase-status-query',message:'purchase-status-query-start',data:{listingId:params?.id,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H1'})}).catch(()=>{});
-      // #endregion
       const res = await fetch(`/api/listings/${params?.id}/purchase-status`, {
         credentials: "include",
       });
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:purchase-status-query',message:'purchase-status-response',data:{status:res.status,ok:res.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H1'})}).catch(()=>{});
-      // #endregion
       if (!res.ok) return { hasPurchased: false };
       const result = await res.json();
-      // #region agent log
-      fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:purchase-status-query',message:'purchase-status-result',data:result,timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H1'})}).catch(()=>{});
-      // #endregion
       return result;
     },
     enabled: !!params?.id && !!user?.id,
   });
-
-  // #region agent log
-  useEffect(() => {
-    fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:purchase-status-effect',message:'purchase-status-value-check',data:{purchaseStatusDefined:typeof purchaseStatus !== 'undefined',purchaseStatusValue:purchaseStatus,hasPurchased:purchaseStatus?.hasPurchased,paramsId:params?.id,userId:user?.id,enabled:!!params?.id && !!user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
-  }, [purchaseStatus, params?.id, user?.id]);
-  // #endregion
 
   // Set outbid status on page load if user has bid but is not highest
   useEffect(() => {
@@ -994,15 +971,9 @@ export default function ProductPage() {
         {/* Action Buttons */}
         <div className="py-4 space-y-3">
           {(() => {
-            // #region agent log
-            fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:action-buttons-iife',message:'iife-entry-purchase-status-check',data:{purchaseStatusDefined:typeof purchaseStatus !== 'undefined',purchaseStatusType:typeof purchaseStatus,purchaseStatusValue:purchaseStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H3'})}).catch(()=>{});
-            // #endregion
             const remainingQuantity = product.quantityAvailable - product.quantitySold;
             const isSoldOut = remainingQuantity <= 0;
             const hasPurchased = purchaseStatus?.hasPurchased === true;
-            // #region agent log
-            fetch('http://localhost:7242/ingest/005f27f0-13ae-4477-918f-9d14680f3cb3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product.tsx:action-buttons-iife',message:'iife-after-purchase-status-access',data:{hasPurchased,remainingQuantity,isSoldOut},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'H3'})}).catch(()=>{});
-            // #endregion
             
             // Show "out of stock" immediately if sold out
             if (isSoldOut) {

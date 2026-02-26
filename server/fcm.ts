@@ -7,7 +7,7 @@
 
   export async function sendFCMNotification(token: string, payload: any) {
     try {
-      console.log(`[FCM] Sending to token: ${token.substring(0, 10)}...`);
+      // Send FCM push notification
 
       const response = await admin.messaging().send({
         token: token,
@@ -32,7 +32,7 @@
         },
       });
 
-      console.log('[FCM] Successfully sent message:', response);
+      // Message sent successfully
       return true;
     } catch (error) {
       console.error('[FCM] Error sending message:', error);

@@ -18,3 +18,9 @@ ebey3-mobile
 android/key.properties
 release-key.jks
 *.jks
+
+# Firebase service account (server-side secrets)
+server/service-account.json
+
+# Test archives (not for production)
+server/_test-archive/

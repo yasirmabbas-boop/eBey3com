@@ -157,14 +157,7 @@ export function setupFacebookAuth(app: Express): void {
           
           const photoUrl = profile.photos && profile.photos[0] ? profile.photos[0].value : null;
           
-          console.log("[Facebook OAuth] Profile data:", { 
-            facebookId,
-            firstName,
-            lastName,
-            displayName,
-            hasEmail: !!email,
-            hasPhoto: !!photoUrl
-          });
+          // Profile extracted successfully
 
           // Generate a unique user ID (use Facebook ID as base, but ensure uniqueness)
           const userId = `fb_${facebookId}`;
@@ -183,30 +176,13 @@ export function setupFacebookAuth(app: Express): void {
           // Passport will serialize this via passport.serializeUser
           return done(null, user as Express.User);
         } catch (error: any) {
-          console.error("[Facebook OAuth] DETAILED ERROR:", {
-            message: error?.message,
-            stack: error?.stack,
-            code: error?.code,
-            name: error?.name,
-            fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-          });
+          console.error("[Facebook OAuth] Authentication error:", error?.message);
           // Don't expose sensitive error details
           return done(new Error("Failed to authenticate with Facebook"), undefined);
         }
       }
     )
   );
-
-  // Debug endpoint to check Facebook OAuth configuration
-  app.get("/api/debug/facebook-status", (req, res) => {
-    res.json({
-      configured: !!(FB_APP_ID && FB_APP_SECRET),
-      appIdConfigured: !!FB_APP_ID,
-      appSecretConfigured: !!FB_APP_SECRET,
-      callbackUrl: FB_CALLBACK_URL,
-      timestamp: new Date().toISOString(),
-    });
-  });
 
   // Route: Initiate Facebook OAuth flow
   app.get("/auth/facebook", passport.authenticate("facebook"));
@@ -222,10 +198,8 @@ export function setupFacebookAuth(app: Express): void {
       try {
         // User is now authenticated and in session
         const user = req.user as User;
-        console.log("[Facebook Auth] Callback received, user:", user?.id);
-        
+
         if (!user || !user.id) {
-          console.log("[Facebook Auth] No user in request, redirecting to signin");
           return res.redirect("/signin?error=authentication_failed");
         }
 
@@ -240,7 +214,6 @@ export function setupFacebookAuth(app: Express): void {
               console.error("[Facebook Auth] Session save error:", err);
               reject(err);
             } else {
-              console.log("[Facebook Auth] Session saved with userId:", user.id);
               resolve();
             }
           });
@@ -248,10 +221,8 @@ export function setupFacebookAuth(app: Express): void {
 
         // Fetch the full user record from database to check for phone and address
         const fullUser = await authStorage.getUser(user.id);
-        console.log("[Facebook Auth] Full user from DB:", fullUser?.id, "phone:", fullUser?.phone, "address:", fullUser?.addressLine1);
-        
+
         if (!fullUser) {
-          console.log("[Facebook Auth] User not found in DB, redirecting to signin");
           return res.redirect("/signin?error=user_not_found");
         }
 
@@ -264,12 +235,10 @@ export function setupFacebookAuth(app: Express): void {
           authToken,
           tokenExpiresAt 
         } as any);
-        console.log("[Facebook Auth] Generated authToken for user:", user.id);
 
         // Check if user has phone and address
         const hasPhone = fullUser.phone && fullUser.phone.trim() !== "";
         const hasAddress = fullUser.addressLine1 && fullUser.addressLine1.trim() !== "";
-        console.log("[Facebook Auth] hasPhone:", hasPhone, "hasAddress:", hasAddress);
 
         // Determine redirect URL
         const needsOnboarding = !hasPhone || !hasAddress;
@@ -331,8 +300,6 @@ export function setupFacebookAuth(app: Express): void {
         return res.status(400).json({ error: "Missing accessToken or userID" });
       }
 
-      console.log("[Facebook Token Auth] Validating token for user:", userID);
-
       let facebookId: string;
       let email: string | null = null;
       let displayName: string = "";
@@ -340,15 +307,12 @@ export function setupFacebookAuth(app: Express): void {
       let longLivedToken: string | null = null;
 
       if (isLimitedLoginJWT(accessToken)) {
-        console.log("[Facebook Token Auth] Detected Limited Login JWT token, validating via JWKS...");
-
         const claims = await verifyLimitedLoginToken(accessToken);
-        console.log("[Facebook Token Auth] JWT verified. sub:", claims.sub, "name:", claims.name);
 
         facebookId = claims.sub;
 
         if (facebookId !== userID) {
-          console.error("[Facebook Token Auth] JWT sub mismatch: expected", userID, "got", facebookId);
+          console.error("[Facebook Token Auth] JWT sub mismatch");
           return res.status(401).json({ error: "Token user mismatch" });
         }
 
@@ -358,8 +322,6 @@ export function setupFacebookAuth(app: Express): void {
         longLivedToken = null;
 
       } else {
-        console.log("[Facebook Token Auth] Detected classic access token, validating via Graph API...");
-
         const verifyResponse = await axios.get(`https://graph.facebook.com/debug_token`, {
           params: {
             input_token: accessToken,
@@ -370,7 +332,7 @@ export function setupFacebookAuth(app: Express): void {
         const tokenData = verifyResponse.data.data;
 
         if (!tokenData.is_valid || tokenData.user_id !== userID) {
-          console.error("[Facebook Token Auth] Invalid token:", tokenData);
+          console.error("[Facebook Token Auth] Invalid token");
           return res.status(401).json({ error: "Invalid Facebook token" });
         }
 
@@ -378,8 +340,6 @@ export function setupFacebookAuth(app: Express): void {
           console.error("[Facebook Token Auth] Token app_id mismatch");
           return res.status(401).json({ error: "Token not for this app" });
         }
-
-        console.log("[Facebook Token Auth] Token verified, fetching user profile...");
 
         const profileResponse = await axios.get(`https://graph.facebook.com/v18.0/${userID}`, {
           params: {
@@ -389,7 +349,6 @@ export function setupFacebookAuth(app: Express): void {
         });
 
         const profile = profileResponse.data;
-        console.log("[Facebook Token Auth] Profile fetched:", profile.id, profile.email);
 
         longLivedToken = await exchangeForLongLivedToken(accessToken);
         facebookId = profile.id;
@@ -408,7 +367,6 @@ export function setupFacebookAuth(app: Express): void {
         displayName,
         avatar: profilePhoto,
       });
-      console.log("[Facebook Token Auth] Upserted user:", user.id);
 
       if (!user) {
         return res.status(500).json({ error: "Failed to create or find user" });
@@ -432,8 +390,6 @@ export function setupFacebookAuth(app: Express): void {
       const hasAddress = fullUser?.addressLine1 && fullUser.addressLine1.trim() !== "";
       const needsOnboarding = !hasPhone || !hasAddress;
 
-      console.log("[Facebook Token Auth] Login successful for user:", user.id, "needsOnboarding:", needsOnboarding);
-
       return res.json({
         success: true,
         authToken,
@@ -446,15 +402,13 @@ export function setupFacebookAuth(app: Express): void {
         },
       });
     } catch (error) {
-      console.error("[Facebook Token Auth] Error:", error);
+      console.error("[Facebook Token Auth] Authentication error");
       return res.status(500).json({ error: "Authentication failed" });
     }
   });
 
   app.post("/api/facebook/data-deletion-callback", async (req, res) => {
     try {
-      console.log("[Facebook Data Deletion] Received callback:", req.body);
-
       // Meta sends signed_request parameter
       const signedRequest = req.body.signed_request;
       
@@ -474,8 +428,6 @@ export function setupFacebookAuth(app: Express): void {
       // Decode payload (base64url encoded JSON)
       const decodedPayload = Buffer.from(payload, "base64").toString("utf-8");
       const data = JSON.parse(decodedPayload);
-      
-      console.log("[Facebook Data Deletion] Decoded data:", data);
 
       // Verify signature using HMAC SHA256
       const expectedSignature = crypto
@@ -493,9 +445,9 @@ export function setupFacebookAuth(app: Express): void {
 
       // Extract user_id from decoded data
       const facebookUserId = data.user_id;
-      
+
       if (!facebookUserId) {
-        console.error("[Facebook Data Deletion] No user_id in decoded data");
+        console.error("[Facebook Data Deletion] Invalid request");
         return res.status(400).json({ error: "Missing user_id" });
       }
 
@@ -504,9 +456,9 @@ export function setupFacebookAuth(app: Express): void {
       const user = await authStorage.getUser(userId);
 
       if (!user) {
-        console.log("[Facebook Data Deletion] User not found:", userId);
         // Still return success - user might have already been deleted
         const confirmationCode = crypto.randomBytes(16).toString("hex");
+        console.log("[Facebook Data Deletion] Deletion request processed, confirmation code:", confirmationCode);
         return res.json({
           url: `https://ebey3.com/deletion/status?id=${confirmationCode}`,
           confirmation_code: confirmationCode,
@@ -518,7 +470,6 @@ export function setupFacebookAuth(app: Express): void {
       const confirmationCode = crypto.randomBytes(16).toString("hex");
 
       // Log deletion request (you may want to store this in a deletion queue table)
-      console.log("[Facebook Data Deletion] Initiating deletion for user:", userId);
       console.log("[Facebook Data Deletion] Deletion ID:", deletionId);
       console.log("[Facebook Data Deletion] Confirmation code:", confirmationCode);
 
@@ -537,7 +488,7 @@ export function setupFacebookAuth(app: Express): void {
       // } as any);
 
       // Send email notification to security@ebey3.com
-      console.log(`[Facebook Data Deletion] TODO: Send notification email to security@ebey3.com for user ${userId}`);
+      console.log("[Facebook Data Deletion] TODO: Send notification email to security@ebey3.com");
 
       // Return confirmation URL and code as required by Meta
       return res.json({
@@ -546,7 +497,7 @@ export function setupFacebookAuth(app: Express): void {
       });
       
     } catch (error) {
-      console.error("[Facebook Data Deletion] Error processing callback:", error);
+      console.error("[Facebook Data Deletion] Error processing callback");
       return res.status(500).json({ error: "Internal server error" });
     }
   });
