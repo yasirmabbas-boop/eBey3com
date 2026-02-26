@@ -3,7 +3,8 @@ import { QRCodeSVG } from "qrcode.react";
 import Barcode from "react-barcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, X, Package } from "lucide-react";
+import { Printer, X, Package, Share2 } from "lucide-react";
+import html2canvas from "html2canvas";
 
 type LabelSize = "a6" | "thermal-100" | "thermal-80";
 
@@ -46,97 +47,125 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
   const isCompact = labelSize === "thermal-80";
   const totalCOD = orderDetails.price + (orderDetails.shippingCost || 0);
 
-  const handlePrint = () => {
+  const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
+
+  const handlePrint = async () => {
     const printContent = printRef.current;
     if (!printContent) return;
 
-    const headerFontSize = isCompact ? "16px" : "20px";
-    const codFontSize = isCompact ? "20px" : "24px";
-    const basePadding = isCompact ? "2mm" : "3mm";
-    const innerPadding = isCompact ? "6px" : "10px";
+    if (isCapacitor) {
+      // On Capacitor: render label to image and share via native share sheet
+      try {
+        const canvas = await html2canvas(printContent, {
+          scale: 3,
+          backgroundColor: "#ffffff",
+          useCORS: true,
+        });
+        const blob = await new Promise<Blob>((resolve, reject) =>
+          canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Failed to create image"))), "image/png")
+        );
+        const file = new File([blob], `label-${orderDetails.orderId}.png`, { type: "image/png" });
 
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html dir="rtl" lang="ar">
-      <head>
-        <meta charset="UTF-8">
-        <title>${isReturn ? "إيصال إرجاع" : "إيصال توصيل"} - ${orderDetails.orderId}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          @page { size: ${sizeConfig.width} ${sizeConfig.height}; margin: 0; }
-          body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #fff; direction: rtl;
-            width: ${sizeConfig.width}; height: ${sizeConfig.height};
-          }
-          .label-container { width: ${sizeConfig.width}; height: ${sizeConfig.height}; padding: ${basePadding}; position: relative; }
-          .label { border: 2px solid #000; height: 100%; padding: ${innerPadding}; display: flex; flex-direction: column; }
-          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: ${isCompact ? "6px" : "10px"}; margin-bottom: ${isCompact ? "6px" : "10px"}; }
-          .header-left { text-align: right; }
-          .header-left h1 { font-size: ${headerFontSize}; font-weight: 900; margin-bottom: 2px; }
-          .header-left .subtitle { font-size: ${isCompact ? "8px" : "10px"}; color: #666; text-transform: uppercase; letter-spacing: 2px; }
-          .header-left .date { font-size: ${isCompact ? "8px" : "9px"}; color: #999; margin-top: 3px; }
-          .cod-badge { border: 2px solid #000; padding: 3px 8px; font-weight: bold; font-size: ${isCompact ? "13px" : "16px"}; text-align: center; }
-          .cod-badge span { display: block; font-size: ${isCompact ? "7px" : "8px"}; font-weight: normal; }
-          .barcode-section { text-align: center; margin: ${isCompact ? "4px 0" : "8px 0"}; }
-          .addresses { display: flex; gap: ${isCompact ? "4px" : "8px"}; flex: 1; margin-bottom: ${isCompact ? "4px" : "8px"}; }
-          .address-box { flex: 1; border: 1px solid #ccc; border-radius: 6px; padding: ${isCompact ? "4px" : "8px"}; }
-          .address-box.buyer { border: 2px solid #000; background: #f9f9f9; }
-          .address-header { display: flex; align-items: center; gap: 5px; font-weight: bold; font-size: ${isCompact ? "9px" : "11px"}; padding-bottom: ${isCompact ? "3px" : "5px"}; border-bottom: 1px solid #ddd; margin-bottom: ${isCompact ? "3px" : "5px"}; }
-          .address-content { font-size: ${isCompact ? "8px" : "10px"}; line-height: 1.4; }
-          .address-content .name { font-weight: bold; font-size: ${isCompact ? "10px" : "12px"}; margin-bottom: 3px; }
-          .address-content .phone { font-weight: 600; direction: ltr; text-align: left; }
-          .cod-amount { background: #FEF3C7; border: 2px solid #F59E0B; border-radius: 6px; padding: ${isCompact ? "6px" : "10px"}; text-align: center; margin-bottom: ${isCompact ? "4px" : "8px"}; }
-          .cod-amount .label-text { font-size: ${isCompact ? "8px" : "9px"}; color: #92400E; margin-bottom: 3px; }
-          .cod-amount .amount { font-size: ${codFontSize}; font-weight: 900; color: #78350F; }
-          .cod-amount .breakdown { font-size: ${isCompact ? "7px" : "8px"}; color: #92400E; margin-top: 2px; }
-          .footer-section { display: flex; justify-content: space-between; align-items: flex-end; }
-          .product-info { flex: 1; }
-          .product-info .label-text { font-size: ${isCompact ? "7px" : "8px"}; color: #999; }
-          .product-info .title { font-size: ${isCompact ? "8px" : "10px"}; font-weight: 500; }
-          .product-info .weight { font-size: ${isCompact ? "7px" : "8px"}; color: #666; }
-          .qr-code { margin-right: ${isCompact ? "5px" : "10px"}; }
-          .company-footer { text-align: center; font-size: ${isCompact ? "7px" : "8px"}; color: #999; padding-top: ${isCompact ? "3px" : "5px"}; border-top: 1px solid #eee; margin-top: ${isCompact ? "3px" : "5px"}; }
-          @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-        </style>
-      </head>
-      <body>${printContent.innerHTML}</body>
-      </html>
-    `;
-
-    // Inject print-only container and CSS into the main document
-    // This avoids iframe/window.open issues in Capacitor WebView
-    const existingPrint = document.getElementById("print-label-container");
-    if (existingPrint) existingPrint.remove();
-    const existingStyle = document.getElementById("print-label-style");
-    if (existingStyle) existingStyle.remove();
-
-    const style = document.createElement("style");
-    style.id = "print-label-style";
-    style.textContent = `
-      @media print {
-        body > *:not(#print-label-container) { display: none !important; }
-        #print-label-container { display: block !important; }
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: `إيصال ${orderDetails.orderId}` });
+        } else {
+          // Fallback: download the image
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `label-${orderDetails.orderId}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      } catch (err) {
+        console.error("Label share error:", err);
       }
-    `;
-    document.head.appendChild(style);
+    } else {
+      // On web browser: use window.print() with CSS @media print rules
+      const headerFontSize = isCompact ? "16px" : "20px";
+      const codFontSize = isCompact ? "20px" : "24px";
+      const basePadding = isCompact ? "2mm" : "3mm";
+      const innerPadding = isCompact ? "6px" : "10px";
 
-    const container = document.createElement("div");
-    container.id = "print-label-container";
-    container.style.display = "none";
-    container.innerHTML = htmlContent;
-    document.body.appendChild(container);
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="UTF-8">
+          <title>${isReturn ? "إيصال إرجاع" : "إيصال توصيل"} - ${orderDetails.orderId}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            @page { size: ${sizeConfig.width} ${sizeConfig.height}; margin: 0; }
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              background: #fff; direction: rtl;
+              width: ${sizeConfig.width}; height: ${sizeConfig.height};
+            }
+            .label-container { width: ${sizeConfig.width}; height: ${sizeConfig.height}; padding: ${basePadding}; position: relative; }
+            .label { border: 2px solid #000; height: 100%; padding: ${innerPadding}; display: flex; flex-direction: column; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: ${isCompact ? "6px" : "10px"}; margin-bottom: ${isCompact ? "6px" : "10px"}; }
+            .header-left { text-align: right; }
+            .header-left h1 { font-size: ${headerFontSize}; font-weight: 900; margin-bottom: 2px; }
+            .header-left .subtitle { font-size: ${isCompact ? "8px" : "10px"}; color: #666; text-transform: uppercase; letter-spacing: 2px; }
+            .header-left .date { font-size: ${isCompact ? "8px" : "9px"}; color: #999; margin-top: 3px; }
+            .cod-badge { border: 2px solid #000; padding: 3px 8px; font-weight: bold; font-size: ${isCompact ? "13px" : "16px"}; text-align: center; }
+            .cod-badge span { display: block; font-size: ${isCompact ? "7px" : "8px"}; font-weight: normal; }
+            .barcode-section { text-align: center; margin: ${isCompact ? "4px 0" : "8px 0"}; }
+            .addresses { display: flex; gap: ${isCompact ? "4px" : "8px"}; flex: 1; margin-bottom: ${isCompact ? "4px" : "8px"}; }
+            .address-box { flex: 1; border: 1px solid #ccc; border-radius: 6px; padding: ${isCompact ? "4px" : "8px"}; }
+            .address-box.buyer { border: 2px solid #000; background: #f9f9f9; }
+            .address-header { display: flex; align-items: center; gap: 5px; font-weight: bold; font-size: ${isCompact ? "9px" : "11px"}; padding-bottom: ${isCompact ? "3px" : "5px"}; border-bottom: 1px solid #ddd; margin-bottom: ${isCompact ? "3px" : "5px"}; }
+            .address-content { font-size: ${isCompact ? "8px" : "10px"}; line-height: 1.4; }
+            .address-content .name { font-weight: bold; font-size: ${isCompact ? "10px" : "12px"}; margin-bottom: 3px; }
+            .address-content .phone { font-weight: 600; direction: ltr; text-align: left; }
+            .cod-amount { background: #FEF3C7; border: 2px solid #F59E0B; border-radius: 6px; padding: ${isCompact ? "6px" : "10px"}; text-align: center; margin-bottom: ${isCompact ? "4px" : "8px"}; }
+            .cod-amount .label-text { font-size: ${isCompact ? "8px" : "9px"}; color: #92400E; margin-bottom: 3px; }
+            .cod-amount .amount { font-size: ${codFontSize}; font-weight: 900; color: #78350F; }
+            .cod-amount .breakdown { font-size: ${isCompact ? "7px" : "8px"}; color: #92400E; margin-top: 2px; }
+            .footer-section { display: flex; justify-content: space-between; align-items: flex-end; }
+            .product-info { flex: 1; }
+            .product-info .label-text { font-size: ${isCompact ? "7px" : "8px"}; color: #999; }
+            .product-info .title { font-size: ${isCompact ? "8px" : "10px"}; font-weight: 500; }
+            .product-info .weight { font-size: ${isCompact ? "7px" : "8px"}; color: #666; }
+            .qr-code { margin-right: ${isCompact ? "5px" : "10px"}; }
+            .company-footer { text-align: center; font-size: ${isCompact ? "7px" : "8px"}; color: #999; padding-top: ${isCompact ? "3px" : "5px"}; border-top: 1px solid #eee; margin-top: ${isCompact ? "3px" : "5px"}; }
+            @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+          </style>
+        </head>
+        <body>${printContent.innerHTML}</body>
+        </html>
+      `;
 
-    // Short delay to let DOM settle, then print
-    setTimeout(() => {
-      container.style.display = "block";
-      window.print();
-      // Clean up after print dialog closes
+      const existingPrint = document.getElementById("print-label-container");
+      if (existingPrint) existingPrint.remove();
+      const existingStyle = document.getElementById("print-label-style");
+      if (existingStyle) existingStyle.remove();
+
+      const style = document.createElement("style");
+      style.id = "print-label-style";
+      style.textContent = `
+        @media print {
+          body > *:not(#print-label-container) { display: none !important; }
+          #print-label-container { display: block !important; }
+        }
+      `;
+      document.head.appendChild(style);
+
+      const container = document.createElement("div");
+      container.id = "print-label-container";
+      container.style.display = "none";
+      container.innerHTML = htmlContent;
+      document.body.appendChild(container);
+
       setTimeout(() => {
-        container.remove();
-        style.remove();
-      }, 500);
-    }, 300);
+        container.style.display = "block";
+        window.print();
+        setTimeout(() => {
+          container.remove();
+          style.remove();
+        }, 500);
+      }, 300);
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -328,8 +357,8 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
               className="flex-1 bg-black hover:bg-gray-800 text-white font-bold py-6"
               data-testid="button-print-label"
             >
-              <Printer className="h-5 w-5 ml-2" />
-              طباعة الإيصال
+              {isCapacitor ? <Share2 className="h-5 w-5 ml-2" /> : <Printer className="h-5 w-5 ml-2" />}
+              {isCapacitor ? "مشاركة الإيصال" : "طباعة الإيصال"}
             </Button>
             <Button
               variant="outline"
