@@ -42,11 +42,11 @@ export function MobileNavBar() {
   const shouldShowNav = isNavVisible && !isPathHidden;
 
   const navItems = [
-    { href: "/", icon: Home, label: language === "ar" ? "الرئيسية" : "سەرەکی", testId: "nav-home", section: "home" },
-    { href: "/favorites", icon: Heart, label: language === "ar" ? "المفضلة" : "دڵخوازەکان", testId: "nav-favorites", section: "favorites" },
-    { href: "/swipe", icon: Play, label: language === "ar" ? "تصفح" : "گەڕان", testId: "nav-swipe", section: "swipe" },
-    { href: "/notifications", icon: Bell, label: language === "ar" ? "الإشعارات" : "ئاگادارییەکان", testId: "nav-notifications", section: "notifications", badge: unreadCount },
-    { href: isAuthenticated ? "/my-account" : "/signin", icon: User, label: language === "ar" ? "حسابي" : "هەژمارەکەم", testId: "nav-account", section: "account", skipRestore: true },
+    { href: "/", icon: Home, label: language === "ar" ? "الرئيسية" : language === "ku" ? "سەرەکی" : "الرئيسية", testId: "nav-home", section: "home" },
+    { href: "/favorites", icon: Heart, label: language === "ar" ? "المفضلة" : language === "ku" ? "دڵخوازەکان" : "المفضلة", testId: "nav-favorites", section: "favorites" },
+    { href: "/swipe", icon: Play, label: language === "ar" ? "تصفح" : language === "ku" ? "گەڕان" : "تصفح", testId: "nav-swipe", section: "swipe" },
+    { href: "/notifications", icon: Bell, label: language === "ar" ? "الإشعارات" : language === "ku" ? "ئاگادارییەکان" : "Notifications", testId: "nav-notifications", section: "notifications", badge: unreadCount },
+    { href: isAuthenticated ? "/my-account" : "/signin", icon: User, label: language === "ar" ? "حسابي" : language === "ku" ? "هەژمارەکەم" : "حسابي", testId: "nav-account", section: "account", skipRestore: true },
   ];
 
   const isActiveSection = (section: string) => {

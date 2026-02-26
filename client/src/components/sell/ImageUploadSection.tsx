@@ -179,7 +179,7 @@ export function ImageUploadSection({
                     <div className="grid grid-cols-1 gap-4">
                       <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                         <p className="font-semibold text-green-800 mb-2">
-                          {language === "ar" ? "افعل" : "بکە"}
+                          {language === "ar" ? "افعل" : language === "ku" ? "بکە" : "افعل"}
                         </p>
                         <ul className="list-disc list-inside space-y-1 text-sm text-green-900/80">
                           {copy.doItems.map((item) => (
@@ -189,7 +189,7 @@ export function ImageUploadSection({
                       </div>
                       <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                         <p className="font-semibold text-red-800 mb-2">
-                          {language === "ar" ? "لا تفعل" : "مەکە"}
+                          {language === "ar" ? "لا تفعل" : language === "ku" ? "مەکە" : "لا تفعل"}
                         </p>
                         <ul className="list-disc list-inside space-y-1 text-sm text-red-900/80">
                           {copy.dontItems.map((item) => (
@@ -223,13 +223,13 @@ export function ImageUploadSection({
                 </ul>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Badge variant="secondary" className="text-xs">
-                    {language === "ar" ? "الحد الأقصى: 8 صور" : "زۆرترین: ٨ وێنە"}
+                    {language === "ar" ? "الحد الأقصى: 8 صور" : language === "ku" ? "زۆرترین: ٨ وێنە" : "الحد الأقصى: 8 صور"}
                   </Badge>
                   <Badge variant="secondary" className="text-xs">
-                    {language === "ar" ? "الحد الأدنى: صورتان" : "کەمترین: ٢ وێنە"}
+                    {language === "ar" ? "الحد الأدنى: صورتان" : language === "ku" ? "کەمترین: ٢ وێنە" : "الحد الأدنى: صورتان"}
                   </Badge>
                   <Badge variant="secondary" className="text-xs">
-                    {language === "ar" ? "الصورة الأولى = الرئيسية" : "یەکەم وێنە = سەرەکی"}
+                    {language === "ar" ? "الصورة الأولى = الرئيسية" : language === "ku" ? "یەکەم وێنە = سەرەکی" : "الصورة الأولى = الرئيسية"}
                   </Badge>
                 </div>
               </AccordionContent>
@@ -261,13 +261,13 @@ export function ImageUploadSection({
                   >
                     <Eye className="h-3 w-3" />
                     {showingOriginal[index] 
-                      ? (language === "ar" ? "المحسّنة" : "باشتر") 
-                      : (language === "ar" ? "الأصلية" : "ئەسڵی")}
+                      ? (language === "ar" ? "المحسّنة" : language === "ku" ? "باشتر" : "المحسّنة") 
+                      : (language === "ar" ? "الأصلية" : language === "ku" ? "ئەسڵی" : "الأصلية")}
                   </button>
                 )}
                 {index === 0 && (
                   <Badge className="absolute bottom-2 right-2 bg-primary">
-                    {language === "ar" ? "الرئيسية" : "سەرەکی"}
+                    {language === "ar" ? "الرئيسية" : language === "ku" ? "سەرەکی" : "الرئيسية"}
                   </Badge>
                 )}
               </div>
@@ -315,12 +315,12 @@ export function ImageUploadSection({
               {isUploadingImages ? (
                 <>
                   <Loader2 className="h-8 w-8 text-primary mb-2 animate-spin" />
-                  <span className="text-sm text-primary">{language === "ar" ? "جاري الرفع..." : "بارکردن..."}</span>
+                  <span className="text-sm text-primary">{language === "ar" ? "جاري الرفع..." : language === "ku" ? "بارکردن..." : "جاري الرفع..."}</span>
                 </>
               ) : (
                 <>
                   <Plus className="h-8 w-8 text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-500">{language === "ar" ? "إضافة صورة" : "وێنە زیاد بکە"}</span>
+                  <span className="text-sm text-gray-500">{language === "ar" ? "إضافة صورة" : language === "ku" ? "وێنە زیاد بکە" : "إضافة صورة"}</span>
                 </>
               )}
             </label>
@@ -338,7 +338,7 @@ export function ImageUploadSection({
               variant="outline"
             >
               <Camera className="ml-2 h-4 w-4" />
-              {language === "ar" ? "التقط صورة بالكاميرا" : "وێنە بگرە بە کامێرا"}
+              {language === "ar" ? "التقط صورة بالكاميرا" : language === "ku" ? "وێنە بگرە بە کامێرا" : "التقط صورة بالكاميرا"}
             </Button>
           </div>
         )}
@@ -356,12 +356,12 @@ export function ImageUploadSection({
               {isAnalyzingImage ? (
                 <>
                   <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  {language === "ar" ? "جاري التحليل..." : "شیکردنەوە..."}
+                  {language === "ar" ? "جاري التحليل..." : language === "ku" ? "شیکردنەوە..." : "جاري التحليل..."}
                 </>
               ) : (
                 <>
                   <ImagePlus className="ml-2 h-4 w-4" />
-                  {language === "ar" ? "🤖 ملء تلقائي ذكي" : "🤖 پڕکردنەوەی زیرەکانە"}
+                  {language === "ar" ? "🤖 ملء تلقائي ذكي" : language === "ku" ? "🤖 پڕکردنەوەی زیرەکانە" : "🤖 ملء تلقائي ذكي"}
                 </>
               )}
             </Button>
@@ -369,9 +369,7 @@ export function ImageUploadSection({
         )}
         
         <p className="text-xs text-muted-foreground mt-3">
-          {language === "ar" 
-            ? "يمكنك إضافة حتى 8 صور. الصورة الأولى ستكون الصورة الرئيسية."
-            : "دەتوانیت هەتا ٨ وێنە زیاد بکەیت. وێنەی یەکەم دەبێتە وێنەی سەرەکی."}
+          {language === "ar" ? "يمكنك إضافة حتى 8 صور. الصورة الأولى ستكون الصورة الرئيسية." : language === "ku" ? "دەتوانیت هەتا ٨ وێنە زیاد بکەیت. وێنەی یەکەم دەبێتە وێنەی سەرەکی." : "يمكنك إضافة حتى 8 صور. الصورة الأولى ستكون الصورة الرئيسية."}
         </p>
         {validationErrors.images && (
           <p className="text-xs text-red-500 mt-2">{validationErrors.images}</p>

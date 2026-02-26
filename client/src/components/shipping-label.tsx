@@ -9,8 +9,8 @@ type LabelSize = "a6" | "thermal-100" | "thermal-80";
 
 const LABEL_SIZES: Record<LabelSize, { width: string; height: string; label: string }> = {
   "a6": { width: "105mm", height: "148mm", label: "A6 (105×148mm)" },
-  "thermal-100": { width: "100mm", height: "150mm", label: "حراري 100×150mm" },
-  "thermal-80": { width: "80mm", height: "120mm", label: "حراري 80×120mm" },
+  "thermal-100": { width: "100mm", height: "150mm", label: "Thermal 100×150mm" },
+  "thermal-80": { width: "80mm", height: "120mm", label: "Thermal 80×120mm" },
 };
 
 interface ShippingLabelProps {
@@ -50,217 +50,94 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
     const printContent = printRef.current;
     if (!printContent) return;
 
-    const printWindow = window.open("", "_blank", "width=420,height=600");
-    if (!printWindow) return;
-
     const headerFontSize = isCompact ? "16px" : "20px";
     const codFontSize = isCompact ? "20px" : "24px";
     const basePadding = isCompact ? "2mm" : "3mm";
     const innerPadding = isCompact ? "6px" : "10px";
 
-    printWindow.document.write(`
+    const htmlContent = `
       <!DOCTYPE html>
       <html dir="rtl" lang="ar">
       <head>
         <meta charset="UTF-8">
         <title>${isReturn ? "إيصال إرجاع" : "إيصال توصيل"} - ${orderDetails.orderId}</title>
         <style>
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          @page {
-            size: ${sizeConfig.width} ${sizeConfig.height};
-            margin: 0;
-          }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          @page { size: ${sizeConfig.width} ${sizeConfig.height}; margin: 0; }
           body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #fff;
-            direction: rtl;
-            width: ${sizeConfig.width};
-            height: ${sizeConfig.height};
+            background: #fff; direction: rtl;
+            width: ${sizeConfig.width}; height: ${sizeConfig.height};
           }
-          .label-container {
-            width: ${sizeConfig.width};
-            height: ${sizeConfig.height};
-            padding: ${basePadding};
-            position: relative;
-          }
-          .label {
-            border: 2px solid #000;
-            height: 100%;
-            padding: ${innerPadding};
-            display: flex;
-            flex-direction: column;
-          }
-          .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2px solid #000;
-            padding-bottom: ${isCompact ? "6px" : "10px"};
-            margin-bottom: ${isCompact ? "6px" : "10px"};
-          }
-          .header-left {
-            text-align: right;
-          }
-          .header-left h1 {
-            font-size: ${headerFontSize};
-            font-weight: 900;
-            margin-bottom: 2px;
-          }
-          .header-left .subtitle {
-            font-size: ${isCompact ? "8px" : "10px"};
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-          }
-          .header-left .date {
-            font-size: ${isCompact ? "8px" : "9px"};
-            color: #999;
-            margin-top: 3px;
-          }
-          .cod-badge {
-            border: 2px solid #000;
-            padding: 3px 8px;
-            font-weight: bold;
-            font-size: ${isCompact ? "13px" : "16px"};
-            text-align: center;
-          }
-          .cod-badge span {
-            display: block;
-            font-size: ${isCompact ? "7px" : "8px"};
-            font-weight: normal;
-          }
-          .barcode-section {
-            text-align: center;
-            margin: ${isCompact ? "4px 0" : "8px 0"};
-          }
-          .addresses {
-            display: flex;
-            gap: ${isCompact ? "4px" : "8px"};
-            flex: 1;
-            margin-bottom: ${isCompact ? "4px" : "8px"};
-          }
-          .address-box {
-            flex: 1;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            padding: ${isCompact ? "4px" : "8px"};
-          }
-          .address-box.buyer {
-            border: 2px solid #000;
-            background: #f9f9f9;
-          }
-          .address-header {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-weight: bold;
-            font-size: ${isCompact ? "9px" : "11px"};
-            padding-bottom: ${isCompact ? "3px" : "5px"};
-            border-bottom: 1px solid #ddd;
-            margin-bottom: ${isCompact ? "3px" : "5px"};
-          }
-          .address-content {
-            font-size: ${isCompact ? "8px" : "10px"};
-            line-height: 1.4;
-          }
-          .address-content .name {
-            font-weight: bold;
-            font-size: ${isCompact ? "10px" : "12px"};
-            margin-bottom: 3px;
-          }
-          .address-content .phone {
-            font-weight: 600;
-            direction: ltr;
-            text-align: left;
-          }
-          .cod-amount {
-            background: #FEF3C7;
-            border: 2px solid #F59E0B;
-            border-radius: 6px;
-            padding: ${isCompact ? "6px" : "10px"};
-            text-align: center;
-            margin-bottom: ${isCompact ? "4px" : "8px"};
-          }
-          .cod-amount .label-text {
-            font-size: ${isCompact ? "8px" : "9px"};
-            color: #92400E;
-            margin-bottom: 3px;
-          }
-          .cod-amount .amount {
-            font-size: ${codFontSize};
-            font-weight: 900;
-            color: #78350F;
-          }
-          .cod-amount .breakdown {
-            font-size: ${isCompact ? "7px" : "8px"};
-            color: #92400E;
-            margin-top: 2px;
-          }
-          .footer-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-          }
-          .product-info {
-            flex: 1;
-          }
-          .product-info .label-text {
-            font-size: ${isCompact ? "7px" : "8px"};
-            color: #999;
-          }
-          .product-info .title {
-            font-size: ${isCompact ? "8px" : "10px"};
-            font-weight: 500;
-          }
-          .product-info .weight {
-            font-size: ${isCompact ? "7px" : "8px"};
-            color: #666;
-          }
-          .qr-code {
-            margin-right: ${isCompact ? "5px" : "10px"};
-          }
-          .company-footer {
-            text-align: center;
-            font-size: ${isCompact ? "7px" : "8px"};
-            color: #999;
-            padding-top: ${isCompact ? "3px" : "5px"};
-            border-top: 1px solid #eee;
-            margin-top: ${isCompact ? "3px" : "5px"};
-          }
-          @media print {
-            body {
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-          }
+          .label-container { width: ${sizeConfig.width}; height: ${sizeConfig.height}; padding: ${basePadding}; position: relative; }
+          .label { border: 2px solid #000; height: 100%; padding: ${innerPadding}; display: flex; flex-direction: column; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: ${isCompact ? "6px" : "10px"}; margin-bottom: ${isCompact ? "6px" : "10px"}; }
+          .header-left { text-align: right; }
+          .header-left h1 { font-size: ${headerFontSize}; font-weight: 900; margin-bottom: 2px; }
+          .header-left .subtitle { font-size: ${isCompact ? "8px" : "10px"}; color: #666; text-transform: uppercase; letter-spacing: 2px; }
+          .header-left .date { font-size: ${isCompact ? "8px" : "9px"}; color: #999; margin-top: 3px; }
+          .cod-badge { border: 2px solid #000; padding: 3px 8px; font-weight: bold; font-size: ${isCompact ? "13px" : "16px"}; text-align: center; }
+          .cod-badge span { display: block; font-size: ${isCompact ? "7px" : "8px"}; font-weight: normal; }
+          .barcode-section { text-align: center; margin: ${isCompact ? "4px 0" : "8px 0"}; }
+          .addresses { display: flex; gap: ${isCompact ? "4px" : "8px"}; flex: 1; margin-bottom: ${isCompact ? "4px" : "8px"}; }
+          .address-box { flex: 1; border: 1px solid #ccc; border-radius: 6px; padding: ${isCompact ? "4px" : "8px"}; }
+          .address-box.buyer { border: 2px solid #000; background: #f9f9f9; }
+          .address-header { display: flex; align-items: center; gap: 5px; font-weight: bold; font-size: ${isCompact ? "9px" : "11px"}; padding-bottom: ${isCompact ? "3px" : "5px"}; border-bottom: 1px solid #ddd; margin-bottom: ${isCompact ? "3px" : "5px"}; }
+          .address-content { font-size: ${isCompact ? "8px" : "10px"}; line-height: 1.4; }
+          .address-content .name { font-weight: bold; font-size: ${isCompact ? "10px" : "12px"}; margin-bottom: 3px; }
+          .address-content .phone { font-weight: 600; direction: ltr; text-align: left; }
+          .cod-amount { background: #FEF3C7; border: 2px solid #F59E0B; border-radius: 6px; padding: ${isCompact ? "6px" : "10px"}; text-align: center; margin-bottom: ${isCompact ? "4px" : "8px"}; }
+          .cod-amount .label-text { font-size: ${isCompact ? "8px" : "9px"}; color: #92400E; margin-bottom: 3px; }
+          .cod-amount .amount { font-size: ${codFontSize}; font-weight: 900; color: #78350F; }
+          .cod-amount .breakdown { font-size: ${isCompact ? "7px" : "8px"}; color: #92400E; margin-top: 2px; }
+          .footer-section { display: flex; justify-content: space-between; align-items: flex-end; }
+          .product-info { flex: 1; }
+          .product-info .label-text { font-size: ${isCompact ? "7px" : "8px"}; color: #999; }
+          .product-info .title { font-size: ${isCompact ? "8px" : "10px"}; font-weight: 500; }
+          .product-info .weight { font-size: ${isCompact ? "7px" : "8px"}; color: #666; }
+          .qr-code { margin-right: ${isCompact ? "5px" : "10px"}; }
+          .company-footer { text-align: center; font-size: ${isCompact ? "7px" : "8px"}; color: #999; padding-top: ${isCompact ? "3px" : "5px"}; border-top: 1px solid #eee; margin-top: ${isCompact ? "3px" : "5px"}; }
+          @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         </style>
       </head>
-      <body>
-        ${printContent.innerHTML}
-      </body>
+      <body>${printContent.innerHTML}</body>
       </html>
-    `);
+    `;
 
-    printWindow.document.close();
-    printWindow.focus();
+    // Use a hidden iframe instead of window.open to avoid Capacitor navigation issues
+    const existingFrame = document.getElementById("print-frame") as HTMLIFrameElement | null;
+    if (existingFrame) existingFrame.remove();
 
-    // Close window after print dialog completes using afterprint event
-    let closed = false;
-    const closeWindow = () => {
-      if (closed) return;
-      closed = true;
-      clearTimeout(fallbackTimeout);
-      try { printWindow.close(); } catch (_) {}
-    };
-    const fallbackTimeout = setTimeout(closeWindow, 60000);
-    printWindow.addEventListener('afterprint', closeWindow);
+    const iframe = document.createElement("iframe");
+    iframe.id = "print-frame";
+    iframe.style.position = "fixed";
+    iframe.style.top = "-10000px";
+    iframe.style.left = "-10000px";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
 
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) return;
+
+    iframeDoc.open();
+    iframeDoc.write(htmlContent);
+    iframeDoc.close();
+
+    // Wait for content to render, then trigger print dialog
     setTimeout(() => {
-      printWindow.print();
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (_) {
+        // Fallback: use main window print
+        window.print();
+      }
+      // Clean up iframe after printing
+      setTimeout(() => {
+        iframe.remove();
+      }, 1000);
     }, 500);
   };
 

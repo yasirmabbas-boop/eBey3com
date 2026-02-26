@@ -134,7 +134,7 @@ export function SellerAddressModal({
     },
     onError: (error: Error) => {
       toast({
-        title: language === "ar" ? "خطأ في حفظ العنوان" : "هەڵە لە پاشەکەوتکردنی ناونیشان",
+        title: language === "ar" ? "خطأ في حفظ العنوان" : language === "ku" ? "هەڵە لە پاشەکەوتکردنی ناونیشان" : "خطأ في حفظ العنوان",
         description: error.message,
         variant: "destructive",
       });
@@ -209,12 +209,10 @@ export function SellerAddressModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5" />
-            {language === "ar" ? "موقع الاستلام" : "شوێنی وەرگرتنەوە"}
+            {language === "ar" ? "موقع الاستلام" : language === "ku" ? "شوێنی وەرگرتنەوە" : "موقع الاستلام"}
           </DialogTitle>
           <DialogDescription>
-            {language === "ar" 
-              ? "حدد موقع استلام المنتج للمشترين" 
-              : "شوێنی وەرگرتنەوەی بەرهەم بۆ کڕیاران دیاری بکە"}
+            {language === "ar" ? "حدد موقع استلام المنتج للمشترين" : language === "ku" ? "شوێنی وەرگرتنەوەی بەرهەم بۆ کڕیاران دیاری بکە" : "حدد موقع استلام المنتج للمشترين"}
           </DialogDescription>
         </DialogHeader>
 
@@ -248,7 +246,7 @@ export function SellerAddressModal({
                         <span className="font-semibold">{address.label}</span>
                         {address.isDefault && (
                           <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                            {language === "ar" ? "افتراضي" : "بنەڕەتی"}
+                            {language === "ar" ? "افتراضي" : language === "ku" ? "بنەڕەتی" : "افتراضي"}
                           </span>
                         )}
                       </div>
@@ -261,7 +259,7 @@ export function SellerAddressModal({
                       <p className="text-sm text-gray-500">{address.addressLine1}</p>
                       {address.latitude && address.longitude && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          📍 {language === "ar" ? "الموقع محدد على الخريطة" : "شوێن لەسەر نەخشە دیاریکراوە"}
+                          📍 {language === "ar" ? "الموقع محدد على الخريطة" : language === "ku" ? "شوێن لەسەر نەخشە دیاریکراوە" : "الموقع محدد على الخريطة"}
                         </p>
                       )}
                     </div>
@@ -279,7 +277,7 @@ export function SellerAddressModal({
               onClick={() => setShowAddForm(true)}
             >
               <Plus className="h-4 w-4 ml-2" />
-              {language === "ar" ? "إضافة موقع جديد" : "شوێنی نوێ زیاد بکە"}
+              {language === "ar" ? "إضافة موقع جديد" : language === "ku" ? "شوێنی نوێ زیاد بکە" : "إضافة موقع جديد"}
             </Button>
 
             <Button
@@ -287,7 +285,7 @@ export function SellerAddressModal({
               disabled={!selectedAddressId}
               className="w-full"
             >
-              {language === "ar" ? "تأكيد واستمرار" : "دڵنیاکردنەوە و بەردەوامبوون"}
+              {language === "ar" ? "تأكيد واستمرار" : language === "ku" ? "دڵنیاکردنەوە و بەردەوامبوون" : "تأكيد واستمرار"}
             </Button>
           </div>
         ) : (
@@ -299,16 +297,14 @@ export function SellerAddressModal({
                 onClick={() => setShowAddForm(false)}
                 className="mb-2"
               >
-                {language === "ar" ? "← العودة للمواقع المحفوظة" : "← گەڕانەوە بۆ شوێنە پاشەکەوتکراوەکان"}
+                {language === "ar" ? "← العودة للمواقع المحفوظة" : language === "ku" ? "← گەڕانەوە بۆ شوێنە پاشەکەوتکراوەکان" : "← العودة للمواقع المحفوظة"}
               </Button>
             )}
 
             {(!addresses || addresses.length === 0) && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                 <p className="text-sm text-blue-700">
-                  {language === "ar" 
-                    ? "أضف موقع الاستلام الأول الخاص بك. سيتم حفظه لاستخدامه في المنتجات المستقبلية."
-                    : "یەکەم شوێنی وەرگرتنەوەت زیاد بکە. پاشەکەوت دەکرێت بۆ بەکارهێنانی داهاتوو."}
+                  {language === "ar" ? "أضف موقع الاستلام الأول الخاص بك. سيتم حفظه لاستخدامه في المنتجات المستقبلية." : language === "ku" ? "یەکەم شوێنی وەرگرتنەوەت زیاد بکە. پاشەکەوت دەکرێت بۆ بەکارهێنانی داهاتوو." : "أضف موقع الاستلام الأول الخاص بك. سيتم حفظه لاستخدامه في المنتجات المستقبلية."}
                 </p>
               </div>
             )}
@@ -316,7 +312,7 @@ export function SellerAddressModal({
             <div className="space-y-4">
               {/* Label Selection */}
               <div>
-                <Label>{language === "ar" ? "نوع الموقع" : "جۆری شوێن"}</Label>
+                <Label>{language === "ar" ? "نوع الموقع" : language === "ku" ? "جۆری شوێن" : "نوع الموقع"}</Label>
                 <div className="flex gap-2 mt-2">
                   {LABEL_OPTIONS.map((option) => {
                     const Icon = option.icon;
@@ -340,20 +336,20 @@ export function SellerAddressModal({
               {/* Contact Name */}
               <div>
                 <Label htmlFor="contactName">
-                  {language === "ar" ? "اسم جهة الاتصال" : "ناوی پەیوەندی"} *
+                  {language === "ar" ? "اسم جهة الاتصال" : language === "ku" ? "ناوی پەیوەندی" : "اسم جهة الاتصال"} *
                 </Label>
                 <Input
                   id="contactName"
                   value={formData.contactName}
                   onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                  placeholder={language === "ar" ? "الاسم الكامل" : "ناوی تەواو"}
+                  placeholder={language === "ar" ? "الاسم الكامل" : language === "ku" ? "ناوی تەواو" : "الاسم الكامل"}
                 />
               </div>
 
               {/* Phone */}
               <div>
                 <Label htmlFor="phone">
-                  {language === "ar" ? "رقم الهاتف" : "ژمارەی مۆبایل"} *
+                  {language === "ar" ? "رقم الهاتف" : language === "ku" ? "ژمارەی مۆبایل" : "رقم الهاتف"} *
                 </Label>
                 <Input
                   id="phone"
@@ -367,14 +363,14 @@ export function SellerAddressModal({
               {/* City */}
               <div>
                 <Label htmlFor="city">
-                  {language === "ar" ? "المحافظة" : "پارێزگا"} *
+                  {language === "ar" ? "المحافظة" : language === "ku" ? "پارێزگا" : "المحافظة"} *
                 </Label>
                 <Select
                   value={formData.city}
                   onValueChange={(v) => setFormData({ ...formData, city: v })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={language === "ar" ? "اختر المحافظة" : "پارێزگا هەڵبژێرە"} />
+                    <SelectValue placeholder={language === "ar" ? "اختر المحافظة" : language === "ku" ? "پارێزگا هەڵبژێرە" : "اختر المحافظة"} />
                   </SelectTrigger>
                   <SelectContent>
                     {IRAQI_PROVINCES.map((province) => (
@@ -389,26 +385,26 @@ export function SellerAddressModal({
               {/* District */}
               <div>
                 <Label htmlFor="district">
-                  {language === "ar" ? "المنطقة / الحي" : "ناوچە / گەڕەک"}
+                  {language === "ar" ? "المنطقة / الحي" : language === "ku" ? "ناوچە / گەڕەک" : "المنطقة / الحي"}
                 </Label>
                 <Input
                   id="district"
                   value={formData.district}
                   onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                  placeholder={language === "ar" ? "اختياري" : "ئارەزوومەندانە"}
+                  placeholder={language === "ar" ? "اختياري" : language === "ku" ? "ئارەزوومەندانە" : "اختياري"}
                 />
               </div>
 
               {/* Address Line */}
               <div>
                 <Label htmlFor="addressLine1">
-                  {language === "ar" ? "العنوان التفصيلي" : "ناونیشانی ورد"} *
+                  {language === "ar" ? "العنوان التفصيلي" : language === "ku" ? "ناونیشانی ورد" : "العنوان التفصيلي"} *
                 </Label>
                 <Input
                   id="addressLine1"
                   value={formData.addressLine1}
                   onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
-                  placeholder={language === "ar" ? "الشارع، رقم المبنى، علامات مميزة" : "شەقام، ژمارەی بینا، نیشانەکان"}
+                  placeholder={language === "ar" ? "الشارع، رقم المبنى، علامات مميزة" : language === "ku" ? "شەقام، ژمارەی بینا، نیشانەکان" : "الشارع، رقم المبنى، علامات مميزة"}
                 />
               </div>
 
@@ -429,13 +425,13 @@ export function SellerAddressModal({
               {/* Notes */}
               <div>
                 <Label htmlFor="notes">
-                  {language === "ar" ? "ملاحظات إضافية" : "تێبینی زیادە"}
+                  {language === "ar" ? "ملاحظات إضافية" : language === "ku" ? "تێبینی زیادە" : "ملاحظات إضافية"}
                 </Label>
                 <Input
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder={language === "ar" ? "تعليمات لمندوب التوصيل" : "ڕێنمایی بۆ کڕیار"}
+                  placeholder={language === "ar" ? "تعليمات لمندوب التوصيل" : language === "ku" ? "ڕێنمایی بۆ کڕیار" : "تعليمات لمندوب التوصيل"}
                 />
               </div>
             </div>
@@ -454,10 +450,10 @@ export function SellerAddressModal({
               {createAddressMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  {language === "ar" ? "جاري الحفظ..." : "پاشەکەوتکردن..."}
+                  {language === "ar" ? "جاري الحفظ..." : language === "ku" ? "پاشەکەوتکردن..." : "جاري الحفظ..."}
                 </>
               ) : (
-                language === "ar" ? "حفظ الموقع والمتابعة" : "شوێن پاشەکەوت بکە و بەردەوام بە"
+                language === "ar" ? "حفظ الموقع والمتابعة" : language === "ku" ? "شوێن پاشەکەوت بکە و بەردەوام بە" : "حفظ الموقع والمتابعة"
               )}
             </Button>
           </div>

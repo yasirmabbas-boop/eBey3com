@@ -55,7 +55,7 @@ export function VerifiedBadge({ size = "md", className }: VerifiedBadgeProps) {
 
 export function TrustedBuyerBadge({ size = "md", className }: VerifiedBadgeProps) {
   const { language } = useLanguage();
-  const label = language === "ar" ? "مشتري موثوق" : "کڕیاری متمانەپێکراو";
+  const label = language === "ar" ? "مشتري موثوق" : language === "ku" ? "کڕیاری متمانەپێکراو" : "Trusted Buyer";
 
   return (
     <Tooltip>
@@ -80,10 +80,12 @@ export function TrustedBuyerBadge({ size = "md", className }: VerifiedBadgeProps
 
 export function AuthenticityBadge({ size = "md", className }: VerifiedBadgeProps) {
   const { language } = useLanguage();
-  const label = language === "ar" ? "مصادق عليه" : "پشتڕاستکراوە";
-  const tooltip = language === "ar" 
+  const label = language === "ar" ? "مصادق عليه" : language === "ku" ? "پشتڕاستکراوە" : "Authenticated";
+  const tooltip = language === "ar"
     ? "البائع أكد الأصالة. المنصة لا تضمن صحة المنتج. راجع المنتج قبل الشراء."
-    : "فرۆشیار پشتڕاستی کردووە. پلاتفۆرم دڵنیایی نادات. پێش کڕین پشکنین بکە.";
+    : language === "ku"
+      ? "فرۆشیار پشتڕاستی کردووە. پلاتفۆرم دڵنیایی نادات. پێش کڕین پشکنین بکە."
+      : "The seller confirmed authenticity. The platform does not guarantee the product. Review before purchasing.";
 
   return (
     <Tooltip>

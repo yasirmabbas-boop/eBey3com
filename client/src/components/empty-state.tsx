@@ -150,6 +150,15 @@ export function EmptySearchState({
       popularNow: "بەرهەمە باوەکانی ئێستا",
       clearFilters: "سڕینەوەی فلتەرەکان",
       browseAll: "بینینی هەموو بەرهەمەکان"
+    },
+    en: {
+      noResults: "No results found",
+      noResultsFor: "No results found for",
+      suggestions: "Try different search terms or browse categories",
+      didYouMean: "Did you mean:",
+      popularNow: "Popular products now",
+      clearFilters: "Clear filters",
+      browseAll: "Browse all products"
     }
   };
   

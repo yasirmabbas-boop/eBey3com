@@ -183,8 +183,8 @@ export default function SellWizardPage() {
         if (draft.specifications) setSpecifications(draft.specifications);
         if (draft.currentStep) setCurrentStep(draft.currentStep);
         toast({ 
-          title: language === "ar" ? "تم استرجاع المسودة" : "ڕەشنووس گەڕایەوە", 
-          description: language === "ar" ? "تم تحميل البيانات المحفوظة مسبقاً" : "داتا پاشەکەوتکراوەکان بارکرا" 
+          title: language === "ar" ? "تم استرجاع المسودة" : language === "ku" ? "ڕەشنووس گەڕایەوە" : "تم استرجاع المسودة", 
+          description: language === "ar" ? "تم تحميل البيانات المحفوظة مسبقاً" : language === "ku" ? "داتا پاشەکەوتکراوەکان بارکرا" : "تم تحميل البيانات المحفوظة مسبقاً" 
         });
       } catch (e) {
         console.error("Failed to load draft:", e);
@@ -286,7 +286,7 @@ export default function SellWizardPage() {
     if (!sellerFormData.shopName || !sellerFormData.phone || !sellerFormData.city) {
       toast({
         title: t("error"),
-        description: language === "ar" ? "يرجى ملء جميع الحقول المطلوبة" : "تکایە هەموو خانەکان پڕ بکەوە",
+        description: language === "ar" ? "يرجى ملء جميع الحقول المطلوبة" : language === "ku" ? "تکایە هەموو خانەکان پڕ بکەوە" : "يرجى ملء جميع الحقول المطلوبة",
         variant: "destructive",
       });
       return;
@@ -308,8 +308,8 @@ export default function SellWizardPage() {
       }
       
       toast({
-        title: language === "ar" ? "تم تقديم الطلب بنجاح!" : "داواکە بە سەرکەوتوویی پێشکەشکرا!",
-        description: language === "ar" ? "سيتم مراجعة طلبك من قبل الإدارة" : "داواکەت لەلایەن بەڕێوەبەرایەتی پێداچوونەوەی بۆ دەکرێت",
+        title: language === "ar" ? "تم تقديم الطلب بنجاح!" : language === "ku" ? "داواکە بە سەرکەوتوویی پێشکەشکرا!" : "تم تقديم الطلب بنجاح!",
+        description: language === "ar" ? "سيتم مراجعة طلبك من قبل الإدارة" : language === "ku" ? "داواکەت لەلایەن بەڕێوەبەرایەتی پێداچوونەوەی بۆ دەکرێت" : "سيتم مراجعة طلبك من قبل الإدارة",
       });
       
       window.location.reload();
@@ -430,8 +430,8 @@ export default function SellWizardPage() {
     
     if (filesToUpload.length === 0) {
       toast({
-        title: language === "ar" ? "الحد الأقصى للصور" : "زۆرترین ژمارەی وێنە",
-        description: language === "ar" ? "يمكنك رفع 8 صور كحد أقصى" : "دەتوانیت ٨ وێنە زۆرترین بارکەیت",
+        title: language === "ar" ? "الحد الأقصى للصور" : language === "ku" ? "زۆرترین ژمارەی وێنە" : "الحد الأقصى للصور",
+        description: language === "ar" ? "يمكنك رفع 8 صور كحد أقصى" : language === "ku" ? "دەتوانیت ٨ وێنە زۆرترین بارکەیت" : "يمكنك رفع 8 صور كحد أقصى",
         variant: "destructive",
       });
       return;
@@ -472,7 +472,7 @@ export default function SellWizardPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || (language === "ar" ? "فشل في رفع الصور" : "شکست لە بارکردنی وێنەکان"));
+        throw new Error(errorData.error || (language === "ar" ? "فشل في رفع الصور" : language === "ku" ? "شکست لە بارکردنی وێنەکان" : "فشل في رفع الصور"));
       }
 
       const result = await response.json();
@@ -480,14 +480,14 @@ export default function SellWizardPage() {
       setImages(prev => [...prev, ...uploadedPaths]);
       
       toast({
-        title: language === "ar" ? "تم رفع الصور بنجاح" : "وێنەکان بە سەرکەوتوویی بارکران",
-        description: `${language === "ar" ? "تم رفع" : "بارکرا"} ${uploadedPaths.length} ${language === "ar" ? "صورة (محسّنة)" : "وێنە (باشتر کراو)"}`,
+        title: language === "ar" ? "تم رفع الصور بنجاح" : language === "ku" ? "وێنەکان بە سەرکەوتوویی بارکران" : "تم رفع الصور بنجاح",
+        description: `${language === "ar" ? "تم رفع" : language === "ku" ? "بارکرا" : "تم رفع"} ${uploadedPaths.length} ${language === "ar" ? "صورة (محسّنة)" : language === "ku" ? "وێنە (باشتر کراو)" : "صورة (محسّنة)"}`,
       });
     } catch (error) {
       console.error("Image upload error:", error);
       toast({
-        title: language === "ar" ? "خطأ في رفع الصور" : "هەڵە لە بارکردنی وێنەکان",
-        description: error instanceof Error ? error.message : (language === "ar" ? "حدث خطأ أثناء رفع الصور" : "هەڵەیەک ڕوویدا لە کاتی بارکردنی وێنەکان"),
+        title: language === "ar" ? "خطأ في رفع الصور" : language === "ku" ? "هەڵە لە بارکردنی وێنەکان" : "خطأ في رفع الصور",
+        description: error instanceof Error ? error.message : (language === "ar" ? "حدث خطأ أثناء رفع الصور" : language === "ku" ? "هەڵەیەک ڕوویدا لە کاتی بارکردنی وێنەکان" : "حدث خطأ أثناء رفع الصور"),
         variant: "destructive",
       });
     } finally {
@@ -505,8 +505,8 @@ export default function SellWizardPage() {
     const maxFiles = 8 - images.length;
     if (maxFiles <= 0) {
       toast({
-        title: language === "ar" ? "الحد الأقصى للصور" : "زۆرترین ژمارەی وێنە",
-        description: language === "ar" ? "يمكنك رفع 8 صور كحد أقصى" : "دەتوانیت ٨ وێنە زۆرترین بارکەیت",
+        title: language === "ar" ? "الحد الأقصى للصور" : language === "ku" ? "زۆرترین ژمارەی وێنە" : "الحد الأقصى للصور",
+        description: language === "ar" ? "يمكنك رفع 8 صور كحد أقصى" : language === "ku" ? "دەتوانیت ٨ وێنە زۆرترین بارکەیت" : "يمكنك رفع 8 صور كحد أقصى",
         variant: "destructive",
       });
       return;
@@ -546,7 +546,7 @@ export default function SellWizardPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || (language === "ar" ? "فشل في رفع الصورة" : "شکست لە بارکردنی وێنە"));
+        throw new Error(errorData.error || (language === "ar" ? "فشل في رفع الصورة" : language === "ku" ? "شکست لە بارکردنی وێنە" : "فشل في رفع الصورة"));
       }
 
       const result = await response.json();
@@ -554,14 +554,14 @@ export default function SellWizardPage() {
       setImages(prev => [...prev, ...uploadedPaths]);
       
       toast({
-        title: language === "ar" ? "تم رفع الصورة بنجاح" : "وێنە بە سەرکەوتوویی بارکرا",
-        description: language === "ar" ? "تم رفع الصورة (محسّنة)" : "وێنە بارکرا (باشتر کراو)",
+        title: language === "ar" ? "تم رفع الصورة بنجاح" : language === "ku" ? "وێنە بە سەرکەوتوویی بارکرا" : "تم رفع الصورة بنجاح",
+        description: language === "ar" ? "تم رفع الصورة (محسّنة)" : language === "ku" ? "وێنە بارکرا (باشتر کراو)" : "تم رفع الصورة (محسّنة)",
       });
     } catch (error) {
       console.error("Camera upload error:", error);
       toast({
-        title: language === "ar" ? "خطأ في رفع الصورة" : "هەڵە لە بارکردنی وێنە",
-        description: error instanceof Error ? error.message : (language === "ar" ? "حدث خطأ أثناء رفع الصورة" : "هەڵەیەک ڕوویدا لە کاتی بارکردنی وێنە"),
+        title: language === "ar" ? "خطأ في رفع الصورة" : language === "ku" ? "هەڵە لە بارکردنی وێنە" : "خطأ في رفع الصورة",
+        description: error instanceof Error ? error.message : (language === "ar" ? "حدث خطأ أثناء رفع الصورة" : language === "ku" ? "هەڵەیەک ڕوویدا لە کاتی بارکردنی وێنە" : "حدث خطأ أثناء رفع الصورة"),
         variant: "destructive",
       });
     } finally {
@@ -572,10 +572,8 @@ export default function SellWizardPage() {
   const analyzeImageWithAI = async () => {
     if (images.length === 0) {
       toast({
-        title: language === "ar" ? "لا توجد صورة" : "وێنە نییە",
-        description: language === "ar" 
-          ? "الرجاء رفع صورة أولاً" 
-          : "تکایە یەکەم جار وێنە بارکە",
+        title: language === "ar" ? "لا توجد صورة" : language === "ku" ? "وێنە نییە" : "لا توجد صورة",
+        description: language === "ar" ? "الرجاء رفع صورة أولاً" : language === "ku" ? "تکایە یەکەم جار وێنە بارکە" : "الرجاء رفع صورة أولاً",
         variant: "destructive",
       });
       return;
@@ -621,18 +619,14 @@ export default function SellWizardPage() {
       setWasAIFilled(true);
       
       toast({
-        title: language === "ar" ? "تم التعبئة التلقائية! ✨" : "پڕکرایەوە بە شێوەی خۆکار! ✨",
-        description: language === "ar"
-          ? "تم ملء الحقول بواسطة الذكاء الاصطناعي. يمكنك التعديل عليها."
-          : "خانەکان پڕکرانەوە بە هۆکاری زیرەکی دەستکرد. دەتوانیت دەستکاریان بکەیت.",
+        title: language === "ar" ? "تم التعبئة التلقائية! ✨" : language === "ku" ? "پڕکرایەوە بە شێوەی خۆکار! ✨" : "تم التعبئة التلقائية! ✨",
+        description: language === "ar" ? "تم ملء الحقول بواسطة الذكاء الاصطناعي. يمكنك التعديل عليها." : language === "ku" ? "خانەکان پڕکرانەوە بە هۆکاری زیرەکی دەستکرد. دەتوانیت دەستکاریان بکەیت." : "تم ملء الحقول بواسطة الذكاء الاصطناعي. يمكنك التعديل عليها.",
       });
     } catch (error) {
       console.error('AI analysis error:', error);
       toast({
-        title: language === "ar" ? "فشل التحليل" : "شکستی شیکاری",
-        description: language === "ar"
-          ? "حدث خطأ أثناء تحليل الصورة. حاول مرة أخرى."
-          : "هەڵەیەک ڕوویدا لە کاتی شیکردنەوەی وێنە. دووبارە هەوڵ بدەوە.",
+        title: language === "ar" ? "فشل التحليل" : language === "ku" ? "شکستی شیکاری" : "فشل التحليل",
+        description: language === "ar" ? "حدث خطأ أثناء تحليل الصورة. حاول مرة أخرى." : language === "ku" ? "هەڵەیەک ڕوویدا لە کاتی شیکردنەوەی وێنە. دووبارە هەوڵ بدەوە." : "حدث خطأ أثناء تحليل الصورة. حاول مرة أخرى.",
         variant: "destructive",
       });
     } finally {
@@ -659,7 +653,7 @@ export default function SellWizardPage() {
         const message =
           typeof data?.error === "string"
             ? data.error
-            : (language === "ar" ? "فشل تنظيف الصورة. حاول مرة أخرى." : "شکست لە پاککردنەوەی وێنە. دووبارە هەوڵ بدە.");
+            : (language === "ar" ? "فشل تنظيف الصورة. حاول مرة أخرى." : language === "ku" ? "شکست لە پاککردنەوەی وێنە. دووبارە هەوڵ بدە." : "فشل تنظيف الصورة. حاول مرة أخرى.");
 
         setCleanErrorByIndex(prev => ({ ...prev, [index]: message }));
         return;
@@ -669,23 +663,21 @@ export default function SellWizardPage() {
       if (typeof newUrl === "string" && newUrl.length > 0) {
         setImages(prev => prev.map((u, i) => (i === index ? newUrl : u)));
         toast({
-          title: language === "ar" ? "تم تنظيف الصورة" : "وێنە پاککرایەوە",
-          description: language === "ar" 
-            ? "الذكاء الاصطناعي قد يخطئ أحياناً. يرجى التحقق من دقة النتيجة." 
-            : "زیرەکی دەستکرد هەندێک جار هەڵە دەکات. تکایە دڵنیابە لە راستی ئەنجامەکە.",
+          title: language === "ar" ? "تم تنظيف الصورة" : language === "ku" ? "وێنە پاککرایەوە" : "تم تنظيف الصورة",
+          description: language === "ar" ? "الذكاء الاصطناعي قد يخطئ أحياناً. يرجى التحقق من دقة النتيجة." : language === "ku" ? "زیرەکی دەستکرد هەندێک جار هەڵە دەکات. تکایە دڵنیابە لە راستی ئەنجامەکە." : "الذكاء الاصطناعي قد يخطئ أحياناً. يرجى التحقق من دقة النتيجة.",
           variant: "default",
         });
       } else {
         setCleanErrorByIndex(prev => ({
           ...prev,
-          [index]: language === "ar" ? "استجابة غير متوقعة من الخادم" : "وەڵامی نەزانراو لە سێرڤەر",
+          [index]: language === "ar" ? "استجابة غير متوقعة من الخادم" : language === "ku" ? "وەڵامی نەزانراو لە سێرڤەر" : "استجابة غير متوقعة من الخادم",
         }));
       }
     } catch (error) {
       console.error("[clean-background] Error:", error);
       setCleanErrorByIndex(prev => ({
         ...prev,
-        [index]: language === "ar" ? "فشل تنظيف الصورة. حاول مرة أخرى." : "شکست لە پاککردنەوەی وێنە. دووبارە هەوڵ بدە.",
+        [index]: language === "ar" ? "فشل تنظيف الصورة. حاول مرة أخرى." : language === "ku" ? "شکست لە پاککردنەوەی وێنە. دووبارە هەوڵ بدە." : "فشل تنظيف الصورة. حاول مرة أخرى.",
       }));
     } finally {
       setCleaningIndex(null);
@@ -707,8 +699,8 @@ export default function SellWizardPage() {
   const handleSubmit = async () => {
     if (!user) {
       toast({
-        title: language === "ar" ? "خطأ" : "هەڵە",
-        description: language === "ar" ? "يجب تسجيل الدخول أولاً" : "پێویستە یەکەم جار بچیتە ژوورەوە",
+        title: language === "ar" ? "خطأ" : language === "ku" ? "هەڵە" : "خطأ",
+        description: language === "ar" ? "يجب تسجيل الدخول أولاً" : language === "ku" ? "پێویستە یەکەم جار بچیتە ژوورەوە" : "يجب تسجيل الدخول أولاً",
         variant: "destructive",
       });
       return;
@@ -785,20 +777,20 @@ export default function SellWizardPage() {
       localStorage.removeItem(WIZARD_DRAFT_KEY);
       
       toast({
-        title: language === "ar" ? "تم بنجاح!" : "سەرکەوتوو بوو!",
+        title: language === "ar" ? "تم بنجاح!" : language === "ku" ? "سەرکەوتوو بوو!" : "تم بنجاح!",
         description: isEditMode 
-          ? (language === "ar" ? "تم تحديث منتجك بنجاح" : "بەرهەمەکەت بە سەرکەوتوویی نوێکرایەوە")
+          ? (language === "ar" ? "تم تحديث منتجك بنجاح" : language === "ku" ? "بەرهەمەکەت بە سەرکەوتوویی نوێکرایەوە" : "تم تحديث منتجك بنجاح")
           : isRelistMode
-            ? (language === "ar" ? "تم إعادة عرض المنتج بنجاح" : "بەرهەمەکە بە سەرکەوتوویی دووبارە بڵاوکرایەوە")
-            : (language === "ar" ? "تم نشر منتجك بنجاح" : "بەرهەمەکەت بە سەرکەوتوویی بڵاوکرایەوە"),
+            ? (language === "ar" ? "تم إعادة عرض المنتج بنجاح" : language === "ku" ? "بەرهەمەکە بە سەرکەوتوویی دووبارە بڵاوکرایەوە" : "تم إعادة عرض المنتج بنجاح")
+            : (language === "ar" ? "تم نشر منتجك بنجاح" : language === "ku" ? "بەرهەمەکەت بە سەرکەوتوویی بڵاوکرایەوە" : "تم نشر منتجك بنجاح"),
       });
       
       window.history.replaceState(null, "", `/product/${resultListing.id}`);
       setLocation(`/product/${resultListing.id}`);
     } catch (error: any) {
       toast({
-        title: language === "ar" ? "خطأ" : "هەڵە",
-        description: error.message || (language === "ar" ? "فشل نشر المنتج" : "بڵاوکردنەوەی بەرهەم سەرکەوتوو نەبوو"),
+        title: language === "ar" ? "خطأ" : language === "ku" ? "هەڵە" : "خطأ",
+        description: error.message || (language === "ar" ? "فشل نشر المنتج" : language === "ku" ? "بڵاوکردنەوەی بەرهەم سەرکەوتوو نەبوو" : "فشل نشر المنتج"),
         variant: "destructive",
       });
     } finally {
@@ -824,10 +816,10 @@ export default function SellWizardPage() {
             <CardContent className="p-8 text-center space-y-4">
               <Lock className="h-12 w-12 mx-auto text-gray-400" />
               <h2 className="text-xl font-bold">
-                {language === "ar" ? "تسجيل الدخول مطلوب" : "پێویستە بچیتە ژوورەوە"}
+                {language === "ar" ? "تسجيل الدخول مطلوب" : language === "ku" ? "پێویستە بچیتە ژوورەوە" : "تسجيل الدخول مطلوب"}
               </h2>
               <p className="text-muted-foreground">
-                {language === "ar" ? "يجب تسجيل الدخول لإضافة منتج" : "پێویستە بچیتە ژوورەوە بۆ زیادکردنی بەرهەم"}
+                {language === "ar" ? "يجب تسجيل الدخول لإضافة منتج" : language === "ku" ? "پێویستە بچیتە ژوورەوە بۆ زیادکردنی بەرهەم" : "يجب تسجيل الدخول لإضافة منتج"}
               </p>
               <Link href="/signin">
                 <Button className="w-full">{t("signIn")}</Button>
@@ -847,19 +839,19 @@ export default function SellWizardPage() {
             <CardContent className="p-8 text-center space-y-4">
               <Package className="h-12 w-12 mx-auto text-blue-600" />
               <h2 className="text-xl font-bold">
-                {language === "ar" ? "تحقق من رقم هاتفك للبيع" : "ژمارەی تەلەفۆنت پشتڕاست بکە بۆ فرۆشتن"}
+                {language === "ar" ? "تحقق من رقم هاتفك للبيع" : language === "ku" ? "ژمارەی تەلەفۆنت پشتڕاست بکە بۆ فرۆشتن" : "تحقق من رقم هاتفك للبيع"}
               </h2>
               
               <p className="text-muted-foreground text-sm">
-                {language === "ar" ? "يجب التحقق من رقم هاتفك عبر واتساب لتتمكن من البيع على منصتنا" : "دەبێت ژمارەی تەلەفۆنت بە واتسئاپ پشتڕاست بکەیت بۆ ئەوەی بتوانیت شتەکان بفرۆشیت"}
+                {language === "ar" ? "يجب التحقق من رقم هاتفك عبر واتساب لتتمكن من البيع على منصتنا" : language === "ku" ? "دەبێت ژمارەی تەلەفۆنت بە واتسئاپ پشتڕاست بکەیت بۆ ئەوەی بتوانیت شتەکان بفرۆشیت" : "يجب التحقق من رقم هاتفك عبر واتساب لتتمكن من البيع على منصتنا"}
               </p>
               <Link href="/settings">
                 <Button className="w-full">
-                  {language === "ar" ? "التحقق من الهاتف" : "پشتڕاستکردنی ژمارەی تەلەفۆن"}
+                  {language === "ar" ? "التحقق من الهاتف" : language === "ku" ? "پشتڕاستکردنی ژمارەی تەلەفۆن" : "التحقق من الهاتف"}
                 </Button>
               </Link>
               <Link href="/">
-                <Button variant="outline" className="w-full">{language === "ar" ? "العودة للصفحة الرئيسية" : "گەڕانەوە بۆ سەرەکی"}</Button>
+                <Button variant="outline" className="w-full">{language === "ar" ? "العودة للصفحة الرئيسية" : language === "ku" ? "گەڕانەوە بۆ سەرەکی" : "العودة للصفحة الرئيسية"}</Button>
               </Link>
             </CardContent>
           </Card>
@@ -888,16 +880,16 @@ export default function SellWizardPage() {
                 <Clock className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="font-medium text-blue-800">{language === "ar" ? "لديك مسودة محفوظة" : "ڕەشنووسێکی پاشەکەوتکراوت هەیە"}</p>
-                <p className="text-sm text-blue-600">{language === "ar" ? "هل تريد استكمال العمل على المنتج السابق؟" : "دەتەوێت کارەکەت لەسەر بەرهەمی پێشوو تەواو بکەیت؟"}</p>
+                <p className="font-medium text-blue-800">{language === "ar" ? "لديك مسودة محفوظة" : language === "ku" ? "ڕەشنووسێکی پاشەکەوتکراوت هەیە" : "لديك مسودة محفوظة"}</p>
+                <p className="text-sm text-blue-600">{language === "ar" ? "هل تريد استكمال العمل على المنتج السابق؟" : language === "ku" ? "دەتەوێت کارەکەت لەسەر بەرهەمی پێشوو تەواو بکەیت؟" : "هل تريد استكمال العمل على المنتج السابق؟"}</p>
               </div>
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" size="sm" onClick={clearDraft}>
-                {language === "ar" ? "تجاهل" : "پشتگوێ بخە"}
+                {language === "ar" ? "تجاهل" : language === "ku" ? "پشتگوێ بخە" : "تجاهل"}
               </Button>
               <Button type="button" size="sm" onClick={loadDraft} className="bg-blue-600 hover:bg-blue-700">
-                {language === "ar" ? "استرجاع المسودة" : "ڕەشنووس بگەڕێنەوە"}
+                {language === "ar" ? "استرجاع المسودة" : language === "ku" ? "ڕەشنووس بگەڕێنەوە" : "استرجاع المسودة"}
               </Button>
             </div>
           </div>
@@ -929,7 +921,7 @@ export default function SellWizardPage() {
             />
             {images.length < 2 && (
               <p className="text-center text-amber-600 text-sm">
-                {language === "ar" ? "أضف صورتين على الأقل للمتابعة" : "لانیکەم دوو وێنە زیاد بکە بۆ بەردەوامبوون"}
+                {language === "ar" ? "أضف صورتين على الأقل للمتابعة" : language === "ku" ? "لانیکەم دوو وێنە زیاد بکە بۆ بەردەوامبوون" : "أضف صورتين على الأقل للمتابعة"}
               </p>
             )}
           </div>
@@ -940,17 +932,17 @@ export default function SellWizardPage() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
                 <Badge variant="secondary" className="gap-1">
                   <span>✨</span>
-                  {language === "ar" ? "تم ملؤه بالذكاء الاصطناعي" : "پڕکرایەوە بە AI"}
+                  {language === "ar" ? "تم ملؤه بالذكاء الاصطناعي" : language === "ku" ? "پڕکرایەوە بە AI" : "تم ملؤه بالذكاء الاصطناعي"}
                 </Badge>
                 <p className="text-sm text-blue-700">
-                  {language === "ar" ? "يمكنك تعديل الحقول أدناه" : "دەتوانیت خانەکان دەستکاری بکەیت"}
+                  {language === "ar" ? "يمكنك تعديل الحقول أدناه" : language === "ku" ? "دەتوانیت خانەکان دەستکاری بکەیت" : "يمكنك تعديل الحقول أدناه"}
                 </p>
               </div>
             )}
             <div className="space-y-2">
               <Label>{t("productTitle")} *</Label>
               <Input 
-                placeholder={language === "ar" ? "مثال: ساعة رولكس فينتاج 1970" : "نموونە: کاتژمێری ڕۆلێکس ١٩٧٠"}
+                placeholder={language === "ar" ? "مثال: ساعة رولكس فينتاج 1970" : language === "ku" ? "نموونە: کاتژمێری ڕۆلێکس ١٩٧٠" : "مثال: ساعة رولكس فينتاج 1970"}
                 value={formData.title}
                 onChange={(e) => handleInputChange("title", e.target.value)}
                 data-testid="input-title"
@@ -960,7 +952,7 @@ export default function SellWizardPage() {
             <div className="space-y-2">
               <Label>{t("productDescription")} *</Label>
               <Textarea 
-                placeholder={language === "ar" ? "اكتب وصفاً تفصيلياً للمنتج..." : "وەسفی ورد بۆ بەرهەم بنووسە..."}
+                placeholder={language === "ar" ? "اكتب وصفاً تفصيلياً للمنتج..." : language === "ku" ? "وەسفی ورد بۆ بەرهەم بنووسە..." : "اكتب وصفاً تفصيلياً للمنتج..."}
                 rows={4}
                 value={formData.description}
                 onChange={(e) => handleInputChange("description", e.target.value)}
@@ -1009,9 +1001,9 @@ export default function SellWizardPage() {
             </div>
             
             <div className="space-y-2">
-              <Label>{language === "ar" ? "الماركة" : "براند"}</Label>
+              <Label>{language === "ar" ? "الماركة" : language === "ku" ? "براند" : "الماركة"}</Label>
               <Input
-                placeholder={language === "ar" ? "اكتب اسم الماركة (اختياري)" : "ناوی براند بنووسە (ئارەزوومەندانە)"}
+                placeholder={language === "ar" ? "اكتب اسم الماركة (اختياري)" : language === "ku" ? "ناوی براند بنووسە (ئارەزوومەندانە)" : "اكتب اسم الماركة (اختياري)"}
                 value={formData.brand}
                 onChange={(e) => handleInputChange("brand", e.target.value)}
                 data-testid="input-brand"
@@ -1030,7 +1022,7 @@ export default function SellWizardPage() {
             )}
 
             <div className="space-y-3">
-              <Label>{language === "ar" ? "الكلمات المفتاحية" : "وشەی سەرەکییەکان"}</Label>
+              <Label>{language === "ar" ? "الكلمات المفتاحية" : language === "ku" ? "وشەی سەرەکییەکان" : "الكلمات المفتاحية"}</Label>
               <div className="flex gap-2">
                 <Input
                   value={tagInput}
@@ -1042,7 +1034,7 @@ export default function SellWizardPage() {
                       setTagInput("");
                     }
                   }}
-                  placeholder={language === "ar" ? "اكتب واضغط Enter" : "بنووسە و Enter دابگرە"}
+                  placeholder={language === "ar" ? "اكتب واضغط Enter" : language === "ku" ? "بنووسە و Enter دابگرە" : "اكتب واضغط Enter"}
                 />
                 <Button
                   type="button"
@@ -1114,8 +1106,8 @@ export default function SellWizardPage() {
             <div className="space-y-2">
               <Label>
                 {saleType === "auction" 
-                  ? (language === "ar" ? "سعر البداية" : "نرخی دەستپێک") 
-                  : (language === "ar" ? "السعر" : "نرخ")} ({t("iqd")}) *
+                  ? (language === "ar" ? "سعر البداية" : language === "ku" ? "نرخی دەستپێک" : "سعر البداية") 
+                  : (language === "ar" ? "السعر" : language === "ku" ? "نرخ" : "السعر")} ({t("iqd")}) *
               </Label>
               <Input 
                 type="text"
@@ -1127,14 +1119,14 @@ export default function SellWizardPage() {
                 data-testid="input-price"
               />
               <div className="space-y-2">
-                <Label htmlFor="quantityAvailable">{language === "ar" ? "الكمية المتوفرة" : "بڕی بەردەست"} *</Label>
+                <Label htmlFor="quantityAvailable">{language === "ar" ? "الكمية المتوفرة" : language === "ku" ? "بڕی بەردەست" : "الكمية المتوفرة"} *</Label>
                 <Input id="quantityAvailable" type="text" inputMode="numeric" pattern="[0-9٠-٩]*" placeholder="1" value={formData.quantityAvailable ?? "1"} onChange={(e) => handleInputChange("quantityAvailable", e.target.value)} data-testid="input-quantity" />
-                <p className="text-xs text-muted-foreground">{language === "ar" ? "عدد القطع المتوفرة للبيع" : "ژمارەی پارچەکان بۆ فرۆشتن"}</p>
+                <p className="text-xs text-muted-foreground">{language === "ar" ? "عدد القطع المتوفرة للبيع" : language === "ku" ? "ژمارەی پارچەکان بۆ فرۆشتن" : "عدد القطع المتوفرة للبيع"}</p>
               </div>
               <Input
               />
               <p className="text-xs text-muted-foreground">
-                {language === "ar" ? "الحد الأدنى: 1,000 دينار" : "کەمترین: ١,٠٠٠ دینار"}
+                {language === "ar" ? "الحد الأدنى: 1,000 دينار" : language === "ku" ? "کەمترین: ١,٠٠٠ دینار" : "الحد الأدنى: 1,000 دينار"}
               </p>
             </div>
             
@@ -1145,7 +1137,7 @@ export default function SellWizardPage() {
                 <div className="space-y-4">
                   <Label className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-primary" />
-                    {language === "ar" ? "موعد بدء المزاد" : "کاتی دەستپێکردنی مزایدە"}
+                    {language === "ar" ? "موعد بدء المزاد" : language === "ku" ? "کاتی دەستپێکردنی مزایدە" : "موعد بدء المزاد"}
                   </Label>
                   <RadioGroup 
                     value={startTimeOption} 
@@ -1161,10 +1153,10 @@ export default function SellWizardPage() {
                       <RadioGroupItem value="now" id="start-now" />
                       <div>
                         <div className="font-bold text-green-700">
-                          {language === "ar" ? "ابدأ فوراً" : "ئێستا دەستپێبکە"}
+                          {language === "ar" ? "ابدأ فوراً" : language === "ku" ? "ئێستا دەستپێبکە" : "ابدأ فوراً"}
                         </div>
                         <p className="text-xs text-gray-500">
-                          {language === "ar" ? "يبدأ المزاد عند النشر" : "مزایدە دەستپێدەکات کاتی بڵاوکردنەوە"}
+                          {language === "ar" ? "يبدأ المزاد عند النشر" : language === "ku" ? "مزایدە دەستپێدەکات کاتی بڵاوکردنەوە" : "يبدأ المزاد عند النشر"}
                         </p>
                       </div>
                     </Label>
@@ -1178,10 +1170,10 @@ export default function SellWizardPage() {
                       <RadioGroupItem value="schedule" id="start-schedule" />
                       <div>
                         <div className="font-bold text-blue-700">
-                          {language === "ar" ? "جدولة موعد" : "کاتی دیاریکراو"}
+                          {language === "ar" ? "جدولة موعد" : language === "ku" ? "کاتی دیاریکراو" : "جدولة موعد"}
                         </div>
                         <p className="text-xs text-gray-500">
-                          {language === "ar" ? "اختر تاريخ ووقت محدد" : "ڕێکەوت و کات هەڵبژێرە"}
+                          {language === "ar" ? "اختر تاريخ ووقت محدد" : language === "ku" ? "ڕێکەوت و کات هەڵبژێرە" : "اختر تاريخ ووقت محدد"}
                         </p>
                       </div>
                     </Label>
@@ -1191,7 +1183,7 @@ export default function SellWizardPage() {
                 {startTimeOption === "schedule" && (
                   <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
                     <div className="space-y-2">
-                      <Label>{language === "ar" ? "تاريخ البداية" : "ڕێکەوتی دەستپێک"} *</Label>
+                      <Label>{language === "ar" ? "تاريخ البداية" : language === "ku" ? "ڕێکەوتی دەستپێک" : "تاريخ البداية"} *</Label>
                       <Input 
                         type="date"
                         value={formData.startDate}
@@ -1201,7 +1193,7 @@ export default function SellWizardPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>{language === "ar" ? "ساعة البداية" : "کاتژمێری دەستپێک"} *</Label>
+                      <Label>{language === "ar" ? "ساعة البداية" : language === "ku" ? "کاتژمێری دەستپێک" : "ساعة البداية"} *</Label>
                       <Select value={formData.startHour} onValueChange={(v) => handleInputChange("startHour", v)}>
                         <SelectTrigger>
                           <SelectValue />
@@ -1218,7 +1210,7 @@ export default function SellWizardPage() {
                 
                 <div className="grid grid-cols-2 gap-4 p-4 bg-orange-50 rounded-lg">
                   <div className="space-y-2">
-                    <Label>{language === "ar" ? "تاريخ الانتهاء" : "ڕێکەوتی کۆتایی"} *</Label>
+                    <Label>{language === "ar" ? "تاريخ الانتهاء" : language === "ku" ? "ڕێکەوتی کۆتایی" : "تاريخ الانتهاء"} *</Label>
                     <Input 
                       type="date"
                       value={formData.endDate}
@@ -1228,7 +1220,7 @@ export default function SellWizardPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{language === "ar" ? "ساعة الانتهاء" : "کاتژمێری کۆتایی"} *</Label>
+                    <Label>{language === "ar" ? "ساعة الانتهاء" : language === "ku" ? "کاتژمێری کۆتایی" : "ساعة الانتهاء"} *</Label>
                     <Select value={formData.endHour} onValueChange={(v) => handleInputChange("endHour", v)}>
                       <SelectTrigger>
                         <SelectValue />
@@ -1243,12 +1235,12 @@ export default function SellWizardPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>{language === "ar" ? "سعر الشراء الفوري (اختياري)" : "نرخی کڕینی ڕاستەوخۆ"}</Label>
+                  <Label>{language === "ar" ? "سعر الشراء الفوري (اختياري)" : language === "ku" ? "نرخی کڕینی ڕاستەوخۆ" : "سعر الشراء الفوري (اختياري)"}</Label>
                   <Input 
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9٠-٩]*"
-                    placeholder={language === "ar" ? "اتركه فارغاً إذا لم ترغب" : "بەتاڵی جێبهێڵە ئەگەر نەتەوێت"}
+                    placeholder={language === "ar" ? "اتركه فارغاً إذا لم ترغب" : language === "ku" ? "بەتاڵی جێبهێڵە ئەگەر نەتەوێت" : "اتركه فارغاً إذا لم ترغب"}
                     value={formData.buyNowPrice}
                     onChange={(e) => handleInputChange("buyNowPrice", e.target.value)}
                   />
@@ -1271,32 +1263,28 @@ export default function SellWizardPage() {
                     />
                     <div className="flex-1">
                       <Label htmlFor="hasReservePrice" className="cursor-pointer font-bold">
-                        {language === "ar" ? "سعر احتياطي (اختياري)" : "نرخی پاراستن (ئارەزوومەندانە)"}
+                        {language === "ar" ? "سعر احتياطي (اختياري)" : language === "ku" ? "نرخی پاراستن (ئارەزوومەندانە)" : "سعر احتياطي (اختياري)"}
                       </Label>
                       <p className="text-xs text-amber-700 mt-1">
-                        {language === "ar" 
-                          ? "حدد سعراً أدنى يجب الوصول إليه لإتمام البيع" 
-                          : "کەمترین نرخێک دیاری بکە کە دەبێت بگاتە بۆ تەواوکردنی فرۆشتن"}
+                        {language === "ar" ? "حدد سعراً أدنى يجب الوصول إليه لإتمام البيع" : language === "ku" ? "کەمترین نرخێک دیاری بکە کە دەبێت بگاتە بۆ تەواوکردنی فرۆشتن" : "حدد سعراً أدنى يجب الوصول إليه لإتمام البيع"}
                       </p>
                     </div>
                   </div>
                   
                   {hasReservePrice && (
                     <div className="space-y-2">
-                      <Label>{language === "ar" ? "السعر الاحتياطي" : "نرخی پاراستن"}</Label>
+                      <Label>{language === "ar" ? "السعر الاحتياطي" : language === "ku" ? "نرخی پاراستن" : "السعر الاحتياطي"}</Label>
                       <Input
                         type="text"
                         inputMode="numeric"
                         pattern="[0-9٠-٩]*"
-                        placeholder={language === "ar" ? "أدخل السعر الاحتياطي" : "نرخی پاراستن بنووسە"}
+                        placeholder={language === "ar" ? "أدخل السعر الاحتياطي" : language === "ku" ? "نرخی پاراستن بنووسە" : "أدخل السعر الاحتياطي"}
                         value={formData.reservePrice}
                         onChange={(e) => handleInputChange("reservePrice", e.target.value)}
                         data-testid="input-reserve-price"
                       />
                       <p className="text-xs text-muted-foreground">
-                        {language === "ar" 
-                          ? "لن يتم بيع المنتج إذا لم يصل المزاد لهذا السعر" 
-                          : "بەرهەمەکە نافرۆشرێت ئەگەر مزایدە نەگاتە ئەم نرخە"}
+                        {language === "ar" ? "لن يتم بيع المنتج إذا لم يصل المزاد لهذا السعر" : language === "ku" ? "بەرهەمەکە نافرۆشرێت ئەگەر مزایدە نەگاتە ئەم نرخە" : "لن يتم بيع المنتج إذا لم يصل المزاد لهذا السعر"}
                       </p>
                     </div>
                   )}
@@ -1310,7 +1298,7 @@ export default function SellWizardPage() {
                 <div className="space-y-4">
                   <Label className="flex items-center gap-2">
                     <Lock className="h-4 w-4 text-primary" />
-                    {language === "ar" ? "من يمكنه المزايدة؟" : "کێ دەتوانێت مزایدە بکات؟"}
+                    {language === "ar" ? "من يمكنه المزايدة؟" : language === "ku" ? "کێ دەتوانێت مزایدە بکات؟" : "من يمكنه المزايدة؟"}
                   </Label>
                   <RadioGroup 
                     value={formData.allowedBidderType} 
@@ -1326,10 +1314,10 @@ export default function SellWizardPage() {
                       <RadioGroupItem value="all_users" id="bidder-all" className="mt-1" />
                       <div>
                         <div className="font-bold">
-                          {language === "ar" ? "جميع المستخدمين" : "هەموو بەکارهێنەران"}
+                          {language === "ar" ? "جميع المستخدمين" : language === "ku" ? "هەموو بەکارهێنەران" : "جميع المستخدمين"}
                         </div>
                         <p className="text-xs text-gray-500">
-                          {language === "ar" ? "يسمح لأي مستخدم مسجل بالمزايدة." : "ڕێگە بە هەر بەکارهێنەرێکی تۆمارکراو دەدرێت مزایدە بکات."}
+                          {language === "ar" ? "يسمح لأي مستخدم مسجل بالمزايدة." : language === "ku" ? "ڕێگە بە هەر بەکارهێنەرێکی تۆمارکراو دەدرێت مزایدە بکات." : "يسمح لأي مستخدم مسجل بالمزايدة."}
                         </p>
                       </div>
                     </Label>
@@ -1343,10 +1331,10 @@ export default function SellWizardPage() {
                       <RadioGroupItem value="verified_only" id="bidder-verified" className="mt-1" />
                       <div>
                         <div className="font-bold">
-                          {language === "ar" ? "الموثقون فقط" : "تەنها متمانەپێکراوەکان"}
+                          {language === "ar" ? "الموثقون فقط" : language === "ku" ? "تەنها متمانەپێکراوەکان" : "الموثقون فقط"}
                         </div>
                         <p className="text-xs text-gray-500">
-                          {language === "ar" ? "يسمح فقط لمن لديهم حسابات موثقة (أكثر أماناً)." : "تەنها ڕێگە بەوانە دەدرێت کە هەژماری متمانەپێکراویان هەیە (پارێزراوترە)."}
+                          {language === "ar" ? "يسمح فقط لمن لديهم حسابات موثقة (أكثر أماناً)." : language === "ku" ? "تەنها ڕێگە بەوانە دەدرێت کە هەژماری متمانەپێکراویان هەیە (پارێزراوترە)." : "يسمح فقط لمن لديهم حسابات موثقة (أكثر أماناً)."}
                         </p>
                       </div>
                     </Label>
@@ -1364,10 +1352,10 @@ export default function SellWizardPage() {
                     <MessageSquare className="h-5 w-5 text-blue-600" />
                     <div>
                       <Label className="font-medium">
-                        {language === "ar" ? "قابل للتفاوض" : "دەکرێت گفتوگۆ بکرێت"}
+                        {language === "ar" ? "قابل للتفاوض" : language === "ku" ? "دەکرێت گفتوگۆ بکرێت" : "قابل للتفاوض"}
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        {language === "ar" ? "السماح للمشترين بتقديم عروض أسعار" : "ڕێگە بدە بە کڕیاران پێشنیاری نرخ بکەن"}
+                        {language === "ar" ? "السماح للمشترين بتقديم عروض أسعار" : language === "ku" ? "ڕێگە بدە بە کڕیاران پێشنیاری نرخ بکەن" : "السماح للمشترين بتقديم عروض أسعار"}
                       </p>
                     </div>
                   </div>
@@ -1387,7 +1375,7 @@ export default function SellWizardPage() {
             <div className="space-y-3">
               <Label className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                {language === "ar" ? "موقع الاستلام" : "شوێنی وەرگرتنەوە"} *
+                {language === "ar" ? "موقع الاستلام" : language === "ku" ? "شوێنی وەرگرتنەوە" : "موقع الاستلام"} *
               </Label>
               
               {isLoadingAddresses ? (
@@ -1403,7 +1391,7 @@ export default function SellWizardPage() {
                           <span className="font-semibold">{selectedAddress.label}</span>
                           {selectedAddress.isDefault && (
                             <Badge variant="secondary" className="text-xs">
-                              {language === "ar" ? "افتراضي" : "بنەڕەتی"}
+                              {language === "ar" ? "افتراضي" : language === "ku" ? "بنەڕەتی" : "افتراضي"}
                             </Badge>
                           )}
                         </div>
@@ -1417,7 +1405,7 @@ export default function SellWizardPage() {
                         {selectedAddress.latitude && selectedAddress.longitude && (
                           <p className="text-xs text-green-600 flex items-center gap-1">
                             <CheckCircle2 className="h-3 w-3" />
-                            {language === "ar" ? "الموقع محدد على الخريطة" : "شوێن لەسەر نەخشە دیاریکراوە"}
+                            {language === "ar" ? "الموقع محدد على الخريطة" : language === "ku" ? "شوێن لەسەر نەخشە دیاریکراوە" : "الموقع محدد على الخريطة"}
                           </p>
                         )}
                       </div>
@@ -1428,7 +1416,7 @@ export default function SellWizardPage() {
                         onClick={() => setShowAddressModal(true)}
                       >
                         <Edit className="h-4 w-4 ml-1" />
-                        {language === "ar" ? "تغيير" : "گۆڕین"}
+                        {language === "ar" ? "تغيير" : language === "ku" ? "گۆڕین" : "تغيير"}
                       </Button>
                     </div>
                   </CardContent>
@@ -1438,9 +1426,7 @@ export default function SellWizardPage() {
                   <CardContent className="p-6 text-center">
                     <MapPin className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground mb-3">
-                      {language === "ar" 
-                        ? "لم يتم تحديد موقع الاستلام بعد" 
-                        : "هێشتا شوێنی وەرگرتنەوە دیاری نەکراوە"}
+                      {language === "ar" ? "لم يتم تحديد موقع الاستلام بعد" : language === "ku" ? "هێشتا شوێنی وەرگرتنەوە دیاری نەکراوە" : "لم يتم تحديد موقع الاستلام بعد"}
                     </p>
                     <Button
                       type="button"
@@ -1448,7 +1434,7 @@ export default function SellWizardPage() {
                       onClick={() => setShowAddressModal(true)}
                     >
                       <Plus className="h-4 w-4 ml-1" />
-                      {language === "ar" ? "إضافة موقع الاستلام" : "شوێنی وەرگرتنەوە زیاد بکە"}
+                      {language === "ar" ? "إضافة موقع الاستلام" : language === "ku" ? "شوێنی وەرگرتنەوە زیاد بکە" : "إضافة موقع الاستلام"}
                     </Button>
                   </CardContent>
                 </Card>
@@ -1470,22 +1456,22 @@ export default function SellWizardPage() {
             </div>
             
             <div className="space-y-2">
-              <Label>{language === "ar" ? "مدة التوصيل" : "ماوەی گەیاندن"} *</Label>
+              <Label>{language === "ar" ? "مدة التوصيل" : language === "ku" ? "ماوەی گەیاندن" : "مدة التوصيل"} *</Label>
               <Select value={formData.deliveryWindow} onValueChange={(v) => handleInputChange("deliveryWindow", v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1-2 أيام">1-2 {language === "ar" ? "أيام" : "ڕۆژ"}</SelectItem>
-                  <SelectItem value="3-5 أيام">3-5 {language === "ar" ? "أيام" : "ڕۆژ"}</SelectItem>
-                  <SelectItem value="5-7 أيام">5-7 {language === "ar" ? "أيام" : "ڕۆژ"}</SelectItem>
-                  <SelectItem value="1-2 أسبوع">1-2 {language === "ar" ? "أسبوع" : "هەفتە"}</SelectItem>
+                  <SelectItem value="1-2 أيام">1-2 {language === "ar" ? "أيام" : language === "ku" ? "ڕۆژ" : "أيام"}</SelectItem>
+                  <SelectItem value="3-5 أيام">3-5 {language === "ar" ? "أيام" : language === "ku" ? "ڕۆژ" : "أيام"}</SelectItem>
+                  <SelectItem value="5-7 أيام">5-7 {language === "ar" ? "أيام" : language === "ku" ? "ڕۆژ" : "أيام"}</SelectItem>
+                  <SelectItem value="1-2 أسبوع">1-2 {language === "ar" ? "أسبوع" : language === "ku" ? "هەفتە" : "أسبوع"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <div className="space-y-3">
-              <Label>{language === "ar" ? "تكلفة الشحن" : "تێچووی گواستنەوە"}</Label>
+              <Label>{language === "ar" ? "تكلفة الشحن" : language === "ku" ? "تێچووی گواستنەوە" : "تكلفة الشحن"}</Label>
               <RadioGroup 
                 value={formData.shippingType} 
                 onValueChange={(v) => handleInputChange("shippingType", v)}
@@ -1494,19 +1480,19 @@ export default function SellWizardPage() {
                 <div className="flex items-center gap-3 p-3 border rounded-lg">
                   <RadioGroupItem value="seller_pays" id="ship-free" />
                   <Label htmlFor="ship-free" className="flex-1 cursor-pointer">
-                    {language === "ar" ? "شحن مجاني" : "گواستنەوەی بەخۆڕایی"}
+                    {language === "ar" ? "شحن مجاني" : language === "ku" ? "گواستنەوەی بەخۆڕایی" : "شحن مجاني"}
                   </Label>
                 </div>
                 <div className="flex items-center gap-3 p-3 border rounded-lg">
                   <RadioGroupItem value="buyer_pays" id="ship-buyer" />
                   <Label htmlFor="ship-buyer" className="flex-1 cursor-pointer">
-                    {language === "ar" ? "على حساب المشتري" : "بە تێچووی کڕیار"}
+                    {language === "ar" ? "على حساب المشتري" : language === "ku" ? "بە تێچووی کڕیار" : "على حساب المشتري"}
                   </Label>
                 </div>
                 <div className="flex items-center gap-3 p-3 border rounded-lg">
                   <RadioGroupItem value="pickup" id="ship-pickup" />
                   <Label htmlFor="ship-pickup" className="flex-1 cursor-pointer">
-                    {language === "ar" ? "استلام شخصي" : "وەرگرتنی کەسی"}
+                    {language === "ar" ? "استلام شخصي" : language === "ku" ? "وەرگرتنی کەسی" : "استلام شخصي"}
                   </Label>
                 </div>
               </RadioGroup>
@@ -1516,7 +1502,7 @@ export default function SellWizardPage() {
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9٠-٩]*"
-                  placeholder={language === "ar" ? "تكلفة الشحن بالدينار" : "تێچووی گواستنەوە بە دینار"}
+                  placeholder={language === "ar" ? "تكلفة الشحن بالدينار" : language === "ku" ? "تێچووی گواستنەوە بە دینار" : "تكلفة الشحن بالدينار"}
                   value={formData.shippingCost}
                   onChange={(e) => handleInputChange("shippingCost", e.target.value)}
                 />
@@ -1524,17 +1510,17 @@ export default function SellWizardPage() {
             </div>
             
             <div className="space-y-2">
-              <Label>{language === "ar" ? "سياسة الإرجاع" : "سیاسەتی گەڕانەوە"} *</Label>
+              <Label>{language === "ar" ? "سياسة الإرجاع" : language === "ku" ? "سیاسەتی گەڕانەوە" : "سياسة الإرجاع"} *</Label>
               <Select value={formData.returnPolicy} onValueChange={(v) => handleInputChange("returnPolicy", v)}>
                 <SelectTrigger data-testid="select-return-policy">
-                  <SelectValue placeholder={language === "ar" ? "اختر سياسة الإرجاع" : "سیاسەتی گەڕانەوە هەڵبژێرە"} />
+                  <SelectValue placeholder={language === "ar" ? "اختر سياسة الإرجاع" : language === "ku" ? "سیاسەتی گەڕانەوە هەڵبژێرە" : "اختر سياسة الإرجاع"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="لا يوجد إرجاع">{language === "ar" ? "لا يوجد إرجاع" : "گەڕانەوە نییە"}</SelectItem>
-                  <SelectItem value="3 أيام">{language === "ar" ? "إرجاع خلال 3 أيام" : "گەڕانەوە لە ماوەی ٣ ڕۆژ"}</SelectItem>
-                  <SelectItem value="7 أيام">{language === "ar" ? "إرجاع خلال 7 أيام" : "گەڕانەوە لە ماوەی ٧ ڕۆژ"}</SelectItem>
-                  <SelectItem value="14 يوم">{language === "ar" ? "إرجاع خلال 14 يوم" : "گەڕانەوە لە ماوەی ١٤ ڕۆژ"}</SelectItem>
-                  <SelectItem value="30 يوم">{language === "ar" ? "إرجاع خلال 30 يوم" : "گەڕانەوە لە ماوەی ٣٠ ڕۆژ"}</SelectItem>
+                  <SelectItem value="لا يوجد إرجاع">{language === "ar" ? "لا يوجد إرجاع" : language === "ku" ? "گەڕانەوە نییە" : "لا يوجد إرجاع"}</SelectItem>
+                  <SelectItem value="3 أيام">{language === "ar" ? "إرجاع خلال 3 أيام" : language === "ku" ? "گەڕانەوە لە ماوەی ٣ ڕۆژ" : "إرجاع خلال 3 أيام"}</SelectItem>
+                  <SelectItem value="7 أيام">{language === "ar" ? "إرجاع خلال 7 أيام" : language === "ku" ? "گەڕانەوە لە ماوەی ٧ ڕۆژ" : "إرجاع خلال 7 أيام"}</SelectItem>
+                  <SelectItem value="14 يوم">{language === "ar" ? "إرجاع خلال 14 يوم" : language === "ku" ? "گەڕانەوە لە ماوەی ١٤ ڕۆژ" : "إرجاع خلال 14 يوم"}</SelectItem>
+                  <SelectItem value="30 يوم">{language === "ar" ? "إرجاع خلال 30 يوم" : language === "ku" ? "گەڕانەوە لە ماوەی ٣٠ ڕۆژ" : "إرجاع خلال 30 يوم"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1590,16 +1576,16 @@ export default function SellWizardPage() {
                   <span className="mr-2 font-medium">{formData.condition}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">{language === "ar" ? "المدينة" : "شار"}:</span>
+                  <span className="text-muted-foreground">{language === "ar" ? "المدينة" : language === "ku" ? "شار" : "المدينة"}:</span>
                   <span className="mr-2 font-medium">{formData.city}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">{language === "ar" ? "الشحن" : "گواستنەوە"}:</span>
+                  <span className="text-muted-foreground">{language === "ar" ? "الشحن" : language === "ku" ? "گواستنەوە" : "الشحن"}:</span>
                   <span className="mr-2 font-medium">
                     {formData.shippingType === "seller_pays" 
-                      ? (language === "ar" ? "مجاني" : "بەخۆڕایی")
+                      ? (language === "ar" ? "مجاني" : language === "ku" ? "بەخۆڕایی" : "مجاني")
                       : formData.shippingType === "pickup"
-                        ? (language === "ar" ? "استلام شخصي" : "وەرگرتنی کەسی")
+                        ? (language === "ar" ? "استلام شخصي" : language === "ku" ? "وەرگرتنی کەسی" : "استلام شخصي")
                         : `${parseInt(formData.shippingCost || "0").toLocaleString()} ${t("iqd")}`
                     }
                   </span>
@@ -1608,7 +1594,7 @@ export default function SellWizardPage() {
               
               {isNegotiable && (
                 <Badge variant="secondary" className="w-fit">
-                  {language === "ar" ? "قابل للتفاوض" : "دەکرێت گفتوگۆ بکرێت"}
+                  {language === "ar" ? "قابل للتفاوض" : language === "ku" ? "دەکرێت گفتوگۆ بکرێت" : "قابل للتفاوض"}
                 </Badge>
               )}
               
@@ -1626,12 +1612,10 @@ export default function SellWizardPage() {
                 <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium text-green-800">
-                    {language === "ar" ? "جاهز للنشر!" : "ئامادەیە بۆ بڵاوکردنەوە!"}
+                    {language === "ar" ? "جاهز للنشر!" : language === "ku" ? "ئامادەیە بۆ بڵاوکردنەوە!" : "جاهز للنشر!"}
                   </p>
                   <p className="text-sm text-green-700 mt-1">
-                    {language === "ar" 
-                      ? "راجع البيانات أعلاه ثم اضغط على زر النشر"
-                      : "زانیاریەکان لە سەرەوە بپشکنە پاشان دوگمەی بڵاوکردنەوە دابگرە"}
+                    {language === "ar" ? "راجع البيانات أعلاه ثم اضغط على زر النشر" : language === "ku" ? "زانیاریەکان لە سەرەوە بپشکنە پاشان دوگمەی بڵاوکردنەوە دابگرە" : "راجع البيانات أعلاه ثم اضغط على زر النشر"}
                   </p>
                 </div>
               </div>
@@ -1660,13 +1644,11 @@ export default function SellWizardPage() {
             <DialogHeader>
               <DialogTitle className="text-lg font-bold flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                {language === "ar" ? "حفظ التغييرات؟" : "گۆڕانکاریەکان پاشەکەوت بکەیت؟"}
+                {language === "ar" ? "حفظ التغييرات؟" : language === "ku" ? "گۆڕانکاریەکان پاشەکەوت بکەیت؟" : "حفظ التغييرات؟"}
               </DialogTitle>
             </DialogHeader>
             <p className="text-gray-600 text-sm py-2">
-              {language === "ar" 
-                ? "لديك تغييرات غير محفوظة. هل تريد حفظها كمسودة قبل المغادرة؟" 
-                : "گۆڕانکاریی پاشەکەوت نەکراوت هەیە. دەتەوێت وەک ڕەشنووس پاشەکەوتی بکەیت پێش ئەوەی بڕۆیت؟"}
+              {language === "ar" ? "لديك تغييرات غير محفوظة. هل تريد حفظها كمسودة قبل المغادرة؟" : language === "ku" ? "گۆڕانکاریی پاشەکەوت نەکراوت هەیە. دەتەوێت وەک ڕەشنووس پاشەکەوتی بکەیت پێش ئەوەی بڕۆیت؟" : "لديك تغييرات غير محفوظة. هل تريد حفظها كمسودة قبل المغادرة؟"}
             </p>
             <DialogFooter className="flex gap-2 sm:gap-2">
               <Button
@@ -1678,21 +1660,21 @@ export default function SellWizardPage() {
                 }}
                 className="flex-1"
               >
-                {language === "ar" ? "تجاهل" : "پشتگوێ بخە"}
+                {language === "ar" ? "تجاهل" : language === "ku" ? "پشتگوێ بخە" : "تجاهل"}
               </Button>
               <Button
                 onClick={() => {
                   saveDraftToStorage();
                   toast({ 
-                    title: language === "ar" ? "تم حفظ المسودة" : "ڕەشنووس پاشەکەوت کرا", 
-                    description: language === "ar" ? "يمكنك إكمال الإعلان لاحقاً" : "دەتوانیت دواتر ڕیکلامەکە تەواو بکەیت" 
+                    title: language === "ar" ? "تم حفظ المسودة" : language === "ku" ? "ڕەشنووس پاشەکەوت کرا" : "تم حفظ المسودة", 
+                    description: language === "ar" ? "يمكنك إكمال الإعلان لاحقاً" : language === "ku" ? "دەتوانیت دواتر ڕیکلامەکە تەواو بکەیت" : "يمكنك إكمال الإعلان لاحقاً" 
                   });
                   setShowExitConfirm(false);
                   setLocation("/");
                 }}
                 className="flex-1 bg-primary"
               >
-                {language === "ar" ? "حفظ ومغادرة" : "پاشەکەوت و بڕۆ"}
+                {language === "ar" ? "حفظ ومغادرة" : language === "ku" ? "پاشەکەوت و بڕۆ" : "حفظ ومغادرة"}
               </Button>
             </DialogFooter>
           </DialogContent>

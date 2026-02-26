@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
 
 interface StarRatingProps {
   value: number;
@@ -224,22 +225,29 @@ export function RatingDisplay({
   showCount?: boolean;
   className?: string;
 }) {
+  const { language } = useLanguage();
   const percentage = Math.round(rating * 20);
-  
+  const positiveLabel = language === "ar" ? "تقييم إيجابي" : language === "ku" ? "هەڵسەنگاندنی ئەرێنی" : "positive rating";
+  const ratingLabel = language === "ar"
+    ? (count === 1 ? "تقييم" : "تقييمات")
+    : language === "ku"
+      ? (count === 1 ? "هەڵسەنگاندن" : "هەڵسەنگاندنەکان")
+      : (count === 1 ? "rating" : "ratings");
+
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <span className={cn(
         "font-bold",
-        percentage >= 80 ? "text-green-600" : 
-        percentage >= 60 ? "text-yellow-600" : 
+        percentage >= 80 ? "text-green-600" :
+        percentage >= 60 ? "text-yellow-600" :
         "text-red-600"
       )}>
         {percentage}%
       </span>
-      <span className="text-sm text-muted-foreground">تقييم إيجابي</span>
+      <span className="text-sm text-muted-foreground">{positiveLabel}</span>
       {showCount && count !== undefined && (
         <span className="text-sm text-muted-foreground">
-          ({count} {count === 1 ? "تقييم" : "تقييمات"})
+          ({count} {ratingLabel})
         </span>
       )}
     </div>

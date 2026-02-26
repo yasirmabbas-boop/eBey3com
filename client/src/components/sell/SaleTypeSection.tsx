@@ -53,12 +53,12 @@ export function SaleTypeSection({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <DollarSign className="h-5 w-5 text-primary" />
-          {t("saleType")} {language === "ar" ? "والسعر" : "و نرخ"}
+          {t("saleType")} {language === "ar" ? "والسعر" : language === "ku" ? "و نرخ" : "والسعر"}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
-          <Label>{language === "ar" ? "اختر طريقة البيع" : "شێوازی فرۆشتن هەڵبژێرە"} *</Label>
+          <Label>{language === "ar" ? "اختر طريقة البيع" : language === "ku" ? "شێوازی فرۆشتن هەڵبژێرە" : "اختر طريقة البيع"} *</Label>
           <RadioGroup 
             value={saleType} 
             onValueChange={(v) => onSaleTypeChange(v as "auction" | "fixed")}
@@ -77,9 +77,7 @@ export function SaleTypeSection({
                   {t("auction")}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {language === "ar" 
-                    ? "دع المشترين يتنافسون على منتجك للحصول على أفضل سعر" 
-                    : "وەرە کڕیاران بەرکەوتوو بن بۆ بەرهەمەکەت بۆ بەدەستهێنانی باشترین نرخ"}
+                  {language === "ar" ? "دع المشترين يتنافسون على منتجك للحصول على أفضل سعر" : language === "ku" ? "وەرە کڕیاران بەرکەوتوو بن بۆ بەرهەمەکەت بۆ بەدەستهێنانی باشترین نرخ" : "دع المشترين يتنافسون على منتجك للحصول على أفضل سعر"}
                 </p>
               </div>
             </Label>
@@ -97,9 +95,7 @@ export function SaleTypeSection({
                   {t("fixedPrice")}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {language === "ar" 
-                    ? "حدد سعراً ثابتاً والمشتري الأول يفوز" 
-                    : "نرخێکی جێگیر دیاری بکە و یەکەم کڕیار بردنەوە دەبات"}
+                  {language === "ar" ? "حدد سعراً ثابتاً والمشتري الأول يفوز" : language === "ku" ? "نرخێکی جێگیر دیاری بکە و یەکەم کڕیار بردنەوە دەبات" : "حدد سعراً ثابتاً والمشتري الأول يفوز"}
                 </p>
               </div>
             </Label>
@@ -109,8 +105,8 @@ export function SaleTypeSection({
         <div className="space-y-2">
           <Label htmlFor="price">
             {saleType === "auction" 
-              ? (language === "ar" ? "سعر البداية" : "نرخی دەستپێک") 
-              : (language === "ar" ? "السعر" : "نرخ")} ({t("iqd")}) *
+              ? (language === "ar" ? "سعر البداية" : language === "ku" ? "نرخی دەستپێک" : "سعر البداية") 
+              : (language === "ar" ? "السعر" : language === "ku" ? "نرخ" : "السعر")} ({t("iqd")}) *
           </Label>
           <div className="relative">
             <DollarSign className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -127,7 +123,7 @@ export function SaleTypeSection({
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            {language === "ar" ? "الحد الأدنى: 1,000 دينار" : "کەمترین: ١,٠٠٠ دینار"}
+            {language === "ar" ? "الحد الأدنى: 1,000 دينار" : language === "ku" ? "کەمترین: ١,٠٠٠ دینار" : "الحد الأدنى: 1,000 دينار"}
           </p>
         </div>
 
@@ -143,12 +139,10 @@ export function SaleTypeSection({
               />
               <div className="space-y-1 flex-1">
                 <Label htmlFor="reservePrice" className="font-bold cursor-pointer">
-                  {language === "ar" ? "سعر احتياطي" : "نرخی پاشەکەوت"}
+                  {language === "ar" ? "سعر احتياطي" : language === "ku" ? "نرخی پاشەکەوت" : "سعر احتياطي"}
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  {language === "ar" 
-                    ? "الحد الأدنى المقبول للبيع. لن يُباع المنتج بأقل من هذا السعر" 
-                    : "کەمترین نرخی پەسەندکراو بۆ فرۆشتن. بەرهەم بە کەمتر لەم نرخە نافرۆشرێت"}
+                  {language === "ar" ? "الحد الأدنى المقبول للبيع. لن يُباع المنتج بأقل من هذا السعر" : language === "ku" ? "کەمترین نرخی پەسەندکراو بۆ فرۆشتن. بەرهەم بە کەمتر لەم نرخە نافرۆشرێت" : "الحد الأدنى المقبول للبيع. لن يُباع المنتج بأقل من هذا السعر"}
                 </p>
               </div>
             </div>
@@ -156,7 +150,7 @@ export function SaleTypeSection({
             {hasReservePrice && (
               <div className="space-y-2 pr-8">
                 <Label htmlFor="reservePriceValue">
-                  {language === "ar" ? "السعر الاحتياطي" : "نرخی پاشەکەوت"} ({t("iqd")}) *
+                  {language === "ar" ? "السعر الاحتياطي" : language === "ku" ? "نرخی پاشەکەوت" : "السعر الاحتياطي"} ({t("iqd")}) *
                 </Label>
                 <Input 
                   id="reservePriceValue" 
@@ -180,12 +174,10 @@ export function SaleTypeSection({
               />
               <div className="space-y-1 flex-1">
                 <Label htmlFor="buyNowToggle" className="font-bold cursor-pointer">
-                  {language === "ar" ? "سعر الشراء الفوري" : "نرخی کڕینی ڕاستەوخۆ"} (Buy Now)
+                  {language === "ar" ? "سعر الشراء الفوري" : language === "ku" ? "نرخی کڕینی ڕاستەوخۆ" : "سعر الشراء الفوري"} (Buy Now)
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  {language === "ar" 
-                    ? "السماح للمشتري بشراء المنتج فوراً بسعر محدد دون انتظار انتهاء المزاد" 
-                    : "ڕێگەدان بە کڕیار کە بەرهەمەکە ڕاستەوخۆ بکڕێت بە نرخێکی دیاریکراو بەبێ چاوەڕوانی کۆتایی مزایدە"}
+                  {language === "ar" ? "السماح للمشتري بشراء المنتج فوراً بسعر محدد دون انتظار انتهاء المزاد" : language === "ku" ? "ڕێگەدان بە کڕیار کە بەرهەمەکە ڕاستەوخۆ بکڕێت بە نرخێکی دیاریکراو بەبێ چاوەڕوانی کۆتایی مزایدە" : "السماح للمشتري بشراء المنتج فوراً بسعر محدد دون انتظار انتهاء المزاد"}
                 </p>
               </div>
             </div>
@@ -193,7 +185,7 @@ export function SaleTypeSection({
             {hasBuyNow && (
               <div className="space-y-2 pr-8">
                 <Label htmlFor="buyNowPrice">
-                  {language === "ar" ? "سعر الشراء الفوري" : "نرخی کڕینی ڕاستەوخۆ"} ({t("iqd")}) *
+                  {language === "ar" ? "سعر الشراء الفوري" : language === "ku" ? "نرخی کڕینی ڕاستەوخۆ" : "سعر الشراء الفوري"} ({t("iqd")}) *
                 </Label>
                 <Input 
                   id="buyNowPrice" 
@@ -205,9 +197,7 @@ export function SaleTypeSection({
                   data-testid="input-buy-now-price"
                 />
                 <p className="text-xs text-muted-foreground">
-                  {language === "ar" 
-                    ? "يجب أن يكون أعلى من سعر البداية" 
-                    : "دەبێت زیاتر بێت لە نرخی دەستپێک"}
+                  {language === "ar" ? "يجب أن يكون أعلى من سعر البداية" : language === "ku" ? "دەبێت زیاتر بێت لە نرخی دەستپێک" : "يجب أن يكون أعلى من سعر البداية"}
                 </p>
               </div>
             )}
@@ -222,12 +212,10 @@ export function SaleTypeSection({
               />
               <div className="space-y-1 flex-1">
                 <Label htmlFor="allowOffersAuction" className="font-bold cursor-pointer">
-                  {language === "ar" ? "قابل للتفاوض" : "شیاوی دانوستان"}
+                  {language === "ar" ? "قابل للتفاوض" : language === "ku" ? "شیاوی دانوستان" : "قابل للتفاوض"}
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  {language === "ar" 
-                    ? "السماح للمشترين بتقديم عروض سعر مختلفة بالإضافة للمزايدات" 
-                    : "ڕێگەدان بە کڕیاران بۆ پێشکەشکردنی نرخی جیاواز لەگەڵ مزایدەکان"}
+                  {language === "ar" ? "السماح للمشترين بتقديم عروض سعر مختلفة بالإضافة للمزايدات" : language === "ku" ? "ڕێگەدان بە کڕیاران بۆ پێشکەشکردنی نرخی جیاواز لەگەڵ مزایدەکان" : "السماح للمشترين بتقديم عروض سعر مختلفة بالإضافة للمزايدات"}
                 </p>
               </div>
             </div>
@@ -243,12 +231,10 @@ export function SaleTypeSection({
                 />
                 <div className="space-y-1 flex-1">
                   <Label htmlFor="exchangeToggle" className="font-bold cursor-pointer">
-                    {language === "ar" ? "قابل للمراوس" : "شیاوی گۆڕینەوە"}
+                    {language === "ar" ? "قابل للمراوس" : language === "ku" ? "شیاوی گۆڕینەوە" : "قابل للمراوس"}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    {language === "ar" 
-                      ? "السماح للمشترين بتقديم عروض تبادل مع منتجاتهم المعروضة" 
-                      : "ڕێگەدان بە کڕیاران بۆ پێشکەشکردنی پێشنیاری گۆڕینەوە لەگەڵ بەرهەمەکانیان"}
+                    {language === "ar" ? "السماح للمشترين بتقديم عروض تبادل مع منتجاتهم المعروضة" : language === "ku" ? "ڕێگەدان بە کڕیاران بۆ پێشکەشکردنی پێشنیاری گۆڕینەوە لەگەڵ بەرهەمەکانیان" : "السماح للمشترين بتقديم عروض تبادل مع منتجاتهم المعروضة"}
                   </p>
                 </div>
               </div>

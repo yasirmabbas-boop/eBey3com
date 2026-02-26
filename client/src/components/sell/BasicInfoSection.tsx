@@ -55,12 +55,12 @@ export function BasicInfoSection({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Tag className="h-5 w-5 text-primary" />
-            {language === "ar" ? "معلومات المنتج" : "زانیاری بەرهەم"}
+            {language === "ar" ? "معلومات المنتج" : language === "ku" ? "زانیاری بەرهەم" : "معلومات المنتج"}
           </CardTitle>
           {wasAIFilled && (
             <Badge variant="secondary" className="gap-1">
               <span>✨</span>
-              {language === "ar" ? "تم ملؤه بالذكاء الاصطناعي" : "پڕکرایەوە بە AI"}
+              {language === "ar" ? "تم ملؤه بالذكاء الاصطناعي" : language === "ku" ? "پڕکرایەوە بە AI" : "تم ملؤه بالذكاء الاصطناعي"}
             </Badge>
           )}
         </div>
@@ -119,7 +119,7 @@ export function BasicInfoSection({
                 <SelectValue placeholder={t("selectCondition")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="New">{t("new")} {language === "ar" ? "(لم يُستخدم)" : "(بەکارنەهاتوو)"}</SelectItem>
+                <SelectItem value="New">{t("new")} {language === "ar" ? "(لم يُستخدم)" : language === "ku" ? "(بەکارنەهاتوو)" : "(لم يُستخدم)"}</SelectItem>
                 <SelectItem value="Used - Like New">{t("likeNew")}</SelectItem>
                 <SelectItem value="Used - Good">{t("usedGood")}</SelectItem>
                 <SelectItem value="Used - Fair">{t("usedFair")}</SelectItem>
@@ -132,10 +132,10 @@ export function BasicInfoSection({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="brand">{language === "ar" ? "الماركة / العلامة التجارية" : "براند / نیشانی بازرگانی"}</Label>
+            <Label htmlFor="brand">{language === "ar" ? "الماركة / العلامة التجارية" : language === "ku" ? "براند / نیشانی بازرگانی" : "الماركة / العلامة التجارية"}</Label>
             <Select value={formData.brand || ""} onValueChange={(v) => onInputChange("brand", v)}>
               <SelectTrigger data-testid="select-brand">
-                <SelectValue placeholder={language === "ar" ? "اختر الماركة" : "براند هەڵبژێرە"} />
+                <SelectValue placeholder={language === "ar" ? "اختر الماركة" : language === "ku" ? "براند هەڵبژێرە" : "اختر الماركة"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Rolex">Rolex</SelectItem>
@@ -151,7 +151,7 @@ export function BasicInfoSection({
                 <SelectItem value="LG">LG</SelectItem>
                 <SelectItem value="Nike">Nike</SelectItem>
                 <SelectItem value="Adidas">Adidas</SelectItem>
-                <SelectItem value="بدون ماركة">{language === "ar" ? "بدون ماركة" : "بێ براند"}</SelectItem>
+                <SelectItem value="بدون ماركة">{language === "ar" ? "بدون ماركة" : language === "ku" ? "بێ براند" : "بدون ماركة"}</SelectItem>
                 <SelectItem value="أخرى">{t("other")}</SelectItem>
               </SelectContent>
             </Select>
@@ -166,7 +166,7 @@ export function BasicInfoSection({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="model">{language === "ar" ? "الموديل / الإصدار" : "مۆدێل / وەشان"}</Label>
+            <Label htmlFor="model">{language === "ar" ? "الموديل / الإصدار" : language === "ku" ? "مۆدێل / وەشان" : "الموديل / الإصدار"}</Label>
             <Input 
               id="model" 
               placeholder="مثال: Submariner 5513"
@@ -176,16 +176,16 @@ export function BasicInfoSection({
         </div>
 
         <div className="space-y-3">
-          <Label>{language === "ar" ? "الكلمات المفتاحية (Tags)" : "وشەی سەرەکییەکان"}</Label>
+          <Label>{language === "ar" ? "الكلمات المفتاحية (Tags)" : language === "ku" ? "وشەی سەرەکییەکان" : "الكلمات المفتاحية (Tags)"}</Label>
           <p className="text-sm text-gray-500">
-            {language === "ar" ? "أضف كلمات تساعد المشترين في العثور على منتجك" : "وشە زیاد بکە بۆ یارمەتیدانی کڕیاران لە دۆزینەوەی بەرهەمەکەت"}
+            {language === "ar" ? "أضف كلمات تساعد المشترين في العثور على منتجك" : language === "ku" ? "وشە زیاد بکە بۆ یارمەتیدانی کڕیاران لە دۆزینەوەی بەرهەمەکەت" : "أضف كلمات تساعد المشترين في العثور على منتجك"}
           </p>
           <div className="flex gap-2">
             <Input
               value={tagInput}
               onChange={(e) => onTagInputChange(e.target.value)}
               onKeyDown={handleTagKeyDown}
-              placeholder={language === "ar" ? "اكتب واضغط Enter لإضافة..." : "بنووسە و Enter دابگرە بۆ زیادکردن..."}
+              placeholder={language === "ar" ? "اكتب واضغط Enter لإضافة..." : language === "ku" ? "بنووسە و Enter دابگرە بۆ زیادکردن..." : "اكتب واضغط Enter لإضافة..."}
               data-testid="input-tags"
             />
             <Button
@@ -214,7 +214,7 @@ export function BasicInfoSection({
               ))}
             </div>
           )}
-          <p className="text-xs text-gray-400">{tags.length}/10 {language === "ar" ? "كلمات مفتاحية" : "وشەی سەرەکی"}</p>
+          <p className="text-xs text-gray-400">{tags.length}/10 {language === "ar" ? "كلمات مفتاحية" : language === "ku" ? "وشەی سەرەکی" : "كلمات مفتاحية"}</p>
         </div>
       </CardContent>
     </Card>

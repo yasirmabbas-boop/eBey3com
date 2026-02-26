@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShippingLabel } from "@/components/shipping-label";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import {
@@ -65,35 +66,50 @@ interface EnrichedOffer extends Offer {
   buyerInfo?: { displayName?: string; username?: string };
 }
 
-const getStatusBadge = (status: string) => {
+const statusLabels: Record<string, { ar: string; ku: string; en: string }> = {
+  delivered: { ar: "تم التسليم", ku: "گەیەندرا", en: "Delivered" },
+  cancelled: { ar: "ملغي", ku: "هەڵوەشاوە", en: "Cancelled" },
+  pending: { ar: "بانتظار الشحن", ku: "چاوەڕێی ناردن", en: "Awaiting Shipment" },
+  shipped: { ar: "تم الشحن", ku: "نێردرا", en: "Shipped" },
+};
+
+const offerLabels: Record<string, { ar: string; ku: string; en: string }> = {
+  pending: { ar: "بانتظار الرد", ku: "چاوەڕێی وەڵام", en: "Awaiting Response" },
+  accepted: { ar: "تم القبول", ku: "قبوڵکرا", en: "Accepted" },
+  rejected: { ar: "مرفوض", ku: "ڕەتکراوە", en: "Rejected" },
+  countered: { ar: "عرض مضاد", ku: "پێشنیاری دژ", en: "Counter Offer" },
+};
+
+const getStatusBadge = (status: string, language: string = "ar") => {
+  const lang = language as "ar" | "ku" | "en";
   switch (status) {
     case "completed":
     case "delivered":
       return (
         <Badge className="bg-green-100 text-green-800 border-0">
           <CheckCircle className="h-3 w-3 ml-1" />
-          تم التسليم
+          {statusLabels.delivered[lang] || statusLabels.delivered.en}
         </Badge>
       );
     case "cancelled":
       return (
         <Badge className="bg-red-100 text-red-800 border-0">
           <XCircle className="h-3 w-3 ml-1" />
-          ملغي
+          {statusLabels.cancelled[lang] || statusLabels.cancelled.en}
         </Badge>
       );
     case "pending":
       return (
         <Badge className="bg-yellow-100 text-yellow-800 border-0">
           <Clock className="h-3 w-3 ml-1" />
-          بانتظار الشحن
+          {statusLabels.pending[lang] || statusLabels.pending.en}
         </Badge>
       );
     case "shipped":
       return (
         <Badge className="bg-blue-100 text-blue-800 border-0">
           <Truck className="h-3 w-3 ml-1" />
-          تم الشحن
+          {statusLabels.shipped[lang] || statusLabels.shipped.en}
         </Badge>
       );
     default:
@@ -105,34 +121,35 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-const getOfferStatusBadge = (status: string) => {
+const getOfferStatusBadge = (status: string, language: string = "ar") => {
+  const lang = language as "ar" | "ku" | "en";
   switch (status) {
     case "pending":
       return (
         <Badge className="bg-yellow-100 text-yellow-800 border-0">
           <Clock className="h-3 w-3 ml-1" />
-          بانتظار الرد
+          {offerLabels.pending[lang] || offerLabels.pending.en}
         </Badge>
       );
     case "accepted":
       return (
         <Badge className="bg-green-100 text-green-800 border-0">
           <Check className="h-3 w-3 ml-1" />
-          تم القبول
+          {offerLabels.accepted[lang] || offerLabels.accepted.en}
         </Badge>
       );
     case "rejected":
       return (
         <Badge className="bg-red-100 text-red-800 border-0">
           <X className="h-3 w-3 ml-1" />
-          مرفوض
+          {offerLabels.rejected[lang] || offerLabels.rejected.en}
         </Badge>
       );
     case "countered":
       return (
         <Badge className="bg-purple-100 text-purple-800 border-0">
           <MessageSquare className="h-3 w-3 ml-1" />
-          عرض مضاد
+          {offerLabels.countered[lang] || offerLabels.countered.en}
         </Badge>
       );
     default:
@@ -170,6 +187,7 @@ const filterByTimeline = <T extends { createdAt: Date | string }>(items: T[], ti
 
 export default function MySales() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedSale, setSelectedSale] = useState<EnrichedTransaction | null>(null);
@@ -505,7 +523,7 @@ export default function MySales() {
                               {new Date(sale.createdAt).toLocaleDateString("ar-IQ")}
                             </p>
                             <div className="mt-2 flex items-center gap-2 flex-wrap">
-                              {getStatusBadge(sale.status)}
+                              {getStatusBadge(sale.status, language)}
                               {/* Views - Hidden */}
                               {/* <span className="text-xs text-gray-500 flex items-center gap-1">
                                 <Eye className="h-3 w-3" />
@@ -570,7 +588,7 @@ export default function MySales() {
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
-                                {getStatusBadge(selectedSale.status)}
+                                {getStatusBadge(selectedSale.status, language)}
                               </div>
                             </div>
                           </div>
@@ -831,7 +849,7 @@ export default function MySales() {
                               من: {offer.buyerInfo?.displayName || offer.buyerInfo?.username || "مشتري"}
                             </p>
                           </div>
-                          {getOfferStatusBadge(offer.status)}
+                          {getOfferStatusBadge(offer.status, language)}
                         </div>
 
                         <div className="mt-3 flex items-center gap-4">

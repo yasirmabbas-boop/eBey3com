@@ -364,12 +364,10 @@ export function PushNotificationPrompt() {
         </div>
         <div className="flex-1">
           <h3 className="font-bold text-sm mb-1">
-            {language === "ar" ? "تفعيل الإشعارات" : "ئاگادارکردنەوەکان چالاک بکە"}
+            {language === "ar" ? "تفعيل الإشعارات" : language === "ku" ? "ئاگادارکردنەوەکان چالاک بکە" : "تفعيل الإشعارات"}
           </h3>
           <p className="text-xs text-blue-100 mb-3">
-            {language === "ar" 
-              ? "احصل على إشعارات فورية عن المزايدات والرسائل الجديدة"
-              : "ئاگاداری لەسەر مزایدە و پەیامە نوێیەکان وەربگرە"
+            {language === "ar" ? "احصل على إشعارات فورية عن المزايدات والرسائل الجديدة" : language === "ku" ? "ئاگاداری لەسەر مزایدە و پەیامە نوێیەکان وەربگرە" : "احصل على إشعارات فورية عن المزايدات والرسائل الجديدة"
             }
           </p>
           <Button
@@ -380,11 +378,11 @@ export function PushNotificationPrompt() {
             data-testid="button-enable-push"
           >
             {isSubscribing ? (
-              language === "ar" ? "جاري التفعيل..." : "چالاککردن..."
+              language === "ar" ? "جاري التفعيل..." : language === "ku" ? "چالاککردن..." : "جاري التفعيل..."
             ) : (
               <>
                 <Bell className="h-4 w-4 ml-2" />
-                {language === "ar" ? "تفعيل الإشعارات" : "چالاککردن"}
+                {language === "ar" ? "تفعيل الإشعارات" : language === "ku" ? "چالاککردن" : "تفعيل الإشعارات"}
               </>
             )}
           </Button>

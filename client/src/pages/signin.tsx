@@ -792,9 +792,7 @@ export default function SignIn() {
                     </InputOTP>
                   </div>
                   <p className="text-sm text-muted-foreground text-center mt-2">
-                    {language === "ar" 
-                      ? "افتح تطبيق Google Authenticator وأدخل الرمز المعروض"
-                      : "ئەپی Google Authenticator بکەوە و کۆدەکە بنووسە"
+                    {language === "ar" ? "افتح تطبيق Google Authenticator وأدخل الرمز المعروض" : language === "ku" ? "ئەپی Google Authenticator بکەوە و کۆدەکە بنووسە" : "افتح تطبيق Google Authenticator وأدخل الرمز المعروض"
                     }
                   </p>
                 </div>

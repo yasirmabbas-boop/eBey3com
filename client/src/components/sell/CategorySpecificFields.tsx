@@ -98,7 +98,7 @@ export function CategorySpecificFields({
             type="number"
             min="0"
             max="9999999"
-            placeholder={language === "ar" ? "مثال: 50000" : "نموونە: 50000"}
+            placeholder={language === "ar" ? "مثال: 50000" : language === "ku" ? "نموونە: 50000" : "مثال: 50000"}
             value={value}
             onChange={(e) => handleFieldChange(field, e.target.value)}
             className={error ? "border-red-500" : ""}
@@ -125,7 +125,7 @@ export function CategorySpecificFields({
               className={error ? "border-red-500" : ""}
               data-testid={`spec-${field}`}
             >
-              <SelectValue placeholder={language === "ar" ? "اختر..." : "هەڵبژێرە..."} />
+              <SelectValue placeholder={language === "ar" ? "اختر..." : language === "ku" ? "هەڵبژێرە..." : "اختر..."} />
             </SelectTrigger>
             <SelectContent>
               {options.map((option) => (
@@ -164,7 +164,7 @@ export function CategorySpecificFields({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Settings2 className="h-5 w-5 text-primary" />
-          {language === "ar" ? "مواصفات إضافية" : "تایبەتمەندییەکانی زیادە"}
+          {language === "ar" ? "مواصفات إضافية" : language === "ku" ? "تایبەتمەندییەکانی زیادە" : "مواصفات إضافية"}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -178,9 +178,7 @@ export function CategorySpecificFields({
         
         {config.required.length > 0 && (
           <p className="text-sm text-muted-foreground mt-4">
-            {language === "ar" 
-              ? "* الحقول المطلوبة لهذه الفئة" 
-              : "* خانە پێویستەکان بۆ ئەم پۆلە"}
+            {language === "ar" ? "* الحقول المطلوبة لهذه الفئة" : language === "ku" ? "* خانە پێویستەکان بۆ ئەم پۆلە" : "* الحقول المطلوبة لهذه الفئة"}
           </p>
         )}
       </CardContent>
@@ -214,18 +212,14 @@ export function validateCategorySpecifications(
     const year = parseInt(specifications.year);
     const currentYear = new Date().getFullYear();
     if (isNaN(year) || year < 1900 || year > currentYear + 1) {
-      errors.year = language === "ar" 
-        ? "سنة الصنع غير صحيحة" 
-        : "ساڵی دروستکردن هەڵەیە";
+      errors.year = language === "ar" ? "سنة الصنع غير صحيحة" : language === "ku" ? "ساڵی دروستکردن هەڵەیە" : "سنة الصنع غير صحيحة";
     }
   }
   
   if (specifications.mileage) {
     const mileage = parseInt(specifications.mileage);
     if (isNaN(mileage) || mileage < 0) {
-      errors.mileage = language === "ar" 
-        ? "عداد الكيلومترات غير صحيح" 
-        : "کیلۆمەتر هەڵەیە";
+      errors.mileage = language === "ar" ? "عداد الكيلومترات غير صحيح" : language === "ku" ? "کیلۆمەتر هەڵەیە" : "عداد الكيلومترات غير صحيح";
     }
   }
   

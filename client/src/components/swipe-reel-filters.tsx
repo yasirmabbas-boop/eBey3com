@@ -113,7 +113,7 @@ export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: S
                   }
                 `}
               >
-                {language === "ar" ? "مزاد" : "مزایدە"}
+                {language === "ar" ? "مزاد" : language === "ku" ? "مزایدە" : "مزاد"}
               </button>
               <button
                 onClick={() => selectSaleType('fixed')}
@@ -126,7 +126,7 @@ export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: S
                   }
                 `}
               >
-                {language === "ar" ? "شراء فوري" : "کڕینی خێرا"}
+                {language === "ar" ? "شراء فوري" : language === "ku" ? "کڕینی خێرا" : "شراء فوري"}
               </button>
               
               {/* Divider */}
@@ -175,7 +175,7 @@ export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: S
             <SheetContent side="bottom" className="h-[80vh]">
               <SheetHeader>
                 <SheetTitle className="text-right">
-                  {language === "ar" ? "الفلاتر" : "فلتەرەکان"}
+                  {language === "ar" ? "الفلاتر" : language === "ku" ? "فلتەرەکان" : "الفلاتر"}
                 </SheetTitle>
               </SheetHeader>
 
@@ -184,7 +184,7 @@ export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: S
                   {/* Categories */}
                   <div>
                     <h3 className="font-semibold mb-3 text-right">
-                      {language === "ar" ? "الفئات" : "جۆرەکان"}
+                      {language === "ar" ? "الفئات" : language === "ku" ? "جۆرەکان" : "الفئات"}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {CATEGORIES.map((cat) => (
@@ -209,7 +209,7 @@ export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: S
                   {/* Sale Type */}
                   <div>
                     <h3 className="font-semibold mb-3 text-right">
-                      {language === "ar" ? "نوع البيع" : "جۆری فرۆشتن"}
+                      {language === "ar" ? "نوع البيع" : language === "ku" ? "جۆری فرۆشتن" : "نوع البيع"}
                     </h3>
                     <ToggleGroup 
                       type="single" 
@@ -225,13 +225,13 @@ export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: S
                       className="justify-start gap-2"
                     >
                       <ToggleGroupItem value="all" className="flex-1">
-                        {language === "ar" ? "الكل" : "هەموو"}
+                        {language === "ar" ? "الكل" : language === "ku" ? "هەموو" : "All"}
                       </ToggleGroupItem>
                       <ToggleGroupItem value="auction" className="flex-1">
-                        {language === "ar" ? "مزادات" : "مزایدەکان"}
+                        {language === "ar" ? "مزادات" : language === "ku" ? "مزایدەکان" : "مزادات"}
                       </ToggleGroupItem>
                       <ToggleGroupItem value="fixed" className="flex-1">
-                        {language === "ar" ? "شراء فوري" : "کڕینی خێرا"}
+                        {language === "ar" ? "شراء فوري" : language === "ku" ? "کڕینی خێرا" : "شراء فوري"}
                       </ToggleGroupItem>
                     </ToggleGroup>
                   </div>
@@ -239,7 +239,7 @@ export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: S
                   {/* Conditions */}
                   <div>
                     <h3 className="font-semibold mb-3 text-right">
-                      {language === "ar" ? "الحالة" : "دۆخ"}
+                      {language === "ar" ? "الحالة" : language === "ku" ? "دۆخ" : "الحالة"}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {CONDITIONS.map((cond) => (
@@ -272,13 +272,13 @@ export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: S
                   disabled={activeFilterCount === 0}
                 >
                   <X className="h-4 w-4 ml-2" />
-                  {language === "ar" ? "مسح الكل" : "سڕینەوەی هەموو"}
+                  {language === "ar" ? "مسح الكل" : language === "ku" ? "سڕینەوەی هەموو" : "مسح الكل"}
                 </Button>
                 <Button
                   className="flex-1"
                   onClick={() => setIsOpen(false)}
                 >
-                  {language === "ar" ? "تطبيق" : "جێبەجێکردن"}
+                  {language === "ar" ? "تطبيق" : language === "ku" ? "جێبەجێکردن" : "تطبيق"}
                 </Button>
               </div>
             </SheetContent>

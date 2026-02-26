@@ -49,7 +49,7 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
       >
         <DrawerHeader className="px-4 pt-6 pb-4 border-b">
           <DrawerTitle className="text-right">
-            {language === "ar" ? "تفاصيل المنتج" : "وردەکارییەکانی بەرهەم"}
+            {language === "ar" ? "تفاصيل المنتج" : language === "ku" ? "وردەکارییەکانی بەرهەم" : "تفاصيل المنتج"}
           </DrawerTitle>
         </DrawerHeader>
 
@@ -69,7 +69,7 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
                   </p>
                   {(listing as any).totalBids > 0 && (
                     <p className="text-sm text-muted-foreground mt-1">
-                      {(listing as any).totalBids} {language === "ar" ? "مزايدة" : "مزایدە"}
+                      {(listing as any).totalBids} {language === "ar" ? "مزايدة" : language === "ku" ? "مزایدە" : "مزايدة"}
                     </p>
                   )}
                   {listing.auctionEndTime && listing.isActive && (
@@ -83,7 +83,7 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
                   <p className="text-3xl font-bold">{formatPrice(listing.price)}</p>
                   {listing.isNegotiable && (
                     <p className="text-sm text-muted-foreground mt-1">
-                      {language === "ar" ? "أو أفضل عرض" : "یان باشترین پێشنیار"}
+                      {language === "ar" ? "أو أفضل عرض" : language === "ku" ? "یان باشترین پێشنیار" : "أو أفضل عرض"}
                     </p>
                   )}
                 </>
@@ -108,7 +108,7 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
               )}
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm">{listing.sellerName || (language === "ar" ? "بائع" : "فرۆشیار")}</span>
+                  <span className="font-semibold text-sm">{listing.sellerName || (language === "ar" ? "بائع" : language === "ku" ? "فرۆشیار" : "بائع")}</span>
                   {sellerData?.isVerified && <VerifiedBadge size="sm" />}
                   {(sellerData?.totalSales || 0) > 0 && (
                     <span className="text-xs text-muted-foreground">({sellerData?.totalSales})</span>
@@ -117,10 +117,10 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   {(sellerData?.ratingCount || 0) > 0 ? (
                     <span className="text-green-600 font-medium">
-                      {Math.round((sellerData?.rating || 0) * 20)}% {language === "ar" ? "تقييم إيجابي" : "هەڵسەنگاندنی ئەرێنی"}
+                      {Math.round((sellerData?.rating || 0) * 20)}% {language === "ar" ? "تقييم إيجابي" : language === "ku" ? "هەڵسەنگاندنی ئەرێنی" : "تقييم إيجابي"}
                     </span>
                   ) : (
-                    <span>{language === "ar" ? "بائع جديد" : "فرۆشیاری نوێ"}</span>
+                    <span>{language === "ar" ? "بائع جديد" : language === "ku" ? "فرۆشیاری نوێ" : "بائع جديد"}</span>
                   )}
                 </div>
               </div>
@@ -139,7 +139,7 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
             {/* Specifications */}
             <div>
               <h3 className="font-bold text-lg mb-3">
-                {language === "ar" ? "المواصفات" : "تایبەتمەندییەکان"}
+                {language === "ar" ? "المواصفات" : language === "ku" ? "تایبەتمەندییەکان" : "المواصفات"}
               </h3>
               <div className="space-y-2">
                 <div className="flex justify-between py-2 border-b border-gray-100">
@@ -150,7 +150,7 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
                 {(listing as any).brand && (
                   <div className="flex justify-between py-2 border-b border-gray-100">
                     <span className="text-muted-foreground">
-                      {language === "ar" ? "الماركة" : "مارکە"}
+                      {language === "ar" ? "الماركة" : language === "ku" ? "مارکە" : "الماركة"}
                     </span>
                     <span className="font-medium">{(listing as any).brand}</span>
                   </div>
@@ -176,26 +176,26 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
             <div>
               <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
                 <Truck className="h-5 w-5 text-primary" />
-                {language === "ar" ? "معلومات الشحن" : "زانیاری گواستنەوە"}
+                {language === "ar" ? "معلومات الشحن" : language === "ku" ? "زانیاری گواستنەوە" : "معلومات الشحن"}
               </h3>
               <div className="space-y-2">
                 <div className="flex justify-between py-2">
                   <span className="text-muted-foreground">{t("delivery")}</span>
                   <span className="font-medium">
-                    {listing.deliveryWindow || (language === "ar" ? "3-5 أيام" : "٣-٥ ڕۆژ")}
+                    {listing.deliveryWindow || (language === "ar" ? "3-5 أيام" : language === "ku" ? "٣-٥ ڕۆژ" : "3-5 أيام")}
                   </span>
                 </div>
                 
                 <div className="flex justify-between py-2">
                   <span className="text-muted-foreground">
-                    {language === "ar" ? "الشحن" : "گواستنەوە"}
+                    {language === "ar" ? "الشحن" : language === "ku" ? "گواستنەوە" : "الشحن"}
                   </span>
                   <span className="font-medium">
                     {listing.shippingType === "buyer_pays"
                       ? `${(listing.shippingCost || 0).toLocaleString()} ${t("iqd")}`
                       : listing.shippingType === "pickup"
-                        ? (language === "ar" ? "استلام شخصي" : "وەرگرتنی کەسی")
-                        : (language === "ar" ? "مجاني" : "بەخۆڕایی")}
+                        ? (language === "ar" ? "استلام شخصي" : language === "ku" ? "وەرگرتنی کەسی" : "استلام شخصي")
+                        : (language === "ar" ? "مجاني" : language === "ku" ? "بەخۆڕایی" : "مجاني")}
                   </span>
                 </div>
 
@@ -220,7 +220,7 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
                 <div>
                   <p className="font-semibold text-amber-800 mb-1">{t("returnPolicy")}</p>
                   <p className="text-sm text-amber-700">
-                    {listing.returnPolicy || (language === "ar" ? "لا يوجد إرجاع" : "گەڕاندنەوە نییە")}
+                    {listing.returnPolicy || (language === "ar" ? "لا يوجد إرجاع" : language === "ku" ? "گەڕاندنەوە نییە" : "لا يوجد إرجاع")}
                   </p>
                 </div>
               </div>
@@ -233,7 +233,7 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
               <div>
                 <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
                   <Tag className="h-5 w-5 text-primary" />
-                  {language === "ar" ? "الكلمات المفتاحية" : "ووشە سەرەکییەکان"}
+                  {language === "ar" ? "الكلمات المفتاحية" : language === "ku" ? "ووشە سەرەکییەکان" : "الكلمات المفتاحية"}
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {listing.tags.map((tag: string, index: number) => (
@@ -262,7 +262,7 @@ export function SwipeReelDetails({ listing, open, onOpenChange }: SwipeReelDetai
                 onClick={() => onOpenChange(false)}
               >
                 <ExternalLink className="h-4 w-4 ml-2" />
-                {language === "ar" ? "عرض الصفحة الكاملة" : "پەڕەی تەواو ببینە"}
+                {language === "ar" ? "عرض الصفحة الكاملة" : language === "ku" ? "پەڕەی تەواو ببینە" : "عرض الصفحة الكاملة"}
               </Button>
             </Link>
           </div>

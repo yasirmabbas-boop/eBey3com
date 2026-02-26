@@ -112,7 +112,7 @@ export function SellWizard({
       <div className="bg-white rounded-xl shadow-sm border p-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-lg">
-            {language === "ar" ? "إضافة منتج" : "بەرهەم زیادکردن"}
+            {language === "ar" ? "إضافة منتج" : language === "ku" ? "بەرهەم زیادکردن" : "إضافة منتج"}
           </h2>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-sm">
@@ -181,21 +181,11 @@ export function SellWizard({
                 : steps[currentStep - 1].titleKu}
             </h3>
             <p className="text-muted-foreground text-sm mt-1">
-              {currentStep === 1 && (language === "ar" 
-                ? "أضف صوراً واضحة لمنتجك (حتى 8 صور)" 
-                : "وێنەی ڕوون زیاد بکە بۆ بەرهەمەکەت (هەتا ٨ وێنە)")}
-              {currentStep === 2 && (language === "ar" 
-                ? "أدخل معلومات المنتج الأساسية" 
-                : "زانیاری سەرەکی بەرهەم بنووسە")}
-              {currentStep === 3 && (language === "ar" 
-                ? "حدد طريقة البيع والسعر" 
-                : "شێوازی فرۆشتن و نرخ دیاری بکە")}
-              {currentStep === 4 && (language === "ar" 
-                ? "حدد موقعك وخيارات الشحن" 
-                : "شوێنەکەت و هەڵبژاردنەکانی گواستنەوە دیاری بکە")}
-              {currentStep === 5 && (language === "ar" 
-                ? "راجع بياناتك قبل النشر" 
-                : "زانیاریەکانت پێش بڵاوکردنەوە بپشکنە")}
+              {currentStep === 1 && (language === "ar" ? "أضف صوراً واضحة لمنتجك (حتى 8 صور)" : language === "ku" ? "وێنەی ڕوون زیاد بکە بۆ بەرهەمەکەت (هەتا ٨ وێنە)" : "أضف صوراً واضحة لمنتجك (حتى 8 صور)")}
+              {currentStep === 2 && (language === "ar" ? "أدخل معلومات المنتج الأساسية" : language === "ku" ? "زانیاری سەرەکی بەرهەم بنووسە" : "أدخل معلومات المنتج الأساسية")}
+              {currentStep === 3 && (language === "ar" ? "حدد طريقة البيع والسعر" : language === "ku" ? "شێوازی فرۆشتن و نرخ دیاری بکە" : "حدد طريقة البيع والسعر")}
+              {currentStep === 4 && (language === "ar" ? "حدد موقعك وخيارات الشحن" : language === "ku" ? "شوێنەکەت و هەڵبژاردنەکانی گواستنەوە دیاری بکە" : "حدد موقعك وخيارات الشحن")}
+              {currentStep === 5 && (language === "ar" ? "راجع بياناتك قبل النشر" : language === "ku" ? "زانیاریەکانت پێش بڵاوکردنەوە بپشکنە" : "راجع بياناتك قبل النشر")}
             </p>
           </div>
 
@@ -213,7 +203,7 @@ export function SellWizard({
           data-testid="wizard-prev"
         >
           <ChevronRight className="h-5 w-5 ml-2" />
-          {language === "ar" ? "السابق" : "پێشوو"}
+          {language === "ar" ? "السابق" : language === "ku" ? "پێشوو" : "السابق"}
         </Button>
         
         {isLastStep ? (
@@ -226,12 +216,12 @@ export function SellWizard({
           >
             {isSubmitting ? (
               <span className="animate-pulse">
-                {language === "ar" ? "جاري النشر..." : "بڵاوکردنەوە..."}
+                {language === "ar" ? "جاري النشر..." : language === "ku" ? "بڵاوکردنەوە..." : "جاري النشر..."}
               </span>
             ) : (
               <>
                 <CheckCircle2 className="h-5 w-5 ml-2" />
-                {language === "ar" ? "نشر المنتج" : "بەرهەم بڵاو بکەرەوە"}
+                {language === "ar" ? "نشر المنتج" : language === "ku" ? "بەرهەم بڵاو بکەرەوە" : "نشر المنتج"}
               </>
             )}
           </Button>
@@ -243,7 +233,7 @@ export function SellWizard({
             className="flex-1 h-12"
             data-testid="wizard-next"
           >
-            {language === "ar" ? "التالي" : "دواتر"}
+            {language === "ar" ? "التالي" : language === "ku" ? "دواتر" : "التالي"}
             <ChevronLeft className="h-5 w-5 mr-2" />
           </Button>
         )}

@@ -48,7 +48,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
             className="absolute left-1/2 -translate-x-1/2 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-[11px] uppercase tracking-wide transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white flex items-center gap-2"
             data-testid="link-add-product"
           >
-            <span className="text-[11px] font-bold leading-tight md:text-xs md:font-semibold">أضف منتج</span>
+            <span className="text-[11px] font-bold leading-tight md:text-xs md:font-semibold">{language === "ar" ? "أضف منتج" : language === "ku" ? "بەرهەم زیاد بکە" : "Add Product"}</span>
           </Link>
 
           <div className="flex items-center gap-2 sm:gap-3">
