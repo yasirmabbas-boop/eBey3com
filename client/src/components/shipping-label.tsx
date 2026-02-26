@@ -104,41 +104,39 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
       </html>
     `;
 
-    // Use a hidden iframe instead of window.open to avoid Capacitor navigation issues
-    const existingFrame = document.getElementById("print-frame") as HTMLIFrameElement | null;
-    if (existingFrame) existingFrame.remove();
+    // Inject print-only container and CSS into the main document
+    // This avoids iframe/window.open issues in Capacitor WebView
+    const existingPrint = document.getElementById("print-label-container");
+    if (existingPrint) existingPrint.remove();
+    const existingStyle = document.getElementById("print-label-style");
+    if (existingStyle) existingStyle.remove();
 
-    const iframe = document.createElement("iframe");
-    iframe.id = "print-frame";
-    iframe.style.position = "fixed";
-    iframe.style.top = "-10000px";
-    iframe.style.left = "-10000px";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "none";
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) return;
-
-    iframeDoc.open();
-    iframeDoc.write(htmlContent);
-    iframeDoc.close();
-
-    // Wait for content to render, then trigger print dialog
-    setTimeout(() => {
-      try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      } catch (_) {
-        // Fallback: use main window print
-        window.print();
+    const style = document.createElement("style");
+    style.id = "print-label-style";
+    style.textContent = `
+      @media print {
+        body > *:not(#print-label-container) { display: none !important; }
+        #print-label-container { display: block !important; }
       }
-      // Clean up iframe after printing
+    `;
+    document.head.appendChild(style);
+
+    const container = document.createElement("div");
+    container.id = "print-label-container";
+    container.style.display = "none";
+    container.innerHTML = htmlContent;
+    document.body.appendChild(container);
+
+    // Short delay to let DOM settle, then print
+    setTimeout(() => {
+      container.style.display = "block";
+      window.print();
+      // Clean up after print dialog closes
       setTimeout(() => {
-        iframe.remove();
-      }, 1000);
-    }, 500);
+        container.remove();
+        style.remove();
+      }, 500);
+    }, 300);
   };
 
   const formatDate = (date: Date) => {
@@ -284,9 +282,9 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
                     <div className={`amount font-black text-amber-900 ${isCompact ? 'text-xl' : 'text-2xl'}`}>
                       {formatPrice(totalCOD)} د.ع
                     </div>
-                    {!isReturn && orderDetails.shippingCost != null && orderDetails.shippingCost > 0 && (
+                    {!isReturn && (
                       <div className="breakdown text-[8px] text-amber-700 mt-1">
-                        سعر المنتج: {formatPrice(orderDetails.price)} | الشحن: {formatPrice(orderDetails.shippingCost)}
+                        سعر المنتج: {formatPrice(orderDetails.price)} | الشحن: {orderDetails.shippingCost ? formatPrice(orderDetails.shippingCost) : "مجاني"}
                       </div>
                     )}
                   </div>
