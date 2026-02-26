@@ -20,13 +20,19 @@
           priority: 'high',
           notification: {
             sound: 'default',
+            icon: 'ic_notification',
+            color: '#E85D26',
+            channelId: 'ebey3_default',
+            tag: payload.data?.type || 'general',
           },
+          collapseKey: payload.data?.type || 'general',
         },
         apns: {
           payload: {
             aps: {
               sound: 'default',
               badge: payload.badge,
+              'thread-id': payload.data?.type || 'general',
             },
           },
         },
