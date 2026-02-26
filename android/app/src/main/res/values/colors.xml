@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Notification accent color (your brand orange) -->
+    <color name="colorPrimary">#E85D26</color>
+    <color name="colorPrimaryDark">#C84D1E</color>
     <color name="notification_color">#E85D26</color>
 </resources>
