@@ -503,6 +503,7 @@ export function registerProductRoutes(app: Express): void {
         locationLat: req.body.locationLat ?? user.locationLat ?? null,
         locationLng: req.body.locationLng ?? user.locationLng ?? null,
         mapUrl: req.body.mapUrl ?? user.mapUrl ?? null,
+        specifications: req.body.specifications || null,
       };
 
       const validatedData = insertListingSchema.parse(listingData);
