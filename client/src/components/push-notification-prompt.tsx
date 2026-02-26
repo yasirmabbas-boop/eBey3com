@@ -66,15 +66,8 @@ export function PushNotificationPrompt() {
           (notification) => {
             // Handle notification received while app is open
             console.log('Notification received:', notification);
-          },
-          (notification) => {
-            // Handle notification tap
-            console.log('Notification tapped:', notification);
-            // Navigate to the appropriate page based on notification data
-            if (notification.notification.data?.url) {
-              window.location.href = notification.notification.data.url;
-            }
           }
+          // Note: notification tap → deep link is handled globally by useNotificationDeeplink hook in App.tsx
         );
 
         console.log("[Push] initNativePushNotifications returned:", success);

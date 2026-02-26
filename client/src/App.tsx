@@ -22,6 +22,7 @@ import { initAppLifecycle } from "@/lib/appLifecycle";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { useSocketNotifications } from "@/hooks/use-socket-notifications";
+import { useNotificationDeeplink } from "@/hooks/use-notification-deeplink";
 import HomePage from "@/pages/home";
 import AuthPage from "@/pages/signin";
 import NotFound from "@/pages/not-found";
@@ -64,6 +65,12 @@ const BrowseRecentlyViewed = lazy(() => import("@/pages/browse-recently-viewed")
 // Define SocketNotificationsWrapper BEFORE Router - must be inside QueryClientProvider and Switch
 function SocketNotificationsWrapper() {
   useSocketNotifications();
+  return null;
+}
+
+// Handles notification tap → deep link navigation (must be mounted early)
+function NotificationDeeplinkHandler() {
+  useNotificationDeeplink();
   return null;
 }
 
@@ -247,6 +254,7 @@ function App() {
             <SafeAreaProvider>
               <NavVisibilityProvider>
               <ScrollToTop />
+              <NotificationDeeplinkHandler />
               <SocketNotificationsWrapper />
               <Toaster />
               <BanBanner />
