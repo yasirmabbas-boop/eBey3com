@@ -2,23 +2,30 @@ import admin from 'firebase-admin';
 import fs from 'fs';
 import path from 'path';
 
-// 1. READ THE FILE DIRECTLY
-// We now know this file exists and works perfectly.
 const keyPath = path.resolve(process.cwd(), 'server/service-account.json');
 
 if (!admin.apps.length) {
   try {
-    if (fs.existsSync(keyPath)) {
-      const fileContent = fs.readFileSync(keyPath, 'utf8');
-      const serviceAccount = JSON.parse(fileContent);
+    let serviceAccount: any = null;
 
+    // Priority 1: Environment variable (Cloud Run secret)
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+      console.log("🚀 [FIREBASE] Initialized using environment variable.");
+    }
+    // Priority 2: Local JSON file (development)
+    else if (fs.existsSync(keyPath)) {
+      const fileContent = fs.readFileSync(keyPath, 'utf8');
+      serviceAccount = JSON.parse(fileContent);
+      console.log("🚀 [FIREBASE] Initialized using JSON file.");
+    }
+
+    if (serviceAccount) {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
-
-      console.log("🚀 [FIREBASE] Initialized successfully using JSON file.");
     } else {
-      console.error("❌ [FIREBASE] Critical: service-account.json not found.");
+      console.error("❌ [FIREBASE] Critical: No service account credentials found.");
     }
   } catch (err) {
     console.error("❌ [FIREBASE] Initialization Failed:", err);
