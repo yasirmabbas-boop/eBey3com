@@ -253,8 +253,9 @@ export function OrderDetailModal({ purchase, isOpen, onClose, userId, initialAct
       });
       const { uploadURL, objectPath } = await urlRes.json();
       await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-      const publicUrl = `https://storage.googleapis.com/${objectPath}`;
-      setImages(prev => [...prev, publicUrl]);
+      // Use the proxy route path (e.g. /objects/uploads/uuid) instead of direct GCS URL
+      // The server's /objects/:objectPath(*) route will stream the file via authenticated GCS client
+      setImages(prev => [...prev, objectPath]);
     } catch { /* silent */ } finally { setUploading(false); }
   };
 
