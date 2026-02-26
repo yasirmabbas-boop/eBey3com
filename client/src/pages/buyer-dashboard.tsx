@@ -605,8 +605,8 @@ export default function BuyerDashboard() {
       });
       const { uploadURL, objectPath } = await urlRes.json();
       await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-      const publicUrl = `https://storage.googleapis.com/${objectPath}`;
-      setReturnImages(prev => [...prev, publicUrl]);
+      // Use the proxy route path instead of direct GCS URL
+      setReturnImages(prev => [...prev, objectPath]);
     } catch { /* silent */ } finally { setReturnUploading(false); }
   };
 
@@ -622,8 +622,8 @@ export default function BuyerDashboard() {
       });
       const { uploadURL, objectPath } = await urlRes.json();
       await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-      const publicUrl = `https://storage.googleapis.com/${objectPath}`;
-      setIssueImages(prev => [...prev, publicUrl]);
+      // Use the proxy route path instead of direct GCS URL
+      setIssueImages(prev => [...prev, objectPath]);
     } catch { /* silent */ } finally { setIssueUploading(false); }
   };
 

@@ -136,6 +136,18 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
   return fetch(url, { ...options, credentials: "include", headers: mergedHeaders });
 }
 
+// Normalize image URLs: convert old malformed GCS URLs to proxy paths
+// Old format: https://storage.googleapis.com//objects/uploads/uuid → /objects/uploads/uuid
+// New format already: /objects/uploads/uuid
+function normalizeImageUrl(url: string): string {
+  if (url.startsWith("/objects/")) return url;
+  // Handle malformed URLs from old uploads: https://storage.googleapis.com//objects/...
+  const match = url.match(/https:\/\/storage\.googleapis\.com\/+objects\/(.+)/);
+  if (match) return `/objects/${match[1]}`;
+  // For any other direct GCS URL, pass through as-is (e.g. product images)
+  return url;
+}
+
 export default function AdminPage() {
   const [, setLocation] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
@@ -875,15 +887,18 @@ export default function AdminPage() {
                                 )}
                                 {report.images && report.images.length > 0 && (
                                   <div className="flex flex-wrap gap-1 mt-2">
-                                    {report.images.map((img, i) => (
-                                      <a key={i} href={img} target="_blank" rel="noreferrer">
-                                        <img
-                                          src={img}
-                                          alt={`دليل ${i + 1}`}
-                                          className="w-10 h-10 object-cover rounded border hover:border-primary cursor-pointer"
-                                        />
-                                      </a>
-                                    ))}
+                                    {report.images.map((img, i) => {
+                                      const imgUrl = normalizeImageUrl(img);
+                                      return (
+                                        <a key={i} href={imgUrl} target="_blank" rel="noreferrer">
+                                          <img
+                                            src={imgUrl}
+                                            alt={`دليل ${i + 1}`}
+                                            className="w-10 h-10 object-cover rounded border hover:border-primary cursor-pointer"
+                                          />
+                                        </a>
+                                      );
+                                    })}
                                   </div>
                                 )}
                               </TableCell>

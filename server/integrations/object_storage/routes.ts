@@ -96,8 +96,11 @@ export function registerObjectStorageRoutes(app: Express): void {
    */
   app.get("/objects/:objectPath(*)", async (req, res) => {
     try {
-      const objectPath = req.params.objectPath; const privateObjectDir = objectStorageService.getPrivateObjectDir(); const { bucketName } = parseObjectPath(privateObjectDir); const gcsUrl = "https://storage.googleapis.com/" + bucketName + "/" + objectPath; res.redirect(301, gcsUrl); return;
-      
+      // Stream the file via authenticated GCS client instead of redirecting
+      // This avoids Access Denied errors when the bucket doesn't allow anonymous access
+      const objectEntityPath = `/objects/${req.params.objectPath}`;
+      const objectFile = await objectStorageService.getObjectEntityFile(objectEntityPath);
+      await objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
       console.error("Error serving object:", error);
       if (error instanceof ObjectNotFoundError) {

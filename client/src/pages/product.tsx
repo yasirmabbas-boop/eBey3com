@@ -180,7 +180,8 @@ export default function ProductPage() {
       });
       const { uploadURL, objectPath } = await urlRes.json();
       await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-      setReportImages(prev => [...prev, `https://storage.googleapis.com/${objectPath}`]);
+      // Use the proxy route path instead of direct GCS URL
+      setReportImages(prev => [...prev, objectPath]);
     } catch { /* silent */ } finally { setReportUploading(false); }
   };
 
