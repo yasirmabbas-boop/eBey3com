@@ -129,14 +129,14 @@ export default function SearchPage() {
     const maxPrice = params.get("maxPrice") || "";
     const includeSold = params.get("includeSold") === "true";
     const specs: Record<string, string[]> = {};
-    for (const [key, val] of params) {
+    params.forEach((val, key) => {
       const match = key.match(/^specs\[(.+)\]$/);
       if (match) {
         const specKey = match[1];
         if (!specs[specKey]) specs[specKey] = [];
         specs[specKey].push(val);
       }
-    }
+    });
     return {
       category,
       conditions,
@@ -178,14 +178,14 @@ export default function SearchPage() {
     const conditions = p.getAll("condition");
     const saleTypes = p.getAll("saleType");
     const specs: Record<string, string[]> = {};
-    for (const [key, val] of p) {
+    p.forEach((val, key) => {
       const match = key.match(/^specs\[(.+)\]$/);
       if (match) {
         const specKey = match[1];
         if (!specs[specKey]) specs[specKey] = [];
         specs[specKey].push(val);
       }
-    }
+    });
     setAppliedFilters({
       category,
       conditions,
