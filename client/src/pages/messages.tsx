@@ -285,7 +285,14 @@ export default function MessagesPage() {
                             : "bg-muted/60 text-foreground rounded-br-none"
                         }`}
                       >
-                        <p className="text-sm">{msg.content}</p>
+                        <p className="text-sm break-words whitespace-pre-wrap" style={{ overflowWrap: 'anywhere' }}
+                          dangerouslySetInnerHTML={{
+                            __html: msg.content.replace(
+                              /(https?:\/\/[^\s<]+)/g,
+                              '<a href="$1" target="_blank" rel="noopener noreferrer" class="underline font-medium" style="word-break:break-all">$1</a>'
+                            )
+                          }}
+                        />
                         <p className={`text-xs mt-1 ${msg.senderId === user?.id ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                           {new Date(msg.createdAt).toLocaleTimeString("ar-IQ", {
                             hour: "2-digit",
