@@ -15,6 +15,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { secureRequest } from "@/lib/queryClient";
 
+// Normalize image URLs: convert old malformed GCS URLs to proxy paths
+function normalizeImageUrl(url: string): string {
+  if (url.startsWith("/objects/")) return url;
+  const match = url.match(/https:\/\/storage\.googleapis\.com\/+objects\/(.+)/);
+  if (match) return `/objects/${match[1]}`;
+  return url;
+}
+
 interface ReturnRequest {
   id: string;
   transactionId: string;
@@ -354,15 +362,18 @@ export function ReturnDetailDialog({
               )}
               {returnRequest.escalationImages && returnRequest.escalationImages.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {returnRequest.escalationImages.map((url: string, i: number) => (
-                    <a key={i} href={url} target="_blank" rel="noreferrer">
-                      <img
-                        src={url}
-                        alt={`دليل ${i + 1}`}
-                        className="w-24 h-24 object-cover rounded-lg border-2 border-orange-300 hover:border-orange-500 transition-colors cursor-pointer"
-                      />
-                    </a>
-                  ))}
+                  {returnRequest.escalationImages.map((url: string, i: number) => {
+                    const imgUrl = normalizeImageUrl(url);
+                    return (
+                      <a key={i} href={imgUrl} target="_blank" rel="noreferrer">
+                        <img
+                          src={imgUrl}
+                          alt={`دليل ${i + 1}`}
+                          className="w-24 h-24 object-cover rounded-lg border-2 border-orange-300 hover:border-orange-500 transition-colors cursor-pointer"
+                        />
+                      </a>
+                    );
+                  })}
                 </div>
               )}
               {returnRequest.escalatedAt && (

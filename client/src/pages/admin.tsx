@@ -43,6 +43,7 @@ interface Report {
   targetType: string;
   reason: string;
   details?: string;
+  images?: string[];
   status: string;
   adminNotes?: string;
   resolvedBy?: string;
@@ -133,6 +134,18 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
     mergedHeaders["Content-Type"] = "application/json";
   }
   return fetch(url, { ...options, credentials: "include", headers: mergedHeaders });
+}
+
+// Normalize image URLs: convert old malformed GCS URLs to proxy paths
+// Old format: https://storage.googleapis.com//objects/uploads/uuid → /objects/uploads/uuid
+// New format already: /objects/uploads/uuid
+function normalizeImageUrl(url: string): string {
+  if (url.startsWith("/objects/")) return url;
+  // Handle malformed URLs from old uploads: https://storage.googleapis.com//objects/...
+  const match = url.match(/https:\/\/storage\.googleapis\.com\/+objects\/(.+)/);
+  if (match) return `/objects/${match[1]}`;
+  // For any other direct GCS URL, pass through as-is (e.g. product images)
+  return url;
 }
 
 export default function AdminPage() {
@@ -871,6 +884,22 @@ export default function AdminPage() {
                                 <p className="text-sm">{report.reason}</p>
                                 {report.details && (
                                   <p className="text-xs text-muted-foreground mt-1 truncate">{report.details}</p>
+                                )}
+                                {report.images && report.images.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {report.images.map((img, i) => {
+                                      const imgUrl = normalizeImageUrl(img);
+                                      return (
+                                        <a key={i} href={imgUrl} target="_blank" rel="noreferrer">
+                                          <img
+                                            src={imgUrl}
+                                            alt={`دليل ${i + 1}`}
+                                            className="w-10 h-10 object-cover rounded border hover:border-primary cursor-pointer"
+                                          />
+                                        </a>
+                                      );
+                                    })}
+                                  </div>
                                 )}
                               </TableCell>
                               <TableCell>

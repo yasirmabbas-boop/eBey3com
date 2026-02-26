@@ -142,6 +142,10 @@ export function OrderDetailModal({ purchase, isOpen, onClose, userId, initialAct
   const [reportDetails, setReportDetails] = useState("");
   const [returnReason, setReturnReason] = useState("");
   const [returnDetails, setReturnDetails] = useState("");
+  const [returnImages, setReturnImages] = useState<string[]>([]);
+  const [returnUploading, setReturnUploading] = useState(false);
+  const [reportImages, setReportImages] = useState<string[]>([]);
+  const [reportUploading, setReportUploading] = useState(false);
   const [rating, setRating] = useState(0);
   const [ratingComment, setRatingComment] = useState("");
   const queryClient = useQueryClient();
@@ -180,7 +184,7 @@ export function OrderDetailModal({ purchase, isOpen, onClose, userId, initialAct
   });
 
   const reportMutation = useMutation({
-    mutationFn: async (data: { reportType: string; targetId: string; targetType: string; reason: string; details?: string }) => {
+    mutationFn: async (data: { reportType: string; targetId: string; targetType: string; reason: string; details?: string; images?: string[] }) => {
       const response = await fetch("/api/reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
       if (!response.ok) throw new Error("Failed to create report");
       return response.json();
@@ -190,6 +194,7 @@ export function OrderDetailModal({ purchase, isOpen, onClose, userId, initialAct
       setIsReportDialogOpen(false);
       setReportReason("");
       setReportDetails("");
+      setReportImages([]);
     },
     onError: () => {
       toast({ title: "خطأ", description: "فشل في إرسال البلاغ. يرجى المحاولة مرة أخرى", variant: "destructive" });
@@ -197,7 +202,7 @@ export function OrderDetailModal({ purchase, isOpen, onClose, userId, initialAct
   });
 
   const returnRequestMutation = useMutation({
-    mutationFn: async (data: { transactionId: string; reason: string; details?: string }) => {
+    mutationFn: async (data: { transactionId: string; reason: string; details?: string; images?: string[] }) => {
       const response = await fetch("/api/return-requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
       if (!response.ok) {
         const error = await response.json();
@@ -210,6 +215,7 @@ export function OrderDetailModal({ purchase, isOpen, onClose, userId, initialAct
       setIsReturnDialogOpen(false);
       setReturnReason("");
       setReturnDetails("");
+      setReturnImages([]);
       queryClient.invalidateQueries({ queryKey: ["/api/return-requests/transaction", purchase.id] });
     },
     onError: (error: Error) => {
@@ -235,14 +241,32 @@ export function OrderDetailModal({ purchase, isOpen, onClose, userId, initialAct
     },
   });
 
+  const handleImageUpload = async (file: File, setImages: React.Dispatch<React.SetStateAction<string[]>>, setUploading: React.Dispatch<React.SetStateAction<boolean>>, maxImages: number, currentCount: number) => {
+    if (!file || currentCount >= maxImages) return;
+    setUploading(true);
+    try {
+      const urlRes = await fetch("/api/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ contentType: file.type, fileName: file.name }),
+      });
+      const { uploadURL, objectPath } = await urlRes.json();
+      await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      // Use the proxy route path (e.g. /objects/uploads/uuid) instead of direct GCS URL
+      // The server's /objects/:objectPath(*) route will stream the file via authenticated GCS client
+      setImages(prev => [...prev, objectPath]);
+    } catch { /* silent */ } finally { setUploading(false); }
+  };
+
   const handleSubmitReport = () => {
     if (!reportReason) return;
-    reportMutation.mutate({ reportType: "order_issue", targetId: purchase.id, targetType: "transaction", reason: reportReason, details: reportDetails || undefined });
+    reportMutation.mutate({ reportType: "order_issue", targetId: purchase.id, targetType: "transaction", reason: reportReason, details: reportDetails || undefined, images: reportImages.length > 0 ? reportImages : undefined });
   };
 
   const handleSubmitReturnRequest = () => {
     if (!returnReason) return;
-    returnRequestMutation.mutate({ transactionId: purchase.id, reason: returnReason, details: returnDetails || undefined });
+    returnRequestMutation.mutate({ transactionId: purchase.id, reason: returnReason, details: returnDetails || undefined, images: returnImages.length > 0 ? returnImages : undefined });
   };
 
   const handleSubmitRating = () => {
@@ -413,10 +437,29 @@ export function OrderDetailModal({ purchase, isOpen, onClose, userId, initialAct
               <Label>تفاصيل إضافية (اختياري)</Label>
               <Textarea placeholder="اشرح المشكلة بالتفصيل..." value={reportDetails} onChange={(e) => setReportDetails(e.target.value)} rows={4} />
             </div>
+            <div className="space-y-2">
+              <Label>صور توضيحية (اختياري، حتى 5 صور)</Label>
+              <div className="flex flex-wrap gap-2">
+                {reportImages.map((img, i) => (
+                  <div key={i} className="relative w-16 h-16">
+                    <img src={img} alt="" className="w-16 h-16 object-cover rounded border" />
+                    <button onClick={() => setReportImages(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">×</button>
+                  </div>
+                ))}
+                {reportImages.length < 5 && (
+                  <label className="w-16 h-16 border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-primary text-gray-400 text-2xl">
+                    {reportUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : "+"}
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(e.target.files[0], setReportImages, setReportUploading, 5, reportImages.length); e.target.value = ""; }} />
+                  </label>
+                )}
+              </div>
+            </div>
           </div>
           <DialogFooter className="flex gap-2">
             <Button variant="outline" onClick={() => setIsReportDialogOpen(false)}>إلغاء</Button>
-            <Button onClick={handleSubmitReport} disabled={!reportReason || reportMutation.isPending} className="bg-red-600 hover:bg-red-700">
+            <Button onClick={handleSubmitReport} disabled={!reportReason || reportMutation.isPending || reportUploading} className="bg-red-600 hover:bg-red-700">
               {reportMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}إرسال البلاغ
             </Button>
           </DialogFooter>
@@ -449,10 +492,29 @@ export function OrderDetailModal({ purchase, isOpen, onClose, userId, initialAct
               <Label>تفاصيل إضافية (اختياري)</Label>
               <Textarea placeholder="اشرح سبب الإرجاع بالتفصيل..." value={returnDetails} onChange={(e) => setReturnDetails(e.target.value)} rows={4} />
             </div>
+            <div className="space-y-2">
+              <Label>صور توضيحية (اختياري، حتى 5 صور)</Label>
+              <div className="flex flex-wrap gap-2">
+                {returnImages.map((img, i) => (
+                  <div key={i} className="relative w-16 h-16">
+                    <img src={img} alt="" className="w-16 h-16 object-cover rounded border" />
+                    <button onClick={() => setReturnImages(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">×</button>
+                  </div>
+                ))}
+                {returnImages.length < 5 && (
+                  <label className="w-16 h-16 border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-primary text-gray-400 text-2xl">
+                    {returnUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : "+"}
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(e.target.files[0], setReturnImages, setReturnUploading, 5, returnImages.length); e.target.value = ""; }} />
+                  </label>
+                )}
+              </div>
+            </div>
           </div>
           <DialogFooter className="flex gap-2">
             <Button variant="outline" onClick={() => setIsReturnDialogOpen(false)}>إلغاء</Button>
-            <Button onClick={handleSubmitReturnRequest} disabled={!returnReason || returnRequestMutation.isPending} className="bg-orange-600 hover:bg-orange-700">
+            <Button onClick={handleSubmitReturnRequest} disabled={!returnReason || returnRequestMutation.isPending || returnUploading} className="bg-orange-600 hover:bg-orange-700">
               {returnRequestMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}إرسال طلب الإرجاع
             </Button>
           </DialogFooter>
