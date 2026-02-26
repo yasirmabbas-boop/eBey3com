@@ -27,40 +27,58 @@ import HomePage from "@/pages/home";
 import AuthPage from "@/pages/signin";
 import NotFound from "@/pages/not-found";
 
+// Auto-reload on stale chunk errors after deployment
+// Wraps lazy() to catch "Failed to fetch dynamically imported module" and reload once
+function lazyWithReload(importFn: () => Promise<any>) {
+  return lazy(() =>
+    importFn().catch((error) => {
+      const reloadedKey = 'chunk-reload-' + window.location.pathname;
+      if (!sessionStorage.getItem(reloadedKey)) {
+        sessionStorage.setItem(reloadedKey, '1');
+        window.location.reload();
+        return new Promise(() => {}); // never resolves — page is reloading
+      }
+      // Already reloaded once, throw the original error
+      sessionStorage.removeItem(reloadedKey);
+      throw error;
+    })
+  );
+}
+
 // Lazy load pages for better performance
-const ProductPage = lazy(() => import("@/pages/product"));
-const Register = lazy(() => import("@/pages/register"));
-const SearchPage = lazy(() => import("@/pages/search"));
-const Privacy = lazy(() => import("@/pages/privacy"));
-const DataDeletion = lazy(() => import("@/pages/data-deletion"));
-const Terms = lazy(() => import("@/pages/terms"));
-const ContactUs = lazy(() => import("@/pages/contact"));
-const SecurityGuide = lazy(() => import("@/pages/security-guide"));
-const Security = lazy(() => import("@/pages/security"));
-const Settings = lazy(() => import("@/pages/settings"));
-const About = lazy(() => import("@/pages/about"));
-const MyPurchases = lazy(() => import("@/pages/my-purchases"));
-const MySales = lazy(() => import("@/pages/my-sales"));
-const SellerDashboard = lazy(() => import("@/pages/seller-dashboard"));
-const BuyerDashboard = lazy(() => import("@/pages/buyer-dashboard"));
-const SellWizardPage = lazy(() => import("@/pages/sell-wizard"));
-const DealsGuide = lazy(() => import("@/pages/deals-guide"));
-const CartPage = lazy(() => import("@/pages/cart"));
-const CheckoutPage = lazy(() => import("@/pages/checkout"));
-const MessagesPage = lazy(() => import("@/pages/messages"));
-const MyAccount = lazy(() => import("@/pages/my-account"));
-const MyBids = lazy(() => import("@/pages/my-bids"));
-const AdminPage = lazy(() => import("@/pages/admin"));
-const ForgotPassword = lazy(() => import("@/pages/forgot-password"));
-const SecuritySettings = lazy(() => import("@/pages/security-settings"));
-const FavoritesPage = lazy(() => import("@/pages/favorites"));
-const SwipePage = lazy(() => import("@/pages/swipe"));
-const AuctionsDashboard = lazy(() => import("@/pages/auctions-dashboard"));
-const MyAuctions = lazy(() => import("@/pages/my-auctions"));
-const SellerProfile = lazy(() => import("@/pages/seller-profile"));
-const NotificationsPage = lazy(() => import("@/pages/notifications"));
-const Onboarding = lazy(() => import("@/pages/onboarding"));
-const BrowseRecentlyViewed = lazy(() => import("@/pages/browse-recently-viewed"));
+const ProductPage = lazyWithReload(() => import("@/pages/product"));
+const Register = lazyWithReload(() => import("@/pages/register"));
+const SearchPage = lazyWithReload(() => import("@/pages/search"));
+const Privacy = lazyWithReload(() => import("@/pages/privacy"));
+const DataDeletion = lazyWithReload(() => import("@/pages/data-deletion"));
+const Terms = lazyWithReload(() => import("@/pages/terms"));
+const ContactUs = lazyWithReload(() => import("@/pages/contact"));
+const SecurityGuide = lazyWithReload(() => import("@/pages/security-guide"));
+const Security = lazyWithReload(() => import("@/pages/security"));
+const Settings = lazyWithReload(() => import("@/pages/settings"));
+const About = lazyWithReload(() => import("@/pages/about"));
+const MyPurchases = lazyWithReload(() => import("@/pages/my-purchases"));
+const MySales = lazyWithReload(() => import("@/pages/my-sales"));
+const SellerDashboard = lazyWithReload(() => import("@/pages/seller-dashboard"));
+const BuyerDashboard = lazyWithReload(() => import("@/pages/buyer-dashboard"));
+const SellWizardPage = lazyWithReload(() => import("@/pages/sell-wizard"));
+const DealsGuide = lazyWithReload(() => import("@/pages/deals-guide"));
+const CartPage = lazyWithReload(() => import("@/pages/cart"));
+const CheckoutPage = lazyWithReload(() => import("@/pages/checkout"));
+const MessagesPage = lazyWithReload(() => import("@/pages/messages"));
+const MyAccount = lazyWithReload(() => import("@/pages/my-account"));
+const MyBids = lazyWithReload(() => import("@/pages/my-bids"));
+const AdminPage = lazyWithReload(() => import("@/pages/admin"));
+const ForgotPassword = lazyWithReload(() => import("@/pages/forgot-password"));
+const SecuritySettings = lazyWithReload(() => import("@/pages/security-settings"));
+const FavoritesPage = lazyWithReload(() => import("@/pages/favorites"));
+const SwipePage = lazyWithReload(() => import("@/pages/swipe"));
+const AuctionsDashboard = lazyWithReload(() => import("@/pages/auctions-dashboard"));
+const MyAuctions = lazyWithReload(() => import("@/pages/my-auctions"));
+const SellerProfile = lazyWithReload(() => import("@/pages/seller-profile"));
+const NotificationsPage = lazyWithReload(() => import("@/pages/notifications"));
+const Onboarding = lazyWithReload(() => import("@/pages/onboarding"));
+const BrowseRecentlyViewed = lazyWithReload(() => import("@/pages/browse-recently-viewed"));
 
 // Define SocketNotificationsWrapper BEFORE Router - must be inside QueryClientProvider and Switch
 function SocketNotificationsWrapper() {
