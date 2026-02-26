@@ -50,8 +50,13 @@ export function registerAdminRoutes(app: Express): void {
 
   app.get("/api/admin/users", requireAdmin, async (req, res) => {
     try {
-      const users = await storage.getAllUsers();
-      const enrichedUsers = users.map((user: any) => ({
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+      const offset = (page - 1) * limit;
+
+      const { users: paginatedUsers, total } = await storage.getUsersPaginated({ limit, offset });
+
+      const enrichedUsers = paginatedUsers.map((user: any) => ({
         id: user.id,
         phone: user.phone,
         email: user.email,
@@ -72,7 +77,17 @@ export function registerAdminRoutes(app: Express): void {
         createdAt: user.createdAt,
         eligibleForBlueCheck: isEligibleForBlueCheck(user),
       }));
-      res.json(enrichedUsers);
+
+      res.json({
+        users: enrichedUsers,
+        pagination: {
+          page,
+          limit,
+          total,
+          hasMore: offset + limit < total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ error: "Failed to fetch users" });
@@ -239,6 +254,29 @@ export function registerAdminRoutes(app: Express): void {
     } catch (error) {
       console.error("Error resolving report:", error);
       res.status(500).json({ error: "Failed to resolve report" });
+    }
+  });
+
+  // PUT /api/admin/reports/:id — update report status (used by admin frontend)
+  app.put("/api/admin/reports/:id", requireAdmin, async (req, res) => {
+    try {
+      const { status, adminNotes } = req.body;
+      const adminUser = (req as any).adminUser;
+
+      const report = await storage.getReportById(req.params.id);
+      if (!report) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+
+      const validStatuses = ["pending", "resolved", "dismissed", "rejected"];
+      const finalStatus = validStatuses.includes(status) ? status : "resolved";
+
+      await storage.updateReportStatus(req.params.id, finalStatus, adminNotes, adminUser.id);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating report:", error);
+      res.status(500).json({ error: "Failed to update report" });
     }
   });
 
@@ -512,6 +550,184 @@ export function registerAdminRoutes(app: Express): void {
     } catch (error) {
       console.error("Error resetting password:", error);
       res.status(500).json({ error: "Failed to reset password" });
+    }
+  });
+
+  // ──── Admin Returns CRUD ────
+
+  // GET /api/admin/returns — list return requests with pagination & filtering
+  app.get("/api/admin/returns", requireAdmin, async (req, res) => {
+    try {
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+      const status = req.query.status as string | undefined;
+      const offset = (page - 1) * limit;
+
+      const { returns, total } = await storage.getReturnRequestsWithDetails({ limit, offset, status });
+
+      // Enrich with buyer, seller, listing, transaction info
+      const enriched = await Promise.all(
+        returns.map(async (rr) => {
+          const [buyer, seller, listing, transaction] = await Promise.all([
+            storage.getUser(rr.buyerId),
+            storage.getUser(rr.sellerId),
+            storage.getListing(rr.listingId),
+            storage.getTransactionById(rr.transactionId),
+          ]);
+          return {
+            ...rr,
+            buyer: buyer ? { id: buyer.id, displayName: buyer.displayName || buyer.username, accountCode: (buyer as any).accountCode, phone: buyer.phone } : undefined,
+            seller: seller ? { id: seller.id, displayName: seller.displayName || seller.username, accountCode: (seller as any).accountCode, phone: seller.phone } : undefined,
+            listing: listing ? { id: listing.id, title: (listing as any).title, productCode: (listing as any).productCode, price: listing.price, category: (listing as any).category, image: listing.images?.[0] } : undefined,
+            transaction: transaction ? { id: transaction.id, amount: transaction.amount, status: transaction.status, completedAt: transaction.completedAt } : undefined,
+          };
+        })
+      );
+
+      res.json({
+        returns: enriched,
+        pagination: {
+          page,
+          limit,
+          total,
+          hasMore: offset + limit < total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching admin returns:", error);
+      res.status(500).json({ error: "فشل في جلب طلبات الإرجاع" });
+    }
+  });
+
+  // POST /api/admin/returns — admin-initiated return request
+  app.post("/api/admin/returns", requireAdmin, async (req, res) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      const { transactionId, reason, details, templateId, overridePolicy } = req.body;
+
+      if (!transactionId || !reason) {
+        return res.status(400).json({ error: "معرّف المعاملة وسبب الإرجاع مطلوبان" });
+      }
+
+      const transaction = await storage.getTransactionById(transactionId);
+      if (!transaction) {
+        return res.status(404).json({ error: "المعاملة غير موجودة", transactionId });
+      }
+
+      // Check if return request already exists
+      const existing = await storage.getReturnRequestByTransaction(transactionId);
+      if (existing) {
+        return res.status(409).json({
+          error: "يوجد طلب إرجاع مسبق لهذه المعاملة",
+          code: "RETURN_EXISTS",
+          returnRequestId: existing.id,
+        });
+      }
+
+      const listing = await storage.getListing(transaction.listingId);
+
+      const returnRequest = await storage.createReturnRequest({
+        transactionId,
+        buyerId: transaction.buyerId,
+        sellerId: transaction.sellerId,
+        listingId: transaction.listingId,
+        reason,
+        details: details || `Admin-initiated return by ${adminUser.displayName || adminUser.username}`,
+        adminInitiatedBy: adminUser.id,
+      } as any);
+
+      // Notify buyer and seller
+      try {
+        const listingTitle = (listing as any)?.title || "المنتج";
+        await Promise.all([
+          storage.createNotification({
+            userId: transaction.buyerId,
+            type: "return_initiated",
+            title: "طلب إرجاع جديد",
+            message: `تم إنشاء طلب إرجاع للمنتج "${listingTitle}" من قبل الإدارة`,
+            linkUrl: `/buyer-dashboard?tab=returns`,
+            relatedId: returnRequest.id,
+          }),
+          storage.createNotification({
+            userId: transaction.sellerId,
+            type: "return_initiated",
+            title: "طلب إرجاع جديد",
+            message: `تم إنشاء طلب إرجاع للمنتج "${listingTitle}" من قبل الإدارة`,
+            linkUrl: `/seller-dashboard?tab=returns`,
+            relatedId: returnRequest.id,
+          }),
+        ]);
+      } catch (notifError) {
+        console.error("[AdminCreateReturn] Notification error:", notifError);
+      }
+
+      res.json(returnRequest);
+    } catch (error) {
+      console.error("Error creating admin return:", error);
+      res.status(500).json({ error: "فشل في إنشاء طلب الإرجاع" });
+    }
+  });
+
+  // PATCH /api/admin/returns/:id — update return status/admin notes
+  app.patch("/api/admin/returns/:id", requireAdmin, async (req, res) => {
+    try {
+      const adminUser = (req as any).adminUser;
+      const { status, adminNotes } = req.body;
+
+      const returnRequest = await storage.getReturnRequestById(req.params.id);
+      if (!returnRequest) {
+        return res.status(404).json({ error: "طلب الإرجاع غير موجود" });
+      }
+
+      const updates: Record<string, any> = {};
+      if (status) updates.status = status;
+      if (adminNotes !== undefined) updates.adminNotes = adminNotes;
+
+      const updated = await storage.updateReturnRequestByAdmin(req.params.id, updates);
+
+      // Notify buyer and seller about status change
+      if (status && status !== returnRequest.status) {
+        try {
+          const transaction = await storage.getTransactionById(returnRequest.transactionId);
+          const listing = await storage.getListing(returnRequest.listingId);
+          const listingTitle = (listing as any)?.title || "المنتج";
+
+          const statusLabels: Record<string, string> = {
+            approved: "تمت الموافقة",
+            rejected: "تم الرفض",
+            escalated: "تم التصعيد",
+            pending: "قيد المراجعة",
+          };
+          const statusLabel = statusLabels[status] || status;
+
+          await Promise.all([
+            storage.createNotification({
+              userId: returnRequest.buyerId,
+              type: "return_status_update",
+              title: `تحديث طلب الإرجاع — ${statusLabel}`,
+              message: `تم تحديث حالة طلب إرجاع "${listingTitle}" إلى: ${statusLabel}`,
+              linkUrl: `/buyer-dashboard?tab=returns`,
+              relatedId: returnRequest.id,
+            }),
+            storage.createNotification({
+              userId: returnRequest.sellerId,
+              type: "return_status_update",
+              title: `تحديث طلب الإرجاع — ${statusLabel}`,
+              message: `تم تحديث حالة طلب إرجاع "${listingTitle}" إلى: ${statusLabel}`,
+              linkUrl: `/seller-dashboard?tab=returns`,
+              relatedId: returnRequest.id,
+            }),
+          ]);
+        } catch (notifError) {
+          console.error("[AdminUpdateReturn] Notification error:", notifError);
+        }
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating admin return:", error);
+      res.status(500).json({ error: "فشل في تحديث طلب الإرجاع" });
     }
   });
 

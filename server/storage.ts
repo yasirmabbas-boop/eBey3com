@@ -44,6 +44,7 @@ export interface ReportWithDetails {
   targetType: string;
   reason: string;
   details: string | null;
+  images: string[] | null;
   status: string;
   adminNotes: string | null;
   resolvedBy: string | null;
@@ -835,7 +836,7 @@ export class DatabaseStorage implements IStorage {
 
     productResults.forEach(row => {
       // Deduplicate by term
-      if (!suggestions.find(s => s.term === row.title)) {
+      if (row.title && !suggestions.find(s => s.term === row.title)) {
         suggestions.push({
           term: row.title,
           category: row.category || "",
@@ -2220,6 +2221,7 @@ export class DatabaseStorage implements IStorage {
       targetType: reports.targetType,
       reason: reports.reason,
       details: reports.details,
+      images: reports.images,
       status: reports.status,
       adminNotes: reports.adminNotes,
       resolvedBy: reports.resolvedBy,
@@ -2601,8 +2603,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchTransactionById(id: string): Promise<Transaction | undefined> {
+    // Support both exact UUID match and partial code match (e.g. first 8 chars)
     const [result] = await db.select().from(transactions)
-      .where(eq(transactions.id, id));
+      .where(sql`${transactions.id}::text ILIKE ${id + '%'}`)
+      .limit(1);
     return result;
   }
 

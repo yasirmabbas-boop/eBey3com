@@ -43,6 +43,7 @@ interface Report {
   targetType: string;
   reason: string;
   details?: string;
+  images?: string[];
   status: string;
   adminNotes?: string;
   resolvedBy?: string;
@@ -871,6 +872,19 @@ export default function AdminPage() {
                                 <p className="text-sm">{report.reason}</p>
                                 {report.details && (
                                   <p className="text-xs text-muted-foreground mt-1 truncate">{report.details}</p>
+                                )}
+                                {report.images && report.images.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {report.images.map((img, i) => (
+                                      <a key={i} href={img} target="_blank" rel="noreferrer">
+                                        <img
+                                          src={img}
+                                          alt={`دليل ${i + 1}`}
+                                          className="w-10 h-10 object-cover rounded border hover:border-primary cursor-pointer"
+                                        />
+                                      </a>
+                                    ))}
+                                  </div>
                                 )}
                               </TableCell>
                               <TableCell>
