@@ -109,9 +109,7 @@ export function LeafletMapPicker({
   const handleUseMyLocation = () => {
     if (!navigator.geolocation) {
       setLocationError(
-        language === "ar" 
-          ? "الموقع الجغرافي غير مدعوم في هذا المتصفح" 
-          : "ئەم وێبگەڕە پشتگیری شوێن ناکات"
+        language === "ar" ? "الموقع الجغرافي غير مدعوم في هذا المتصفح" : language === "ku" ? "ئەم وێبگەڕە پشتگیری شوێن ناکات" : "الموقع الجغرافي غير مدعوم في هذا المتصفح"
       );
       return;
     }
@@ -133,30 +131,22 @@ export function LeafletMapPicker({
         switch (error.code) {
           case error.PERMISSION_DENIED:
             setLocationError(
-              language === "ar"
-                ? "تم رفض إذن الموقع"
-                : "مۆڵەتی شوێن ڕەتکرایەوە"
+              language === "ar" ? "تم رفض إذن الموقع" : language === "ku" ? "مۆڵەتی شوێن ڕەتکرایەوە" : "تم رفض إذن الموقع"
             );
             break;
           case error.POSITION_UNAVAILABLE:
             setLocationError(
-              language === "ar"
-                ? "معلومات الموقع غير متوفرة"
-                : "زانیاری شوێن بەردەست نییە"
+              language === "ar" ? "معلومات الموقع غير متوفرة" : language === "ku" ? "زانیاری شوێن بەردەست نییە" : "معلومات الموقع غير متوفرة"
             );
             break;
           case error.TIMEOUT:
             setLocationError(
-              language === "ar"
-                ? "انتهت مهلة طلب الموقع"
-                : "کاتی داواکردنی شوێن تەواو بوو"
+              language === "ar" ? "انتهت مهلة طلب الموقع" : language === "ku" ? "کاتی داواکردنی شوێن تەواو بوو" : "انتهت مهلة طلب الموقع"
             );
             break;
           default:
             setLocationError(
-              language === "ar"
-                ? "حدث خطأ غير معروف"
-                : "هەڵەیەکی نەزانراو ڕوویدا"
+              language === "ar" ? "حدث خطأ غير معروف" : language === "ku" ? "هەڵەیەکی نەزانراو ڕوویدا" : "حدث خطأ غير معروف"
             );
         }
       },
@@ -173,7 +163,7 @@ export function LeafletMapPicker({
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium flex items-center gap-2">
           <MapPin className="h-4 w-4" />
-          {language === "ar" ? "حدد الموقع على الخريطة" : "شوێنەکە لەسەر نەخشە دیاری بکە"}
+          {language === "ar" ? "حدد الموقع على الخريطة" : language === "ku" ? "شوێنەکە لەسەر نەخشە دیاری بکە" : "حدد الموقع على الخريطة"}
         </label>
         <Button
           type="button"
@@ -187,7 +177,7 @@ export function LeafletMapPicker({
           ) : (
             <Crosshair className="h-4 w-4 mr-2" />
           )}
-          {language === "ar" ? "موقعي الحالي" : "شوێنی ئێستام"}
+          {language === "ar" ? "موقعي الحالي" : language === "ku" ? "شوێنی ئێستام" : "موقعي الحالي"}
         </Button>
       </div>
 
@@ -228,15 +218,13 @@ export function LeafletMapPicker({
 
       {markerPosition && (
         <p className="text-xs text-muted-foreground">
-          {language === "ar" ? "الإحداثيات:" : "کۆئۆردینات:"}{" "}
+          {language === "ar" ? "الإحداثيات:" : language === "ku" ? "کۆئۆردینات:" : "الإحداثيات:"}{" "}
           {markerPosition[0].toFixed(6)}, {markerPosition[1].toFixed(6)}
         </p>
       )}
 
       <p className="text-xs text-muted-foreground">
-        {language === "ar"
-          ? "انقر على الخريطة أو اسحب العلامة لتحديد الموقع"
-          : "کلیک لەسەر نەخشە بکە یان نیشانەکە بکێشە بۆ دیاریکردنی شوێن"}
+        {language === "ar" ? "انقر على الخريطة أو اسحب العلامة لتحديد الموقع" : language === "ku" ? "کلیک لەسەر نەخشە بکە یان نیشانەکە بکێشە بۆ دیاریکردنی شوێن" : "انقر على الخريطة أو اسحب العلامة لتحديد الموقع"}
       </p>
     </div>
   );

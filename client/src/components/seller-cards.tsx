@@ -134,7 +134,7 @@ export function SellerCards() {
 
   if (isLoading || sellerCards.length === 0) return null;
 
-  const title = language === "ar" ? "متاجر قد تعجبك" : "ئەو فرۆشگایانەی کە ڕەنگە بەدڵت بن";
+  const title = language === "ar" ? "متاجر قد تعجبك" : language === "ku" ? "ئەو فرۆشگایانەی کە ڕەنگە بەدڵت بن" : "متاجر قد تعجبك";
 
   return (
     <section className="py-3">

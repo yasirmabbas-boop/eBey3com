@@ -48,11 +48,11 @@ export default function BrowseRecentlyViewed() {
         <div className="flex items-center gap-3 mb-6">
           <Eye className="h-8 w-8 text-blue-600" />
           <h1 className="text-2xl font-bold">
-            {language === "ar" ? "شوهد مؤخراً" : "تازە بینراوەکان"}
+            {language === "ar" ? "شوهد مؤخراً" : language === "ku" ? "تازە بینراوەکان" : "شوهد مؤخراً"}
           </h1>
           {recentlyViewedProducts.length > 0 && (
             <Badge variant="secondary" className="text-sm">
-              {recentlyViewedProducts.length} {language === "ar" ? "منتج" : "بەرهەم"}
+              {recentlyViewedProducts.length} {language === "ar" ? "منتج" : language === "ku" ? "بەرهەم" : "Products"}
             </Badge>
           )}
         </div>
@@ -62,11 +62,9 @@ export default function BrowseRecentlyViewed() {
         ) : recentlyViewedProducts.length === 0 ? (
           <EmptyState
             type="search"
-            title={language === "ar" ? "لا توجد منتجات شوهدت مؤخراً" : "هیچ بەرهەمێکت نەبینیوە"}
-            description={language === "ar" 
-              ? "ابدأ بتصفح المنتجات وسنحفظ سجل المشاهدة هنا لتتمكن من العودة إليها بسهولة"
-              : "دەست بکە بە گەڕان بە بەرهەمەکان و ئێمە مێژووی بینینەکەت لێرە پاشەکەوت دەکەین"}
-            actionLabel={language === "ar" ? "تصفح المنتجات" : "گەڕان بە بەرهەمەکان"}
+            title={language === "ar" ? "لا توجد منتجات شوهدت مؤخراً" : language === "ku" ? "هیچ بەرهەمێکت نەبینیوە" : "لا توجد منتجات شوهدت مؤخراً"}
+            description={language === "ar" ? "ابدأ بتصفح المنتجات وسنحفظ سجل المشاهدة هنا لتتمكن من العودة إليها بسهولة" : language === "ku" ? "دەست بکە بە گەڕان بە بەرهەمەکان و ئێمە مێژووی بینینەکەت لێرە پاشەکەوت دەکەین" : "ابدأ بتصفح المنتجات وسنحفظ سجل المشاهدة هنا لتتمكن من العودة إليها بسهولة"}
+            actionLabel={language === "ar" ? "تصفح المنتجات" : language === "ku" ? "گەڕان بە بەرهەمەکان" : "تصفح المنتجات"}
             actionHref="/search"
           />
         ) : (
@@ -85,7 +83,7 @@ export default function BrowseRecentlyViewed() {
                     />
                     {listing.saleType === "auction" && (
                       <Badge className="absolute top-2 right-2 bg-primary text-white text-xs">
-                        {language === "ar" ? "مزاد" : "مزایدە"}
+                        {language === "ar" ? "مزاد" : language === "ku" ? "مزایدە" : "مزاد"}
                       </Badge>
                     )}
                   </div>

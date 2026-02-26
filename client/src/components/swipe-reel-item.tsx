@@ -91,9 +91,9 @@ export function SwipeReelItem({
     if (!user) { onNavigateToListing(); return; }
     try {
       await addToCart({ listingId: listing.id, quantity: 1 });
-      toast({ title: language === "ar" ? "تمت الإضافة للسلة" : "زیادکرا بۆ سەبەتە" });
+      toast({ title: language === "ar" ? "تمت الإضافة للسلة" : language === "ku" ? "زیادکرا بۆ سەبەتە" : "تمت الإضافة للسلة" });
     } catch {
-      toast({ title: language === "ar" ? "فشل الإضافة" : "زیادکردن سەرکەوتو نەبوو", variant: "destructive" });
+      toast({ title: language === "ar" ? "فشل الإضافة" : language === "ku" ? "زیادکردن سەرکەوتو نەبوو" : "فشل الإضافة", variant: "destructive" });
     }
   };
 
@@ -185,7 +185,7 @@ export function SwipeReelItem({
           {isAuction && (listing as any).totalBids > 0 && (
             <p className="text-white/65 text-xs mb-1">
               {(listing as any).totalBids}{" "}
-              {language === "ar" ? "مزايدة" : "مزایدە"}
+              {language === "ar" ? "مزايدة" : language === "ku" ? "مزایدە" : "مزايدة"}
             </p>
           )}
 
@@ -202,7 +202,7 @@ export function SwipeReelItem({
               {(listing.sellerName || "U").charAt(0).toUpperCase()}
             </div>
             <span className="text-white/80 text-sm font-medium truncate">
-              {listing.sellerName || (language === "ar" ? "بائع" : "فرۆشیار")}
+              {listing.sellerName || (language === "ar" ? "بائع" : language === "ku" ? "فرۆشیار" : "بائع")}
             </span>
             {(listing as any).sellerIsVerified && (
               <BadgeCheck className="h-3.5 w-3.5 text-blue-400 flex-shrink-0" />
@@ -248,7 +248,7 @@ export function SwipeReelItem({
               disabled={isAdding}
               className="h-11 w-11 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90"
               style={{ background: "rgba(22,163,74,0.85)", backdropFilter: "blur(8px)" }}
-              aria-label={language === "ar" ? "أضف للسلة" : "زیادکردن بۆ سەبەتە"}
+              aria-label={language === "ar" ? "أضف للسلة" : language === "ku" ? "زیادکردن بۆ سەبەتە" : "أضف للسلة"}
             >
               <ShoppingCart className="h-5 w-5 text-white stroke-2" />
             </button>
@@ -263,7 +263,7 @@ export function SwipeReelItem({
               className="px-2 h-9 rounded-full text-white text-xs font-bold shadow-lg"
               style={{ background: "rgba(234,88,12,0.92)", backdropFilter: "blur(8px)" }}
             >
-              {language === "ar" ? "زاود" : "بزاودە"}
+              {language === "ar" ? "زاود" : language === "ku" ? "بزاودە" : "زاود"}
             </motion.button>
           )}
 
@@ -276,7 +276,7 @@ export function SwipeReelItem({
               className="px-2 h-9 rounded-full text-white text-xs font-bold shadow-lg"
               style={{ background: "rgba(37,99,235,0.88)", backdropFilter: "blur(8px)" }}
             >
-              {language === "ar" ? "فاوض" : "چاوپێکەوتن"}
+              {language === "ar" ? "فاوض" : language === "ku" ? "چاوپێکەوتن" : "فاوض"}
             </motion.button>
           )}
         </div>

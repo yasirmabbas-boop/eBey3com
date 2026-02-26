@@ -148,14 +148,14 @@ export default function ProductPage() {
       });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || (language === "ar" ? "فشل في إرسال العرض" : "نەتوانرا پێشنیارەکە بنێردرێت"));
+        throw new Error(error.error || (language === "ar" ? "فشل في إرسال العرض" : language === "ku" ? "نەتوانرا پێشنیارەکە بنێردرێت" : "فشل في إرسال العرض"));
       }
       return res.json();
     },
     onSuccess: () => {
       toast({
         title: t("offerSent"),
-        description: language === "ar" ? "سيتم إعلامك عندما يرد البائع على عرضك" : "کاتێک فرۆشیار وەڵام بداتەوە ئاگادارت دەکرێیتەوە",
+        description: language === "ar" ? "سيتم إعلامك عندما يرد البائع على عرضك" : language === "ku" ? "کاتێک فرۆشیار وەڵام بداتەوە ئاگادارت دەکرێیتەوە" : "سيتم إعلامك عندما يرد البائع على عرضك",
       });
       setOfferDialogOpen(false);
       setOfferAmount("");
@@ -194,14 +194,14 @@ export default function ProductPage() {
       });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || (language === "ar" ? "فشل في إرسال البلاغ" : "ڕاپۆرتەکە نەنێردرا"));
+        throw new Error(error.error || (language === "ar" ? "فشل في إرسال البلاغ" : language === "ku" ? "ڕاپۆرتەکە نەنێردرا" : "فشل في إرسال البلاغ"));
       }
       return res.json();
     },
     onSuccess: () => {
       toast({
-        title: language === "ar" ? "تم إرسال البلاغ" : "ڕاپۆرتەکە نێردرا",
-        description: language === "ar" ? "شكراً لمساعدتنا في الحفاظ على أمان المنصة" : "سوپاس بۆ یارمەتیدانمان بۆ پاراستنی ئاسایشی پلاتفۆڕمەکە",
+        title: language === "ar" ? "تم إرسال البلاغ" : language === "ku" ? "ڕاپۆرتەکە نێردرا" : "تم إرسال البلاغ",
+        description: language === "ar" ? "شكراً لمساعدتنا في الحفاظ على أمان المنصة" : language === "ku" ? "سوپاس بۆ یارمەتیدانمان بۆ پاراستنی ئاسایشی پلاتفۆڕمەکە" : "شكراً لمساعدتنا في الحفاظ على أمان المنصة",
       });
       setReportDialogOpen(false);
       setReportReason("");
@@ -419,7 +419,7 @@ export default function ProductPage() {
           if (data.previousHighBidderId === user?.id && data.bidderId !== user?.id) {
             setWasOutbid(true);
             toast({
-              title: language === "ar" ? "تم تجاوز مزايدتك! 📢" : "مزایدەکەت تێپەڕێندرا! 📢",
+              title: language === "ar" ? "تم تجاوز مزايدتك! 📢" : language === "ku" ? "مزایدەکەت تێپەڕێندرا! 📢" : "تم تجاوز مزايدتك! 📢",
               description: language === "ar" 
                 ? `تم تقديم مزايدة أعلى (${data.currentBid.toLocaleString()} د.ع)` 
                 : `مزایدەیەکی بەرزتر دانرا (${data.currentBid.toLocaleString()} د.ع)`,
@@ -430,8 +430,8 @@ export default function ProductPage() {
           // Notify about time extension
           if (data.timeExtended) {
             toast({
-              title: language === "ar" ? "تم تمديد المزاد! ⏰" : "مزایدە درێژکرایەوە! ⏰",
-              description: language === "ar" ? "تم إضافة دقيقتين للمزاد بسبب مزايدة في اللحظات الأخيرة" : "٢ خولەک زیادکرا بەهۆی مزایدە لە کۆتا ساتەکاندا",
+              title: language === "ar" ? "تم تمديد المزاد! ⏰" : language === "ku" ? "مزایدە درێژکرایەوە! ⏰" : "تم تمديد المزاد! ⏰",
+              description: language === "ar" ? "تم إضافة دقيقتين للمزاد بسبب مزايدة في اللحظات الأخيرة" : language === "ku" ? "٢ خولەک زیادکرا بەهۆی مزایدە لە کۆتا ساتەکاندا" : "تم إضافة دقيقتين للمزاد بسبب مزايدة في اللحظات الأخيرة",
             });
           }
 
@@ -452,7 +452,7 @@ export default function ProductPage() {
           if (data.status === "sold") {
             if (data.winnerId === user?.id) {
               toast({
-                title: language === "ar" ? "مبروك! 🎉" : "پیرۆز بێت! 🎉",
+                title: language === "ar" ? "مبروك! 🎉" : language === "ku" ? "پیرۆز بێت! 🎉" : "مبروك! 🎉",
                 description: language === "ar" 
                   ? `فزت بالمزاد بمبلغ ${data.winningBid?.toLocaleString()} د.ع`
                   : `براوەی مزایدەکە بویت بە ${data.winningBid?.toLocaleString()} د.ع`,
@@ -468,7 +468,7 @@ export default function ProductPage() {
           } else {
             toast({
               title: t("auctionEnded"),
-              description: language === "ar" ? "انتهى المزاد بدون مزايدات" : "مزایدە بەبێ مزایدەکار کۆتایی هات",
+              description: language === "ar" ? "انتهى المزاد بدون مزايدات" : language === "ku" ? "مزایدە بەبێ مزایدەکار کۆتایی هات" : "انتهى المزاد بدون مزايدات",
             });
           }
           
@@ -537,17 +537,15 @@ export default function ProductPage() {
       const redirectUrl = `/signin?redirect=${encodeURIComponent(`/product/${params?.id}`)}`;
       toast({
         title: t("loginRequired"),
-        description: language === "ar" 
-          ? "يجب عليك تسجيل الدخول أو إنشاء حساب للمتابعة" 
-          : "دەبێت بچیتە ژوورەوە یان هەژمار دروست بکەیت بۆ بەردەوامبوون",
+        description: language === "ar" ? "يجب عليك تسجيل الدخول أو إنشاء حساب للمتابعة" : language === "ku" ? "دەبێت بچیتە ژوورەوە یان هەژمار دروست بکەیت بۆ بەردەوامبوون" : "يجب عليك تسجيل الدخول أو إنشاء حساب للمتابعة",
         variant: "destructive",
         duration: 8000,
         action: (
           <ToastAction 
-            altText={language === "ar" ? "تسجيل الدخول" : "چوونە ژوورەوە"}
+            altText={language === "ar" ? "تسجيل الدخول" : language === "ku" ? "چوونە ژوورەوە" : "Sign In"}
             onClick={() => navigate(redirectUrl)}
           >
-            {language === "ar" ? "تسجيل الدخول" : "چوونە ژوورەوە"}
+            {language === "ar" ? "تسجيل الدخول" : language === "ku" ? "چوونە ژوورەوە" : "Sign In"}
           </ToastAction>
         ),
       });
@@ -562,8 +560,8 @@ export default function ProductPage() {
     
     if (listing.saleType === "auction") {
       toast({
-        title: language === "ar" ? "غير متاح" : "بەردەست نییە",
-        description: language === "ar" ? "لا يمكن إضافة منتجات المزاد إلى السلة" : "ناتوانیت بەرهەمی مزایدە زیاد بکەیت بۆ سەبەتە",
+        title: language === "ar" ? "غير متاح" : language === "ku" ? "بەردەست نییە" : "غير متاح",
+        description: language === "ar" ? "لا يمكن إضافة منتجات المزاد إلى السلة" : language === "ku" ? "ناتوانیت بەرهەمی مزایدە زیاد بکەیت بۆ سەبەتە" : "لا يمكن إضافة منتجات المزاد إلى السلة",
         variant: "destructive",
       });
       return;
@@ -573,13 +571,13 @@ export default function ProductPage() {
     try {
       await addToCart({ listingId: listing.id, quantity: qty });
       toast({
-        title: language === "ar" ? "تم الإضافة للسلة" : "زیادکرا بۆ سەبەتە",
-        description: language === "ar" ? "يمكنك الاستمرار في التصفح أو الذهاب للسلة." : "دەتوانیت بەردەوام بیت لە گەڕان یان بڕۆیت بۆ سەبەتە.",
+        title: language === "ar" ? "تم الإضافة للسلة" : language === "ku" ? "زیادکرا بۆ سەبەتە" : "تم الإضافة للسلة",
+        description: language === "ar" ? "يمكنك الاستمرار في التصفح أو الذهاب للسلة." : language === "ku" ? "دەتوانیت بەردەوام بیت لە گەڕان یان بڕۆیت بۆ سەبەتە." : "يمكنك الاستمرار في التصفح أو الذهاب للسلة.",
       });
     } catch (error: any) {
       toast({
         title: t("error"),
-        description: error.message || (language === "ar" ? "فشل في إضافة المنتج للسلة" : "زیادکردنی بەرهەم بۆ سەبەتە شکستی هێنا"),
+        description: error.message || (language === "ar" ? "فشل في إضافة المنتج للسلة" : language === "ku" ? "زیادکردنی بەرهەم بۆ سەبەتە شکستی هێنا" : "فشل في إضافة المنتج للسلة"),
         variant: "destructive",
       });
     }
@@ -589,7 +587,7 @@ export default function ProductPage() {
     if (!requireAuth("wishlist")) return;
     toast({
       title: t("addedToFavorites"),
-      description: language === "ar" ? "يمكنك عرض المفضلة من إعداداتك." : "دەتوانیت دڵخوازەکان ببینیت لە ڕێکخستنەکانت.",
+      description: language === "ar" ? "يمكنك عرض المفضلة من إعداداتك." : language === "ku" ? "دەتوانیت دڵخوازەکان ببینیت لە ڕێکخستنەکانت." : "يمكنك عرض المفضلة من إعداداتك.",
     });
   };
 
@@ -606,15 +604,15 @@ export default function ProductPage() {
       await addToCart({ listingId: listing.id, quantity: qty });
       hapticSuccess();
       toast({
-        title: language === "ar" ? "تم إضافة المنتج للسلة" : "بەرهەم زیادکرا بۆ سەبەتە",
-        description: language === "ar" ? "سيتم توجيهك لإتمام الشراء..." : "دەگوازرێیتەوە بۆ تەواوکردنی کڕین...",
+        title: language === "ar" ? "تم إضافة المنتج للسلة" : language === "ku" ? "بەرهەم زیادکرا بۆ سەبەتە" : "تم إضافة المنتج للسلة",
+        description: language === "ar" ? "سيتم توجيهك لإتمام الشراء..." : language === "ku" ? "دەگوازرێیتەوە بۆ تەواوکردنی کڕین..." : "سيتم توجيهك لإتمام الشراء...",
       });
       navigate("/checkout");
     } catch (error: any) {
       hapticError();
       toast({
         title: t("error"),
-        description: error.message || (language === "ar" ? "فشل في إضافة المنتج للسلة" : "زیادکردنی بەرهەم بۆ سەبەتە شکستی هێنا"),
+        description: error.message || (language === "ar" ? "فشل في إضافة المنتج للسلة" : language === "ku" ? "زیادکردنی بەرهەم بۆ سەبەتە شکستی هێنا" : "فشل في إضافة المنتج للسلة"),
         variant: "destructive",
       });
     }
@@ -631,8 +629,8 @@ export default function ProductPage() {
       const saved = await saveToPhotos(product.images[0]);
       if (saved) {
         toast({
-          title: language === "ar" ? "تم حفظ الصورة" : "وێنە پاشەکەوت کرا",
-          description: language === "ar" ? "تم حفظ الصورة في ألبوم الكاميرا" : "وێنە پاشەکەوت کرا لە ئەلبومی کامێرا",
+          title: language === "ar" ? "تم حفظ الصورة" : language === "ku" ? "وێنە پاشەکەوت کرا" : "تم حفظ الصورة",
+          description: language === "ar" ? "تم حفظ الصورة في ألبوم الكاميرا" : language === "ku" ? "وێنە پاشەکەوت کرا لە ئەلبومی کامێرا" : "تم حفظ الصورة في ألبوم الكاميرا",
         });
       }
     }
@@ -652,9 +650,9 @@ export default function ProductPage() {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">{language === "ar" ? "المنتج غير موجود" : "بەرهەم نەدۆزرایەوە"}</h2>
-          <p className="text-gray-600 mb-4">{language === "ar" ? "عذراً، لم نتمكن من العثور على هذا المنتج." : "ببورە، نەتوانرا ئەم بەرهەمە بدۆزرێتەوە."}</p>
-          <Button onClick={() => navigate("/")}>{language === "ar" ? "العودة للرئيسية" : "گەڕانەوە بۆ سەرەکی"}</Button>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">{language === "ar" ? "المنتج غير موجود" : language === "ku" ? "بەرهەم نەدۆزرایەوە" : "المنتج غير موجود"}</h2>
+          <p className="text-gray-600 mb-4">{language === "ar" ? "عذراً، لم نتمكن من العثور على هذا المنتج." : language === "ku" ? "ببورە، نەتوانرا ئەم بەرهەمە بدۆزرێتەوە." : "عذراً، لم نتمكن من العثور على هذا المنتج."}</p>
+          <Button onClick={() => navigate("/")}>{language === "ar" ? "العودة للرئيسية" : language === "ku" ? "گەڕانەوە بۆ سەرەکی" : "العودة للرئيسية"}</Button>
         </div>
       </Layout>
     );
@@ -782,7 +780,7 @@ export default function ProductPage() {
                   onClick={handleSaveToPhotos}
                   data-testid="button-save-to-photos"
                 >
-                  {language === "ar" ? "حفظ الصورة في الهاتف" : "وێنە پاشەکەوت بکە"}
+                  {language === "ar" ? "حفظ الصورة في الهاتف" : language === "ku" ? "وێنە پاشەکەوت بکە" : "حفظ الصورة في الهاتف"}
                 </Button>
               )}
             </div>
@@ -820,17 +818,17 @@ export default function ProductPage() {
               {(product.seller?.salesCount || 0) > 0 && (
                 <span className="text-xs text-gray-500">({product.seller?.salesCount})</span>
               )}
-              <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">{language === "ar" ? "عرض المتجر ←" : "دوکان ببینە ←"}</span>
+              <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">{language === "ar" ? "عرض المتجر ←" : language === "ku" ? "دوکان ببینە ←" : "عرض المتجر ←"}</span>
             </div>
             <div className="flex items-center gap-1 text-xs text-gray-500">
               {(product.seller?.ratingCount || 0) > 0 ? (
                 <>
                   <span className="text-green-600 font-medium">
-                    {Math.round((product.seller?.rating || 0) * 20)}% {language === "ar" ? "تقييم إيجابي" : "هەڵسەنگاندنی ئەرێنی"}
+                    {Math.round((product.seller?.rating || 0) * 20)}% {language === "ar" ? "تقييم إيجابي" : language === "ku" ? "هەڵسەنگاندنی ئەرێنی" : "تقييم إيجابي"}
                   </span>
                 </>
               ) : (
-                <span>{language === "ar" ? "بائع جديد" : "فرۆشیاری نوێ"}</span>
+                <span>{language === "ar" ? "بائع جديد" : language === "ku" ? "فرۆشیاری نوێ" : "بائع جديد"}</span>
               )}
             </div>
           </div>
@@ -848,24 +846,24 @@ export default function ProductPage() {
               <p className="text-3xl font-bold">{(liveBidData?.currentBid || product.currentBid || product.price).toLocaleString()} د.ع</p>
               <p className="text-sm text-gray-500 mt-1">
                 {(liveBidData?.totalBids || product.totalBids) && (liveBidData?.totalBids || product.totalBids) > 0 
-                  ? `${liveBidData?.totalBids || product.totalBids} ${language === "ar" ? "مزايدة" : "مزایدە"}` 
-                  : language === "ar" ? "سعر المزايدة الابتدائي" : "نرخی دەستپێکردنی مزایدە"}
+                  ? `${liveBidData?.totalBids || product.totalBids} ${language === "ar" ? "مزايدة" : language === "ku" ? "مزایدە" : "مزايدة"}` 
+                  : language === "ar" ? "سعر المزايدة الابتدائي" : language === "ku" ? "نرخی دەستپێکردنی مزایدە" : "سعر المزايدة الابتدائي"}
               </p>
               {/* Auction Countdown Timer */}
               {(liveBidData?.auctionEndTime || product.auctionEndTime) && (
                 <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                  <p className="text-xs text-orange-700 mb-1 font-medium">{language === "ar" ? "ينتهي المزاد خلال:" : "مزایدە تەواو دەبێت لە:"}</p>
+                  <p className="text-xs text-orange-700 mb-1 font-medium">{language === "ar" ? "ينتهي المزاد خلال:" : language === "ku" ? "مزایدە تەواو دەبێت لە:" : "ينتهي المزاد خلال:"}</p>
                   <AuctionCountdown 
                     endTime={liveBidData?.auctionEndTime || product.auctionEndTime} 
                   />
                   {wsConnected && lastUpdateTime && (
                     <p className="text-xs text-gray-500 mt-2">
-                      {language === "ar" ? "آخر تحديث:" : "دوایین نوێکردنەوە:"} {lastUpdateTime.toLocaleTimeString('ar-IQ')}
+                      {language === "ar" ? "آخر تحديث:" : language === "ku" ? "دوایین نوێکردنەوە:" : "آخر تحديث:"} {lastUpdateTime.toLocaleTimeString('ar-IQ')}
                     </p>
                   )}
                   {!wsConnected && (
                     <p className="text-xs text-orange-600 mt-2 font-medium">
-                      ⚠️ {language === "ar" ? "قد يكون المؤقت قديماً. حدّث الصفحة." : "دەکرێت کاتژمێر کۆن بێت. پەڕەکە نوێ بکەوە."}
+                      ⚠️ {language === "ar" ? "قد يكون المؤقت قديماً. حدّث الصفحة." : language === "ku" ? "دەکرێت کاتژمێر کۆن بێت. پەڕەکە نوێ بکەوە." : "قد يكون المؤقت قديماً. حدّث الصفحة."}
                     </p>
                   )}
                 </div>
@@ -875,7 +873,7 @@ export default function ProductPage() {
             <>
               <p className="text-3xl font-bold">{product.price.toLocaleString()} د.ع</p>
               {product.isNegotiable && (
-                <p className="text-sm text-gray-500 mt-1">{language === "ar" ? "أو أفضل عرض" : "یان باشترین پێشنیار"}</p>
+                <p className="text-sm text-gray-500 mt-1">{language === "ar" ? "أو أفضل عرض" : language === "ku" ? "یان باشترین پێشنیار" : "أو أفضل عرض"}</p>
               )}
             </>
           )}
@@ -885,26 +883,26 @@ export default function ProductPage() {
         <div className="py-4 border-b space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-gray-500 text-sm">{t("delivery")}</span>
-            <span className="text-sm font-medium">{product.deliveryWindow || (language === "ar" ? "3-5 أيام" : "٣-٥ ڕۆژ")}</span>
+            <span className="text-sm font-medium">{product.deliveryWindow || (language === "ar" ? "3-5 أيام" : language === "ku" ? "٣-٥ ڕۆژ" : "3-5 أيام")}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 text-sm">{language === "ar" ? "الشحن" : "گواستنەوە"}</span>
+            <span className="text-gray-500 text-sm">{language === "ar" ? "الشحن" : language === "ku" ? "گواستنەوە" : "الشحن"}</span>
             <span className="text-sm font-medium">
               {product?.shippingType === "buyer_pays" 
                 ? `${(product?.shippingCost || 0).toLocaleString()} ${t("iqd")}` 
                 : product?.shippingType === "pickup" 
-                  ? (language === "ar" ? "استلام شخصي" : "وەرگرتنی کەسی") 
-                  : (language === "ar" ? "مجاني (على حساب البائع)" : "بەخۆڕایی (بە تێچووی فرۆشیار)")}
+                  ? (language === "ar" ? "استلام شخصي" : language === "ku" ? "وەرگرتنی کەسی" : "استلام شخصي") 
+                  : (language === "ar" ? "مجاني (على حساب البائع)" : language === "ku" ? "بەخۆڕایی (بە تێچووی فرۆشیار)" : "مجاني (على حساب البائع)")}
             </span>
           </div>
           {product?.internationalShipping && (
             <div className="flex items-center justify-between">
               <span className="text-gray-500 text-sm flex items-center gap-1">
                 <Globe className="h-4 w-4" />
-                {language === "ar" ? "شحن دولي" : "گواستنەوەی نێودەوڵەتی"}
+                {language === "ar" ? "شحن دولي" : language === "ku" ? "گواستنەوەی نێودەوڵەتی" : "شحن دولي"}
               </span>
               <span className="text-sm font-medium text-green-600">
-                {language === "ar" ? "متاح" : "بەردەستە"}
+                {language === "ar" ? "متاح" : language === "ku" ? "بەردەستە" : "available"}
               </span>
             </div>
           )}
@@ -926,7 +924,7 @@ export default function ProductPage() {
                     data-testid="link-google-maps"
                   >
                     <MapPin className="h-3 w-3" />
-                    {language === "ar" ? "الموقع" : "شوێن"}
+                    {language === "ar" ? "الموقع" : language === "ku" ? "شوێن" : "الموقع"}
                   </a>
                 )}
               </div>
@@ -949,11 +947,11 @@ export default function ProductPage() {
             <div>
               <p className="text-sm font-semibold text-amber-800 mb-1">{t("returnPolicy")}</p>
               <p className="text-sm text-amber-700">
-                {product.returnPolicy || (language === "ar" ? "يرجى التواصل مع البائع لمعرفة سياسة الإرجاع" : "تکایە پەیوەندی بکە بە فرۆشیار بۆ زانینی سیاسەتی گەڕاندنەوە")}
+                {product.returnPolicy || (language === "ar" ? "يرجى التواصل مع البائع لمعرفة سياسة الإرجاع" : language === "ku" ? "تکایە پەیوەندی بکە بە فرۆشیار بۆ زانینی سیاسەتی گەڕاندنەوە" : "يرجى التواصل مع البائع لمعرفة سياسة الإرجاع")}
               </p>
               {product.returnPolicy && product.returnPolicy !== "لا يوجد إرجاع" && (
                 <p className="text-xs text-amber-600 mt-1">
-                  {language === "ar" ? "يجب أن يكون المنتج بحالته الأصلية مع جميع الملحقات" : "بەرهەم دەبێت لە دۆخی ڕەسەنی بێت لەگەڵ هەموو پاشکۆکان"}
+                  {language === "ar" ? "يجب أن يكون المنتج بحالته الأصلية مع جميع الملحقات" : language === "ku" ? "بەرهەم دەبێت لە دۆخی ڕەسەنی بێت لەگەڵ هەموو پاشکۆکان" : "يجب أن يكون المنتج بحالته الأصلية مع جميع الملحقات"}
                 </p>
               )}
             </div>
@@ -963,8 +961,8 @@ export default function ProductPage() {
         {/* Show notice if this is the user's own product */}
         {isOwnProduct && (
           <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl text-center my-4">
-            <p className="text-blue-700 font-semibold">{language === "ar" ? "هذا منتجك الخاص" : "ئەمە بەرهەمی تۆیە"}</p>
-            <p className="text-blue-600 text-sm">{language === "ar" ? "لا يمكنك شراء أو المزايدة على منتجاتك" : "ناتوانیت بەرهەمەکانی خۆت بکڕیت یان مزایدە بکەیت"}</p>
+            <p className="text-blue-700 font-semibold">{language === "ar" ? "هذا منتجك الخاص" : language === "ku" ? "ئەمە بەرهەمی تۆیە" : "هذا منتجك الخاص"}</p>
+            <p className="text-blue-600 text-sm">{language === "ar" ? "لا يمكنك شراء أو المزايدة على منتجاتك" : language === "ku" ? "ناتوانیت بەرهەمەکانی خۆت بکڕیت یان مزایدە بکەیت" : "لا يمكنك شراء أو المزايدة على منتجاتك"}</p>
           </div>
         )}
 
@@ -980,7 +978,7 @@ export default function ProductPage() {
               return (
                 <div className="bg-red-50 border border-red-200 p-4 rounded-xl text-center">
                   <p className="text-red-700 font-semibold">{t("outOfStock")}</p>
-                  <p className="text-red-600 text-sm">{language === "ar" ? "تم بيع جميع الكميات" : "هەموو بڕەکە فرۆشرا"}</p>
+                  <p className="text-red-600 text-sm">{language === "ar" ? "تم بيع جميع الكميات" : language === "ku" ? "هەموو بڕەکە فرۆشرا" : "تم بيع جميع الكميات"}</p>
                 </div>
               );
             }
@@ -991,10 +989,10 @@ export default function ProductPage() {
                 <div className="space-y-3">
                   <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl text-center">
                     <p className="text-blue-700 font-semibold">
-                      {language === "ar" ? "لقد قمت بشراء هذا المنتج" : "تۆ ئەم بەرهەمەت کڕیوە"}
+                      {language === "ar" ? "لقد قمت بشراء هذا المنتج" : language === "ku" ? "تۆ ئەم بەرهەمەت کڕیوە" : "لقد قمت بشراء هذا المنتج"}
                     </p>
                     <p className="text-blue-600 text-sm">
-                      {language === "ar" ? "لا يمكنك الشراء مرة أخرى" : "ناتوانیت دووبارە بیکڕیت"}
+                      {language === "ar" ? "لا يمكنك الشراء مرة أخرى" : language === "ku" ? "ناتوانیت دووبارە بیکڕیت" : "لا يمكنك الشراء مرة أخرى"}
                     </p>
                   </div>
                   {/* Show disabled action buttons */}
@@ -1004,7 +1002,7 @@ export default function ProductPage() {
                     className="w-full h-14 text-lg font-bold bg-primary/50"
                     data-testid="button-buy-now-disabled"
                   >
-                    {language === "ar" ? "اشتر الآن" : "ئێستا بیکڕە"}
+                    {language === "ar" ? "اشتر الآن" : language === "ku" ? "ئێستا بیکڕە" : "اشتر الآن"}
                   </Button>
                   {product.isNegotiable && (
                     <Button 
@@ -1033,8 +1031,8 @@ export default function ProductPage() {
                       <div className="bg-green-50 border-2 border-green-400 p-4 rounded-xl flex items-center gap-3 shadow-md" data-testid="winning-banner">
                         <Trophy className="h-6 w-6 text-green-600" />
                         <div>
-                          <p className="text-green-700 font-bold">{language === "ar" ? "أنت صاحب أعلى مزايدة! 🎉" : "تۆ بەرزترین مزایدەکاریت! 🎉"}</p>
-                          <p className="text-green-600 text-sm">{language === "ar" ? "مزايدتك الحالية:" : "مزایدەی ئێستات:"} {(liveBidData?.currentBid || product.currentBid || product.price).toLocaleString()} {t("iqd")}</p>
+                          <p className="text-green-700 font-bold">{language === "ar" ? "أنت صاحب أعلى مزايدة! 🎉" : language === "ku" ? "تۆ بەرزترین مزایدەکاریت! 🎉" : "أنت صاحب أعلى مزايدة! 🎉"}</p>
+                          <p className="text-green-600 text-sm">{language === "ar" ? "مزايدتك الحالية:" : language === "ku" ? "مزایدەی ئێستات:" : "مزايدتك الحالية:"} {(liveBidData?.currentBid || product.currentBid || product.price).toLocaleString()} {t("iqd")}</p>
                         </div>
                       </div>
                     )}
@@ -1044,8 +1042,8 @@ export default function ProductPage() {
                       <div className="bg-red-50 border-2 border-red-500 p-4 rounded-xl flex items-center gap-3 shadow-lg animate-pulse" data-testid="outbid-banner">
                         <AlertCircle className="h-6 w-6 text-red-600" />
                         <div>
-                          <p className="text-red-700 font-bold text-lg">{language === "ar" ? "⚠️ تم تجاوز مزايدتك!" : "⚠️ مزایدەکەت تێپەڕێندرا!"}</p>
-                          <p className="text-red-600 text-sm">{language === "ar" ? "قم بزيادة مزايدتك الآن للفوز بالمزاد" : "ئێستا مزایدەکەت زیاد بکە بۆ بردنەوەی مزایدە"}</p>
+                          <p className="text-red-700 font-bold text-lg">{language === "ar" ? "⚠️ تم تجاوز مزايدتك!" : language === "ku" ? "⚠️ مزایدەکەت تێپەڕێندرا!" : "⚠️ تم تجاوز مزايدتك!"}</p>
+                          <p className="text-red-600 text-sm">{language === "ar" ? "قم بزيادة مزايدتك الآن للفوز بالمزاد" : language === "ku" ? "ئێستا مزایدەکەت زیاد بکە بۆ بردنەوەی مزایدە" : "قم بزيادة مزايدتك الآن للفوز بالمزاد"}</p>
                         </div>
                       </div>
                     )}
@@ -1065,9 +1063,9 @@ export default function ProductPage() {
                         <div className="space-y-2">
                           <p className="text-gray-600">
                             {auctionEnded?.winnerId === user?.id ? (
-                              <span className="text-green-600 font-bold">{language === "ar" ? "🎉 مبروك! لقد فزت بهذا المزاد" : "🎉 پیرۆز بێت! تۆ براوەی ئەم مزایدەیە بویت"}</span>
+                              <span className="text-green-600 font-bold">{language === "ar" ? "🎉 مبروك! لقد فزت بهذا المزاد" : language === "ku" ? "🎉 پیرۆز بێت! تۆ براوەی ئەم مزایدەیە بویت" : "🎉 مبروك! لقد فزت بهذا المزاد"}</span>
                             ) : (
-                              <span>{language === "ar" ? "الفائز:" : "براوە:"} {auctionEnded?.winnerName || (language === "ar" ? "مشتري" : "کڕیار")}</span>
+                              <span>{language === "ar" ? "الفائز:" : language === "ku" ? "براوە:" : "الفائز:"} {auctionEnded?.winnerName || (language === "ar" ? "مشتري" : language === "ku" ? "کڕیار" : "مشتري")}</span>
                             )}
                           </p>
                           <p className="text-2xl font-bold text-primary">
@@ -1079,13 +1077,13 @@ export default function ProductPage() {
                               onClick={() => navigate("/checkout")}
                               data-testid="button-proceed-payment"
                             >
-                              {language === "ar" ? "إتمام عملية الدفع" : "تەواوکردنی پارەدان"}
+                              {language === "ar" ? "إتمام عملية الدفع" : language === "ku" ? "تەواوکردنی پارەدان" : "إتمام عملية الدفع"}
                             </Button>
                           )}
                         </div>
                       ) : (
                         <p className="text-gray-600">
-                          {language === "ar" ? "انتهى هذا المزاد بدون مزايدات" : "ئەم مزایدەیە بەبێ مزایدەکار تەواو بوو"}
+                          {language === "ar" ? "انتهى هذا المزاد بدون مزايدات" : language === "ku" ? "ئەم مزایدەیە بەبێ مزایدەکار تەواو بوو" : "انتهى هذا المزاد بدون مزايدات"}
                         </p>
                       )}
                     </div>
@@ -1099,13 +1097,11 @@ export default function ProductPage() {
                       <div className="flex items-center gap-2 mb-3">
                         <ShieldCheck className="w-5 h-5 text-amber-600" />
                         <span className="font-bold text-amber-800 dark:text-amber-400">
-                          {language === "ar" ? "التحقق من الهاتف مطلوب" : "پشتڕاستکردنەوەی مۆبایل پێویستە"}
+                          {language === "ar" ? "التحقق من الهاتف مطلوب" : language === "ku" ? "پشتڕاستکردنەوەی مۆبایل پێویستە" : "التحقق من الهاتف مطلوب"}
                         </span>
                       </div>
                       <p className="text-sm text-amber-700 dark:text-amber-300 mb-4">
-                        {language === "ar" 
-                          ? "يجب التحقق من رقم هاتفك عبر واتساب للمزايدة على هذا المنتج"
-                          : "دەبێت ژمارەی مۆبایلەکەت بە واتسئاپ پشتڕاست بکەیتەوە بۆ مزایدەکردن لەم بەرهەمە"}
+                        {language === "ar" ? "يجب التحقق من رقم هاتفك عبر واتساب للمزايدة على هذا المنتج" : language === "ku" ? "دەبێت ژمارەی مۆبایلەکەت بە واتسئاپ پشتڕاست بکەیتەوە بۆ مزایدەکردن لەم بەرهەمە" : "يجب التحقق من رقم هاتفك عبر واتساب للمزايدة على هذا المنتج"}
                       </p>
                       <Button 
                         className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold h-12"
@@ -1113,7 +1109,7 @@ export default function ProductPage() {
                         data-testid="button-verify-phone-to-bid"
                       >
                         <ShieldCheck className="w-5 h-5 ml-2" />
-                        {language === "ar" ? "التحقق من الهاتف للمزايدة" : "پشتڕاستکردنەوەی مۆبایل بۆ مزایدە"}
+                        {language === "ar" ? "التحقق من الهاتف للمزايدة" : language === "ku" ? "پشتڕاستکردنەوەی مۆبایل بۆ مزایدە" : "التحقق من الهاتف للمزايدة"}
                       </Button>
                     </div>
                   ) : (
@@ -1146,12 +1142,12 @@ export default function ProductPage() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Zap className="w-5 h-5 text-green-600" />
-                        <span className="font-bold text-green-800 dark:text-green-400">{language === "ar" ? "اشتر الآن" : "ئێستا بیکڕە"}</span>
+                        <span className="font-bold text-green-800 dark:text-green-400">{language === "ar" ? "اشتر الآن" : language === "ku" ? "ئێستا بیکڕە" : "اشتر الآن"}</span>
                       </div>
                       <span className="text-2xl font-bold text-green-700 dark:text-green-300">{product.buyNowPrice.toLocaleString()} {t("iqd")}</span>
                     </div>
                     <p className="text-sm text-green-600 dark:text-green-400 mb-3">
-                      {language === "ar" ? "تخطى المزاد واشتر المنتج فوراً بهذا السعر" : "لە مزایدە تێپەڕە و بەرهەمەکە ئێستا بکڕە بەم نرخە"}
+                      {language === "ar" ? "تخطى المزاد واشتر المنتج فوراً بهذا السعر" : language === "ku" ? "لە مزایدە تێپەڕە و بەرهەمەکە ئێستا بکڕە بەم نرخە" : "تخطى المزاد واشتر المنتج فوراً بهذا السعر"}
                     </p>
                     <Button 
                       className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12"
@@ -1162,7 +1158,7 @@ export default function ProductPage() {
                       {isBuyingNow ? (
                         <>
                           <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                          {language === "ar" ? "جاري المعالجة..." : "چاوەڕێ بکە..."}
+                          {language === "ar" ? "جاري المعالجة..." : language === "ku" ? "چاوەڕێ بکە..." : "جاري المعالجة..."}
                         </>
                       ) : (
                         <>
@@ -1183,13 +1179,11 @@ export default function ProductPage() {
                           <div className="flex items-center gap-2 mb-3">
                             <ShieldCheck className="w-5 h-5 text-amber-600" />
                             <span className="font-bold text-amber-800 dark:text-amber-400">
-                              {language === "ar" ? "التحقق من الهاتف مطلوب" : "پشتڕاستکردنەوەی مۆبایل پێویستە"}
+                              {language === "ar" ? "التحقق من الهاتف مطلوب" : language === "ku" ? "پشتڕاستکردنەوەی مۆبایل پێویستە" : "التحقق من الهاتف مطلوب"}
                             </span>
                           </div>
                           <p className="text-sm text-amber-700 dark:text-amber-300 mb-4">
-                            {language === "ar" 
-                              ? "يجب التحقق من رقم هاتفك عبر واتساب للشراء"
-                              : "دەبێت ژمارەی مۆبایلەکەت بە واتسئاپ پشتڕاست بکەیتەوە بۆ کڕین"}
+                            {language === "ar" ? "يجب التحقق من رقم هاتفك عبر واتساب للشراء" : language === "ku" ? "دەبێت ژمارەی مۆبایلەکەت بە واتسئاپ پشتڕاست بکەیتەوە بۆ کڕین" : "يجب التحقق من رقم هاتفك عبر واتساب للشراء"}
                           </p>
                           <Button 
                             size="lg"
@@ -1198,14 +1192,14 @@ export default function ProductPage() {
                             data-testid="button-verify-phone-to-buy"
                           >
                             <ShieldCheck className="w-5 h-5 ml-2" />
-                            {language === "ar" ? "التحقق من الهاتف للشراء" : "پشتڕاستکردنەوەی مۆبایل بۆ کڕین"}
+                            {language === "ar" ? "التحقق من الهاتف للشراء" : language === "ku" ? "پشتڕاستکردنەوەی مۆبایل بۆ کڕین" : "التحقق من الهاتف للشراء"}
                           </Button>
                         </div>
                       ) : (
                         <>
                         {remainingQty > 1 && (
                           <div className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-lg mb-3">
-                            <span className="text-sm font-medium">{language === "ar" ? "الكمية" : "بڕ"}</span>
+                            <span className="text-sm font-medium">{language === "ar" ? "الكمية" : language === "ku" ? "بڕ" : "الكمية"}</span>
                             <div className="flex items-center gap-2">
                               <Button type="button" variant="outline" size="sm" className="h-9 w-9 p-0" onClick={() => setAddToCartQuantity(Math.max(1, addToCartQuantity - 1))} disabled={addToCartQuantity <= 1}>−</Button>
                               <span className="w-10 text-center font-medium" data-testid="product-quantity">{addToCartQuantity}</span>
@@ -1223,10 +1217,10 @@ export default function ProductPage() {
                           {isPurchaseDisabled || isBuyingNow ? (
                             <>
                               <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                              {language === "ar" ? "جاري المعالجة..." : "چاوەڕێ بکە..."}
+                              {language === "ar" ? "جاري المعالجة..." : language === "ku" ? "چاوەڕێ بکە..." : "جاري المعالجة..."}
                             </>
                           ) : (
-                            language === "ar" ? "إتمام الطلب" : "تەواوکردنی داواکاری"
+                            language === "ar" ? "إتمام الطلب" : language === "ku" ? "تەواوکردنی داواکاری" : "إتمام الطلب"
                           )}
                         </Button>
                         </>
@@ -1262,7 +1256,7 @@ export default function ProductPage() {
                           data-testid="button-make-offer"
                         >
                           {!!user && !user.phoneVerified
-                            ? (language === "ar" ? "وثّق الهاتف لتقديم عرض" : "پشتڕاستکردنەوەی مۆبایل بۆ پێشنیار")
+                            ? (language === "ar" ? "وثّق الهاتف لتقديم عرض" : language === "ku" ? "پشتڕاستکردنەوەی مۆبایل بۆ پێشنیار" : "وثّق الهاتف لتقديم عرض")
                             : t("makeOffer")}
                         </Button>
                       )}
@@ -1274,7 +1268,7 @@ export default function ProductPage() {
                           <ShieldCheck className="h-8 w-8 text-gray-500" />
                         </div>
                         <h3 className="text-xl font-bold text-gray-700">{t("sold")}</h3>
-                        <p className="text-gray-600">{language === "ar" ? "تم بيع هذا المنتج" : "ئەم بەرهەمە فرۆشرا"}</p>
+                        <p className="text-gray-600">{language === "ar" ? "تم بيع هذا المنتج" : language === "ku" ? "ئەم بەرهەمە فرۆشرا" : "تم بيع هذا المنتج"}</p>
                         <p className="text-lg font-bold text-gray-700">{(product.currentBid || product.price).toLocaleString()} {t("iqd")}</p>
                       </div>
                     </div>
@@ -1292,7 +1286,7 @@ export default function ProductPage() {
                     data-testid="button-report-listing"
                   >
                     <Flag className="h-4 w-4 ml-2" />
-                    {language === "ar" ? "الإبلاغ عن هذا المنتج" : "ڕاپۆرتکردنی ئەم بەرهەمە"}
+                    {language === "ar" ? "الإبلاغ عن هذا المنتج" : language === "ku" ? "ڕاپۆرتکردنی ئەم بەرهەمە" : "الإبلاغ عن هذا المنتج"}
                   </Button>
                 )}
               </>
@@ -1362,8 +1356,8 @@ export default function ProductPage() {
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
                 toast({
-                  title: language === "ar" ? "تم النسخ" : "کۆپی کرا",
-                  description: language === "ar" ? "تم نسخ رابط المنتج" : "لینکی بەرهەم کۆپی کرا",
+                  title: language === "ar" ? "تم النسخ" : language === "ku" ? "کۆپی کرا" : "تم النسخ",
+                  description: language === "ar" ? "تم نسخ رابط المنتج" : language === "ku" ? "لینکی بەرهەم کۆپی کرا" : "تم نسخ رابط المنتج",
                 });
               }}
               data-testid="button-copy-link-main"
@@ -1391,8 +1385,8 @@ export default function ProductPage() {
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 my-4 flex items-start gap-3">
           <Banknote className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
           <div>
-            <p className="font-medium text-green-800 text-sm">{language === "ar" ? "الدفع عند الاستلام" : "پارەدان لە کاتی وەرگرتن"}</p>
-            <p className="text-green-700 text-xs">{language === "ar" ? "ادفع نقداً عند استلام طلبك" : "کاتێک داواکارییەکەت وەردەگریت پارە بدە"}</p>
+            <p className="font-medium text-green-800 text-sm">{language === "ar" ? "الدفع عند الاستلام" : language === "ku" ? "پارەدان لە کاتی وەرگرتن" : "الدفع عند الاستلام"}</p>
+            <p className="text-green-700 text-xs">{language === "ar" ? "ادفع نقداً عند استلام طلبك" : language === "ku" ? "کاتێک داواکارییەکەت وەردەگریت پارە بدە" : "ادفع نقداً عند استلام طلبك"}</p>
           </div>
         </div>
 
@@ -1400,8 +1394,8 @@ export default function ProductPage() {
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 flex items-start gap-3">
           <ShieldCheck className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
           <div>
-            <p className="font-medium text-blue-800 text-sm">{language === "ar" ? "حماية المشتري" : "پاراستنی کڕیار"}</p>
-            <p className="text-blue-700 text-xs">{language === "ar" ? "أموالك محفوظة حتى تستلم المنتج" : "پارەکەت پارێزراوە تاوەکو بەرهەم وەربگریت"}</p>
+            <p className="font-medium text-blue-800 text-sm">{language === "ar" ? "حماية المشتري" : language === "ku" ? "پاراستنی کڕیار" : "حماية المشتري"}</p>
+            <p className="text-blue-700 text-xs">{language === "ar" ? "أموالك محفوظة حتى تستلم المنتج" : language === "ku" ? "پارەکەت پارێزراوە تاوەکو بەرهەم وەربگریت" : "أموالك محفوظة حتى تستلم المنتج"}</p>
           </div>
         </div>
 
@@ -1409,7 +1403,7 @@ export default function ProductPage() {
         <div className="py-4 border-t">
           <h2 className="font-bold text-lg mb-3">{t("description")}</h2>
           <p className="text-gray-600 leading-relaxed text-sm">
-            {product.description || (language === "ar" ? "لا يوجد وصف متوفر لهذا المنتج." : "هیچ وەسفێک بۆ ئەم بەرهەمە بەردەست نییە.")}
+            {product.description || (language === "ar" ? "لا يوجد وصف متوفر لهذا المنتج." : language === "ku" ? "هیچ وەسفێک بۆ ئەم بەرهەمە بەردەست نییە." : "لا يوجد وصف متوفر لهذا المنتج.")}
           </p>
         </div>
 
@@ -1421,7 +1415,7 @@ export default function ProductPage() {
           <div className="py-4 border-t">
             <h2 className="font-bold text-lg mb-3 flex items-center gap-2">
               <Tag className="h-5 w-5 text-primary" />
-              {language === "ar" ? "الكلمات المفتاحية" : "ووشە سەرەکییەکان"}
+              {language === "ar" ? "الكلمات المفتاحية" : language === "ku" ? "ووشە سەرەکییەکان" : "الكلمات المفتاحية"}
             </h2>
             <div className="flex flex-wrap gap-2">
               {product.tags.map((tag: string, index: number) => (
@@ -1440,11 +1434,11 @@ export default function ProductPage() {
 
         {/* Specs Section */}
         <div className="py-4 border-t">
-          <h2 className="font-bold text-lg mb-3">{language === "ar" ? "المواصفات" : "تایبەتمەندییەکان"}</h2>
+          <h2 className="font-bold text-lg mb-3">{language === "ar" ? "المواصفات" : language === "ku" ? "تایبەتمەندییەکان" : "المواصفات"}</h2>
           <div className="space-y-2 text-sm">
             {product.brand && (
               <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-500">{language === "ar" ? "الماركة" : "مارکە"}</span>
+                <span className="text-gray-500">{language === "ar" ? "الماركة" : language === "ku" ? "مارکە" : "الماركة"}</span>
                 <span className="font-medium">{product.brand}</span>
               </div>
             )}
@@ -1481,7 +1475,7 @@ export default function ProductPage() {
       <Dialog open={offerDialogOpen} onOpenChange={setOfferDialogOpen}>
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right">{language === "ar" ? "تقديم عرض سعر" : "پێشکەشکردنی نرخ"}</DialogTitle>
+            <DialogTitle className="text-right">{language === "ar" ? "تقديم عرض سعر" : language === "ku" ? "پێشکەشکردنی نرخ" : "تقديم عرض سعر"}</DialogTitle>
             <DialogDescription className="text-right">
               {language === "ar" 
                 ? `قدّم عرضك للبائع. السعر المطلوب: ${product?.price.toLocaleString()} د.ع`
@@ -1490,11 +1484,11 @@ export default function ProductPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="offer-amount">{language === "ar" ? "عرضك (د.ع)" : "پێشنیارەکەت (د.ع)"}</Label>
+              <Label htmlFor="offer-amount">{language === "ar" ? "عرضك (د.ع)" : language === "ku" ? "پێشنیارەکەت (د.ع)" : "عرضك (د.ع)"}</Label>
               <Input
                 id="offer-amount"
                 type="number"
-                placeholder={language === "ar" ? "أدخل السعر المقترح" : "نرخی پێشنیارکراو بنووسە"}
+                placeholder={language === "ar" ? "أدخل السعر المقترح" : language === "ku" ? "نرخی پێشنیارکراو بنووسە" : "أدخل السعر المقترح"}
                 value={offerAmount}
                 onChange={(e) => setOfferAmount(e.target.value)}
                 className="text-left"
@@ -1511,17 +1505,17 @@ export default function ProductPage() {
                     </span>
                   ) : (
                     <span className="text-green-600">
-                      {language === "ar" ? "يساوي أو أعلى من السعر المطلوب" : "یەکسانە یان بەرزترە لە نرخی داواکراو"}
+                      {language === "ar" ? "يساوي أو أعلى من السعر المطلوب" : language === "ku" ? "یەکسانە یان بەرزترە لە نرخی داواکراو" : "يساوي أو أعلى من السعر المطلوب"}
                     </span>
                   )}
                 </p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="offer-message">{language === "ar" ? "رسالة للبائع (اختياري)" : "نامە بۆ فرۆشیار (هەڵبژاردەیی)"}</Label>
+              <Label htmlFor="offer-message">{language === "ar" ? "رسالة للبائع (اختياري)" : language === "ku" ? "نامە بۆ فرۆشیار (هەڵبژاردەیی)" : "رسالة للبائع (اختياري)"}</Label>
               <Textarea
                 id="offer-message"
-                placeholder={language === "ar" ? "أضف رسالة توضيحية..." : "نامەیەکی ڕوونکەرەوە زیاد بکە..."}
+                placeholder={language === "ar" ? "أضف رسالة توضيحية..." : language === "ku" ? "نامەیەکی ڕوونکەرەوە زیاد بکە..." : "أضف رسالة توضيحية..."}
                 value={offerMessage}
                 onChange={(e) => setOfferMessage(e.target.value)}
                 rows={3}
@@ -1569,34 +1563,34 @@ export default function ProductPage() {
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right">{language === "ar" ? "الإبلاغ عن المنتج" : "ڕاپۆرتکردنی بەرهەم"}</DialogTitle>
+            <DialogTitle className="text-right">{language === "ar" ? "الإبلاغ عن المنتج" : language === "ku" ? "ڕاپۆرتکردنی بەرهەم" : "الإبلاغ عن المنتج"}</DialogTitle>
             <DialogDescription className="text-right">
-              {language === "ar" ? "ساعدنا في الحفاظ على أمان المنصة بالإبلاغ عن المحتوى المخالف" : "یارمەتیمان بدە لە پاراستنی ئاسایشی پلاتفۆڕمەکە بە ڕاپۆرتکردنی ناوەڕۆکی خلافکار"}
+              {language === "ar" ? "ساعدنا في الحفاظ على أمان المنصة بالإبلاغ عن المحتوى المخالف" : language === "ku" ? "یارمەتیمان بدە لە پاراستنی ئاسایشی پلاتفۆڕمەکە بە ڕاپۆرتکردنی ناوەڕۆکی خلافکار" : "ساعدنا في الحفاظ على أمان المنصة بالإبلاغ عن المحتوى المخالف"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="report-reason">{language === "ar" ? "سبب البلاغ" : "هۆکاری ڕاپۆرت"}</Label>
+              <Label htmlFor="report-reason">{language === "ar" ? "سبب البلاغ" : language === "ku" ? "هۆکاری ڕاپۆرت" : "سبب البلاغ"}</Label>
               <Select value={reportReason} onValueChange={setReportReason}>
                 <SelectTrigger data-testid="select-report-reason">
-                  <SelectValue placeholder={language === "ar" ? "اختر سبب البلاغ" : "هۆکاری ڕاپۆرت هەڵبژێرە"} />
+                  <SelectValue placeholder={language === "ar" ? "اختر سبب البلاغ" : language === "ku" ? "هۆکاری ڕاپۆرت هەڵبژێرە" : "اختر سبب البلاغ"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fake">{language === "ar" ? "منتج مزيف أو مقلد" : "بەرهەمی ساختە یان لەبەرگیراو"}</SelectItem>
-                  <SelectItem value="scam">{language === "ar" ? "احتيال أو نصب" : "فێڵ یان ساختەکاری"}</SelectItem>
-                  <SelectItem value="inappropriate">{language === "ar" ? "محتوى غير لائق" : "ناوەڕۆکی نەشیاو"}</SelectItem>
-                  <SelectItem value="stolen">{language === "ar" ? "منتج مسروق" : "بەرهەمی دزراو"}</SelectItem>
-                  <SelectItem value="misleading">{language === "ar" ? "وصف مضلل" : "وەسفی چەواشەکار"}</SelectItem>
-                  <SelectItem value="prohibited">{language === "ar" ? "منتج محظور" : "بەرهەمی قەدەغەکراو"}</SelectItem>
-                  <SelectItem value="other">{language === "ar" ? "سبب آخر" : "هۆکارێکی تر"}</SelectItem>
+                  <SelectItem value="fake">{language === "ar" ? "منتج مزيف أو مقلد" : language === "ku" ? "بەرهەمی ساختە یان لەبەرگیراو" : "منتج مزيف أو مقلد"}</SelectItem>
+                  <SelectItem value="scam">{language === "ar" ? "احتيال أو نصب" : language === "ku" ? "فێڵ یان ساختەکاری" : "احتيال أو نصب"}</SelectItem>
+                  <SelectItem value="inappropriate">{language === "ar" ? "محتوى غير لائق" : language === "ku" ? "ناوەڕۆکی نەشیاو" : "محتوى غير لائق"}</SelectItem>
+                  <SelectItem value="stolen">{language === "ar" ? "منتج مسروق" : language === "ku" ? "بەرهەمی دزراو" : "منتج مسروق"}</SelectItem>
+                  <SelectItem value="misleading">{language === "ar" ? "وصف مضلل" : language === "ku" ? "وەسفی چەواشەکار" : "وصف مضلل"}</SelectItem>
+                  <SelectItem value="prohibited">{language === "ar" ? "منتج محظور" : language === "ku" ? "بەرهەمی قەدەغەکراو" : "منتج محظور"}</SelectItem>
+                  <SelectItem value="other">{language === "ar" ? "سبب آخر" : language === "ku" ? "هۆکارێکی تر" : "سبب آخر"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="report-details">{language === "ar" ? "تفاصيل إضافية (اختياري)" : "وردەکاری زیادە (هەڵبژاردەیی)"}</Label>
+              <Label htmlFor="report-details">{language === "ar" ? "تفاصيل إضافية (اختياري)" : language === "ku" ? "وردەکاری زیادە (هەڵبژاردەیی)" : "تفاصيل إضافية (اختياري)"}</Label>
               <Textarea
                 id="report-details"
-                placeholder={language === "ar" ? "أضف تفاصيل تساعدنا في فهم المشكلة..." : "وردەکاری زیادە زیاد بکە کە یارمەتیمان بدات لە تێگەیشتنی کێشەکە..."}
+                placeholder={language === "ar" ? "أضف تفاصيل تساعدنا في فهم المشكلة..." : language === "ku" ? "وردەکاری زیادە زیاد بکە کە یارمەتیمان بدات لە تێگەیشتنی کێشەکە..." : "أضف تفاصيل تساعدنا في فهم المشكلة..."}
                 value={reportDetails}
                 onChange={(e) => setReportDetails(e.target.value)}
                 rows={3}
@@ -1605,7 +1599,7 @@ export default function ProductPage() {
             </div>
             {/* Evidence photos */}
             <div className="space-y-2">
-              <Label>{language === "ar" ? "صور توضيحية (اختياري، حتى 5 صور)" : "وێنەی بەڵگە (هەڵبژاردەیی، تا 5 وێنە)"}</Label>
+              <Label>{language === "ar" ? "صور توضيحية (اختياري، حتى 5 صور)" : language === "ku" ? "وێنەی بەڵگە (هەڵبژاردەیی، تا 5 وێنە)" : "صور توضيحية (اختياري، حتى 5 صور)"}</Label>
               <div className="flex flex-wrap gap-2">
                 {reportImages.map((img, i) => (
                   <div key={i} className="relative w-16 h-16">
@@ -1656,7 +1650,7 @@ export default function ProductPage() {
               ) : (
                 <>
                   <Flag className="h-4 w-4 ml-2" />
-                  {language === "ar" ? "إرسال البلاغ" : "ناردنی ڕاپۆرت"}
+                  {language === "ar" ? "إرسال البلاغ" : language === "ku" ? "ناردنی ڕاپۆرت" : "إرسال البلاغ"}
                 </>
               )}
             </Button>
@@ -1679,24 +1673,22 @@ export default function ProductPage() {
       <AlertDialog open={buyNowDialogOpen} onOpenChange={setBuyNowDialogOpen}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
-            <AlertDialogTitle>{language === "ar" ? "تأكيد الطلب" : "دڵنیاکردنەوەی داواکاری"}</AlertDialogTitle>
+            <AlertDialogTitle>{language === "ar" ? "تأكيد الطلب" : language === "ku" ? "دڵنیاکردنەوەی داواکاری" : "تأكيد الطلب"}</AlertDialogTitle>
             <AlertDialogDescription className="text-right">
-              {language === "ar" 
-                ? "سيتم إنشاء الطلب. الدفع عند الاستلام. سيتم مراجعة الطلب من قبل البائع. سيتم إشعارك عند قبول الطلب."
-                : "داواکاری دروست دەکرێت. پارەدان لە کاتی وەرگرتندا. داواکاری لەلایەن فرۆشیارەوە پشکنین دەکرێت. کاتێک داواکاری قبوڵ کرا ئاگاداری دەکرێیتەوە."}
+              {language === "ar" ? "سيتم إنشاء الطلب. الدفع عند الاستلام. سيتم مراجعة الطلب من قبل البائع. سيتم إشعارك عند قبول الطلب." : language === "ku" ? "داواکاری دروست دەکرێت. پارەدان لە کاتی وەرگرتندا. داواکاری لەلایەن فرۆشیارەوە پشکنین دەکرێت. کاتێک داواکاری قبوڵ کرا ئاگاداری دەکرێیتەوە." : "سيتم إنشاء الطلب. الدفع عند الاستلام. سيتم مراجعة الطلب من قبل البائع. سيتم إشعارك عند قبول الطلب."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm font-medium text-blue-900">
-              {language === "ar" ? "الدفع: نقداً عند الاستلام" : "پارەدان: بە پارەی نەقد لە کاتی وەرگرتندا"}
+              {language === "ar" ? "الدفع: نقداً عند الاستلام" : language === "ku" ? "پارەدان: بە پارەی نەقد لە کاتی وەرگرتندا" : "الدفع: نقداً عند الاستلام"}
             </p>
             <p className="text-xs text-blue-700 mt-1">
-              {language === "ar" ? "المراجعة: 1-2 يوم | الشحن: 3-5 أيام" : "پشکنین: 1-2 ڕۆژ | ناردن: 3-5 ڕۆژ"}
+              {language === "ar" ? "المراجعة: 1-2 يوم | الشحن: 3-5 أيام" : language === "ku" ? "پشکنین: 1-2 ڕۆژ | ناردن: 3-5 ڕۆژ" : "المراجعة: 1-2 يوم | الشحن: 3-5 أيام"}
             </p>
           </div>
           <AlertDialogFooter className="flex gap-2 sm:gap-0">
             <AlertDialogCancel disabled={isBuyingNow}>
-              {language === "ar" ? "إلغاء" : "هەڵوەشاندنەوە"}
+              {language === "ar" ? "إلغاء" : language === "ku" ? "هەڵوەشاندنەوە" : "إلغاء"}
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmBuyNow}
@@ -1706,10 +1698,10 @@ export default function ProductPage() {
               {isBuyingNow ? (
                 <>
                   <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                  {language === "ar" ? "جاري المعالجة..." : "چاوەڕێ بکە..."}
+                  {language === "ar" ? "جاري المعالجة..." : language === "ku" ? "چاوەڕێ بکە..." : "جاري المعالجة..."}
                 </>
               ) : (
-                language === "ar" ? "تأكيد الطلب" : "دڵنیاکردنەوە"
+                language === "ar" ? "تأكيد الطلب" : language === "ku" ? "دڵنیاکردنەوە" : "تأكيد الطلب"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

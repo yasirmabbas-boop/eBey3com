@@ -93,19 +93,25 @@ const getNotificationIcon = (type: Notification["type"]) => {
 
 const formatTimeAgo = (date: Date, language: string) => {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  
+
   if (language === "ar") {
     if (seconds < 60) return "الآن";
     if (seconds < 3600) return `منذ ${Math.floor(seconds / 60)} دقيقة`;
     if (seconds < 86400) return `منذ ${Math.floor(seconds / 3600)} ساعة`;
     if (seconds < 604800) return `منذ ${Math.floor(seconds / 86400)} يوم`;
     return `منذ ${Math.floor(seconds / 604800)} أسبوع`;
-  } else {
+  } else if (language === "ku") {
     if (seconds < 60) return "ئێستا";
     if (seconds < 3600) return `${Math.floor(seconds / 60)} خولەک پێش`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)} کاتژمێر پێش`;
     if (seconds < 604800) return `${Math.floor(seconds / 86400)} ڕۆژ پێش`;
     return `${Math.floor(seconds / 604800)} هەفتە پێش`;
+  } else {
+    if (seconds < 60) return "Just now";
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return `${Math.floor(seconds / 604800)} weeks ago`;
   }
 };
 
@@ -253,11 +259,11 @@ export default function NotificationsPage() {
 
   const unreadCount = allNotifications.filter(n => !n.read).length;
 
-  const filterTabs: { key: FilterCategory; label: { ar: string; ku: string }; icon: React.ReactNode }[] = [
-    { key: "all", label: { ar: "الكل", ku: "هەموو" }, icon: <Bell className="h-4 w-4" /> },
-    { key: "buy", label: { ar: "الشراء", ku: "کڕین" }, icon: <Package className="h-4 w-4" /> },
-    { key: "sell", label: { ar: "البيع", ku: "فرۆشتن" }, icon: <Store className="h-4 w-4" /> },
-    { key: "account", label: { ar: "الحساب", ku: "هەژمار" }, icon: <User className="h-4 w-4" /> },
+  const filterTabs: { key: FilterCategory; label: { ar: string; ku: string; en: string }; icon: React.ReactNode }[] = [
+    { key: "all", label: { ar: "الكل", ku: "هەموو", en: "All" }, icon: <Bell className="h-4 w-4" /> },
+    { key: "buy", label: { ar: "الشراء", ku: "کڕین", en: "Buying" }, icon: <Package className="h-4 w-4" /> },
+    { key: "sell", label: { ar: "البيع", ku: "فرۆشتن", en: "Selling" }, icon: <Store className="h-4 w-4" /> },
+    { key: "account", label: { ar: "الحساب", ku: "هەژمار", en: "Account" }, icon: <User className="h-4 w-4" /> },
   ];
 
   const handleNotificationClick = (notification: Notification) => {
@@ -290,13 +296,13 @@ export default function NotificationsPage() {
         <div className="container mx-auto px-4 py-8 text-center" dir="rtl">
           <Bell className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <h1 className="text-xl font-bold mb-2">
-            {language === "ar" ? "الإشعارات" : "ئاگادارییەکان"}
+            {language === "ar" ? "الإشعارات" : language === "ku" ? "ئاگادارییەکان" : "Notifications"}
           </h1>
           <p className="text-muted-foreground mb-4">
-            {language === "ar" ? "يجب تسجيل الدخول لعرض الإشعارات" : "پێویستە بچیتە ژوورەوە بۆ بینینی ئاگادارییەکان"}
+            {language === "ar" ? "يجب تسجيل الدخول لعرض الإشعارات" : language === "ku" ? "پێویستە بچیتە ژوورەوە بۆ بینینی ئاگادارییەکان" : "Please log in to view notifications"}
           </p>
           <Button onClick={() => navigate("/signin")}>
-            {language === "ar" ? "تسجيل الدخول" : "چوونە ژوورەوە"}
+            {language === "ar" ? "تسجيل الدخول" : language === "ku" ? "چوونە ژوورەوە" : "Sign In"}
           </Button>
         </div>
       </Layout>
@@ -310,7 +316,7 @@ export default function NotificationsPage() {
           <div className="flex items-center gap-3">
             <Bell className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold">
-              {language === "ar" ? "الإشعارات" : "ئاگادارییەکان"}
+              {language === "ar" ? "الإشعارات" : language === "ku" ? "ئاگادارییەکان" : "Notifications"}
             </h1>
             {unreadCount > 0 && (
               <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
@@ -327,7 +333,7 @@ export default function NotificationsPage() {
               className="text-xs"
             >
               <CheckCheck className="h-4 w-4 ml-1" />
-              {language === "ar" ? "تحديد الكل كمقروء" : "هەموو وەک خوێندراو"}
+              {language === "ar" ? "تحديد الكل كمقروء" : language === "ku" ? "هەموو وەک خوێندراو" : "Mark all as read"}
             </Button>
           )}
         </div>
@@ -347,7 +353,7 @@ export default function NotificationsPage() {
               data-testid={`filter-tab-${tab.key}`}
             >
               {tab.icon}
-              {tab.label[language === "ku" ? "ku" : "ar"]}
+              {tab.label[language]}
             </button>
           ))}
         </div>
@@ -360,9 +366,9 @@ export default function NotificationsPage() {
           <Card className="p-8 text-center">
             <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              {filterCategory === "all" 
-                ? (language === "ar" ? "لا توجد إشعارات" : "هیچ ئاگادارییەک نییە")
-                : (language === "ar" ? "لا توجد إشعارات في هذه الفئة" : "هیچ ئاگادارییەک لەم بەشەدا نییە")}
+              {filterCategory === "all"
+                ? (language === "ar" ? "لا توجد إشعارات" : language === "ku" ? "هیچ ئاگادارییەک نییە" : "No notifications")
+                : (language === "ar" ? "لا توجد إشعارات في هذه الفئة" : language === "ku" ? "هیچ ئاگادارییەک لەم بەشەدا نییە" : "No notifications in this category")}
             </p>
           </Card>
         ) : (

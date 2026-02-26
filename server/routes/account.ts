@@ -397,6 +397,53 @@ export function registerAccountRoutes(app: Express): void {
     }
   });
 
+  // Request account deletion
+  app.post("/api/account/delete", async (req, res) => {
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Soft-delete: ban the account and anonymize personal data
+      // Actual data purge happens manually within 30 days per privacy policy
+      const { db } = await import("../db");
+      const { users } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+
+      await db.update(users).set({
+        isBanned: true,
+        banReason: "ACCOUNT_DELETION_REQUESTED",
+        bannedAt: new Date(),
+        displayName: "Deleted User",
+        avatar: null,
+        email: null,
+        facebookId: null,
+        facebookLongLivedToken: null,
+        authToken: null,
+        tokenExpiresAt: null,
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
+      }).where(eq(users.id, userId));
+
+      // Destroy the session
+      if (req.session) {
+        req.session.destroy(() => {});
+      }
+
+      console.log(`Account deletion requested for user ${userId} (${user.phone || user.email})`);
+      res.json({ success: true, message: "Account scheduled for deletion" });
+    } catch (error) {
+      console.error("Error processing account deletion:", error);
+      res.status(500).json({ error: "Failed to process account deletion" });
+    }
+  });
+
   // Set default address
   app.post("/api/account/addresses/:id/default", async (req, res) => {
     const userId = await getUserIdFromRequest(req);

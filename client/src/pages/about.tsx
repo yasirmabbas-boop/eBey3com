@@ -8,32 +8,30 @@ export default function About() {
   const { language } = useLanguage();
   
   const menuItems = [
-    { href: "/terms", icon: FileText, label: language === "ar" ? "الشروط والأحكام" : "مەرج و ڕێسا" },
-    { href: "/privacy", icon: Lock, label: language === "ar" ? "سياسة الخصوصية" : "سیاسەتی تایبەتمەندی" },
-    { href: "/security", icon: Shield, label: language === "ar" ? "الأمان" : "پاراستن" },
-    { href: "/security-guide", icon: Shield, label: language === "ar" ? "دليل الأمان" : "ڕێنمایی پاراستن" },
-    { href: "/sell", icon: Store, label: language === "ar" ? "ابدأ كبائع" : "وەک فرۆشیار دەست پێ بکە" },
-    { href: "/contact", icon: Mail, label: language === "ar" ? "اتصل بنا" : "پەیوەندیمان پێوە بکە" },
+    { href: "/terms", icon: FileText, label: language === "ar" ? "الشروط والأحكام" : language === "ku" ? "مەرج و ڕێسا" : "الشروط والأحكام" },
+    { href: "/privacy", icon: Lock, label: language === "ar" ? "سياسة الخصوصية" : language === "ku" ? "سیاسەتی تایبەتمەندی" : "سياسة الخصوصية" },
+    { href: "/security", icon: Shield, label: language === "ar" ? "الأمان" : language === "ku" ? "پاراستن" : "الأمان" },
+    { href: "/security-guide", icon: Shield, label: language === "ar" ? "دليل الأمان" : language === "ku" ? "ڕێنمایی پاراستن" : "دليل الأمان" },
+    { href: "/sell", icon: Store, label: language === "ar" ? "ابدأ كبائع" : language === "ku" ? "وەک فرۆشیار دەست پێ بکە" : "ابدأ كبائع" },
+    { href: "/contact", icon: Mail, label: language === "ar" ? "اتصل بنا" : language === "ku" ? "پەیوەندیمان پێوە بکە" : "اتصل بنا" },
   ];
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 max-w-lg" dir={language === "ar" ? "rtl" : "ltr"}>
         <h1 className="text-2xl font-bold mb-6 text-center">
-          {language === "ar" ? "حول التطبيق" : "دەربارەی ئەپ"}
+          {language === "ar" ? "حول التطبيق" : language === "ku" ? "دەربارەی ئەپ" : "حول التطبيق"}
         </h1>
 
         <Card className="mb-6">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">
-              {language === "ar" ? "اي-بيع" : "ئی-بیع"}
+              {language === "ar" ? "اي-بيع" : language === "ku" ? "ئی-بیع" : "اي-بيع"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {language === "ar" 
-                ? "منصتك الأولى للبيع والشراء في العراق. نوفر بيئة آمنة وموثوقة للتجارة الإلكترونية."
-                : "یەکەم پلاتفۆرمی کڕین و فرۆشتن لە عێراق. ژینگەیەکی پارێزراو و متمانەپێکراو بۆ بازرگانی ئەلیکترۆنی دابین دەکەین."
+              {language === "ar" ? "منصتك الأولى للبيع والشراء في العراق. نوفر بيئة آمنة وموثوقة للتجارة الإلكترونية." : language === "ku" ? "یەکەم پلاتفۆرمی کڕین و فرۆشتن لە عێراق. ژینگەیەکی پارێزراو و متمانەپێکراو بۆ بازرگانی ئەلیکترۆنی دابین دەکەین." : "منصتك الأولى للبيع والشراء في العراق. نوفر بيئة آمنة وموثوقة للتجارة الإلكترونية."
               }
             </p>
           </CardContent>
@@ -57,7 +55,7 @@ export default function About() {
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <Phone className="h-5 w-5" />
-              {language === "ar" ? "تواصل معنا" : "پەیوەندیمان پێوە بکە"}
+              {language === "ar" ? "تواصل معنا" : language === "ku" ? "پەیوەندیمان پێوە بکە" : "تواصل معنا"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -74,7 +72,7 @@ export default function About() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground mt-8">
-          © 2025 {language === "ar" ? "اي بيع. جميع الحقوق محفوظة." : "ئی-بیع. هەموو مافەکان پارێزراون."}
+          © 2025 {language === "ar" ? "اي بيع. جميع الحقوق محفوظة." : language === "ku" ? "ئی-بیع. هەموو مافەکان پارێزراون." : "اي بيع. جميع الحقوق محفوظة."}
         </p>
       </div>
     </Layout>

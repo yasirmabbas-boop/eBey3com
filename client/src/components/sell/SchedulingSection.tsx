@@ -39,21 +39,21 @@ export function SchedulingSection({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />
-          {language === "ar" ? "توقيت المزاد" : "کاتی مزایدە"}
+          {language === "ar" ? "توقيت المزاد" : language === "ku" ? "کاتی مزایدە" : "توقيت المزاد"}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="startTime">
-            {language === "ar" ? "موعد بدء المزاد" : "کاتی دەستپێکردنی مزایدە"}
+            {language === "ar" ? "موعد بدء المزاد" : language === "ku" ? "کاتی دەستپێکردنی مزایدە" : "موعد بدء المزاد"}
           </Label>
           <Select value={startTimeOption} onValueChange={onStartTimeOptionChange}>
             <SelectTrigger data-testid="select-start-time">
-              <SelectValue placeholder={language === "ar" ? "ابدأ فوراً" : "ئێستا دەستپێبکە"} />
+              <SelectValue placeholder={language === "ar" ? "ابدأ فوراً" : language === "ku" ? "ئێستا دەستپێبکە" : "ابدأ فوراً"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="now">{language === "ar" ? "ابدأ فوراً" : "ئێستا دەستپێبکە"}</SelectItem>
-              <SelectItem value="schedule">{language === "ar" ? "جدولة موعد محدد" : "کاتی دیاریکراو"}</SelectItem>
+              <SelectItem value="now">{language === "ar" ? "ابدأ فوراً" : language === "ku" ? "ئێستا دەستپێبکە" : "ابدأ فوراً"}</SelectItem>
+              <SelectItem value="schedule">{language === "ar" ? "جدولة موعد محدد" : language === "ku" ? "کاتی دیاریکراو" : "جدولة موعد محدد"}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -61,7 +61,7 @@ export function SchedulingSection({
         {startTimeOption === "schedule" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-blue-50 rounded-lg">
             <div className="space-y-2">
-              <Label htmlFor="startDate">{language === "ar" ? "تاريخ البدء" : "ڕێکەوتی دەستپێک"} *</Label>
+              <Label htmlFor="startDate">{language === "ar" ? "تاريخ البدء" : language === "ku" ? "ڕێکەوتی دەستپێک" : "تاريخ البدء"} *</Label>
               <Input 
                 id="startDate" 
                 type="date"
@@ -77,10 +77,10 @@ export function SchedulingSection({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="startHour">{language === "ar" ? "وقت البدء" : "کاتی دەستپێک"} *</Label>
+              <Label htmlFor="startHour">{language === "ar" ? "وقت البدء" : language === "ku" ? "کاتی دەستپێک" : "وقت البدء"} *</Label>
               <Select value={startHour} onValueChange={(v) => onInputChange("startHour", v)}>
                 <SelectTrigger data-testid="select-start-hour" className={validationErrors.startHour ? "border-red-500" : ""}>
-                  <SelectValue placeholder={language === "ar" ? "اختر الساعة" : "کاتژمێر هەڵبژێرە"} />
+                  <SelectValue placeholder={language === "ar" ? "اختر الساعة" : language === "ku" ? "کاتژمێر هەڵبژێرە" : "اختر الساعة"} />
                 </SelectTrigger>
                 <SelectContent>
                   {HOURS.map(({ value, label }) => (
@@ -96,15 +96,13 @@ export function SchedulingSection({
         )}
         
         <p className="text-xs text-muted-foreground">
-          ⏰ {language === "ar" 
-            ? "يجب أن تكون مدة المزاد 24 ساعة على الأقل" 
-            : "ماوەی مزایدە دەبێت لانیکەم ٢٤ کاتژمێر بێت"}
+          ⏰ {language === "ar" ? "يجب أن تكون مدة المزاد 24 ساعة على الأقل" : language === "ku" ? "ماوەی مزایدە دەبێت لانیکەم ٢٤ کاتژمێر بێت" : "يجب أن تكون مدة المزاد 24 ساعة على الأقل"}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-orange-50 rounded-lg">
           <div className="space-y-2">
             <Label htmlFor="endDate">
-              {language === "ar" ? "تاريخ انتهاء المزاد" : "ڕێکەوتی کۆتاییی مزایدە"} *
+              {language === "ar" ? "تاريخ انتهاء المزاد" : language === "ku" ? "ڕێکەوتی کۆتاییی مزایدە" : "تاريخ انتهاء المزاد"} *
             </Label>
             <Input 
               id="endDate" 
@@ -121,10 +119,10 @@ export function SchedulingSection({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="endHour">{language === "ar" ? "وقت الانتهاء" : "کاتی کۆتایی"} *</Label>
+            <Label htmlFor="endHour">{language === "ar" ? "وقت الانتهاء" : language === "ku" ? "کاتی کۆتایی" : "وقت الانتهاء"} *</Label>
             <Select value={endHour} onValueChange={(v) => onInputChange("endHour", v)}>
               <SelectTrigger data-testid="select-end-hour" className={validationErrors.endHour ? "border-red-500" : ""}>
-                <SelectValue placeholder={language === "ar" ? "اختر الساعة" : "کاتژمێر هەڵبژێرە"} />
+                <SelectValue placeholder={language === "ar" ? "اختر الساعة" : language === "ku" ? "کاتژمێر هەڵبژێرە" : "اختر الساعة"} />
               </SelectTrigger>
               <SelectContent>
                 {HOURS.map(({ value, label }) => (

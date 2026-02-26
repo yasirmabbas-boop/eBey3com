@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, Phone, Plus, Pencil, Trash2, CheckCircle, Star, Camera, User, Globe } from "lucide-react";
+import { Loader2, MapPin, Phone, Plus, Pencil, Trash2, CheckCircle, Star, Camera, User, Globe, AlertTriangle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { apiRequest, authFetch } from "@/lib/queryClient";
 import { getUserAvatarSrc } from "@/lib/avatar";
 import { Layout } from "@/components/layout";
@@ -39,6 +40,9 @@ export default function Settings() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
+  // Delete account state
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Address dialog state
   const [showAddressDialog, setShowAddressDialog] = useState(false);
@@ -596,6 +600,94 @@ export default function Settings() {
                   )}
                 </SelectContent>
               </Select>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Delete Account Section */}
+        <div className="mt-8">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-red-600">
+            <AlertTriangle className="h-5 w-5" />
+            {language === "ar" ? "حذف الحساب" : language === "ku" ? "سڕینەوەی هەژمار" : "Delete Account"}
+          </h2>
+          <Card className="border-red-200">
+            <CardHeader>
+              <CardTitle className="text-base text-red-700">
+                {language === "ar" ? "حذف حسابك نهائياً" : language === "ku" ? "سڕینەوەی هەژمارەکەت بە تەواوی" : "Permanently delete your account"}
+              </CardTitle>
+              <CardDescription>
+                {language === "ar"
+                  ? "سيتم حذف جميع بياناتك الشخصية خلال 30 يوماً. هذا الإجراء لا يمكن التراجع عنه."
+                  : language === "ku"
+                    ? "هەموو داتا کەسییەکانت لە ماوەی 30 ڕۆژدا دەسڕدرێنەوە. ئەم کارە ناگەڕێتەوە."
+                    : "All your personal data will be deleted within 30 days. This action cannot be undone."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="gap-2">
+                    <Trash2 className="h-4 w-4" />
+                    {language === "ar" ? "حذف حسابي" : language === "ku" ? "هەژمارەکەم بسڕەوە" : "Delete My Account"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent dir={language === "en" ? "ltr" : "rtl"}>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {language === "ar" ? "هل أنت متأكد؟" : language === "ku" ? "دڵنیایت؟" : "Are you sure?"}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {language === "ar"
+                        ? "سيتم حذف حسابك وجميع بياناتك الشخصية نهائياً. لن تتمكن من استرجاع حسابك بعد ذلك."
+                        : language === "ku"
+                          ? "هەژمارەکەت و هەموو داتا کەسییەکانت بە تەواوی دەسڕدرێنەوە. ناتوانیت هەژمارەکەت بگەڕێنیتەوە."
+                          : "Your account and all personal data will be permanently deleted. You will not be able to recover your account."}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>
+                      {language === "ar" ? "إلغاء" : language === "ku" ? "هەڵوەشاندنەوە" : "Cancel"}
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-red-600 hover:bg-red-700"
+                      disabled={isDeletingAccount}
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        setIsDeletingAccount(true);
+                        try {
+                          const res = await authFetch("/api/account/delete", { method: "POST" });
+                          if (!res.ok) throw new Error("Failed");
+                          toast({
+                            title: language === "ar" ? "تم حذف الحساب" : language === "ku" ? "هەژمار سڕایەوە" : "Account deleted",
+                            description: language === "ar"
+                              ? "سيتم حذف بياناتك خلال 30 يوماً"
+                              : language === "ku"
+                                ? "داتاکانت لە ماوەی 30 ڕۆژدا دەسڕدرێنەوە"
+                                : "Your data will be deleted within 30 days",
+                          });
+                          // Force logout
+                          queryClient.setQueryData([AUTH_QUERY_KEY], null);
+                          window.location.href = "/";
+                        } catch {
+                          toast({
+                            title: language === "ar" ? "خطأ" : language === "ku" ? "هەڵە" : "Error",
+                            description: language === "ar" ? "فشل في حذف الحساب" : language === "ku" ? "سڕینەوەی هەژمار سەرکەوتوو نەبوو" : "Failed to delete account",
+                            variant: "destructive",
+                          });
+                        } finally {
+                          setIsDeletingAccount(false);
+                        }
+                      }}
+                    >
+                      {isDeletingAccount ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        language === "ar" ? "نعم، احذف حسابي" : language === "ku" ? "بەڵێ، هەژمارەکەم بسڕەوە" : "Yes, delete my account"
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </CardContent>
           </Card>
         </div>

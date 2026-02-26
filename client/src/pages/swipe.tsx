@@ -259,9 +259,7 @@ export default function SwipePage() {
     if (!user) {
       toast({
         title: t("loginRequired"),
-        description: language === "ar"
-          ? "يجب عليك تسجيل الدخول للمزايدة"
-          : "دەبێت بچیتە ژوورەوە بۆ مزایدەکردن",
+        description: language === "ar" ? "يجب عليك تسجيل الدخول للمزايدة" : language === "ku" ? "دەبێت بچیتە ژوورەوە بۆ مزایدەکردن" : "يجب عليك تسجيل الدخول للمزايدة",
         variant: "destructive",
       });
       navigate(`/signin?redirect=/swipe`);
@@ -275,9 +273,7 @@ export default function SwipePage() {
     if (!user) {
       toast({
         title: t("loginRequired"),
-        description: language === "ar"
-          ? "يجب عليك تسجيل الدخول لتقديم عرض"
-          : "دەبێت بچیتە ژوورەوە بۆ پێشکەشکردنی عەرز",
+        description: language === "ar" ? "يجب عليك تسجيل الدخول لتقديم عرض" : language === "ku" ? "دەبێت بچیتە ژوورەوە بۆ پێشکەشکردنی عەرز" : "يجب عليك تسجيل الدخول لتقديم عرض",
         variant: "destructive",
       });
       navigate(`/signin?redirect=/swipe`);
@@ -310,7 +306,7 @@ export default function SwipePage() {
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-white/70">
-            {language === "ar" ? "جاري التحميل..." : "بارکردن..."}
+            {language === "ar" ? "جاري التحميل..." : language === "ku" ? "بارکردن..." : "جاري التحميل..."}
           </p>
         </div>
       </div>
@@ -324,16 +320,14 @@ export default function SwipePage() {
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2 text-white">
-            {language === "ar" ? "حدث خطأ" : "هەڵەیەک ڕوویدا"}
+            {language === "ar" ? "حدث خطأ" : language === "ku" ? "هەڵەیەک ڕوویدا" : "حدث خطأ"}
           </h2>
           <p className="text-white/70 mb-4">
-            {language === "ar"
-              ? "فشل في تحميل المنتجات"
-              : "بارکردنی بەرهەمەکان شکستی هێنا"}
+            {language === "ar" ? "فشل في تحميل المنتجات" : language === "ku" ? "بارکردنی بەرهەمەکان شکستی هێنا" : "فشل في تحميل المنتجات"}
           </p>
           <Button onClick={() => refetch()}>
             <RotateCw className="h-4 w-4 ml-2" />
-            {language === "ar" ? "إعادة المحاولة" : "دووبارە هەوڵ بدەرەوە"}
+            {language === "ar" ? "إعادة المحاولة" : language === "ku" ? "دووبارە هەوڵ بدەرەوە" : "إعادة المحاولة"}
           </Button>
         </div>
       </div>
@@ -348,17 +342,15 @@ export default function SwipePage() {
         <div className="flex items-center justify-center h-full px-4">
           <div className="text-center">
             <p className="text-xl font-bold mb-2 text-white">
-              {language === "ar" ? "لا توجد منتجات" : "هیچ بەرهەمێک نییە"}
+              {language === "ar" ? "لا توجد منتجات" : language === "ku" ? "هیچ بەرهەمێک نییە" : "لا توجد منتجات"}
             </p>
             <p className="text-white/70 mb-4">
-              {language === "ar"
-                ? "جرب تغيير الفلاتر"
-                : "فلتەرەکان بگۆڕە"}
+              {language === "ar" ? "جرب تغيير الفلاتر" : language === "ku" ? "فلتەرەکان بگۆڕە" : "جرب تغيير الفلاتر"}
             </p>
             <Button
               onClick={() => setFilters({ categories: [], saleType: 'all', conditions: [] })}
             >
-              {language === "ar" ? "مسح الفلاتر" : "سڕینەوەی فلتەرەکان"}
+              {language === "ar" ? "مسح الفلاتر" : language === "ku" ? "سڕینەوەی فلتەرەکان" : "مسح الفلاتر"}
             </Button>
           </div>
         </div>
@@ -472,14 +464,14 @@ export default function SwipePage() {
               }}
               onRequirePhoneVerification={() => {
                 toast({
-                  title: language === "ar" ? "التحقق من الهاتف مطلوب" : "پشتڕاستکردنەوەی مۆبایل پێویستە",
+                  title: language === "ar" ? "التحقق من الهاتف مطلوب" : language === "ku" ? "پشتڕاستکردنەوەی مۆبایل پێویستە" : "التحقق من الهاتف مطلوب",
                   variant: "destructive",
                 });
               }}
               onBidSuccess={() => {
                 setBiddingOpen(false);
                 toast({
-                  title: language === "ar" ? "تم تقديم المزايدة" : "مزایدەکە سەرکەوتوو بوو",
+                  title: language === "ar" ? "تم تقديم المزايدة" : language === "ku" ? "مزایدەکە سەرکەوتوو بوو" : "تم تقديم المزايدة",
                 });
               }}
               isWinning={false}

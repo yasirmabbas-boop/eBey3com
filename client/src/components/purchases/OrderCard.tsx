@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/lib/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,32 +60,39 @@ interface OrderCardProps {
   onReportIssue: (purchase: Purchase) => void;
 }
 
-const getStatusConfig = (status: string) => {
+const getStatusConfig = (status: string, language: string = "ar") => {
+  const labels: Record<string, { ar: string; ku: string; en: string }> = {
+    delivered: { ar: "تم التسليم", ku: "گەیەندرا", en: "Delivered" },
+    shipped: { ar: "قيد التوصيل", ku: "لە ڕێگایە", en: "In Transit" },
+    processing: { ar: "قيد التجهيز", ku: "لە ئامادەکردن", en: "Processing" },
+    returned: { ar: "مرتجع", ku: "گەڕێندراوە", en: "Returned" },
+  };
+  const lang = language as "ar" | "ku" | "en";
   switch (status) {
     case "delivered":
     case "completed":
       return {
-        label: "تم التسليم",
+        label: labels.delivered[lang] || labels.delivered.en,
         color: "bg-green-100 text-green-700 border-green-200",
         icon: CheckCircle,
       };
     case "shipped":
     case "in_transit":
       return {
-        label: "قيد التوصيل",
+        label: labels.shipped[lang] || labels.shipped.en,
         color: "bg-blue-100 text-blue-700 border-blue-200",
         icon: Truck,
       };
     case "processing":
     case "pending":
       return {
-        label: "قيد التجهيز",
+        label: labels.processing[lang] || labels.processing.en,
         color: "bg-yellow-100 text-yellow-700 border-yellow-200",
         icon: Clock,
       };
     case "returned":
       return {
-        label: "مرتجع",
+        label: labels.returned[lang] || labels.returned.en,
         color: "bg-red-100 text-red-700 border-red-200",
         icon: RotateCcw,
       };
@@ -106,8 +114,9 @@ export function OrderCard({
   onRequestReturn,
   onReportIssue,
 }: OrderCardProps) {
+  const { language } = useLanguage();
   const status = purchase.status || purchase.deliveryStatus || "pending";
-  const statusConfig = getStatusConfig(status);
+  const statusConfig = getStatusConfig(status, language);
   const StatusIcon = statusConfig.icon;
   const isDelivered = status === "delivered" || status === "completed";
   const isShipped = status === "shipped" || status === "in_transit";
@@ -115,7 +124,8 @@ export function OrderCard({
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString("ar-IQ", {
+    const locale = language === "ar" ? "ar-IQ" : language === "ku" ? "ckb-IQ" : "en-US";
+    return date.toLocaleDateString(locale, {
       day: "numeric",
       month: "short",
       year: "numeric",

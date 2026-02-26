@@ -341,10 +341,10 @@ export default function Home() {
         {/* Recently Viewed */}
         {recentlyViewedProducts.length > 0 && (
           <Section 
-            title={language === "ar" ? "شوهد مؤخراً" : "تازە بینراوەکان"}
+            title={language === "ar" ? "شوهد مؤخراً" : language === "ku" ? "تازە بینراوەکان" : "شوهد مؤخراً"}
             icon={<Eye className="h-4 w-4 text-blue-600" />}
             seeAllLink="/browse/recently-viewed"
-            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+            seeAllText={language === "ar" ? "عرض الكل" : language === "ku" ? "هەموو" : "All"}
           >
             {recentlyViewedProducts.map((product) => (
               <div key={product.id} className="snap-start">
@@ -357,10 +357,10 @@ export default function Home() {
         {/* Favorites / Watchlist */}
         {favoriteProducts.length > 0 && (
           <Section 
-            title={language === "ar" ? "المفضلة" : "دڵخوازەکان"}
+            title={language === "ar" ? "المفضلة" : language === "ku" ? "دڵخوازەکان" : "المفضلة"}
             icon={<Heart className="h-4 w-4 text-red-500" />}
             seeAllLink="/favorites"
-            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+            seeAllText={language === "ar" ? "عرض الكل" : language === "ku" ? "هەموو" : "All"}
           >
             {favoriteProducts.map((product) => (
               <div key={product.id} className="snap-start">
@@ -373,10 +373,10 @@ export default function Home() {
         {/* Because you viewed X - similar items */}
         {similarData?.similar && similarData.similar.length > 0 && (
           <Section
-            title={language === "ar" ? "منتجات مشابهة لَمَا شاهدته" : "بەرهەمی هاوشێوە بۆ ئەوەی بینیت"}
+            title={language === "ar" ? "منتجات مشابهة لَمَا شاهدته" : language === "ku" ? "بەرهەمی هاوشێوە بۆ ئەوەی بینیت" : "منتجات مشابهة لَمَا شاهدته"}
             icon={<ThumbsUp className="h-4 w-4 text-emerald-600" />}
             seeAllLink="/search"
-            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+            seeAllText={language === "ar" ? "عرض الكل" : language === "ku" ? "هەموو" : "All"}
           >
             {similarData.similar.map((product: any) => (
               <div key={product.id} className="snap-start">
@@ -399,7 +399,7 @@ export default function Home() {
               title={group.label}
               icon={<CatIcon className="h-4 w-4 text-primary" />}
               seeAllLink={`/search?category=${encodeURIComponent(group.category)}`}
-              seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+              seeAllText={language === "ar" ? "عرض الكل" : language === "ku" ? "هەموو" : "All"}
             >
               {group.listings.map((product: any) => (
                 <div key={product.id} className="snap-start">
@@ -413,10 +413,10 @@ export default function Home() {
         {/* Recommended for you */}
         {recommendations?.recommended && recommendations.recommended.length > 0 && (
           <Section
-            title={language === "ar" ? "مقترح لك" : "پێشنیارکراو بۆ تۆ"}
+            title={language === "ar" ? "مقترح لك" : language === "ku" ? "پێشنیارکراو بۆ تۆ" : "مقترح لك"}
             icon={<Star className="h-4 w-4 text-yellow-500" />}
             seeAllLink="/search"
-            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+            seeAllText={language === "ar" ? "عرض الكل" : language === "ku" ? "هەموو" : "All"}
           >
             {recommendations.recommended.map((product: any) => (
               <div key={product.id} className="snap-start">
@@ -428,10 +428,10 @@ export default function Home() {
 
         {/* New Arrivals */}
         <Section 
-          title={language === "ar" ? "جديد الآن" : "تازەکان"}
+          title={language === "ar" ? "جديد الآن" : language === "ku" ? "تازەکان" : "جديد الآن"}
           icon={<Sparkles className="h-4 w-4 text-purple-600" />}
           seeAllLink="/search?sort=newest"
-          seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+          seeAllText={language === "ar" ? "عرض الكل" : language === "ku" ? "هەموو" : "All"}
         >
           {isLoading ? <LoadingSkeleton /> : (
             newArrivals.map((product) => (
@@ -445,10 +445,10 @@ export default function Home() {
         {/* Ending Soon (Auctions) */}
         {endingSoon.length > 0 && (
           <Section 
-            title={language === "ar" ? "ينتهي قريباً" : "زوو دەکوژرێتەوە"}
+            title={language === "ar" ? "ينتهي قريباً" : language === "ku" ? "زوو دەکوژرێتەوە" : "Ending soon"}
             icon={<Timer className="h-4 w-4 text-orange-600" />}
             seeAllLink="/search?saleType=auction&sort=ending_soon"
-            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+            seeAllText={language === "ar" ? "عرض الكل" : language === "ku" ? "هەموو" : "All"}
           >
             {endingSoon.map((product) => (
               <div key={product.id} className="snap-start">
@@ -461,10 +461,10 @@ export default function Home() {
         {/* Popular in your area */}
         {recommendations?.popularInArea && recommendations.popularInArea.length > 0 && (
           <Section
-            title={language === "ar" ? "رائج في منطقتك" : "بەناوبانگ لە ناوچەکەت"}
+            title={language === "ar" ? "رائج في منطقتك" : language === "ku" ? "بەناوبانگ لە ناوچەکەت" : "رائج في منطقتك"}
             icon={<MapPin className="h-4 w-4 text-green-500" />}
             seeAllLink="/search"
-            seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+            seeAllText={language === "ar" ? "عرض الكل" : language === "ku" ? "هەموو" : "All"}
           >
             {recommendations.popularInArea.map((product: any) => (
               <div key={product.id} className="snap-start">
@@ -476,10 +476,10 @@ export default function Home() {
 
         {/* Trending */}
         <Section 
-          title={language === "ar" ? "الأكثر رواجاً" : "ترێند"}
+          title={language === "ar" ? "الأكثر رواجاً" : language === "ku" ? "ترێند" : "الأكثر رواجاً"}
           icon={<TrendingUp className="h-4 w-4 text-indigo-600" />}
           seeAllLink="/search?sort=views"
-          seeAllText={language === "ar" ? "عرض الكل" : "هەموو"}
+          seeAllText={language === "ar" ? "عرض الكل" : language === "ku" ? "هەموو" : "All"}
         >
           {isLoading ? <LoadingSkeleton /> : (
             mostViewed.map((product) => (
@@ -493,7 +493,7 @@ export default function Home() {
         {displayProducts.length === 0 && !isLoading && (
           <div className="text-center py-12 px-4">
             <p className="text-gray-500">
-              {language === "ar" ? "لا توجد منتجات حالياً" : "هیچ بەرهەمێک نییە"}
+              {language === "ar" ? "لا توجد منتجات حالياً" : language === "ku" ? "هیچ بەرهەمێک نییە" : "لا توجد منتجات حالياً"}
             </p>
           </div>
         )}

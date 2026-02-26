@@ -511,7 +511,7 @@ export default function SearchPage() {
           <div className="bg-gradient-to-l from-primary via-[#1b2b5a] to-[#0f172a] text-white rounded-xl p-6 mb-6 shadow-[var(--shadow-2)]">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
-                {sellerInfo.displayName?.charAt(0) || sellerInfo.username?.charAt(0) || (language === "ar" ? "م" : "د")}
+                {sellerInfo.displayName?.charAt(0) || sellerInfo.username?.charAt(0) || (language === "ar" ? "م" : language === "ku" ? "د" : "م")}
               </div>
               <div className="flex-1">
                 <h2 className="text-xl font-bold">{t("store")} {sellerInfo.displayName || sellerInfo.username}</h2>
@@ -680,9 +680,7 @@ export default function SearchPage() {
                           </div>
                           {!searchQuery && (
                             <p className="text-xs text-muted-foreground/70 mt-1 mr-6">
-                              {language === "ar" 
-                                ? "متاح فقط عند البحث" 
-                                : "تەنها لە کاتی گەڕاندا بەردەستە"}
+                              {language === "ar" ? "متاح فقط عند البحث" : language === "ku" ? "تەنها لە کاتی گەڕاندا بەردەستە" : "متاح فقط عند البحث"}
                             </p>
                           )}
                         </div>
@@ -825,7 +823,7 @@ export default function SearchPage() {
                 }
               `}
             >
-              {language === "ar" ? "مزاد" : "مزایدە"}
+              {language === "ar" ? "مزاد" : language === "ku" ? "مزایدە" : "مزاد"}
             </button>
             <button
               onClick={() => quickToggleSaleType("fixed")}
@@ -837,7 +835,7 @@ export default function SearchPage() {
                 }
               `}
             >
-              {language === "ar" ? "شراء فوري" : "کڕینی خێرا"}
+              {language === "ar" ? "شراء فوري" : language === "ku" ? "کڕینی خێرا" : "شراء فوري"}
             </button>
             <div className="w-px h-6 bg-border flex-shrink-0 self-center" />
             {CATEGORIES.map((cat) => (
@@ -956,11 +954,11 @@ export default function SearchPage() {
             ) : (
               <div className="text-center py-12">
                 <p className="text-muted-foreground mb-4">
-                  {language === "ar" ? "لا توجد منتجات متاحة حالياً" : "هیچ بەرهەمێک بەردەست نییە لە ئێستادا"}
+                  {language === "ar" ? "لا توجد منتجات متاحة حالياً" : language === "ku" ? "هیچ بەرهەمێک بەردەست نییە لە ئێستادا" : "لا توجد منتجات متاحة حالياً"}
                 </p>
                 <Link href="/">
                   <Button variant="outline">
-                    {language === "ar" ? "العودة للرئيسية" : "گەڕانەوە بۆ سەرەکی"}
+                    {language === "ar" ? "العودة للرئيسية" : language === "ku" ? "گەڕانەوە بۆ سەرەکی" : "العودة للرئيسية"}
                   </Button>
                 </Link>
               </div>
@@ -1017,7 +1015,7 @@ export default function SearchPage() {
                           {showLowStockBadge && (
                             <div className="mb-1.5">
                               <Badge className="bg-amber-500 text-white border-0 text-[8px] sm:text-[10px] px-1.5 py-0.5">
-                                {remaining <= 1 ? (language === "ar" ? "آخر قطعة" : "یەک دانە ماوە") : (language === "ar" ? `آخر ${remaining} قطع` : `${remaining} دانە ماوە`)}
+                                {remaining <= 1 ? (language === "ar" ? "آخر قطعة" : language === "ku" ? "یەک دانە ماوە" : "آخر قطعة") : (language === "ar" ? `آخر ${remaining} قطع` : `${remaining} دانە ماوە`)}
                               </Badge>
                             </div>
                           )}
@@ -1031,7 +1029,7 @@ export default function SearchPage() {
                               </p>
                             ) : shippingType === "pickup" ? (
                               <p className="text-[10px] sm:text-xs text-gray-500">
-                                {language === "ar" ? "استلام شخصي" : "وەرگرتنی کەسی"}
+                                {language === "ar" ? "استلام شخصي" : language === "ku" ? "وەرگرتنی کەسی" : "استلام شخصي"}
                               </p>
                             ) : (
                               <p className="text-[10px] sm:text-xs text-green-600">
@@ -1058,7 +1056,7 @@ export default function SearchPage() {
           )}
           {!isLoading && !hasMoreProducts && mergedListings.length > 20 && (
             <p className="text-center text-muted-foreground text-sm py-6">
-              {language === "ar" ? "لا توجد منتجات أخرى" : "بەرهەمی تر نییە"}
+              {language === "ar" ? "لا توجد منتجات أخرى" : language === "ku" ? "بەرهەمی تر نییە" : "لا توجد منتجات أخرى"}
             </p>
           )}
         </div>

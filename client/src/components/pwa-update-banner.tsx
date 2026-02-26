@@ -39,9 +39,7 @@ export function PWAUpdateBanner() {
         <div className="flex items-center gap-2 text-sm">
           <RefreshCw className="h-4 w-4 animate-spin" />
           <span>
-            {language === "ar" 
-              ? "تتوفر نسخة جديدة من التطبيق" 
-              : "وەشانێکی نوێ بەردەستە"}
+            {language === "ar" ? "تتوفر نسخة جديدة من التطبيق" : language === "ku" ? "وەشانێکی نوێ بەردەستە" : "تتوفر نسخة جديدة من التطبيق"}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -52,7 +50,7 @@ export function PWAUpdateBanner() {
             className="text-xs px-3 py-1 h-7"
             data-testid="btn-refresh-app"
           >
-            {language === "ar" ? "تحديث الآن" : "نوێکردنەوە"}
+            {language === "ar" ? "تحديث الآن" : language === "ku" ? "نوێکردنەوە" : "تحديث الآن"}
           </Button>
           <button 
             onClick={handleDismiss}

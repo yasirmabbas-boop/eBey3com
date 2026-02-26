@@ -75,10 +75,8 @@ export function BiddingWindow({
       const endTime = typeof auctionEndTime === "string" ? new Date(auctionEndTime) : auctionEndTime;
       if (!isNaN(endTime.getTime()) && endTime.getTime() <= new Date().getTime()) {
         toast({
-          title: language === "ar" ? "انتهى المزاد" : "مزایدە تەواو بوو",
-          description: language === "ar" 
-            ? "انتهى المزاد ولا يمكن تقديم مزايدات جديدة"
-            : "مزایدە کۆتایی هات و ناتوانیت مزایدەی نوێ بکەیت",
+          title: language === "ar" ? "انتهى المزاد" : language === "ku" ? "مزایدە تەواو بوو" : "انتهى المزاد",
+          description: language === "ar" ? "انتهى المزاد ولا يمكن تقديم مزايدات جديدة" : language === "ku" ? "مزایدە کۆتایی هات و ناتوانیت مزایدەی نوێ بکەیت" : "انتهى المزاد ولا يمكن تقديم مزايدات جديدة",
           variant: "destructive",
         });
         return;
@@ -87,7 +85,7 @@ export function BiddingWindow({
 
     if (bidAmount < minBidAmount) {
       toast({
-        title: language === "ar" ? "مبلغ غير كافٍ" : "بڕی پارە بەس نییە",
+        title: language === "ar" ? "مبلغ غير كافٍ" : language === "ku" ? "بڕی پارە بەس نییە" : "مبلغ غير كافٍ",
         description: language === "ar" 
           ? `الحد الأدنى للمزايدة هو ${minBidAmount.toLocaleString()} د.ع`
           : `کەمترین مزایدە ${minBidAmount.toLocaleString()} د.ع`,
@@ -109,7 +107,7 @@ export function BiddingWindow({
       }
 
       toast({
-        title: language === "ar" ? "تم تقديم المزايدة بنجاح! 🎉" : "مزایدە سەرکەوتوو بوو! 🎉",
+        title: language === "ar" ? "تم تقديم المزايدة بنجاح! 🎉" : language === "ku" ? "مزایدە سەرکەوتوو بوو! 🎉" : "تم تقديم المزايدة بنجاح! 🎉",
         description: language === "ar"
           ? `مزايدتك: ${bidAmount.toLocaleString()} د.ع`
           : `مزایدەکەت: ${bidAmount.toLocaleString()} د.ع`,
@@ -117,10 +115,8 @@ export function BiddingWindow({
 
       if (data.extended) {
         toast({
-          title: language === "ar" ? "تم تمديد المزاد! ⏰" : "مزایدە درێژکرایەوە! ⏰",
-          description: language === "ar" 
-            ? "تم إضافة دقيقتين للمزاد"
-            : "٢ خولەک زیادکرا بۆ مزایدە",
+          title: language === "ar" ? "تم تمديد المزاد! ⏰" : language === "ku" ? "مزایدە درێژکرایەوە! ⏰" : "تم تمديد المزاد! ⏰",
+          description: language === "ar" ? "تم إضافة دقيقتين للمزاد" : language === "ku" ? "٢ خولەک زیادکرا بۆ مزایدە" : "تم إضافة دقيقتين للمزاد",
         });
       }
 
@@ -131,7 +127,7 @@ export function BiddingWindow({
       setBidAmount(bidAmount + 1000);
     } catch (error: any) {
       toast({
-        title: language === "ar" ? "فشل في المزايدة" : "مزایدە سەرکەوتوو نەبوو",
+        title: language === "ar" ? "فشل في المزايدة" : language === "ku" ? "مزایدە سەرکەوتوو نەبوو" : "فشل في المزايدة",
         description: error.message,
         variant: "destructive",
       });
@@ -156,23 +152,23 @@ export function BiddingWindow({
         <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
           <Gavel className="h-5 w-5" />
           <h3 className="font-bold">
-            {language === "ar" ? "قدّم مزايدتك" : "مزایدەکەت پێشکەش بکە"}
+            {language === "ar" ? "قدّم مزايدتك" : language === "ku" ? "مزایدەکەت پێشکەش بکە" : "قدّم مزايدتك"}
           </h3>
         </div>
 
         {isWinning && (
           <div className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 p-2 rounded-lg text-sm text-center font-semibold">
-            {language === "ar" ? "أنت صاحب أعلى مزايدة حالياً! 🏆" : "تۆ بەرزترین مزایدەکاریت! 🏆"}
+            {language === "ar" ? "أنت صاحب أعلى مزايدة حالياً! 🏆" : language === "ku" ? "تۆ بەرزترین مزایدەکاریت! 🏆" : "أنت صاحب أعلى مزايدة حالياً! 🏆"}
           </div>
         )}
 
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-              {language === "ar" ? "السعر الحالي:" : "نرخی ئێستا:"}
+              {language === "ar" ? "السعر الحالي:" : language === "ku" ? "نرخی ئێستا:" : "السعر الحالي:"}
             </span>
             <span className="font-bold text-lg text-purple-700 dark:text-purple-300">
-              {currentBid.toLocaleString()} {language === "ar" ? "د.ع" : "د.ع"}
+              {currentBid.toLocaleString()} {language === "ar" ? "د.ع" : language === "ku" ? "د.ع" : "د.ع"}
             </span>
           </div>
 
@@ -237,12 +233,12 @@ export function BiddingWindow({
             {isSubmitting ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin ml-2" />
-                {language === "ar" ? "جارٍ المزايدة..." : "مزایدەکردن..."}
+                {language === "ar" ? "جارٍ المزايدة..." : language === "ku" ? "مزایدەکردن..." : "جارٍ المزايدة..."}
               </>
             ) : (
               <>
                 <Gavel className="h-5 w-5 ml-2" />
-                {language === "ar" ? "زايد الآن" : "ئێستا مزایدە بکە"}
+                {language === "ar" ? "زايد الآن" : language === "ku" ? "ئێستا مزایدە بکە" : "زايد الآن"}
               </>
             )}
           </Button>
@@ -251,7 +247,7 @@ export function BiddingWindow({
         <p className="text-xs text-gray-500 text-center">
           {totalBids > 0 
             ? (language === "ar" ? `${totalBids} مزايدة حتى الآن` : `${totalBids} مزایدە هەتا ئێستا`)
-            : (language === "ar" ? "كن أول المزايدين!" : "یەکەم مزایدەکار بە!")}
+            : (language === "ar" ? "كن أول المزايدين!" : language === "ku" ? "یەکەم مزایدەکار بە!" : "كن أول المزايدين!")}
         </p>
       </CardContent>
     </Card>

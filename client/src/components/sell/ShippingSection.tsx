@@ -64,13 +64,13 @@ export function ShippingSection({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MapPin className="h-5 w-5 text-primary" />
-          {language === "ar" ? "الموقع والشحن" : "شوێن و گواستنەوە"}
+          {language === "ar" ? "الموقع والشحن" : language === "ku" ? "شوێن و گواستنەوە" : "الموقع والشحن"}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="sellerName">{language === "ar" ? "اسم البائع" : "ناوی فرۆشیار"} *</Label>
+            <Label htmlFor="sellerName">{language === "ar" ? "اسم البائع" : language === "ku" ? "ناوی فرۆشیار" : "اسم البائع"} *</Label>
             <Input 
               id="sellerName" 
               placeholder="مثال: أحمد العراقي"
@@ -81,15 +81,15 @@ export function ShippingSection({
               data-testid="input-seller-name"
             />
             <p className="text-xs text-muted-foreground">
-              {language === "ar" ? "يتم تعبئة هذا الحقل تلقائياً من حسابك" : "ئەم خانەیە خۆکارانە پڕدەکرێتەوە لە هەژمارەکەت"}
+              {language === "ar" ? "يتم تعبئة هذا الحقل تلقائياً من حسابك" : language === "ku" ? "ئەم خانەیە خۆکارانە پڕدەکرێتەوە لە هەژمارەکەت" : "يتم تعبئة هذا الحقل تلقائياً من حسابك"}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="city">{language === "ar" ? "المدينة" : "شار"} *</Label>
+            <Label htmlFor="city">{language === "ar" ? "المدينة" : language === "ku" ? "شار" : "المدينة"} *</Label>
             <Select value={formData.city} onValueChange={(v) => onInputChange("city", v)}>
               <SelectTrigger data-testid="select-city" className={validationErrors.city ? "border-red-500" : ""}>
-                <SelectValue placeholder={language === "ar" ? "اختر المدينة" : "شارەکە هەڵبژێرە"} />
+                <SelectValue placeholder={language === "ar" ? "اختر المدينة" : language === "ku" ? "شارەکە هەڵبژێرە" : "اختر المدينة"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="بغداد">بغداد</SelectItem>
@@ -101,7 +101,7 @@ export function ShippingSection({
                 <SelectItem value="كربلاء">كربلاء</SelectItem>
                 <SelectItem value="كركوك">كركوك</SelectItem>
                 <SelectItem value="دهوك">دهوك</SelectItem>
-                <SelectItem value="مدينة أخرى">{language === "ar" ? "مدينة أخرى" : "شاری تر"}</SelectItem>
+                <SelectItem value="مدينة أخرى">{language === "ar" ? "مدينة أخرى" : language === "ku" ? "شاری تر" : "مدينة أخرى"}</SelectItem>
               </SelectContent>
             </Select>
             {validationErrors.city && (
@@ -112,7 +112,7 @@ export function ShippingSection({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="area">{language === "ar" ? "المنطقة / الحي" : "ناوچە / گەڕەک"}</Label>
+            <Label htmlFor="area">{language === "ar" ? "المنطقة / الحي" : language === "ku" ? "ناوچە / گەڕەک" : "المنطقة / الحي"}</Label>
             <Input 
               id="area" 
               value={formData.area}
@@ -122,44 +122,44 @@ export function ShippingSection({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="sku">{language === "ar" ? "رمز المنتج (SKU)" : "کۆدی بەرهەم (SKU)"}</Label>
+            <Label htmlFor="sku">{language === "ar" ? "رمز المنتج (SKU)" : language === "ku" ? "کۆدی بەرهەم (SKU)" : "رمز المنتج (SKU)"}</Label>
             <Input 
               id="sku" 
               value={formData.sku}
               onChange={(e) => onInputChange("sku", e.target.value)}
-              placeholder={language === "ar" ? "رمز فريد للمنتج (اختياري)" : "کۆدێکی تایبەت بۆ بەرهەم (ئارەزوومەندانە)"}
+              placeholder={language === "ar" ? "رمز فريد للمنتج (اختياري)" : language === "ku" ? "کۆدێکی تایبەت بۆ بەرهەم (ئارەزوومەندانە)" : "رمز فريد للمنتج (اختياري)"}
               data-testid="input-sku"
             />
           </div>
         </div>
 
         <div className="space-y-4">
-          <Label>{language === "ar" ? "خيارات الشحن والتوصيل" : "هەڵبژاردنەکانی گواستنەوە"}</Label>
+          <Label>{language === "ar" ? "خيارات الشحن والتوصيل" : language === "ku" ? "هەڵبژاردنەکانی گواستنەوە" : "خيارات الشحن والتوصيل"}</Label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-3 p-3 border rounded-lg">
               <Checkbox id="localPickup" defaultChecked data-testid="checkbox-local-pickup" />
               <Label htmlFor="localPickup" className="cursor-pointer">
-                <span className="font-medium">{language === "ar" ? "استلام شخصي" : "وەرگرتنی کەسی"}</span>
+                <span className="font-medium">{language === "ar" ? "استلام شخصي" : language === "ku" ? "وەرگرتنی کەسی" : "استلام شخصي"}</span>
                 <p className="text-xs text-muted-foreground">
-                  {language === "ar" ? "المشتري يستلم من موقعك" : "کڕیار لە شوێنی تۆ وەری دەگرێت"}
+                  {language === "ar" ? "المشتري يستلم من موقعك" : language === "ku" ? "کڕیار لە شوێنی تۆ وەری دەگرێت" : "المشتري يستلم من موقعك"}
                 </p>
               </Label>
             </div>
             <div className="flex items-center gap-3 p-3 border rounded-lg">
               <Checkbox id="delivery" data-testid="checkbox-delivery" />
               <Label htmlFor="delivery" className="cursor-pointer">
-                <span className="font-medium">{language === "ar" ? "توصيل داخل المدينة" : "گەیاندن لە ناو شار"}</span>
+                <span className="font-medium">{language === "ar" ? "توصيل داخل المدينة" : language === "ku" ? "گەیاندن لە ناو شار" : "توصيل داخل المدينة"}</span>
                 <p className="text-xs text-muted-foreground">
-                  {language === "ar" ? "أنت توصل للمشتري" : "تۆ دەیگەیەنیت بۆ کڕیار"}
+                  {language === "ar" ? "أنت توصل للمشتري" : language === "ku" ? "تۆ دەیگەیەنیت بۆ کڕیار" : "أنت توصل للمشتري"}
                 </p>
               </Label>
             </div>
             <div className="flex items-center gap-3 p-3 border rounded-lg">
               <Checkbox id="shipping" data-testid="checkbox-shipping" />
               <Label htmlFor="shipping" className="cursor-pointer">
-                <span className="font-medium">{language === "ar" ? "شحن لجميع المحافظات" : "گواستنەوە بۆ هەموو پارێزگاکان"}</span>
+                <span className="font-medium">{language === "ar" ? "شحن لجميع المحافظات" : language === "ku" ? "گواستنەوە بۆ هەموو پارێزگاکان" : "شحن لجميع المحافظات"}</span>
                 <p className="text-xs text-muted-foreground">
-                  {language === "ar" ? "عبر شركات الشحن" : "لەڕێگەی کۆمپانیاکانی گواستنەوە"}
+                  {language === "ar" ? "عبر شركات الشحن" : language === "ku" ? "لەڕێگەی کۆمپانیاکانی گواستنەوە" : "عبر شركات الشحن"}
                 </p>
               </Label>
             </div>
@@ -171,9 +171,9 @@ export function ShippingSection({
                 onCheckedChange={(checked) => onInternationalShippingChange(checked === true)}
               />
               <Label htmlFor="internationalShipping" className="cursor-pointer">
-                <span className="font-medium">🌍 {language === "ar" ? "شحن دولي" : "گواستنەوەی نێودەوڵەتی"}</span>
+                <span className="font-medium">🌍 {language === "ar" ? "شحن دولي" : language === "ku" ? "گواستنەوەی نێودەوڵەتی" : "شحن دولي"}</span>
                 <p className="text-xs text-muted-foreground">
-                  {language === "ar" ? "الشحن لدول محددة" : "گواستنەوە بۆ وڵاتانی دیاریکراو"}
+                  {language === "ar" ? "الشحن لدول محددة" : language === "ku" ? "گواستنەوە بۆ وڵاتانی دیاریکراو" : "الشحن لدول محددة"}
                 </p>
               </Label>
             </div>
@@ -181,7 +181,7 @@ export function ShippingSection({
 
           <div className="p-4 border border-blue-200 bg-blue-50/50 rounded-lg space-y-3">
             <Label className="font-medium">
-              {language === "ar" ? "الدول المتاحة للشحن الدولي" : "وڵاتانی بەردەست بۆ گواستنەوەی نێودەوڵەتی"}
+              {language === "ar" ? "الدول المتاحة للشحن الدولي" : language === "ku" ? "وڵاتانی بەردەست بۆ گواستنەوەی نێودەوڵەتی" : "الدول المتاحة للشحن الدولي"}
             </Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {INTERNATIONAL_COUNTRIES.map((country) => (
@@ -197,9 +197,7 @@ export function ShippingSection({
               ))}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              {language === "ar" 
-                ? "* تكاليف الشحن الدولي يتم الاتفاق عليها مع المشتري" 
-                : "* تێچووەکانی گواستنەوەی نێودەوڵەتی لەگەڵ کڕیار ڕێککەوتن دەکرێت"}
+              {language === "ar" ? "* تكاليف الشحن الدولي يتم الاتفاق عليها مع المشتري" : language === "ku" ? "* تێچووەکانی گواستنەوەی نێودەوڵەتی لەگەڵ کڕیار ڕێککەوتن دەکرێت" : "* تكاليف الشحن الدولي يتم الاتفاق عليها مع المشتري"}
             </p>
           </div>
         </div>
@@ -207,17 +205,17 @@ export function ShippingSection({
         <Separator className="my-4" />
 
         <div className="space-y-2">
-          <Label htmlFor="deliveryWindow">{language === "ar" ? "مدة التوصيل المتوقعة" : "ماوەی گەیاندنی چاوەڕواندراو"} *</Label>
+          <Label htmlFor="deliveryWindow">{language === "ar" ? "مدة التوصيل المتوقعة" : language === "ku" ? "ماوەی گەیاندنی چاوەڕواندراو" : "مدة التوصيل المتوقعة"} *</Label>
           <Select value={formData.deliveryWindow} onValueChange={(v) => onInputChange("deliveryWindow", v)}>
             <SelectTrigger data-testid="select-delivery-window" className={validationErrors.deliveryWindow ? "border-red-500" : ""}>
-              <SelectValue placeholder={language === "ar" ? "اختر المدة" : "ماوە هەڵبژێرە"} />
+              <SelectValue placeholder={language === "ar" ? "اختر المدة" : language === "ku" ? "ماوە هەڵبژێرە" : "اختر المدة"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1-2 أيام">1-2 {language === "ar" ? "أيام" : "ڕۆژ"}</SelectItem>
-              <SelectItem value="3-5 أيام">3-5 {language === "ar" ? "أيام" : "ڕۆژ"}</SelectItem>
-              <SelectItem value="5-7 أيام">5-7 {language === "ar" ? "أيام" : "ڕۆژ"}</SelectItem>
-              <SelectItem value="1-2 أسبوع">1-2 {language === "ar" ? "أسبوع" : "هەفتە"}</SelectItem>
-              <SelectItem value="2-3 أسابيع">2-3 {language === "ar" ? "أسابيع" : "هەفتە"}</SelectItem>
+              <SelectItem value="1-2 أيام">1-2 {language === "ar" ? "أيام" : language === "ku" ? "ڕۆژ" : "أيام"}</SelectItem>
+              <SelectItem value="3-5 أيام">3-5 {language === "ar" ? "أيام" : language === "ku" ? "ڕۆژ" : "أيام"}</SelectItem>
+              <SelectItem value="5-7 أيام">5-7 {language === "ar" ? "أيام" : language === "ku" ? "ڕۆژ" : "أيام"}</SelectItem>
+              <SelectItem value="1-2 أسبوع">1-2 {language === "ar" ? "أسبوع" : language === "ku" ? "هەفتە" : "أسبوع"}</SelectItem>
+              <SelectItem value="2-3 أسابيع">2-3 {language === "ar" ? "أسابيع" : language === "ku" ? "هەفتە" : "أسابيع"}</SelectItem>
             </SelectContent>
           </Select>
           {validationErrors.deliveryWindow && (
@@ -226,7 +224,7 @@ export function ShippingSection({
         </div>
 
         <div className="space-y-3">
-          <Label>{language === "ar" ? "تكلفة الشحن" : "تێچووی گواستنەوە"}</Label>
+          <Label>{language === "ar" ? "تكلفة الشحن" : language === "ku" ? "تێچووی گواستنەوە" : "تكلفة الشحن"}</Label>
           <RadioGroup 
             value={formData.shippingType} 
             onValueChange={(v) => onInputChange("shippingType", v)}
@@ -235,27 +233,27 @@ export function ShippingSection({
             <div className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50">
               <RadioGroupItem value="seller_pays" id="ship-free" data-testid="radio-ship-free" />
               <Label htmlFor="ship-free" className="flex-1 cursor-pointer">
-                <span className="font-medium">{language === "ar" ? "شحن مجاني" : "گواستنەوەی بەخۆڕایی"}</span>
+                <span className="font-medium">{language === "ar" ? "شحن مجاني" : language === "ku" ? "گواستنەوەی بەخۆڕایی" : "شحن مجاني"}</span>
                 <p className="text-xs text-gray-500">
-                  {language === "ar" ? "على حساب البائع" : "بە تێچووی فرۆشیار"}
+                  {language === "ar" ? "على حساب البائع" : language === "ku" ? "بە تێچووی فرۆشیار" : "على حساب البائع"}
                 </p>
               </Label>
             </div>
             <div className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50">
               <RadioGroupItem value="buyer_pays" id="ship-buyer" data-testid="radio-ship-buyer" />
               <Label htmlFor="ship-buyer" className="flex-1 cursor-pointer">
-                <span className="font-medium">{language === "ar" ? "على حساب المشتري" : "بە تێچووی کڕیار"}</span>
+                <span className="font-medium">{language === "ar" ? "على حساب المشتري" : language === "ku" ? "بە تێچووی کڕیار" : "على حساب المشتري"}</span>
                 <p className="text-xs text-gray-500">
-                  {language === "ar" ? "حدد تكلفة الشحن" : "تێچووی گواستنەوە دیاری بکە"}
+                  {language === "ar" ? "حدد تكلفة الشحن" : language === "ku" ? "تێچووی گواستنەوە دیاری بکە" : "حدد تكلفة الشحن"}
                 </p>
               </Label>
             </div>
             <div className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50">
               <RadioGroupItem value="pickup" id="ship-pickup" data-testid="radio-ship-pickup" />
               <Label htmlFor="ship-pickup" className="flex-1 cursor-pointer">
-                <span className="font-medium">{language === "ar" ? "استلام شخصي" : "وەرگرتنی کەسی"}</span>
+                <span className="font-medium">{language === "ar" ? "استلام شخصي" : language === "ku" ? "وەرگرتنی کەسی" : "استلام شخصي"}</span>
                 <p className="text-xs text-gray-500">
-                  {language === "ar" ? "بدون شحن - التسليم باليد" : "بێ گواستنەوە - ڕادەستکردن بە دەست"}
+                  {language === "ar" ? "بدون شحن - التسليم باليد" : language === "ku" ? "بێ گواستنەوە - ڕادەستکردن بە دەست" : "بدون شحن - التسليم باليد"}
                 </p>
               </Label>
             </div>
@@ -264,7 +262,7 @@ export function ShippingSection({
           {formData.shippingType === "buyer_pays" && (
             <div className="space-y-2 pt-2">
               <Label htmlFor="shippingCost">
-                {language === "ar" ? "تكلفة الشحن (دينار عراقي)" : "تێچووی گواستنەوە (دینار)"} *
+                {language === "ar" ? "تكلفة الشحن (دينار عراقي)" : language === "ku" ? "تێچووی گواستنەوە (دینار)" : "تكلفة الشحن (دينار عراقي)"} *
               </Label>
               <Input
                 id="shippingCost"
@@ -276,13 +274,11 @@ export function ShippingSection({
                 data-testid="input-shipping-cost"
               />
               <p className="text-xs text-gray-500">
-                {language === "ar" ? "سيتم إضافة هذا المبلغ للسعر النهائي" : "ئەم بڕە زیاد دەکرێت بۆ نرخی کۆتایی"}
+                {language === "ar" ? "سيتم إضافة هذا المبلغ للسعر النهائي" : language === "ku" ? "ئەم بڕە زیاد دەکرێت بۆ نرخی کۆتایی" : "سيتم إضافة هذا المبلغ للسعر النهائي"}
               </p>
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-2.5 mt-2">
                 <p className="text-xs text-orange-700">
-                  {language === "ar"
-                    ? "ملاحظة: سيتم إضافة 2,000 د.ع تلقائياً على المشتري إذا كان في محافظة مختلفة عن محافظتك."
-                    : "تێبینی: 2,000 دینار زیادە دەکرێت بۆ کڕیار ئەگەر لە پارێزگایەکی جیاواز بێت."}
+                  {language === "ar" ? "ملاحظة: سيتم إضافة 2,000 د.ع تلقائياً على المشتري إذا كان في محافظة مختلفة عن محافظتك." : language === "ku" ? "تێبینی: 2,000 دینار زیادە دەکرێت بۆ کڕیار ئەگەر لە پارێزگایەکی جیاواز بێت." : "ملاحظة: سيتم إضافة 2,000 د.ع تلقائياً على المشتري إذا كان في محافظة مختلفة عن محافظتك."}
                 </p>
               </div>
             </div>
@@ -290,21 +286,21 @@ export function ShippingSection({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="returnPolicy">{language === "ar" ? "سياسة الإرجاع" : "سیاسەتی گەڕاندنەوە"} *</Label>
+          <Label htmlFor="returnPolicy">{language === "ar" ? "سياسة الإرجاع" : language === "ku" ? "سیاسەتی گەڕاندنەوە" : "سياسة الإرجاع"} *</Label>
           <Select value={formData.returnPolicy} onValueChange={(v) => onInputChange("returnPolicy", v)}>
             <SelectTrigger data-testid="select-return-policy" className={validationErrors.returnPolicy ? "border-red-500" : ""}>
-              <SelectValue placeholder={language === "ar" ? "اختر السياسة" : "سیاسەت هەڵبژێرە"} />
+              <SelectValue placeholder={language === "ar" ? "اختر السياسة" : language === "ku" ? "سیاسەت هەڵبژێرە" : "اختر السياسة"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="لا يوجد إرجاع">{language === "ar" ? "لا يوجد إرجاع - البيع نهائي" : "گەڕاندنەوە نییە - فرۆشتن کۆتاییە"}</SelectItem>
-              <SelectItem value="يوم واحد">{language === "ar" ? "إرجاع خلال يوم واحد" : "گەڕاندنەوە لە یەک ڕۆژدا"}</SelectItem>
-              <SelectItem value="3 أيام">{language === "ar" ? "إرجاع خلال 3 أيام" : "گەڕاندنەوە لە ٣ ڕۆژدا"}</SelectItem>
-              <SelectItem value="7 أيام">{language === "ar" ? "إرجاع خلال 7 أيام" : "گەڕاندنەوە لە ٧ ڕۆژدا"}</SelectItem>
-              <SelectItem value="14 يوم">{language === "ar" ? "إرجاع خلال 14 يوم" : "گەڕاندنەوە لە ١٤ ڕۆژدا"}</SelectItem>
-              <SelectItem value="30 يوم">{language === "ar" ? "إرجاع خلال 30 يوم" : "گەڕاندنەوە لە ٣٠ ڕۆژدا"}</SelectItem>
-              <SelectItem value="استبدال فقط">{language === "ar" ? "استبدال فقط - لا إرجاع نقدي" : "گۆڕینەوە تەنها - گەڕاندنەوەی پارە نییە"}</SelectItem>
-              <SelectItem value="ضمان المنتج">{language === "ar" ? "ضمان المنتج من الشركة المصنعة" : "گەرەنتی بەرهەم لە کۆمپانیای دروستکەر"}</SelectItem>
-              <SelectItem value="أخرى">{language === "ar" ? "أخرى - أحدد في التفاصيل" : "تر - لە وردەکاریدا دیاری دەکەم"}</SelectItem>
+              <SelectItem value="لا يوجد إرجاع">{language === "ar" ? "لا يوجد إرجاع - البيع نهائي" : language === "ku" ? "گەڕاندنەوە نییە - فرۆشتن کۆتاییە" : "لا يوجد إرجاع - البيع نهائي"}</SelectItem>
+              <SelectItem value="يوم واحد">{language === "ar" ? "إرجاع خلال يوم واحد" : language === "ku" ? "گەڕاندنەوە لە یەک ڕۆژدا" : "إرجاع خلال يوم واحد"}</SelectItem>
+              <SelectItem value="3 أيام">{language === "ar" ? "إرجاع خلال 3 أيام" : language === "ku" ? "گەڕاندنەوە لە ٣ ڕۆژدا" : "إرجاع خلال 3 أيام"}</SelectItem>
+              <SelectItem value="7 أيام">{language === "ar" ? "إرجاع خلال 7 أيام" : language === "ku" ? "گەڕاندنەوە لە ٧ ڕۆژدا" : "إرجاع خلال 7 أيام"}</SelectItem>
+              <SelectItem value="14 يوم">{language === "ar" ? "إرجاع خلال 14 يوم" : language === "ku" ? "گەڕاندنەوە لە ١٤ ڕۆژدا" : "إرجاع خلال 14 يوم"}</SelectItem>
+              <SelectItem value="30 يوم">{language === "ar" ? "إرجاع خلال 30 يوم" : language === "ku" ? "گەڕاندنەوە لە ٣٠ ڕۆژدا" : "إرجاع خلال 30 يوم"}</SelectItem>
+              <SelectItem value="استبدال فقط">{language === "ar" ? "استبدال فقط - لا إرجاع نقدي" : language === "ku" ? "گۆڕینەوە تەنها - گەڕاندنەوەی پارە نییە" : "استبدال فقط - لا إرجاع نقدي"}</SelectItem>
+              <SelectItem value="ضمان المنتج">{language === "ar" ? "ضمان المنتج من الشركة المصنعة" : language === "ku" ? "گەرەنتی بەرهەم لە کۆمپانیای دروستکەر" : "ضمان المنتج من الشركة المصنعة"}</SelectItem>
+              <SelectItem value="أخرى">{language === "ar" ? "أخرى - أحدد في التفاصيل" : language === "ku" ? "تر - لە وردەکاریدا دیاری دەکەم" : "أخرى - أحدد في التفاصيل"}</SelectItem>
             </SelectContent>
           </Select>
           {validationErrors.returnPolicy && (
@@ -313,10 +309,10 @@ export function ShippingSection({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="returnDetails">{language === "ar" ? "تفاصيل الإرجاع (اختياري)" : "وردەکاری گەڕاندنەوە (ئارەزوومەندانە)"}</Label>
+          <Label htmlFor="returnDetails">{language === "ar" ? "تفاصيل الإرجاع (اختياري)" : language === "ku" ? "وردەکاری گەڕاندنەوە (ئارەزوومەندانە)" : "تفاصيل الإرجاع (اختياري)"}</Label>
           <Textarea 
             id="returnDetails" 
-            placeholder={language === "ar" ? "مثال: يقبل الإرجاع إذا كان المنتج بحالته الأصلية..." : "نموونە: گەڕاندنەوە قبوڵ دەکرێت ئەگەر بەرهەم لە حاڵەتی ڕەسەنی بێت..."}
+            placeholder={language === "ar" ? "مثال: يقبل الإرجاع إذا كان المنتج بحالته الأصلية..." : language === "ku" ? "نموونە: گەڕاندنەوە قبوڵ دەکرێت ئەگەر بەرهەم لە حاڵەتی ڕەسەنی بێت..." : "مثال: يقبل الإرجاع إذا كان المنتج بحالته الأصلية..."}
             rows={2}
             value={formData.returnDetails}
             onChange={(e) => onInputChange("returnDetails", e.target.value)}
