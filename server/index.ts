@@ -134,6 +134,20 @@ app.use((req, res, next) => {
     throw err;
   });
 
+  // Android App Links verification — allows ebey3.com links to open in the native app
+  app.get('/.well-known/assetlinks.json', (_req, res) => {
+    res.json([{
+      relation: ['delegate_permission/common.handle_all_urls'],
+      target: {
+        namespace: 'android_app',
+        package_name: 'iq.ebay3.app',
+        sha256_cert_fingerprints: [
+          '48:BA:DB:90:50:60:E5:E1:9A:2D:F8:1C:B2:CF:29:FD:03:29:9B:67:25:39:3C:01:2F:E0:12:50:9D:8C:3F:A1'
+        ]
+      }
+    }]);
+  });
+
   // Social media meta tag middleware - serve dynamic OG tags for crawlers
   // This middleware only handles specific routes (product/seller pages) and calls next() for others
   app.use(socialMetaMiddleware);

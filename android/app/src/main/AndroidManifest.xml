@@ -30,6 +30,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Android App Links: open ebey3.com URLs directly in the app -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="ebey3.com" />
+                <data android:scheme="https" android:host="www.ebey3.com" />
+            </intent-filter>
+
         </activity>
 
         <!-- Facebook Login Activity -->
