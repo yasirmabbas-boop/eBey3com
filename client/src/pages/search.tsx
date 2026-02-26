@@ -40,6 +40,16 @@ import { useLanguage } from "@/lib/i18n";
 import { CATEGORY_SEARCH_FILTERS, SPECIFICATION_OPTIONS, SPECIFICATION_LABELS, CONDITION_LABELS, CATEGORY_KEYWORDS } from "@/lib/search-data";
 import type { Listing } from "@shared/schema";
 
+// Translate a specification value (e.g. "black" → "أسود") using the options table
+function getSpecLabel(specKey: string, value: string | number | boolean, lang: string): string {
+  const options = SPECIFICATION_OPTIONS[specKey as keyof typeof SPECIFICATION_OPTIONS] as Array<{ value: string; labelAr: string; labelKu: string }> | undefined;
+  if (options) {
+    const match = options.find((o) => o.value === String(value));
+    if (match) return lang === "ar" ? match.labelAr : match.labelKu;
+  }
+  return String(value);
+}
+
 const CATEGORIES = [
   { id: "ساعات", nameAr: "ساعات", nameKu: "کاتژمێر", icon: Watch },
   { id: "إلكترونيات", nameAr: "إلكترونيات", nameKu: "ئەلیکترۆنیات", icon: Smartphone },
@@ -999,8 +1009,8 @@ export default function SearchPage() {
                             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 mb-1">
                               {[
                                 product.condition && (CONDITION_LABELS[product.condition] ? (language === "ar" ? CONDITION_LABELS[product.condition].ar : CONDITION_LABELS[product.condition].ku) : product.condition),
-                                (product as any).specifications?.size || (product as any).specifications?.shoeSize,
-                                (product as any).specifications?.color
+                                (product as any).specifications?.size ? getSpecLabel("size", (product as any).specifications.size, language) : (product as any).specifications?.shoeSize ? getSpecLabel("shoeSize", (product as any).specifications.shoeSize, language) : null,
+                                (product as any).specifications?.color ? getSpecLabel("color", (product as any).specifications.color, language) : null
                               ].filter(Boolean).join(" • ")}
                             </p>
                           )}

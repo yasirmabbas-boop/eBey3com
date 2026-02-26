@@ -29,7 +29,7 @@ import { VerifiedBadge } from "@/components/verified-badge";
 import { MandatoryPhoneVerificationModal } from "@/components/mandatory-phone-verification-modal";
 import { ProductComments } from "@/components/product-comments";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram, shareToTwitter } from "@/lib/share-utils";
-import { SPECIFICATION_LABELS } from "@/lib/search-data";
+import { SPECIFICATION_LABELS, SPECIFICATION_OPTIONS } from "@/lib/search-data";
 import { hapticSuccess, hapticError, hapticLight, saveToPhotos, isDespia } from "@/lib/despia";
 import {
   Carousel,
@@ -1462,7 +1462,14 @@ export default function ProductPage() {
               return (
                 <div key={key} className="flex justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-500">{label}</span>
-                  <span className="font-medium">{String(value)}</span>
+                  <span className="font-medium">{(() => {
+                    const opts = SPECIFICATION_OPTIONS[key as keyof typeof SPECIFICATION_OPTIONS] as Array<{ value: string; labelAr: string; labelKu: string }> | undefined;
+                    if (opts) {
+                      const match = opts.find((o) => o.value === String(value));
+                      if (match) return language === "ar" ? match.labelAr : match.labelKu;
+                    }
+                    return String(value);
+                  })()}</span>
                 </div>
               );
             })}
