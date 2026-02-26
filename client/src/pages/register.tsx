@@ -147,7 +147,7 @@ export default function Register() {
       } else {
         toast({
           title: tr("تم إنشاء الحساب بنجاح", "هەژمار بە سەرکەوتوویی دروستکرا", "Account created successfully"),
-          description: tr("مرحباً بك في E-بيع!", "بەخێربێیت بۆ E-بیع!", "Welcome to E-Bay Iraq!"),
+          description: tr("مرحباً بك في اي بيع!", "بەخێربێیت بۆ اي بیع!", "Welcome to E-Bay Iraq!"),
         });
         queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
         navigate("/");
@@ -531,7 +531,7 @@ export default function Register() {
               queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
               toast({
                 title: tr("تم التحقق بنجاح", "پشتڕاستکرایەوە", "Verified successfully"),
-                description: tr("مرحباً بك في E-بيع!", "بەخێربێیت بۆ E-بیع!", "Welcome to E-Bay Iraq!"),
+                description: tr("مرحباً بك في اي بيع!", "بەخێربێیت بۆ اي بیع!", "Welcome to E-Bay Iraq!"),
               });
               navigate("/");
             }}

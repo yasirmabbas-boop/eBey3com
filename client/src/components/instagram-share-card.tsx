@@ -107,11 +107,11 @@ export function InstagramShareCard({ product }: InstagramShareCardProps) {
       const title = product.title.length > 30 ? product.title.slice(0, 30) + "..." : product.title;
       ctx.fillText(title, width / 2, 1195);
 
-      // E-بيع branding only (no URL)
+      // اي بيع branding only (no URL)
       ctx.fillStyle = "#2563eb";
       ctx.font = "bold 38px Arial, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("E-بيع", width / 2, 1240);
+      ctx.fillText("اي بيع", width / 2, 1240);
 
       return new Promise((resolve) => {
         canvas.toBlob((blob) => resolve(blob), "image/png", 1);
@@ -225,7 +225,7 @@ export function InstagramShareCard({ product }: InstagramShareCardProps) {
                 </div>
                 <div className="h-1/4 flex flex-col items-center justify-center p-2">
                   <p className="text-xs font-medium line-clamp-1">{product.title}</p>
-                  <p className="text-xs font-bold text-primary mt-1">E-بيع</p>
+                  <p className="text-xs font-bold text-primary mt-1">اي بيع</p>
                 </div>
               </div>
               <p className="text-xs text-gray-500 mt-2">

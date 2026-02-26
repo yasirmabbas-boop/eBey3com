@@ -108,8 +108,8 @@ export default function Privacy() {
                   </p>
                   <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
                     <li>Enable/disable notifications anytime in your device settings</li>
-                    <li><strong>iOS:</strong> Settings → E-بيع → Notifications</li>
-                    <li><strong>Android:</strong> Settings → Apps → E-بيع → Notifications</li>
+                    <li><strong>iOS:</strong> Settings → اي بيع → Notifications</li>
+                    <li><strong>Android:</strong> Settings → Apps → اي بيع → Notifications</li>
                     <li><strong>Web:</strong> Browser settings → Site settings → Notifications</li>
                   </ul>
                   
@@ -368,8 +368,8 @@ export default function Privacy() {
                   </p>
                   <ul className="list-disc list-inside space-y-2 text-gray-700 mr-4">
                     <li>تفعيل/تعطيل الإشعارات في أي وقت من إعدادات الجهاز</li>
-                    <li><strong>iOS:</strong> الإعدادات → E-بيع → الإشعارات</li>
-                    <li><strong>Android:</strong> الإعدادات → التطبيقات → E-بيع → الإشعارات</li>
+                    <li><strong>iOS:</strong> الإعدادات → اي بيع → الإشعارات</li>
+                    <li><strong>Android:</strong> الإعدادات → التطبيقات → اي بيع → الإشعارات</li>
                     <li><strong>الويب:</strong> إعدادات المتصفح → إعدادات الموقع → الإشعارات</li>
                   </ul>
                   

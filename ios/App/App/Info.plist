@@ -5,7 +5,7 @@
         <key>CFBundleDevelopmentRegion</key>
         <string>ar</string>
         <key>CFBundleDisplayName</key>
-        <string>E-بيع</string>
+        <string>اي بيع</string>
         <key>CFBundleExecutable</key>
         <string>$(EXECUTABLE_NAME)</string>
         <key>CFBundleIdentifier</key>
@@ -117,7 +117,7 @@
         <key>FacebookClientToken</key>
         <string>03a6c8eae3cbaa91dd284f80d086417a</string>
         <key>FacebookDisplayName</key>
-        <string>E-بيع</string>
+        <string>اي بيع</string>
         
         <!-- Allow app to detect if Facebook app is installed -->
         <key>LSApplicationQueriesSchemes</key>

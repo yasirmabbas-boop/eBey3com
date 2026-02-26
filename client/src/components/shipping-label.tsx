@@ -427,7 +427,7 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
                 </div>
 
                 <div className="company-footer text-center text-[8px] text-gray-400 pt-1 border-t border-gray-200 mt-1">
-                  E-بيع | www.ebey3.com | منصة المزادات العراقية
+                  اي بيع | www.ebey3.com | منصة المزادات العراقية
                 </div>
               </div>
             </div>

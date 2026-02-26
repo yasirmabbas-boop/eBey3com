@@ -1332,8 +1332,8 @@ export default function SellerDashboard() {
               size="sm"
               onClick={async () => {
                 const shareData = {
-                  title: language === "ar" ? "متجري على E-بيع" : "فرۆشگاکەم لە E-بيع",
-                  text: language === "ar" ? "تصفح متجري على E-بيع" : "فرۆشگاکەم ببینە لە E-بيع",
+                  title: language === "ar" ? "متجري على اي بيع" : "فرۆشگاکەم لە اي بیع",
+                  text: language === "ar" ? "تصفح متجري على اي بيع" : "فرۆشگاکەم ببینە لە اي بیع",
                   url: `${window.location.origin}/seller/${user?.id}`,
                 };
                 if (navigator.share) {

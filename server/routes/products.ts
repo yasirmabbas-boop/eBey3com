@@ -93,7 +93,7 @@ export function registerProductRoutes(app: Express): void {
   <text x="600" y="485" text-anchor="middle" font-size="44" fill="#0f172a" font-family="Arial, sans-serif" direction="rtl">${title}</text>
   <text x="600" y="535" text-anchor="middle" font-size="32" fill="#2563eb" font-family="Arial, sans-serif">${price}</text>
   <text x="600" y="580" text-anchor="middle" font-size="28" fill="#16a34a" font-family="Arial, sans-serif">${saleTypeText}</text>
-  <text x="1120" y="610" text-anchor="end" font-size="24" fill="#2563eb" font-family="Arial, sans-serif">E-بيع</text>
+  <text x="1120" y="610" text-anchor="end" font-size="24" fill="#2563eb" font-family="Arial, sans-serif">اي بيع</text>
 </svg>`;
 
       const png = await sharp(Buffer.from(svg)).png().toBuffer();

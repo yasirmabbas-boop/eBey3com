@@ -91,13 +91,13 @@ async function sendReportEmail(report: {
         
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
         <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-          E-بيع Security Team
+          اي بيع Security Team
         </p>
       </div>
     `;
 
     await transporter.sendMail({
-      from: `"E-بيع Security" <${ZOHO_EMAIL}>`,
+      from: `"اي بيع Security" <${ZOHO_EMAIL}>`,
       to: "security@ebey3.com",
       subject: `[${report.caseNumber}] بلاغ جديد - ${report.reportType}`,
       html: htmlContent,

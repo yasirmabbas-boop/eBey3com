@@ -335,7 +335,7 @@ export const translations: Translations = {
   help: { ar: "المساعدة", ku: "یارمەتی", en: "Help" },
   faqAndSupport: { ar: "الأسئلة الشائعة والدعم", ku: "پرسیارە باوەکان و پشتگیری", en: "FAQ and support" },
   aboutApp: { ar: "حول التطبيق", ku: "دەربارەی ئەپ", en: "About the App" },
-  aboutAppDescription: { ar: "معلومات عن E-بيع", ku: "زانیاری دەربارەی E-بيع", en: "Information about E-بيع" },
+  aboutAppDescription: { ar: "معلومات عن اي بيع", ku: "زانیاری دەربارەی اي بیع", en: "Information about اي بيع" },
   newSeller: { ar: "جديد", ku: "نوێ", en: "New" },
   positiveRatingPercent: { ar: "تقييم إيجابي", ku: "هەڵسەنگاندنی ئەرێنی", en: "positive rating" },
   saleOperation: { ar: "عملية بيع", ku: "فرۆشتن", en: "sale" },

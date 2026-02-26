@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">E-بيع</string>
-    <string name="title_activity_main">E-بيع</string>
+    <string name="app_name">اي بيع</string>
+    <string name="title_activity_main">اي بيع</string>
     <string name="package_name">iq.ebay3.app</string>
     <string name="custom_url_scheme">iq.ebay3.app</string>
     

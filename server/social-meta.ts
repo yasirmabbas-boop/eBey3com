@@ -94,7 +94,7 @@ export async function socialMetaMiddleware(
       const rating = seller.rating || 0;
       const ratingStars = "⭐".repeat(Math.round(rating));
       const description = escapeHtml(
-        `${ratingStars} تقييم ${rating.toFixed(1)} | متجر ${sellerName} على E-بيع - منصة المزادات العراقية`
+        `${ratingStars} تقييم ${rating.toFixed(1)} | متجر ${sellerName} على اي بيع - منصة المزادات العراقية`
       );
       const imageUrl = ensureAbsoluteUrl(
         seller.avatar || `${baseUrl}/favicon.png`,
@@ -107,7 +107,7 @@ export async function socialMetaMiddleware(
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>متجر ${sellerName} - E-بيع</title>
+  <title>متجر ${sellerName} - اي بيع</title>
   
   <link rel="canonical" href="${sellerUrl}" />
 
@@ -119,7 +119,7 @@ export async function socialMetaMiddleware(
   <meta property="og:image:secure_url" content="${imageUrl}" />
   <meta property="og:image:alt" content="متجر ${sellerName}" />
   <meta property="og:url" content="${sellerUrl}" />
-  <meta property="og:site_name" content="E-بيع" />
+  <meta property="og:site_name" content="اي بيع" />
   <meta property="og:locale" content="ar_IQ" />
   
   <!-- Twitter Card -->
@@ -171,7 +171,7 @@ export async function socialMetaMiddleware(
 
     const title = escapeHtml(listing.title);
     const description = escapeHtml(
-      `${saleTypeText} | ${price} | بائع: ${sellerName} | E-بيع - منصة المزادات العراقية`
+      `${saleTypeText} | ${price} | بائع: ${sellerName} | اي بيع - منصة المزادات العراقية`
     );
 
     const html = `<!DOCTYPE html>
@@ -179,7 +179,7 @@ export async function socialMetaMiddleware(
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${title} - E-بيع</title>
+  <title>${title} - اي بيع</title>
   
   <link rel="canonical" href="${productUrl}" />
 
@@ -194,7 +194,7 @@ export async function socialMetaMiddleware(
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="${title}" />
   <meta property="og:url" content="${productUrl}" />
-  <meta property="og:site_name" content="E-بيع" />
+  <meta property="og:site_name" content="اي بيع" />
   <meta property="og:locale" content="ar_IQ" />
   <meta property="product:price:amount" content="${listing.currentBid || listing.price}" />
   <meta property="product:price:currency" content="IQD" />

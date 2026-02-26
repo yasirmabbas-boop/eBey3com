@@ -12,7 +12,7 @@ export default function SecurityGuide() {
           <Shield className="h-16 w-16 text-primary mx-auto mb-4" />
           <h1 className="text-4xl font-bold text-primary mb-4">دليل أمان الحساب</h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            دليلك الشامل لحماية حسابك ومعلوماتك الشخصية على منصة E-بيع.
+            دليلك الشامل لحماية حسابك ومعلوماتك الشخصية على منصة اي بيع.
             اتبع هذه الخطوات لضمان تجربة آمنة وموثوقة.
           </p>
         </div>
@@ -105,7 +105,7 @@ export default function SecurityGuide() {
               <div>
                 <h3 className="font-bold text-xl text-yellow-800 mb-2">تحذير هام</h3>
                 <p className="text-yellow-700">
-                  فريق E-بيع لن يطلب منك أبداً كلمة المرور الخاصة بك أو رمز التحقق (OTP) عبر الهاتف أو البريد الإلكتروني.
+                  فريق اي بيع لن يطلب منك أبداً كلمة المرور الخاصة بك أو رمز التحقق (OTP) عبر الهاتف أو البريد الإلكتروني.
                   لا تشارك هذه المعلومات مع أي شخص.
                 </p>
               </div>

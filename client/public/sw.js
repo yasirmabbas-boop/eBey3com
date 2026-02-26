@@ -163,7 +163,7 @@ self.addEventListener('push', (event) => {
     };
 
     event.waitUntil(
-      self.registration.showNotification(data.title || 'E-بيع', options)
+      self.registration.showNotification(data.title || 'اي بيع', options)
     );
   } catch (e) {
     console.error('Push notification error:', e);

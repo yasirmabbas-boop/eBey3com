@@ -105,7 +105,7 @@ export function Logo({ className = "" }: LogoProps) {
 
       <img
         src="/logo.svg"
-        alt="E-بيع"
+        alt="اي بيع"
         className={`h-8 md:h-10 transition-transform ${isAnimating ? "logo-drop" : "logo-rest"}`}
       />
     </div>

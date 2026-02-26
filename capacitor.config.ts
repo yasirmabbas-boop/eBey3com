@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'iq.ebay3.app',
-  appName: 'E-بيع',
+  appName: 'اي بيع',
   webDir: 'dist/public',
   ios: {
     contentInset: 'always'

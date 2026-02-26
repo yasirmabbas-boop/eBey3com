@@ -264,7 +264,7 @@ export function InstallPWAPrompt() {
               <Download className="h-6 w-6 text-blue-600" />
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-sm mb-1">ثبّت E-بيع على هاتفك</h3>
+              <h3 className="font-bold text-sm mb-1">ثبّت اي بيع على هاتفك</h3>
               {isIOS ? (
                 <div className="text-xs text-blue-100 space-y-1">
                   <p className="font-medium">للتثبيت على الآيفون:</p>

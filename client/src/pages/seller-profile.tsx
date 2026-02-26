@@ -95,9 +95,9 @@ export default function SellerProfile() {
   });
 
   const handleShare = (platform: string) => {
-    const shareText = language === "ar" 
-      ? `تصفح منتجات ${seller?.displayName || "البائع"} على E-بيع`
-      : `Check out ${seller?.displayName || "seller"}'s products on E-بيع`;
+    const shareText = language === "ar"
+      ? `تصفح منتجات ${seller?.displayName || "البائع"} على اي بيع`
+      : `Check out ${seller?.displayName || "seller"}'s products on اي بيع`;
 
     switch (platform) {
       case "whatsapp":
