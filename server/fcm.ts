@@ -23,9 +23,8 @@
             icon: 'ic_notification',
             color: '#E85D26',
             channelId: 'ebey3_default',
-            tag: payload.data?.type || 'general',
+            tag: `ebey3_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           },
-          collapseKey: payload.data?.type || 'general',
         },
         apns: {
           payload: {
