@@ -1,9 +1,12 @@
 import { useRef, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
 import Barcode from "react-barcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, X, Package } from "lucide-react";
+import { Printer as NativePrinter } from "@capgo/capacitor-printer";
+import { isNative } from "@/lib/capacitor";
 
 type LabelSize = "a6" | "thermal-100" | "thermal-80";
 
@@ -46,7 +49,10 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
   const isCompact = labelSize === "thermal-80";
   const totalCOD = orderDetails.price + (orderDetails.shippingCost || 0);
 
-  const handlePrint = () => {
+  const isCapacitor = isNative;
+  const { toast } = useToast();
+
+  const handlePrint = async () => {
     const printContent = printRef.current;
     if (!printContent) return;
 
@@ -56,89 +62,105 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
     const innerPadding = isCompact ? "6px" : "10px";
 
     const htmlContent = `
-      <!DOCTYPE html>
-      <html dir="rtl" lang="ar">
-      <head>
-        <meta charset="UTF-8">
-        <title>${isReturn ? "إيصال إرجاع" : "إيصال توصيل"} - ${orderDetails.orderId}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          @page { size: ${sizeConfig.width} ${sizeConfig.height}; margin: 0; }
-          body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #fff; direction: rtl;
-            width: ${sizeConfig.width}; height: ${sizeConfig.height};
-          }
-          .label-container { width: ${sizeConfig.width}; height: ${sizeConfig.height}; padding: ${basePadding}; position: relative; }
-          .label { border: 2px solid #000; height: 100%; padding: ${innerPadding}; display: flex; flex-direction: column; }
-          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: ${isCompact ? "6px" : "10px"}; margin-bottom: ${isCompact ? "6px" : "10px"}; }
-          .header-left { text-align: right; }
-          .header-left h1 { font-size: ${headerFontSize}; font-weight: 900; margin-bottom: 2px; }
-          .header-left .subtitle { font-size: ${isCompact ? "8px" : "10px"}; color: #666; text-transform: uppercase; letter-spacing: 2px; }
-          .header-left .date { font-size: ${isCompact ? "8px" : "9px"}; color: #999; margin-top: 3px; }
-          .cod-badge { border: 2px solid #000; padding: 3px 8px; font-weight: bold; font-size: ${isCompact ? "13px" : "16px"}; text-align: center; }
-          .cod-badge span { display: block; font-size: ${isCompact ? "7px" : "8px"}; font-weight: normal; }
-          .barcode-section { text-align: center; margin: ${isCompact ? "4px 0" : "8px 0"}; }
-          .addresses { display: flex; gap: ${isCompact ? "4px" : "8px"}; flex: 1; margin-bottom: ${isCompact ? "4px" : "8px"}; }
-          .address-box { flex: 1; border: 1px solid #ccc; border-radius: 6px; padding: ${isCompact ? "4px" : "8px"}; }
-          .address-box.buyer { border: 2px solid #000; background: #f9f9f9; }
-          .address-header { display: flex; align-items: center; gap: 5px; font-weight: bold; font-size: ${isCompact ? "9px" : "11px"}; padding-bottom: ${isCompact ? "3px" : "5px"}; border-bottom: 1px solid #ddd; margin-bottom: ${isCompact ? "3px" : "5px"}; }
-          .address-content { font-size: ${isCompact ? "8px" : "10px"}; line-height: 1.4; }
-          .address-content .name { font-weight: bold; font-size: ${isCompact ? "10px" : "12px"}; margin-bottom: 3px; }
-          .address-content .phone { font-weight: 600; direction: ltr; text-align: left; }
-          .cod-amount { background: #FEF3C7; border: 2px solid #F59E0B; border-radius: 6px; padding: ${isCompact ? "6px" : "10px"}; text-align: center; margin-bottom: ${isCompact ? "4px" : "8px"}; }
-          .cod-amount .label-text { font-size: ${isCompact ? "8px" : "9px"}; color: #92400E; margin-bottom: 3px; }
-          .cod-amount .amount { font-size: ${codFontSize}; font-weight: 900; color: #78350F; }
-          .cod-amount .breakdown { font-size: ${isCompact ? "7px" : "8px"}; color: #92400E; margin-top: 2px; }
-          .footer-section { display: flex; justify-content: space-between; align-items: flex-end; }
-          .product-info { flex: 1; }
-          .product-info .label-text { font-size: ${isCompact ? "7px" : "8px"}; color: #999; }
-          .product-info .title { font-size: ${isCompact ? "8px" : "10px"}; font-weight: 500; }
-          .product-info .weight { font-size: ${isCompact ? "7px" : "8px"}; color: #666; }
-          .qr-code { margin-right: ${isCompact ? "5px" : "10px"}; }
-          .company-footer { text-align: center; font-size: ${isCompact ? "7px" : "8px"}; color: #999; padding-top: ${isCompact ? "3px" : "5px"}; border-top: 1px solid #eee; margin-top: ${isCompact ? "3px" : "5px"}; }
-          @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-        </style>
-      </head>
-      <body>${printContent.innerHTML}</body>
-      </html>
-    `;
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="UTF-8">
+          <title>${isReturn ? "إيصال إرجاع" : "إيصال توصيل"} - ${orderDetails.orderId}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            @page { size: ${sizeConfig.width} ${sizeConfig.height}; margin: 0; }
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              background: #fff; direction: rtl;
+              width: ${sizeConfig.width}; height: ${sizeConfig.height};
+            }
+            .label-container { width: ${sizeConfig.width}; height: ${sizeConfig.height}; padding: ${basePadding}; position: relative; }
+            .label { border: 2px solid #000; height: 100%; padding: ${innerPadding}; display: flex; flex-direction: column; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: ${isCompact ? "6px" : "10px"}; margin-bottom: ${isCompact ? "6px" : "10px"}; }
+            .header-left { text-align: right; }
+            .header-left h1 { font-size: ${headerFontSize}; font-weight: 900; margin-bottom: 2px; }
+            .header-left .subtitle { font-size: ${isCompact ? "8px" : "10px"}; color: #666; text-transform: uppercase; letter-spacing: 2px; }
+            .header-left .date { font-size: ${isCompact ? "8px" : "9px"}; color: #999; margin-top: 3px; }
+            .cod-badge { border: 2px solid #000; padding: 3px 8px; font-weight: bold; font-size: ${isCompact ? "13px" : "16px"}; text-align: center; }
+            .cod-badge span { display: block; font-size: ${isCompact ? "7px" : "8px"}; font-weight: normal; }
+            .barcode-section { text-align: center; margin: ${isCompact ? "4px 0" : "8px 0"}; }
+            .addresses { display: flex; gap: ${isCompact ? "4px" : "8px"}; flex: 1; margin-bottom: ${isCompact ? "4px" : "8px"}; }
+            .address-box { flex: 1; border: 1px solid #ccc; border-radius: 6px; padding: ${isCompact ? "4px" : "8px"}; }
+            .address-box.buyer { border: 2px solid #000; background: #f9f9f9; }
+            .address-header { display: flex; align-items: center; gap: 5px; font-weight: bold; font-size: ${isCompact ? "9px" : "11px"}; padding-bottom: ${isCompact ? "3px" : "5px"}; border-bottom: 1px solid #ddd; margin-bottom: ${isCompact ? "3px" : "5px"}; }
+            .address-content { font-size: ${isCompact ? "8px" : "10px"}; line-height: 1.4; }
+            .address-content .name { font-weight: bold; font-size: ${isCompact ? "10px" : "12px"}; margin-bottom: 3px; }
+            .address-content .phone { font-weight: 600; direction: ltr; text-align: left; }
+            .cod-amount { background: #FEF3C7; border: 2px solid #F59E0B; border-radius: 6px; padding: ${isCompact ? "6px" : "10px"}; text-align: center; margin-bottom: ${isCompact ? "4px" : "8px"}; }
+            .cod-amount .label-text { font-size: ${isCompact ? "8px" : "9px"}; color: #92400E; margin-bottom: 3px; }
+            .cod-amount .amount { font-size: ${codFontSize}; font-weight: 900; color: #78350F; }
+            .cod-amount .breakdown { font-size: ${isCompact ? "7px" : "8px"}; color: #92400E; margin-top: 2px; }
+            .footer-section { display: flex; justify-content: space-between; align-items: flex-end; }
+            .product-info { flex: 1; }
+            .product-info .label-text { font-size: ${isCompact ? "7px" : "8px"}; color: #999; }
+            .product-info .title { font-size: ${isCompact ? "8px" : "10px"}; font-weight: 500; }
+            .product-info .weight { font-size: ${isCompact ? "7px" : "8px"}; color: #666; }
+            .qr-code { margin-right: ${isCompact ? "5px" : "10px"}; }
+            .company-footer { text-align: center; font-size: ${isCompact ? "7px" : "8px"}; color: #999; padding-top: ${isCompact ? "3px" : "5px"}; border-top: 1px solid #eee; margin-top: ${isCompact ? "3px" : "5px"}; }
+            @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+          </style>
+        </head>
+        <body>${printContent.innerHTML}</body>
+        </html>
+      `;
 
-    // Use a hidden iframe instead of window.open to avoid Capacitor navigation issues
-    const existingFrame = document.getElementById("print-frame") as HTMLIFrameElement | null;
-    if (existingFrame) existingFrame.remove();
-
-    const iframe = document.createElement("iframe");
-    iframe.id = "print-frame";
-    iframe.style.position = "fixed";
-    iframe.style.top = "-10000px";
-    iframe.style.left = "-10000px";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "none";
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) return;
-
-    iframeDoc.open();
-    iframeDoc.write(htmlContent);
-    iframeDoc.close();
-
-    // Wait for content to render, then trigger print dialog
-    setTimeout(() => {
+    if (isCapacitor) {
+      // On Capacitor (Android/iOS): use native PrintManager
       try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      } catch (_) {
-        // Fallback: use main window print
-        window.print();
+        await NativePrinter.printHtml({
+          html: htmlContent,
+          name: `بطاقة-${orderDetails.orderId}`,
+        });
+        toast({
+          title: "تم فتح نافذة الطباعة",
+          description: "أكمل الطباعة من الجهاز",
+        });
+      } catch (error) {
+        console.error("Print failed:", error);
+        toast({
+          title: "فشل في الطباعة",
+          description: error instanceof Error ? error.message : "يرجى المحاولة مرة أخرى أو استخدم جهاز آخر",
+          variant: "destructive",
+        });
       }
-      // Clean up iframe after printing
+    } else {
+      // On web browser: use window.print() with CSS @media print rules
+      const existingPrint = document.getElementById("print-label-container");
+      if (existingPrint) existingPrint.remove();
+      const existingStyle = document.getElementById("print-label-style");
+      if (existingStyle) existingStyle.remove();
+
+      const style = document.createElement("style");
+      style.id = "print-label-style";
+      style.textContent = `
+        @media print {
+          body > *:not(#print-label-container) { display: none !important; }
+          #print-label-container { display: block !important; }
+        }
+      `;
+      document.head.appendChild(style);
+
+      const container = document.createElement("div");
+      container.id = "print-label-container";
+      container.style.display = "none";
+      container.innerHTML = htmlContent;
+      document.body.appendChild(container);
+
       setTimeout(() => {
-        iframe.remove();
-      }, 1000);
-    }, 500);
+        container.style.display = "block";
+        window.print();
+        setTimeout(() => {
+          container.remove();
+          style.remove();
+        }, 500);
+      }, 300);
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -284,9 +306,9 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
                     <div className={`amount font-black text-amber-900 ${isCompact ? 'text-xl' : 'text-2xl'}`}>
                       {formatPrice(totalCOD)} د.ع
                     </div>
-                    {!isReturn && orderDetails.shippingCost != null && orderDetails.shippingCost > 0 && (
+                    {!isReturn && (
                       <div className="breakdown text-[8px] text-amber-700 mt-1">
-                        سعر المنتج: {formatPrice(orderDetails.price)} | الشحن: {formatPrice(orderDetails.shippingCost)}
+                        سعر المنتج: {formatPrice(orderDetails.price)} | الشحن: {orderDetails.shippingCost ? formatPrice(orderDetails.shippingCost) : "مجاني"}
                       </div>
                     )}
                   </div>
