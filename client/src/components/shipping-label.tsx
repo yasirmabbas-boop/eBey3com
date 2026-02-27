@@ -5,6 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Printer, X, Package, Share2 } from "lucide-react";
 import html2canvas from "html2canvas";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
+import { isNative } from "@/lib/capacitor";
 
 type LabelSize = "a6" | "thermal-100" | "thermal-80";
 
@@ -47,36 +50,44 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
   const isCompact = labelSize === "thermal-80";
   const totalCOD = orderDetails.price + (orderDetails.shippingCost || 0);
 
-  const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
+  const isCapacitor = isNative;
 
   const handlePrint = async () => {
     const printContent = printRef.current;
     if (!printContent) return;
 
     if (isCapacitor) {
-      // On Capacitor: render label to image and share via native share sheet
+      // On Capacitor: render label to image, write to temp file, share natively
       try {
         const canvas = await html2canvas(printContent, {
           scale: 3,
           backgroundColor: "#ffffff",
           useCORS: true,
         });
-        const blob = await new Promise<Blob>((resolve, reject) =>
-          canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Failed to create image"))), "image/png")
-        );
-        const file = new File([blob], `label-${orderDetails.orderId}.png`, { type: "image/png" });
 
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], title: `إيصال ${orderDetails.orderId}` });
-        } else {
-          // Fallback: download the image
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `label-${orderDetails.orderId}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-        }
+        // Get base64 PNG (strip the data:image/png;base64, prefix)
+        const base64Data = canvas.toDataURL("image/png").split(",")[1];
+        const fileName = `label-${orderDetails.orderId}.png`;
+
+        // Write to a temporary file on device storage
+        const writeResult = await Filesystem.writeFile({
+          path: fileName,
+          data: base64Data,
+          directory: Directory.Cache,
+        });
+
+        // Share the file using the native share sheet
+        await Share.share({
+          title: `إيصال ${orderDetails.orderId}`,
+          files: [writeResult.uri],
+          dialogTitle: "مشاركة الإيصال",
+        });
+
+        // Clean up temp file after sharing
+        await Filesystem.deleteFile({
+          path: fileName,
+          directory: Directory.Cache,
+        }).catch(() => {});
       } catch (err) {
         console.error("Label share error:", err);
       }
