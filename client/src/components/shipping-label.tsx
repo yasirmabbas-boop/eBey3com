@@ -3,10 +3,8 @@ import { QRCodeSVG } from "qrcode.react";
 import Barcode from "react-barcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, X, Package, Share2 } from "lucide-react";
-import html2canvas from "html2canvas";
-import { Filesystem, Directory } from "@capacitor/filesystem";
-import { Share } from "@capacitor/share";
+import { Printer, X, Package } from "lucide-react";
+import { Printer as NativePrinter } from "@capgo/capacitor-printer";
 import { isNative } from "@/lib/capacitor";
 
 type LabelSize = "a6" | "thermal-100" | "thermal-80";
@@ -56,49 +54,12 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
     const printContent = printRef.current;
     if (!printContent) return;
 
-    if (isCapacitor) {
-      // On Capacitor: render label to image, write to temp file, share natively
-      try {
-        const canvas = await html2canvas(printContent, {
-          scale: 3,
-          backgroundColor: "#ffffff",
-          useCORS: true,
-        });
+    const headerFontSize = isCompact ? "16px" : "20px";
+    const codFontSize = isCompact ? "20px" : "24px";
+    const basePadding = isCompact ? "2mm" : "3mm";
+    const innerPadding = isCompact ? "6px" : "10px";
 
-        // Get base64 PNG (strip the data:image/png;base64, prefix)
-        const base64Data = canvas.toDataURL("image/png").split(",")[1];
-        const fileName = `label-${orderDetails.orderId}.png`;
-
-        // Write to a temporary file on device storage
-        const writeResult = await Filesystem.writeFile({
-          path: fileName,
-          data: base64Data,
-          directory: Directory.Cache,
-        });
-
-        // Share the file using the native share sheet
-        await Share.share({
-          title: `إيصال ${orderDetails.orderId}`,
-          files: [writeResult.uri],
-          dialogTitle: "مشاركة الإيصال",
-        });
-
-        // Clean up temp file after sharing
-        await Filesystem.deleteFile({
-          path: fileName,
-          directory: Directory.Cache,
-        }).catch(() => {});
-      } catch (err) {
-        console.error("Label share error:", err);
-      }
-    } else {
-      // On web browser: use window.print() with CSS @media print rules
-      const headerFontSize = isCompact ? "16px" : "20px";
-      const codFontSize = isCompact ? "20px" : "24px";
-      const basePadding = isCompact ? "2mm" : "3mm";
-      const innerPadding = isCompact ? "6px" : "10px";
-
-      const htmlContent = `
+    const htmlContent = `
         <!DOCTYPE html>
         <html dir="rtl" lang="ar">
         <head>
@@ -147,6 +108,18 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
         </html>
       `;
 
+    if (isCapacitor) {
+      // On Capacitor (Android/iOS): use native PrintManager
+      try {
+        await NativePrinter.printHtml({
+          html: htmlContent,
+          name: `إيصال-${orderDetails.orderId}`,
+        });
+      } catch (err) {
+        console.error("Native print error:", err);
+      }
+    } else {
+      // On web browser: use window.print() with CSS @media print rules
       const existingPrint = document.getElementById("print-label-container");
       if (existingPrint) existingPrint.remove();
       const existingStyle = document.getElementById("print-label-style");
@@ -368,8 +341,8 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
               className="flex-1 bg-black hover:bg-gray-800 text-white font-bold py-6"
               data-testid="button-print-label"
             >
-              {isCapacitor ? <Share2 className="h-5 w-5 ml-2" /> : <Printer className="h-5 w-5 ml-2" />}
-              {isCapacitor ? "مشاركة الإيصال" : "طباعة الإيصال"}
+              <Printer className="h-5 w-5 ml-2" />
+              طباعة الإيصال
             </Button>
             <Button
               variant="outline"
