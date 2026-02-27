@@ -5,7 +5,6 @@ import Barcode from "react-barcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, X, Package } from "lucide-react";
-import { Printer as NativePrinter } from "@capgo/capacitor-printer";
 import { isNative } from "@/lib/capacitor";
 
 type LabelSize = "a6" | "thermal-100" | "thermal-80";
@@ -111,8 +110,9 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
       `;
 
     if (isCapacitor) {
-      // On Capacitor (Android/iOS): use native PrintManager
+      // On Capacitor (Android/iOS): use native PrintManager (dynamic import for web build compatibility)
       try {
+        const { Printer: NativePrinter } = await import("@capgo/capacitor-printer");
         await NativePrinter.printHtml({
           html: htmlContent,
           name: `بطاقة-${orderDetails.orderId}`,
