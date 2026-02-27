@@ -46,5 +46,5 @@ jobs:
             --image ${{ env.IMAGE }}:${{ github.sha }} \
             --region ${{ env.REGION }} \
             --platform managed \
-            --set-env-vars "GIT_SHA=${{ github.sha }},DEPLOY_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --update-env-vars "GIT_SHA=${{ github.sha }},DEPLOY_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --quiet
