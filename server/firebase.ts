@@ -25,10 +25,12 @@ if (!admin.apps.length) {
         credential: admin.credential.cert(serviceAccount),
       });
     } else {
-      console.error("❌ [FIREBASE] Critical: No service account credentials found.");
+      admin.initializeApp();
+      console.log("🚀 [FIREBASE] Initialized using Application Default Credentials.");
     }
   } catch (err) {
     console.error("❌ [FIREBASE] Initialization Failed:", err);
+    process.exit(1);
   }
 }
 

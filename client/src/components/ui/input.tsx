@@ -5,9 +5,11 @@ import { cn } from "@/lib/utils"
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, onFocus, ...props }, ref) => {
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-      setTimeout(() => {
-        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
+      if (!e.target.closest('[role="dialog"]')) {
+        setTimeout(() => {
+          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      }
       onFocus?.(e);
     };
     

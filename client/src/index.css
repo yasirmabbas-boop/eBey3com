@@ -298,6 +298,11 @@ img, video, iframe {
   }
 }
 
+/* Kurdish: Noto Sans Arabic for proper Sorani script shaping (connected letters) */
+[lang="ku"] {
+  font-family: 'Noto Sans Arabic', 'Almarai', sans-serif;
+}
+
 /* Scroll Container - Hide scrollbar for native app feel */
 .despia-scroll-container {
   overflow-y: auto;

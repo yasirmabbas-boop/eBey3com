@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { useListings } from "@/hooks/use-listings";
 import { useLanguage } from "@/lib/i18n";
-import { CONDITION_LABELS } from "@/lib/search-data";
+import { CONDITION_LABELS, getSpecLabel } from "@/lib/search-data";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -44,10 +44,14 @@ interface ProductCardProps {
 
 function ProductCard({ product }: ProductCardProps) {
   const { language } = useLanguage();
+  const specs = product.specifications as Record<string, string> | undefined;
+  const sizeVal = specs?.size || specs?.shoeSize;
+  const sizeSpecKey = specs?.size ? "size" : "shoeSize";
   const aspects = [
     product.condition && (CONDITION_LABELS[product.condition] ? (language === "ar" ? CONDITION_LABELS[product.condition].ar : CONDITION_LABELS[product.condition].ku) : product.condition),
-    (product.specifications as Record<string, string>)?.["size"] || (product.specifications as Record<string, string>)?.["shoeSize"],
-    (product.specifications as Record<string, string>)?.["color"],
+    sizeVal ? getSpecLabel(sizeSpecKey, sizeVal, language) : undefined,
+    specs?.color ? getSpecLabel("color", specs.color, language) : undefined,
+    specs?.material ? getSpecLabel("material", specs.material, language) : undefined,
   ].filter(Boolean);
   return (
     <Link href={`/product/${product.id}`}>

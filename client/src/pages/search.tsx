@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Loader2, 
@@ -29,7 +30,8 @@ import {
   X,
   ArrowUpDown,
   Eye,
-  LayoutGrid
+  LayoutGrid,
+  ChevronDown
 } from "lucide-react";
 import { AuctionCountdown } from "@/components/auction-countdown";
 import { CategoryCarousel } from "@/components/category-carousel";
@@ -37,7 +39,7 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { ProductGridSkeleton } from "@/components/optimized-image";
 import { EmptySearchState } from "@/components/empty-state";
 import { useLanguage } from "@/lib/i18n";
-import { CATEGORY_SEARCH_FILTERS, SPECIFICATION_OPTIONS, SPECIFICATION_LABELS, CONDITION_LABELS, CATEGORY_KEYWORDS } from "@/lib/search-data";
+import { CATEGORY_SEARCH_FILTERS, SPECIFICATION_OPTIONS, SPECIFICATION_LABELS, CONDITION_LABELS, CATEGORY_KEYWORDS, getSpecLabel } from "@/lib/search-data";
 import type { Listing } from "@shared/schema";
 
 // Translate a specification value (e.g. "black" → "أسود") using the options table
@@ -163,6 +165,7 @@ export default function SearchPage() {
     return searchQuery ? "relevance" : "newest";
   });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [sizePopoverOpen, setSizePopoverOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [mergedListings, setMergedListings] = useState<Listing[]>([]);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -497,10 +500,25 @@ export default function SearchPage() {
   };
 
   const quickToggleCategory = (category: string | null) => {
-    setAppliedFilters(prev => ({
-      ...prev,
-      category: prev.category === category ? null : category
-    }));
+    setAppliedFilters(prev => {
+      const newCategory = prev.category === category ? null : category;
+      const newSpecs = { ...prev.specs };
+      if (prev.category !== newCategory) {
+        delete newSpecs.size;
+        delete newSpecs.shoeSize;
+      }
+      return { ...prev, category: newCategory, specs: newSpecs };
+    });
+  };
+
+  const setSizeSpec = (specKey: "size" | "shoeSize", value: string | null) => {
+    setAppliedFilters(prev => {
+      const newSpecs = { ...prev.specs };
+      delete newSpecs.size;
+      delete newSpecs.shoeSize;
+      if (value) newSpecs[specKey] = [value];
+      return { ...prev, specs: newSpecs };
+    });
   };
 
   return (
@@ -847,12 +865,76 @@ export default function SearchPage() {
                   ${appliedFilters.category === cat.id
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }
-                `}
-              >
-                {language === "ar" ? cat.nameAr : cat.nameKu}
-              </button>
+                }
+              `}
+            >
+              {language === "ar" ? cat.nameAr : cat.nameKu}
+            </button>
             ))}
+            {(appliedFilters.category === "ملابس" || appliedFilters.category === "أحذية") && (
+              <Popover open={sizePopoverOpen} onOpenChange={setSizePopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    className={`
+                      flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1
+                      ${(appliedFilters.specs.size?.length || appliedFilters.specs.shoeSize?.length)
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }
+                  `}
+                    data-testid="size-filter-chip"
+                  >
+                    {(() => {
+                      const specKey = appliedFilters.category === "ملابس" ? "size" : "shoeSize";
+                      const values = appliedFilters.specs[specKey] || [];
+                      const val = values[0];
+                      const options = specKey === "size" ? SPECIFICATION_OPTIONS.size : SPECIFICATION_OPTIONS.shoeSize;
+                      const option = val ? options?.find((o: { value: string }) => o.value === val) : null;
+                      const label = option ? (language === "ar" ? option.labelAr : option.labelKu) : t("all");
+                      const fieldLabel = SPECIFICATION_LABELS[specKey];
+                      const fieldName = fieldLabel ? (language === "ar" ? fieldLabel.ar : fieldLabel.ku) : specKey;
+                      return (
+                        <>
+                          {fieldName}: {label}
+                          <ChevronDown className="h-3 w-3 opacity-70" />
+                        </>
+                      );
+                    })()}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="center" className="w-48 p-0">
+                  <ScrollArea className="max-h-60">
+                    <div className="p-1">
+                      <button
+                        onClick={() => {
+                          const specKey = appliedFilters.category === "ملابس" ? "size" : "shoeSize";
+                          setSizeSpec(specKey, null);
+                          setSizePopoverOpen(false);
+                        }}
+                        className="w-full text-start px-3 py-2 rounded-md text-sm hover:bg-muted"
+                        data-testid="size-filter-any"
+                      >
+                        {t("all")}
+                      </button>
+                      {((appliedFilters.category === "ملابس" ? SPECIFICATION_OPTIONS.size : SPECIFICATION_OPTIONS.shoeSize) || []).map((option: { value: string; labelAr: string; labelKu: string }) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            const specKey = appliedFilters.category === "ملابس" ? "size" : "shoeSize";
+                            setSizeSpec(specKey, option.value);
+                            setSizePopoverOpen(false);
+                          }}
+                          className="w-full text-start px-3 py-2 rounded-md text-sm hover:bg-muted flex items-center justify-between"
+                          data-testid={`size-filter-${option.value}`}
+                        >
+                          {language === "ar" ? option.labelAr : option.labelKu}
+                        </button>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
         </div>
 
@@ -1003,15 +1085,22 @@ export default function SearchPage() {
                           <h3 className="font-normal text-sm sm:text-base text-gray-700 line-clamp-2 group-hover:text-primary transition-colors leading-tight mb-1.5">
                             {product.title}
                           </h3>
-                          {(product.condition || (product as any).specifications?.size || (product as any).specifications?.shoeSize || (product as any).specifications?.color) && (
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 mb-1">
-                              {[
-                                product.condition && (CONDITION_LABELS[product.condition] ? (language === "ar" ? CONDITION_LABELS[product.condition].ar : CONDITION_LABELS[product.condition].ku) : product.condition),
-                                (product as any).specifications?.size ? getSpecLabel("size", (product as any).specifications.size, language) : (product as any).specifications?.shoeSize ? getSpecLabel("shoeSize", (product as any).specifications.shoeSize, language) : null,
-                                (product as any).specifications?.color ? getSpecLabel("color", (product as any).specifications.color, language) : null
-                              ].filter(Boolean).join(" • ")}
-                            </p>
-                          )}
+                          {(() => {
+                            const specs = (product as any).specifications as Record<string, string> | undefined;
+                            const sizeVal = specs?.size || specs?.shoeSize;
+                            const sizeSpecKey = specs?.size ? "size" : "shoeSize";
+                            const aspects = [
+                              product.condition && (CONDITION_LABELS[product.condition] ? (language === "ar" ? CONDITION_LABELS[product.condition].ar : CONDITION_LABELS[product.condition].ku) : product.condition),
+                              sizeVal ? getSpecLabel(sizeSpecKey, sizeVal, language) : undefined,
+                              specs?.color ? getSpecLabel("color", specs.color, language) : undefined,
+                              specs?.material ? getSpecLabel("material", specs.material, language) : undefined,
+                            ].filter(Boolean);
+                            return aspects.length > 0 && (
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 mb-1">
+                                {aspects.join(" • ")}
+                              </p>
+                            );
+                          })()}
                           {showLowStockBadge && (
                             <div className="mb-1.5">
                               <Badge className="bg-amber-500 text-white border-0 text-[8px] sm:text-[10px] px-1.5 py-0.5">

@@ -1488,6 +1488,8 @@ export function registerProductRoutes(app: Express): void {
               saleType: l.saleType,
               auctionEndTime: l.auctionEndTime,
               views: l.views || 0,
+              condition: l.condition,
+              specifications: l.specifications,
             })),
           });
         }
@@ -1511,6 +1513,8 @@ export function registerProductRoutes(app: Express): void {
           saleType: l.saleType,
           auctionEndTime: l.auctionEndTime,
           views: l.views || 0,
+          condition: l.condition,
+          specifications: l.specifications,
         }));
       }
 
@@ -1533,6 +1537,8 @@ export function registerProductRoutes(app: Express): void {
           saleType: l.saleType,
           auctionEndTime: l.auctionEndTime,
           views: l.views || 0,
+          condition: l.condition,
+          specifications: l.specifications,
         }));
       }
 

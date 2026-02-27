@@ -23,7 +23,7 @@ export default function Register() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading } = useAuth();
-  const { language, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const tr = (ar: string, ku: string, en: string) => (language === "ar" ? ar : language === "ku" ? ku : en);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -177,6 +177,26 @@ export default function Register() {
     <Layout>
       <div className="container mx-auto px-4 py-8 max-w-md">
         <div className="text-center mb-6">
+          <div className="flex justify-center gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => setLanguage("ar")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                language === "ar" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {t("arabic")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage("ku")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                language === "ku" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {t("kurdish")}
+            </button>
+          </div>
           <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
             <span className="h-px w-8 bg-border/70" />
             {tr("إنشاء حساب جديد", "دروستکردنی هەژماری نوێ", "Create New Account")}

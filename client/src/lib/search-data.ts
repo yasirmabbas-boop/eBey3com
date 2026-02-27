@@ -221,6 +221,9 @@ export const SPECIFICATION_OPTIONS = {
     { value: "XL", labelAr: "XL", labelKu: "XL" },
     { value: "XXL", labelAr: "XXL", labelKu: "XXL" },
     { value: "XXXL", labelAr: "XXXL", labelKu: "XXXL" },
+    { value: "30", labelAr: "30", labelKu: "30" },
+    { value: "32", labelAr: "32", labelKu: "32" },
+    { value: "34", labelAr: "34", labelKu: "34" },
     { value: "36", labelAr: "36", labelKu: "36" },
     { value: "38", labelAr: "38", labelKu: "38" },
     { value: "40", labelAr: "40", labelKu: "40" },
@@ -538,7 +541,31 @@ export const CONDITION_LABELS: Record<string, { ar: string; ku: string }> = {
   "Used - Good": { ar: "مستعمل", ku: "بەکارهاتوو" },
   "Used - Fair": { ar: "مستعمل", ku: "بەکارهاتوو" },
   "For Parts or Not Working": { ar: "لا يعمل / لأجزاء", ku: "نایەوە کار / بۆ پارچەکان" },
+  // Legacy/CSV values
+  "excellent": { ar: "ممتاز", ku: "نایاب" },
+  "very_good": { ar: "جيد جداً", ku: "زۆر باش" },
+  "good": { ar: "جيد", ku: "باش" },
+  "fair": { ar: "مقبول", ku: "قبوڵ" },
+  "for_parts": { ar: "للقطع", ku: "بۆ پارچەکان" },
+  "new": { ar: "جديد", ku: "نوێ" },
+  "used": { ar: "مستعمل", ku: "بەکارهاتوو" },
 };
+
+/** Look up a spec value in SPECIFICATION_OPTIONS and return the translated label */
+export function getSpecLabel(
+  specKey: keyof typeof SPECIFICATION_OPTIONS,
+  value: string | number | boolean | undefined,
+  language: "ar" | "ku" | "en"
+): string | undefined {
+  if (value == null || value === "") return undefined;
+  const strVal = String(value);
+  const options = SPECIFICATION_OPTIONS[specKey];
+  if (!options || !Array.isArray(options)) return strVal;
+  const option = options.find((o: { value: string }) => o.value === strVal || String(o.value) === strVal);
+  if (!option) return strVal;
+  if (language === "en") return strVal;
+  return language === "ar" ? option.labelAr : option.labelKu;
+}
 
 // Field labels for form display
 export const SPECIFICATION_LABELS: Record<string, { ar: string; ku: string }> = {

@@ -25,7 +25,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
   const isRtl = language === "ar" || language === "ku";
 
   return (
-    <div className="despia-app bg-background font-sans md:min-h-screen md:block overflow-x-hidden max-w-full" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="despia-app bg-background font-sans md:min-h-screen md:block overflow-x-hidden max-w-full" dir={isRtl ? "rtl" : "ltr"} lang={language}>
       {/* Image Search Modal */}
       <ImageSearchModal open={imageSearchOpen} onOpenChange={setImageSearchOpen} />
 

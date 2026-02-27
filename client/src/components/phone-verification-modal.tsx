@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,8 @@ export function PhoneVerificationModal({
   const tr = (ar: string, ku: string, en: string) => 
     language === "ar" ? ar : language === "ku" ? ku : en;
 
+  const otpSectionRef = useRef<HTMLDivElement>(null);
+
   // Reset state when modal opens/closes
   useEffect(() => {
     if (!open) {
@@ -46,6 +48,13 @@ export function PhoneVerificationModal({
       setOtpSent(false);
     }
   }, [open]);
+
+  // Scroll OTP input into view when otpSent becomes true
+  useEffect(() => {
+    if (open && otpSent && otpSectionRef.current) {
+      otpSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [open, otpSent]);
 
   const handleSendOtp = async () => {
     setIsSendingOtp(true);
@@ -236,7 +245,7 @@ export function PhoneVerificationModal({
               </p>
             </>
           ) : (
-            <>
+            <div ref={otpSectionRef}>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
                 <MessageSquare className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-blue-800">
@@ -305,7 +314,7 @@ export function PhoneVerificationModal({
                   )}
                 </Button>
               </div>
-            </>
+            </div>
           )}
         </div>
       </DialogContent>

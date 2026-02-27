@@ -34,7 +34,7 @@ export default function SignIn() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading } = useAuth();
-  const { language, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const tr = (ar: string, ku: string, en: string) => (language === "ar" ? ar : language === "ku" ? ku : en);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<Step>("credentials");
@@ -325,6 +325,26 @@ export default function SignIn() {
     <Layout>
       <div className="container mx-auto px-4 py-16 max-w-md">
         <div className="mb-6 text-center">
+          <div className="flex justify-center gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => setLanguage("ar")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                language === "ar" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {t("arabic")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage("ku")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                language === "ku" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {t("kurdish")}
+            </button>
+          </div>
           <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
             <span className="h-px w-8 bg-border/70" />
             {tr("تسجيل الدخول", "چوونە ژوورەوە", "Sign In")}
@@ -720,6 +740,7 @@ export default function SignIn() {
                       maxLength={6}
                       value={otpCode}
                       onChange={(value) => setOtpCode(value)}
+                      autoFocus
                       data-testid="input-otp-code"
                     >
                       <InputOTPGroup>

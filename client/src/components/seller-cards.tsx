@@ -5,7 +5,7 @@ import { OptimizedImage } from "@/components/optimized-image";
 import { FavoriteButton } from "@/components/favorite-button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/lib/i18n";
-import { CONDITION_LABELS } from "@/lib/search-data";
+import { CONDITION_LABELS, getSpecLabel } from "@/lib/search-data";
 
 interface SellerCardListing {
   id: string;
@@ -34,12 +34,16 @@ interface ProductCardProps {
 
 function SellerProductCard({ product }: ProductCardProps) {
   const { language } = useLanguage();
+  const specs = product.specifications as Record<string, string> | undefined;
+  const sizeVal = specs?.size || specs?.shoeSize;
+  const sizeSpecKey = specs?.size ? "size" : "shoeSize";
   const aspects = [
     product.condition && (CONDITION_LABELS[product.condition as keyof typeof CONDITION_LABELS]
       ? (language === "ar" ? CONDITION_LABELS[product.condition as keyof typeof CONDITION_LABELS].ar : CONDITION_LABELS[product.condition as keyof typeof CONDITION_LABELS].ku)
       : product.condition),
-    (product.specifications as Record<string, string>)?.["size"] || (product.specifications as Record<string, string>)?.["shoeSize"],
-    (product.specifications as Record<string, string>)?.["color"],
+    sizeVal ? getSpecLabel(sizeSpecKey, sizeVal, language) : undefined,
+    specs?.color ? getSpecLabel("color", specs.color, language) : undefined,
+    specs?.material ? getSpecLabel("material", specs.material, language) : undefined,
   ].filter(Boolean);
   return (
     <Link href={`/product/${product.id}`}>
