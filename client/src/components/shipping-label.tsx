@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
 import Barcode from "react-barcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -49,6 +50,7 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
   const totalCOD = orderDetails.price + (orderDetails.shippingCost || 0);
 
   const isCapacitor = isNative;
+  const { toast } = useToast();
 
   const handlePrint = async () => {
     const printContent = printRef.current;
@@ -113,10 +115,19 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
       try {
         await NativePrinter.printHtml({
           html: htmlContent,
-          name: `إيصال-${orderDetails.orderId}`,
+          name: `بطاقة-${orderDetails.orderId}`,
         });
-      } catch (err) {
-        console.error("Native print error:", err);
+        toast({
+          title: "تم فتح نافذة الطباعة",
+          description: "أكمل الطباعة من الجهاز",
+        });
+      } catch (error) {
+        console.error("Print failed:", error);
+        toast({
+          title: "فشل في الطباعة",
+          description: error instanceof Error ? error.message : "يرجى المحاولة مرة أخرى أو استخدم جهاز آخر",
+          variant: "destructive",
+        });
       }
     } else {
       // On web browser: use window.print() with CSS @media print rules
