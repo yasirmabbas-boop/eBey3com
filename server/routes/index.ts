@@ -19,6 +19,11 @@ import { registerCommentRoutes } from "./comments";
 import { registerDeliveryWebhookRoutes } from "./delivery-webhook";
 
 export async function registerRoutes(server: Server, app: Express): Promise<void> {
+  // Version endpoint to verify deployment is live
+  app.get('/api/version', (_req, res) => {
+    res.json({ version: process.env.GIT_SHA || 'unknown', deployedAt: process.env.DEPLOY_TIME || 'unknown' });
+  });
+
   registerObjectStorageRoutes(app);
   registerAccountRoutes(app);
   registerOffersRoutes(app);
