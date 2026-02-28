@@ -200,7 +200,7 @@ function parseObjectPath(path: string): { bucketName: string; objectName: string
     path = `/${path}`;
   }
   const pathParts = path.split("/");
-  if (pathParts.length < 3) {
+  if (pathParts.length < 2 || !pathParts[1]) {
     throw new Error("Invalid path: must contain at least a bucket name");
   }
   const bucketName = pathParts[1];
