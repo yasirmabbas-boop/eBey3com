@@ -26,6 +26,7 @@ import {
 import { db } from "./db";
 import { eq, desc, and, or, sql, lt, inArray, ne, isNotNull, asc} from "drizzle-orm";
 import { expandQuery } from "./services/query-expander";
+import { syncListingToMeilisearch } from "./services/meilisearch";
 
 /** Exhaustive whitelist of valid specification keys derived from CATEGORY_SPEC_FIELDS.
  *  Any user-supplied spec key not in this set is silently ignored to prevent injection. */
@@ -1130,6 +1131,9 @@ export class DatabaseStorage implements IStorage {
           : null;
     }
     const [listing] = await db.insert(listings).values(dbValues as InsertListing).returning();
+    void syncListingToMeilisearch(listing).catch((err) =>
+      console.error("[Meilisearch] sync after create failed:", (err as Error).message)
+    );
     return listing;
   }
 
@@ -1143,6 +1147,11 @@ export class DatabaseStorage implements IStorage {
           : null;
     }
     const [listing] = await db.update(listings).set(dbUpdates).where(eq(listings.id, id)).returning();
+    if (listing) {
+      void syncListingToMeilisearch(listing).catch((err) =>
+        console.error("[Meilisearch] sync after update failed:", (err as Error).message)
+      );
+    }
     return listing;
   }
 
@@ -1152,6 +1161,11 @@ export class DatabaseStorage implements IStorage {
       isDeleted: true,
       deletedAt: new Date()
     }).where(eq(listings.id, id)).returning();
+    if (listing) {
+      void syncListingToMeilisearch(listing).catch((err) =>
+        console.error("[Meilisearch] sync after delete failed:", (err as Error).message)
+      );
+    }
     return !!listing;
   }
 

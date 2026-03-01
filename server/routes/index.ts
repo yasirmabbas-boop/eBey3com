@@ -17,6 +17,7 @@ import { registerAnalyticsRoutes } from "./analytics";
 import { registerLogisticsRoutes } from "./logistics-api";
 import { registerCommentRoutes } from "./comments";
 import { registerDeliveryWebhookRoutes } from "./delivery-webhook";
+import { registerMeilisearchRoutes } from "./meilisearch";
 
 export async function registerRoutes(server: Server, app: Express): Promise<void> {
   // Version endpoint to verify deployment is live
@@ -25,6 +26,7 @@ export async function registerRoutes(server: Server, app: Express): Promise<void
   });
 
   registerObjectStorageRoutes(app);
+  registerMeilisearchRoutes(app);
   registerAccountRoutes(app);
   registerOffersRoutes(app);
   registerProductRoutes(app);

@@ -1,5 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "../storage";
+import { db } from "../db";
+import { bulkSyncListingsToMeilisearch } from "../services/meilisearch";
 import { getUserIdFromRequest, isEligibleForBlueCheck } from "./shared";
 import { validateCsrfToken } from "../middleware/csrf";
 
@@ -21,6 +23,19 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
 export function registerAdminRoutes(app: Express): void {
   // Apply CSRF validation to all admin routes except GET requests
   app.use("/api/admin", validateCsrfToken);
+
+  app.post("/api/admin/sync-search", requireAdmin, async (req, res) => {
+    try {
+      const summary = await bulkSyncListingsToMeilisearch(db);
+      res.json(summary);
+    } catch (error) {
+      console.error("[Admin] sync-search failed:", error);
+      res.status(500).json({
+        error: "Bulk sync failed",
+        details: (error as Error).message,
+      });
+    }
+  });
 
   app.get("/api/admin/stats", requireAdmin, async (req, res) => {
     try {
