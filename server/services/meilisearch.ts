@@ -183,7 +183,7 @@ export async function syncListingToMeilisearch(listing: Listing): Promise<void> 
       await index.deleteDocument(listing.id);
     } else {
       const doc = listingToDocument(listing);
-      await index.addDocuments([doc]);
+      await index.addDocuments([doc], { primaryKey: "id" });
     }
   } catch (err) {
     console.error("[Meilisearch] sync failed for listing", listing.id, (err as Error).message);
@@ -220,7 +220,7 @@ export async function bulkSyncListingsToMeilisearch(
 
     if (batch.length > 0) {
       const docs = batch.map(listingToDocument);
-      await index.addDocuments(docs);
+      await index.addDocuments(docs, { primaryKey: "id" });
       totalProcessed += batch.length;
       totalBatches += 1;
     }
