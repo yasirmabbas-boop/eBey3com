@@ -85,7 +85,21 @@ export async function initializeMeilisearch(): Promise<void> {
       "auctionEndTime",
     ]);
 
-    console.log("[Meilisearch] Index 'listings' configured");
+    // Reset ranking rules to Meilisearch defaults (undo any custom ranking from previous deploys)
+    await index.updateRankingRules([
+      "words",
+      "typo",
+      "proximity",
+      "attribute",
+      "sort",
+      "exactness",
+    ]);
+
+    // Reset stop words and typo tolerance to defaults
+    await index.updateStopWords([]);
+    await index.updateTypoTolerance({ enabled: true, minWordSizeForTypos: { oneTypo: 5, twoTypos: 9 } });
+
+    console.log("[Meilisearch] Index 'listings' configured (settings reset to defaults)");
   } catch (err) {
     console.error("[Meilisearch] Failed to initialize:", (err as Error).message);
   }
