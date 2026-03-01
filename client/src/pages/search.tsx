@@ -13,7 +13,6 @@ import {
   RangeInput,
   ClearRefinements,
 } from "react-instantsearch";
-import historyRouter from "instantsearch.js/es/lib/routers/history";
 import { instantMeiliSearch } from "@meilisearch/instant-meilisearch";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -501,17 +500,12 @@ export default function SearchPage() {
             },
           }}
           routing={{
-            router: historyRouter({ writeDelay: 400 }),
             stateMapping: {
               stateToRoute(uiState) {
                 const indexState = uiState.listings || {};
                 const route: Record<string, string> = {};
                 if (indexState.query) route.q = indexState.query;
                 if (indexState.sortBy) route.sort = indexState.sortBy;
-                // Persist category refinement in URL for shareable filtered links
-                if (indexState.refinementList?.category?.length) {
-                  route.category = indexState.refinementList.category.join(",");
-                }
                 return route;
               },
               routeToState(routeState) {
@@ -521,11 +515,6 @@ export default function SearchPage() {
                   listings: {
                     query: (typeof safe.q === "string" ? safe.q : "") as string,
                     sortBy: (typeof safe.sort === "string" ? safe.sort : undefined) as string | undefined,
-                    refinementList: {
-                      category: typeof safe.category === "string"
-                        ? safe.category.split(",")
-                        : [],
-                    },
                   },
                 };
               },
