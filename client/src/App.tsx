@@ -19,6 +19,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { isIOS, isNative } from "@/lib/capacitor";
 import { initAppLifecycle } from "@/lib/appLifecycle";
+import { saveScrollY, getScrollY } from "@/lib/scroll-storage";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { useSocketNotifications } from "@/hooks/use-socket-notifications";
@@ -92,20 +93,8 @@ function NotificationDeeplinkHandler() {
   return null;
 }
 
-// Scroll position map: stores scrollY keyed by a unique history entry key
-// Limited to 50 entries to prevent unbounded memory growth
-const scrollPositions = new Map<string, number>();
-const MAX_SCROLL_ENTRIES = 50;
+// Current history entry key — persists across route changes within a session
 let currentHistoryKey = Math.random().toString(36).slice(2, 8);
-
-function saveScrollPosition(key: string, y: number) {
-  scrollPositions.set(key, y);
-  // Evict oldest entries if over limit
-  if (scrollPositions.size > MAX_SCROLL_ENTRIES) {
-    const firstKey = scrollPositions.keys().next().value;
-    if (firstKey) scrollPositions.delete(firstKey);
-  }
-}
 
 function ScrollToTop() {
   useEffect(() => {
@@ -127,7 +116,7 @@ function ScrollToTop() {
     // On forward navigation (pushState): save current scroll, scroll new page to top
     history.pushState = function(...args) {
       // Save scroll position for the page we're leaving
-      saveScrollPosition(currentHistoryKey, window.scrollY);
+      saveScrollY(currentHistoryKey, window.scrollY);
 
       // Generate a new key for the destination page
       const newKey = Math.random().toString(36).slice(2, 8);
@@ -149,17 +138,21 @@ function ScrollToTop() {
     // On back/forward (popstate): restore saved scroll position
     const handlePopState = (e: PopStateEvent) => {
       // Save scroll position for the page we're leaving
-      saveScrollPosition(currentHistoryKey, window.scrollY);
+      saveScrollY(currentHistoryKey, window.scrollY);
 
       // Get the key for the page we're going to
       const targetKey = e.state?._scrollKey;
       if (targetKey) {
         currentHistoryKey = targetKey;
-        const savedY = scrollPositions.get(targetKey);
+        const savedY = getScrollY(targetKey);
         if (savedY != null && savedY > 0) {
-          // Delay to allow lazy-loaded page content to render before restoring scroll
-          // Use multiple attempts since Suspense/lazy pages may take time to mount
-          const restore = () => window.scrollTo(0, savedY);
+          // Delay to allow lazy-loaded page content to render before restoring scroll.
+          // Page-level useLayoutEffect (e.g., search.tsx) may handle restore first;
+          // __scrollRestoreHandled flag prevents these timeouts from interfering.
+          const restore = () => {
+            if ((window as any).__scrollRestoreHandled) return;
+            window.scrollTo(0, savedY);
+          };
           setTimeout(restore, 50);
           setTimeout(restore, 150);
           setTimeout(restore, 400);
