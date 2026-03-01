@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:22-slim
 
 # Install OpenSSL for pg/database support
 RUN apt-get update -y && apt-get install -y openssl
