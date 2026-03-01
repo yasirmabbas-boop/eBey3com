@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { authFetch } from "@/lib/api";
 import type { Listing } from "@shared/schema";
 
@@ -137,5 +137,6 @@ export function useListings(options?: UseListingsOptions) {
       };
     },
     staleTime: 60 * 1000, // 60 seconds - fresh feed but doesn't spam server
+    placeholderData: keepPreviousData, // Keep previous results visible while new filters fetch
   });
 }
