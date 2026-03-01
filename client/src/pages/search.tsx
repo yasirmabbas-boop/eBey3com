@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useLocation, useSearch, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -40,9 +40,17 @@ import { ProductGridSkeleton } from "@/components/optimized-image";
 import { EmptySearchState } from "@/components/empty-state";
 import { useLanguage } from "@/lib/i18n";
 import { CATEGORY_SEARCH_FILTERS, SPECIFICATION_OPTIONS, SPECIFICATION_LABELS, CONDITION_LABELS, CATEGORY_KEYWORDS, getSpecLabel } from "@/lib/search-data";
-import { getScrollY } from "@/lib/scroll-storage";
 import type { Listing } from "@shared/schema";
 
+// Translate a specification value (e.g. "black" → "أسود") using the options table
+function getSpecLabel(specKey: string, value: string | number | boolean, lang: string): string {
+  const options = SPECIFICATION_OPTIONS[specKey as keyof typeof SPECIFICATION_OPTIONS] as Array<{ value: string; labelAr: string; labelKu: string }> | undefined;
+  if (options) {
+    const match = options.find((o) => o.value === String(value));
+    if (match) return lang === "ar" ? match.labelAr : match.labelKu;
+  }
+  return String(value);
+}
 
 const CATEGORIES = [
   { id: "ساعات", nameAr: "ساعات", nameKu: "کاتژمێر", icon: Watch },
@@ -220,7 +228,7 @@ export default function SearchPage() {
   const saleTypes = appliedFilters.saleTypes;
 
   // Use the standardized useListings hook for consistent data fetching and caching
-  const { data: listingsData, isLoading, isFetching, isError } = useListings({
+  const { data: listingsData, isLoading, isFetching } = useListings({
     sellerId: sellerIdParam || undefined,
     limit: ITEMS_PER_PAGE,
     page,
@@ -264,26 +272,7 @@ export default function SearchPage() {
     observer.observe(el);
     return () => observer.disconnect();
   }, [isLoading, isFetching, listingsData?.pagination?.hasMore]);
-
-  // Scroll restoration: restore position AFTER the grid DOM is ready.
-  // Fires synchronously after React commits DOM mutations but before browser paint.
-  const scrollRestoredForKey = useRef<string | null>(null);
-  useLayoutEffect(() => {
-    const key = history.state?._scrollKey;
-    if (!key) return;
-    if (scrollRestoredForKey.current === key) return; // Already restored for this history entry
-    if (mergedListings.length === 0) return; // DOM not ready yet
-
-    const savedY = getScrollY(key);
-    if (savedY != null && savedY > 0) {
-      window.scrollTo(0, savedY);
-      scrollRestoredForKey.current = key;
-      // Signal to App.tsx's timeout-based restorer to skip — we already handled it
-      (window as any).__scrollRestoreHandled = true;
-      setTimeout(() => { (window as any).__scrollRestoreHandled = false; }, 500);
-    }
-  }, [mergedListings.length]);
-
+  
   const { data: sellerInfo } = useQuery({
     queryKey: ["/api/users", sellerIdParam],
     queryFn: async () => {
@@ -325,13 +314,6 @@ export default function SearchPage() {
   }, [listings]);
 
   const filteredProducts = useMemo(() => allProducts, [allProducts]);
-
-  // Hydration guard: when React Query has cached data but mergedListings hasn't been
-  // populated yet (e.g., on component remount from back-nav), show the skeleton
-  // instead of briefly flashing the empty state.
-  const isHydrating = mergedListings.length === 0
-    && !isError
-    && (listingsData?.listings?.length ?? 0) > 0;
 
   const displayedProducts = filteredProducts;
   const hasMoreProducts = listingsData?.pagination?.hasMore ?? false;
@@ -461,26 +443,11 @@ export default function SearchPage() {
     setAppliedFilters(cleared);
   };
 
-  // Detect back/forward navigation (popstate) vs user-initiated filter changes.
-  // When navigating back, we want to KEEP the current grid visible while React Query
-  // serves cached data — clearing mergedListings would collapse the DOM and break scroll restore.
-  const isPopstateRef = useRef(false);
-  useEffect(() => {
-    const onPop = () => { isPopstateRef.current = true; };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
-
   // Reset pagination when filters change - use primitive deps to avoid unnecessary runs
   const filterKey = `${appliedFilters.category}-${appliedFilters.includeSold}-${appliedFilters.priceMin}-${appliedFilters.priceMax}-${appliedFilters.conditions.join(',')}-${appliedFilters.saleTypes.join(',')}-${JSON.stringify(appliedFilters.specs)}`;
   useEffect(() => {
     setPage(1);
-    // Only clear the grid on user-initiated filter changes.
-    // On popstate (back/forward), skip the clear — React Query will repopulate from cache.
-    if (!isPopstateRef.current) {
-      setMergedListings([]);
-    }
-    isPopstateRef.current = false;
+    setMergedListings([]);
   }, [filterKey, searchQuery, sellerIdParam]);
 
   const syncFiltersToUrl = useCallback((filters: FilterState, sort: string) => {
@@ -1053,22 +1020,7 @@ export default function SearchPage() {
         )}
 
         <div>
-          {isError ? (
-            <div className="text-center py-16">
-              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <X className="h-8 w-8 text-red-500" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">
-                {language === "ar" ? "حدث خطأ في تحميل النتائج" : language === "ku" ? "هەڵەیەک ڕوویدا لە بارکردنی ئەنجامەکان" : "حدث خطأ في تحميل النتائج"}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {language === "ar" ? "يرجى المحاولة مرة أخرى" : language === "ku" ? "تکایە دووبارە هەوڵبدە" : "يرجى المحاولة مرة أخرى"}
-              </p>
-              <Button variant="outline" onClick={() => window.location.reload()}>
-                {language === "ar" ? "إعادة المحاولة" : language === "ku" ? "دووبارە هەوڵبدە" : "إعادة المحاولة"}
-              </Button>
-            </div>
-          ) : (isLoading || isHydrating) ? (
+          {isLoading ? (
             <ProductGridSkeleton count={12} />
           ) : filteredProducts.length === 0 ? (
             // Only show empty state if user has applied filters or search query
