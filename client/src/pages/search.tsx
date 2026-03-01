@@ -501,13 +501,7 @@ export default function SearchPage() {
             },
           }}
           routing={{
-            router: historyRouter({
-              writeDelay: 400,
-              createURL({ qsModule, routeState, location }) {
-                const qs = qsModule.stringify(routeState, { addQueryPrefix: true });
-                return `${location.pathname}${qs}`;
-              },
-            }),
+            router: historyRouter({ writeDelay: 400 }),
             stateMapping: {
               stateToRoute(uiState) {
                 const indexState = uiState.listings || {};
