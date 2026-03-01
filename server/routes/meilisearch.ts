@@ -18,10 +18,6 @@ export function registerMeilisearchRoutes(app: Express): void {
     const search = req.url?.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
     const url = `${MEILISEARCH_HOST}${path}${search}`;
 
-    // 5-second timeout so a stalled Meilisearch Cloud doesn't hold a Cloud Run slot
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -30,27 +26,19 @@ export function registerMeilisearchRoutes(app: Express): void {
       const init: RequestInit = {
         method: req.method,
         headers,
-        signal: controller.signal,
       };
       if (req.method !== "GET" && req.method !== "HEAD" && req.body) {
         init.body = JSON.stringify(req.body);
       }
 
       const response = await fetch(url, init);
-      clearTimeout(timeout);
       const text = await response.text();
       res.status(response.status);
       res.set("Content-Type", response.headers.get("Content-Type") || "application/json");
       res.send(text);
     } catch (err) {
-      clearTimeout(timeout);
-      if ((err as Error).name === "AbortError") {
-        console.error("[Meilisearch proxy] Request timed out after 5s");
-        res.status(504).json({ error: "Meilisearch request timed out" });
-      } else {
-        console.error("[Meilisearch proxy] Error:", (err as Error).message);
-        res.status(502).json({ error: "Meilisearch proxy error" });
-      }
+      console.error("[Meilisearch proxy] Error:", (err as Error).message);
+      res.status(502).json({ error: "Meilisearch proxy error" });
     }
   });
 }
