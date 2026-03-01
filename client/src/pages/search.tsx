@@ -402,7 +402,36 @@ export default function SearchPage() {
           </div>
         )}
 
-        <InstantSearch searchClient={searchClient} indexName="listings" routing={true}>
+        <InstantSearch
+          searchClient={searchClient}
+          indexName="listings"
+          initialUiState={{
+            listings: {
+              query: params.get("q") || "",
+            },
+          }}
+          routing={{
+            stateMapping: {
+              stateToRoute(uiState) {
+                const indexState = uiState.listings || {};
+                const route: Record<string, string> = {};
+                if (indexState.query) route.q = indexState.query;
+                if (indexState.sortBy) route.sort = indexState.sortBy;
+                return route;
+              },
+              routeToState(routeState) {
+                // Guard against non-object values (e.g., ?q=yasir parsed as string)
+                const safe = routeState && typeof routeState === "object" ? routeState : {};
+                return {
+                  listings: {
+                    query: (typeof safe.q === "string" ? safe.q : "") as string,
+                    sortBy: (typeof safe.sort === "string" ? safe.sort : undefined) as string | undefined,
+                  },
+                };
+              },
+            },
+          }}
+        >
           <SearchContent sellerIdParam={sellerIdParam} language={language} t={t} />
         </InstantSearch>
       </div>
