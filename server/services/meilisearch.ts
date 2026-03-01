@@ -85,37 +85,7 @@ export async function initializeMeilisearch(): Promise<void> {
       "auctionEndTime",
     ]);
 
-    // Phase 2A: Custom ranking rules for e-commerce relevance
-    // attribute rule respects searchableAttributes order: title > description > brand > category
-    await index.updateRankingRules([
-      "words",
-      "typo",
-      "proximity",
-      "attribute",
-      "sort",
-      "exactness",
-      "isActive:desc",  // Active listings rank above sold/inactive
-      "views:desc",     // Popular items break ties
-    ]);
-
-    // Phase 2B: Arabic & Kurdish stop words — prevent common particles from diluting results
-    await index.updateStopWords([
-      // Arabic
-      "في", "من", "على", "إلى", "و", "أو", "ال", "هو", "هي",
-      "هذا", "هذه", "ذلك", "تلك", "مع", "عن", "أن", "لا",
-      // Kurdish (Sorani)
-      "لە", "بۆ", "بە", "لەگەڵ", "یان", "ئەو", "ئەم", "کە", "هەر",
-    ]);
-
-    // Phase 2C: Typo tolerance tuning — no fuzzy matching on short Arabic/Kurdish particles
-    await index.updateTypoTolerance({
-      minWordSizeForTypos: {
-        oneTypo: 4,   // 1-3 char words: exact match only
-        twoTypos: 8,  // 4-7 char words: max 1 typo; 8+: up to 2 typos
-      },
-    });
-
-    console.log("[Meilisearch] Index 'listings' configured (ranking, stopWords, typoTolerance)");
+    console.log("[Meilisearch] Index 'listings' configured");
   } catch (err) {
     console.error("[Meilisearch] Failed to initialize:", (err as Error).message);
   }
