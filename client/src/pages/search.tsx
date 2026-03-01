@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import { useSearch, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -242,7 +242,7 @@ function SearchContent({
   language: string;
   t: (k: string) => string;
 }) {
-  const baseFilter = "isDeleted = false";
+  const baseFilter = "isDeleted = false AND isActive = true";
   const filter = sellerIdParam
     ? `${baseFilter} AND sellerId = "${sellerIdParam}"`
     : baseFilter;
@@ -250,6 +250,7 @@ function SearchContent({
   return (
     <>
       <Configure filter={filter} hitsPerPage={24} attributesToRetrieve={["*"]} />
+      <StaleSpecCleaner />
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
         <div className="flex-1 min-w-0">
           <SearchBox
@@ -294,6 +295,44 @@ function useSelectedCategories(): string[] {
     }
   }
   return cats;
+}
+
+/**
+ * Automatically clears specification refinements that become irrelevant
+ * when the user switches categories (e.g. shoeSize filter left active
+ * after switching from Shoes to Electronics).
+ */
+function StaleSpecCleaner() {
+  const selectedCategories = useSelectedCategories();
+  const { items } = useCurrentRefinements();
+  const prevCatsRef = useRef<string>(selectedCategories.join(","));
+
+  useEffect(() => {
+    const catsKey = selectedCategories.join(",");
+    if (catsKey === prevCatsRef.current) return;
+    prevCatsRef.current = catsKey;
+
+    // Determine which spec attributes are valid for the new category selection
+    const validAttrs = new Set<string>();
+    for (const cat of selectedCategories) {
+      const specs = CATEGORY_SEARCH_FILTERS[cat];
+      if (specs) specs.forEach((k) => validAttrs.add(`specifications.${k}`));
+    }
+
+    // Clear any active spec refinements that are no longer valid
+    for (const item of items) {
+      if (
+        item.attribute.startsWith("specifications.") &&
+        !validAttrs.has(item.attribute)
+      ) {
+        for (const refinement of item.refinements) {
+          item.refine(refinement);
+        }
+      }
+    }
+  }); // intentionally no deps — runs every render but early-returns if categories haven't changed
+
+  return null;
 }
 
 const REFINEMENT_CLASS_NAMES = {

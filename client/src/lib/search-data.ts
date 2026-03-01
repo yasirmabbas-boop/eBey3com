@@ -31,15 +31,12 @@ export const SEARCH_SUGGESTIONS = [
   { ar: "كاميرا نيكون", en: "nikon camera", category: "إلكترونيات" },
   { ar: "سماعات", en: "headphones", category: "إلكترونيات" },
   { ar: "ايربودز", en: "airpods", category: "إلكترونيات" },
-  { ar: "سيارة", en: "car", category: "سيارات" },
-  { ar: "تويوتا", en: "toyota", category: "سيارات" },
-  { ar: "مرسيدس", en: "mercedes", category: "سيارات" },
-  { ar: "بي ام دبليو", en: "bmw", category: "سيارات" },
-  { ar: "لكزس", en: "lexus", category: "سيارات" },
-  { ar: "هوندا", en: "honda", category: "سيارات" },
-  { ar: "نيسان", en: "nissan", category: "سيارات" },
-  { ar: "كيا", en: "kia", category: "سيارات" },
-  { ar: "هيونداي", en: "hyundai", category: "سيارات" },
+  { ar: "ألعاب", en: "games", category: "ألعاب" },
+  { ar: "بلايستيشن 5", en: "playstation 5 game", category: "ألعاب" },
+  { ar: "بلايستيشن 4", en: "playstation 4 game", category: "ألعاب" },
+  { ar: "اكس بوكس", en: "xbox game", category: "ألعاب" },
+  { ar: "نينتندو سويتش", en: "nintendo switch game", category: "ألعاب" },
+  { ar: "لعبة كمبيوتر", en: "pc game", category: "ألعاب" },
   { ar: "ملابس", en: "clothing", category: "ملابس" },
   { ar: "فستان", en: "dress", category: "ملابس" },
   { ar: "بدلة", en: "suit", category: "ملابس" },
@@ -194,8 +191,8 @@ export const CATEGORY_SPECIFICATIONS: Record<string, { fields: string[] }> = {
   "أحذية": {
     fields: ["shoeBrand", "shoeSize", "shoeWidth", "shoeStyle", "upperMaterial", "color", "gender"]
   },
-  "سيارات": {
-    fields: ["make", "model", "year", "mileage", "fuelType", "transmission", "color", "bodyType"]
+  "ألعاب": {
+    fields: ["platform", "color"]
   },
   "تحف وأثاث": {
     fields: ["type", "era", "material", "dimensions", "origin", "authenticity"]
@@ -302,6 +299,16 @@ export const SPECIFICATION_OPTIONS = {
     { value: "xlarge", labelAr: "كبير جداً (أكثر من 44مم)", labelKu: "زۆر گەورە (زیاتر لە 44مم)" },
   ],
   
+  // Games - Platform options
+  platform: [
+    { value: "ps5", labelAr: "بلايستيشن 5", labelKu: "پلەیستەیشن 5" },
+    { value: "ps4", labelAr: "بلايستيشن 4", labelKu: "پلەیستەیشن 4" },
+    { value: "xbox_series", labelAr: "اكس بوكس سيريس", labelKu: "ئێکس بۆکس سیریز" },
+    { value: "xbox_one", labelAr: "اكس بوكس ون", labelKu: "ئێکس بۆکس وەن" },
+    { value: "nintendo_switch", labelAr: "نينتندو سويتش", labelKu: "نینتێندۆ سویتچ" },
+    { value: "pc", labelAr: "كمبيوتر", labelKu: "کۆمپیوتەر" },
+  ],
+
   // Common color options
   color: [
     { value: "black", labelAr: "أسود", labelKu: "ڕەش" },
@@ -509,9 +516,9 @@ export const CATEGORY_FIELD_CONFIG: Record<string, { required: string[]; optiona
     required: ["gender", "shoeSize"],
     optional: ["shoeBrand", "shoeStyle", "shoeWidth", "upperMaterial", "color"],
   },
-  "سيارات": {
-    required: ["year", "mileage"],
-    optional: ["fuelType", "transmission", "bodyType", "color"],
+  "ألعاب": {
+    required: ["platform"],
+    optional: ["color"],
   },
   "تحف وأثاث": {
     required: [],
@@ -528,7 +535,7 @@ export const CATEGORY_SEARCH_FILTERS: Record<string, string[]> = {
   "أحذية": ["gender", "shoeBrand", "shoeSize", "shoeStyle", "color"],
   "إلكترونيات": ["storage", "ram", "color"],
   "ساعات": ["movement", "caseSize", "color"],
-  "سيارات": ["fuelType", "transmission", "bodyType"],
+  "ألعاب": ["platform"],
   "مجوهرات": ["jewelryMaterial", "gemstone", "color"],
   "تحف وأثاث": ["era", "material"],
 };
@@ -593,6 +600,8 @@ export const SPECIFICATION_LABELS: Record<string, { ar: string; ku: string }> = 
   shoeStyle: { ar: "نوع الحذاء", ku: "جۆری پێڵاو" },
   shoeBrand: { ar: "الماركة", ku: "براند" },
   upperMaterial: { ar: "خامة الوجه", ku: "مادەی سەرەوە" },
+  // Games
+  platform: { ar: "المنصة", ku: "پلاتفۆرم" },
 };
 
 export const BRAND_SYNONYMS: Record<string, string[]> = {
@@ -634,7 +643,7 @@ export const CATEGORY_KEYWORDS: Record<string, string[]> = {
   "ملابس": ["clothing", "clothes", "ملابس", "لبس", "fashion", "أزياء", "dress", "فستان"],
   "أحذية": ["shoes", "shoe", "أحذية", "حذاء", "sneakers", "سنيكرز", "boots", "بوت", "sandals", "صندل", "heels", "كعب", "نايكي", "nike", "adidas", "اديداس", "جوردان", "jordan"],
   "تحف وأثاث": ["antiques", "furniture", "تحف", "أثاث", "انتيك", "vintage", "فينتاج"],
-  "سيارات": ["car", "cars", "سيارة", "سيارات", "vehicle", "مركبة", "auto"],
+  "ألعاب": ["game", "games", "ألعاب", "لعبة", "playstation", "بلايستيشن", "xbox", "اكس بوكس", "nintendo", "نينتندو"],
   "مجوهرات": ["jewelry", "jewellery", "مجوهرات", "ذهب", "gold", "diamond", "ألماس"],
 };
 
