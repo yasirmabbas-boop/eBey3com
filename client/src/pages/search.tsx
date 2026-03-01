@@ -41,7 +41,7 @@ const SORT_OPTIONS = [
   { value: "listings:price:desc", labelAr: "السعر: من الأعلى للأقل", labelKu: "نرخ: لە زۆرەوە بۆ کەم" },
 ];
 
-const MEILISEARCH_PROXY = "/api/meilisearch";
+const MEILISEARCH_PROXY = `${window.location.origin}/api/meilisearch`;
 
 const searchClient = (() => {
   try {
