@@ -27,6 +27,18 @@ import { db } from "./db";
 import { eq, desc, and, or, sql, lt, inArray, ne, isNotNull, asc} from "drizzle-orm";
 import { expandQuery } from "./services/query-expander";
 
+/** Exhaustive whitelist of valid specification keys derived from CATEGORY_SPEC_FIELDS.
+ *  Any user-supplied spec key not in this set is silently ignored to prevent injection. */
+const ALLOWED_SPEC_KEYS = new Set([
+  "gender", "clothingType", "clothingBrand", "size", "color", "material",
+  "shoeBrand", "shoeSize", "shoeStyle",
+  "storage", "ram",
+  "movement", "caseSize",
+  "fuelType", "transmission", "bodyType",
+  "jewelryMaterial", "gemstone",
+  "era",
+]);
+
 export interface UserPreferences {
   topCategories: string[];        // e.g. ["ساعات", "إلكترونيات"]
   recentSearches: string[];       // e.g. ["rolex", "iphone 15"]
@@ -543,31 +555,38 @@ export class DatabaseStorage implements IStorage {
 
     if (searchQuery && searchQuery.trim()) {
       expanded = expandQuery(searchQuery);
-      const rawTerm = `%${searchQuery.trim().toLowerCase()}%`;
-
-      // Build LIKE clauses for each synonym term (capped to 8 for perf)
-      const likeTerms = expanded.allTerms.slice(0, 8);
-      const likeClauses: any[] = [];
-      for (const term of likeTerms) {
-        const patt = `%${term.toLowerCase()}%`;
-        likeClauses.push(sql`LOWER(${listings.title}) LIKE ${patt}`);
-        likeClauses.push(sql`LOWER(COALESCE(${listings.brand}, '')) LIKE ${patt}`);
-      }
+      const searchTrimmed = searchQuery.trim();
+      const rawTerm = `%${searchTrimmed.toLowerCase()}%`;
+      const isSingleChar = searchTrimmed.length === 1;
 
       // Full-text search via search_vector (uses GIN index from migration 0003)
       const ftsClause = sql`${listings.searchVector}::tsvector @@ websearch_to_tsquery('simple', ${expanded.tsqueryString})`;
 
       // Word-level trigram similarity for typo tolerance -- compares query against each
       // word in the title individually so short misspellings aren't drowned out
-      const searchTrimmed = searchQuery.trim();
       const trigramClause = sql`EXISTS (SELECT 1 FROM unnest(string_to_array(${listings.title}, ' ')) AS word WHERE similarity(word, ${searchTrimmed}) > 0.35)`;
 
-      // Original LIKE on description/tags as fallback
-      likeClauses.push(sql`LOWER(${listings.description}) LIKE ${rawTerm}`);
-      likeClauses.push(sql`LOWER(${listings.category}) LIKE ${rawTerm}`);
-      likeClauses.push(sql`EXISTS (SELECT 1 FROM unnest(${listings.tags}) AS tag WHERE LOWER(tag) LIKE ${rawTerm})`);
+      // Skip LIKE wildcards for single-character queries (e.g. "L", "M") to prevent
+      // matching "XL", "XXL", etc. The user should use the Size facet instead.
+      if (isSingleChar) {
+        conds.push(or(ftsClause, trigramClause));
+      } else {
+        // Build LIKE clauses for each synonym term (capped to 8 for perf)
+        const likeTerms = expanded.allTerms.slice(0, 8);
+        const likeClauses: any[] = [];
+        for (const term of likeTerms) {
+          const patt = `%${term.toLowerCase()}%`;
+          likeClauses.push(sql`LOWER(${listings.title}) LIKE ${patt}`);
+          likeClauses.push(sql`LOWER(COALESCE(${listings.brand}, '')) LIKE ${patt}`);
+        }
 
-      conds.push(or(ftsClause, trigramClause, ...likeClauses));
+        // LIKE on description/tags as fallback
+        likeClauses.push(sql`LOWER(${listings.description}) LIKE ${rawTerm}`);
+        likeClauses.push(sql`LOWER(${listings.category}) LIKE ${rawTerm}`);
+        likeClauses.push(sql`EXISTS (SELECT 1 FROM unnest(${listings.tags}) AS tag WHERE LOWER(tag) LIKE ${rawTerm})`);
+
+        conds.push(or(ftsClause, trigramClause, ...likeClauses));
+      }
 
       // ── Best Match composite score ──
       // Weights: FTS rank (40), trigram similarity (10), title LIKE (10),
@@ -612,10 +631,10 @@ export class DatabaseStorage implements IStorage {
       conds.push(sql`COALESCE(${listings.currentBid}, ${listings.price}) <= ${maxPrice}`);
     }
 
-    // Condition filter
+    // Condition filter — exact match so "New" won't bleed into "Like New"
     if (conditionFilters && conditionFilters.length > 0) {
       const condClauses = conditionFilters.map((c) =>
-        sql`LOWER(${listings.condition}) LIKE ${`%${c.toLowerCase()}%`}`
+        sql`LOWER(${listings.condition}) = ${c.toLowerCase()}`
       );
       conds.push(or(...condClauses));
     }
@@ -628,12 +647,12 @@ export class DatabaseStorage implements IStorage {
       conds.push(or(...cityClauses));
     }
 
-    // Specification filters (JSONB)
+    // Specification filters (JSONB) — whitelist keys to prevent SQL injection
     if (options.specs) {
       for (const [key, values] of Object.entries(options.specs)) {
-        if (values && values.length > 0) {
+        if (values && values.length > 0 && ALLOWED_SPEC_KEYS.has(key)) {
           const specClauses = values.map((v) =>
-            sql`${listings.specifications}->>${sql.raw(`'${key}'`)} = ${v}`
+            sql`${listings.specifications}->>${key} = ${v}`
           );
           conds.push(or(...specClauses));
         }
@@ -907,12 +926,12 @@ export class DatabaseStorage implements IStorage {
       if (specFields && specFields.length > 0) {
         const specQueries = specFields.map(field =>
           db.select({
-            value: sql<string>`${listings.specifications}->>${sql.raw(`'${field}'`)}`,
+            value: sql<string>`${listings.specifications}->>${field}`,
             count: sql<number>`count(*)::int`,
           })
             .from(listings)
-            .where(and(whereClause, sql`${listings.specifications}->>${sql.raw(`'${field}'`)} IS NOT NULL AND ${listings.specifications}->>${sql.raw(`'${field}'`)} != ''`))
-            .groupBy(sql`${listings.specifications}->>${sql.raw(`'${field}'`)}`)
+            .where(and(whereClause, sql`${listings.specifications}->>${field} IS NOT NULL AND ${listings.specifications}->>${field} != ''`))
+            .groupBy(sql`${listings.specifications}->>${field}`)
             .orderBy(sql`count(*) DESC`)
             .limit(30)
         );

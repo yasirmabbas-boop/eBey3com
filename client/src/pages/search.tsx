@@ -42,16 +42,6 @@ import { useLanguage } from "@/lib/i18n";
 import { CATEGORY_SEARCH_FILTERS, SPECIFICATION_OPTIONS, SPECIFICATION_LABELS, CONDITION_LABELS, CATEGORY_KEYWORDS, getSpecLabel } from "@/lib/search-data";
 import type { Listing } from "@shared/schema";
 
-// Translate a specification value (e.g. "black" → "أسود") using the options table
-function getSpecLabel(specKey: string, value: string | number | boolean, lang: string): string {
-  const options = SPECIFICATION_OPTIONS[specKey as keyof typeof SPECIFICATION_OPTIONS] as Array<{ value: string; labelAr: string; labelKu: string }> | undefined;
-  if (options) {
-    const match = options.find((o) => o.value === String(value));
-    if (match) return lang === "ar" ? match.labelAr : match.labelKu;
-  }
-  return String(value);
-}
-
 const CATEGORIES = [
   { id: "ساعات", nameAr: "ساعات", nameKu: "کاتژمێر", icon: Watch },
   { id: "إلكترونيات", nameAr: "إلكترونيات", nameKu: "ئەلیکترۆنیات", icon: Smartphone },
@@ -228,7 +218,7 @@ export default function SearchPage() {
   const saleTypes = appliedFilters.saleTypes;
 
   // Use the standardized useListings hook for consistent data fetching and caching
-  const { data: listingsData, isLoading, isFetching } = useListings({
+  const { data: listingsData, isLoading, isFetching, isError } = useListings({
     sellerId: sellerIdParam || undefined,
     limit: ITEMS_PER_PAGE,
     page,
@@ -386,21 +376,29 @@ export default function SearchPage() {
   };
 
   const toggleAppliedCondition = (condition: string) => {
-    setAppliedFilters(prev => ({
-      ...prev,
-      conditions: prev.conditions.includes(condition)
-        ? prev.conditions.filter(c => c !== condition)
-        : [...prev.conditions, condition]
-    }));
+    setAppliedFilters(prev => {
+      const next = {
+        ...prev,
+        conditions: prev.conditions.includes(condition)
+          ? prev.conditions.filter(c => c !== condition)
+          : [...prev.conditions, condition]
+      };
+      pushFiltersToUrl(next, sortBy);
+      return next;
+    });
   };
 
   const toggleAppliedSaleType = (saleType: string) => {
-    setAppliedFilters(prev => ({
-      ...prev,
-      saleTypes: prev.saleTypes.includes(saleType)
-        ? prev.saleTypes.filter(t => t !== saleType)
-        : [...prev.saleTypes, saleType]
-    }));
+    setAppliedFilters(prev => {
+      const next = {
+        ...prev,
+        saleTypes: prev.saleTypes.includes(saleType)
+          ? prev.saleTypes.filter(t => t !== saleType)
+          : [...prev.saleTypes, saleType]
+      };
+      pushFiltersToUrl(next, sortBy);
+      return next;
+    });
   };
 
   const toggleAppliedSpec = (specKey: string, specValue: string) => {
@@ -415,7 +413,9 @@ export default function SearchPage() {
       } else {
         newSpecs[specKey] = newValues;
       }
-      return { ...prev, specs: newSpecs };
+      const next = { ...prev, specs: newSpecs };
+      pushFiltersToUrl(next, sortBy);
+      return next;
     });
   };
 
@@ -441,6 +441,7 @@ export default function SearchPage() {
       specs: {},
     };
     setAppliedFilters(cleared);
+    pushFiltersToUrl(cleared, sortBy);
   };
 
   // Reset pagination when filters change - use primitive deps to avoid unnecessary runs
@@ -450,7 +451,7 @@ export default function SearchPage() {
     setMergedListings([]);
   }, [filterKey, searchQuery, sellerIdParam]);
 
-  const syncFiltersToUrl = useCallback((filters: FilterState, sort: string) => {
+  const buildFilterUrl = useCallback((filters: FilterState, sort: string) => {
     const p = new URLSearchParams();
     if (searchQuery) p.set("q", searchQuery);
     if (sellerIdParam) p.set("sellerId", sellerIdParam);
@@ -465,12 +466,28 @@ export default function SearchPage() {
       values.forEach(v => p.append(`specs[${key}]`, v));
     }
     const query = p.toString();
-    navigate(`/search${query ? `?${query}` : ""}`, { replace: true });
-  }, [searchQuery, sellerIdParam, navigate]);
+    return `/search${query ? `?${query}` : ""}`;
+  }, [searchQuery, sellerIdParam]);
 
+  // Ref to skip the auto-sync replace after an explicit push already navigated
+  const skipNextReplace = useRef(false);
+
+  // Push a new history entry when a user explicitly clicks a filter/facet
+  const pushFiltersToUrl = useCallback((filters: FilterState, sort: string) => {
+    skipNextReplace.current = true;
+    navigate(buildFilterUrl(filters, sort), { replace: false });
+  }, [buildFilterUrl, navigate]);
+
+  // Keep URL in sync via replace (no new history entry) for automatic/derived updates
+  // (e.g. price input keystrokes). Skipped when pushFiltersToUrl already navigated.
   useEffect(() => {
-    syncFiltersToUrl(appliedFilters, sortBy);
-  }, [appliedFilters, sortBy, syncFiltersToUrl]);
+    if (skipNextReplace.current) {
+      skipNextReplace.current = false;
+      return;
+    }
+    const url = buildFilterUrl(appliedFilters, sortBy);
+    navigate(url, { replace: true });
+  }, [appliedFilters, sortBy, buildFilterUrl, navigate]);
 
   const activeFiltersCount = [
     appliedFilters.category ? 1 : 0,
@@ -491,12 +508,16 @@ export default function SearchPage() {
   };
 
   const quickToggleSaleType = (saleType: string) => {
-    setAppliedFilters(prev => ({
-      ...prev,
-      saleTypes: prev.saleTypes.includes(saleType)
-        ? prev.saleTypes.filter(t => t !== saleType)
-        : [saleType]
-    }));
+    setAppliedFilters(prev => {
+      const next = {
+        ...prev,
+        saleTypes: prev.saleTypes.includes(saleType)
+          ? prev.saleTypes.filter(t => t !== saleType)
+          : [saleType]
+      };
+      pushFiltersToUrl(next, sortBy);
+      return next;
+    });
   };
 
   const quickToggleCategory = (category: string | null) => {
@@ -507,7 +528,9 @@ export default function SearchPage() {
         delete newSpecs.size;
         delete newSpecs.shoeSize;
       }
-      return { ...prev, category: newCategory, specs: newSpecs };
+      const next = { ...prev, category: newCategory, specs: newSpecs };
+      pushFiltersToUrl(next, sortBy);
+      return next;
     });
   };
 
@@ -517,7 +540,9 @@ export default function SearchPage() {
       delete newSpecs.size;
       delete newSpecs.shoeSize;
       if (value) newSpecs[specKey] = [value];
-      return { ...prev, specs: newSpecs };
+      const next = { ...prev, specs: newSpecs };
+      pushFiltersToUrl(next, sortBy);
+      return next;
     });
   };
 
@@ -620,7 +645,11 @@ export default function SearchPage() {
                         <Button
                           variant={appliedFilters.category === null ? "default" : "ghost"}
                           className="w-full justify-between"
-                          onClick={() => setAppliedFilters(prev => ({ ...prev, category: null, specs: {} }))}
+                          onClick={() => {
+                            const next = { ...appliedFilters, category: null, specs: {} };
+                            setAppliedFilters(next);
+                            pushFiltersToUrl(next, sortBy);
+                          }}
                           data-testid="filter-category-all"
                         >
                           <span>{t("allCategories")}</span>
@@ -631,7 +660,11 @@ export default function SearchPage() {
                             key={cat.id}
                             variant={appliedFilters.category === cat.id ? "default" : "ghost"}
                             className="w-full justify-between"
-                            onClick={() => setAppliedFilters(prev => ({ ...prev, category: cat.id, specs: prev.category !== cat.id ? {} : prev.specs }))}
+                            onClick={() => {
+                              const next = { ...appliedFilters, category: cat.id, specs: appliedFilters.category !== cat.id ? {} : appliedFilters.specs };
+                              setAppliedFilters(next);
+                              pushFiltersToUrl(next, sortBy);
+                            }}
                             data-testid={`filter-category-${cat.id}`}
                           >
                             <span className="flex items-center gap-2">
@@ -685,7 +718,11 @@ export default function SearchPage() {
                             <Checkbox 
                               id="includeSold" 
                               checked={appliedFilters.includeSold}
-                              onCheckedChange={(checked) => setAppliedFilters(prev => ({ ...prev, includeSold: !!checked }))}
+                              onCheckedChange={(checked) => {
+                                const next = { ...appliedFilters, includeSold: !!checked };
+                                setAppliedFilters(next);
+                                pushFiltersToUrl(next, sortBy);
+                              }}
                               data-testid="filter-include-sold"
                               disabled={!searchQuery}
                             />
@@ -1020,7 +1057,22 @@ export default function SearchPage() {
         )}
 
         <div>
-          {isLoading ? (
+          {isError ? (
+            <div className="text-center py-16">
+              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <X className="h-8 w-8 text-red-500" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">
+                {language === "ar" ? "حدث خطأ في تحميل النتائج" : language === "ku" ? "هەڵەیەک ڕوویدا لە بارکردنی ئەنجامەکان" : "حدث خطأ في تحميل النتائج"}
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {language === "ar" ? "يرجى المحاولة مرة أخرى" : language === "ku" ? "تکایە دووبارە هەوڵبدە" : "يرجى المحاولة مرة أخرى"}
+              </p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                {language === "ar" ? "إعادة المحاولة" : language === "ku" ? "دووبارە هەوڵبدە" : "إعادة المحاولة"}
+              </Button>
+            </div>
+          ) : isLoading ? (
             <ProductGridSkeleton count={12} />
           ) : filteredProducts.length === 0 ? (
             // Only show empty state if user has applied filters or search query
