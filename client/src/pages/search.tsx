@@ -254,6 +254,10 @@ function SearchContent({
         <div className="flex-1 min-w-0">
           <SearchBox
             placeholder={language === "ar" ? "ابحث عن منتجات..." : language === "ku" ? "گەڕان بۆ بەرهەم..." : "Search products..."}
+            queryHook={(query, search) => {
+              clearTimeout((window as any).__searchDebounce);
+              (window as any).__searchDebounce = setTimeout(() => search(query), 300);
+            }}
             classNames={{
               root: "w-full",
               form: "relative",
