@@ -24,3 +24,4 @@ server/service-account.json
 
 # Test archives (not for production)
 server/_test-archive/
+server/firebase-creds.ts
