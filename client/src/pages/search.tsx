@@ -8,10 +8,12 @@ import {
   RefinementList,
   Configure,
   useHits,
+  useCurrentRefinements,
   SortBy,
   RangeInput,
   ClearRefinements,
 } from "react-instantsearch";
+import historyRouter from "instantsearch.js/es/lib/routers/history";
 import { instantMeiliSearch } from "@meilisearch/instant-meilisearch";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,9 +31,49 @@ import { useLanguage } from "@/lib/i18n";
 import {
   SPECIFICATION_OPTIONS,
   CONDITION_LABELS,
+  CATEGORY_SEARCH_FILTERS,
+  SPECIFICATION_LABELS,
   getSpecLabel,
 } from "@/lib/search-data";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 import type { Listing } from "@shared/schema";
+
+/** Local error boundary so a Meilisearch proxy failure doesn't crash the whole page */
+class SearchErrorBoundary extends Component<
+  { children: ReactNode; language: string },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("[SearchErrorBoundary]", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      const lang = this.props.language;
+      return (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground mb-4">
+            {lang === "ar"
+              ? "البحث غير متاح حالياً. يرجى المحاولة لاحقاً."
+              : lang === "ku"
+                ? "گەڕان لە ئێستادا بەردەست نییە."
+                : "Search is temporarily unavailable."}
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="text-primary underline text-sm"
+          >
+            {lang === "ar" ? "إعادة المحاولة" : lang === "ku" ? "دووبارە هەوڵبدە" : "Try again"}
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const SORT_OPTIONS = [
   { value: "listings:relevance", labelAr: "الأكثر صلة", labelKu: "پەیوەندیدارترین" },
@@ -159,6 +201,13 @@ function ListingHitCard({
 function SearchResults({ language, t }: { language: string; t: (k: string) => string }) {
   const { hits, results, status } = useHits<Listing & Record<string, unknown>>();
 
+  // Pre-fetch hot listings so empty state renders instantly
+  const { data: hotListings = [] } = useQuery<Listing[]>({
+    queryKey: ["/api/hot-listings", 6],
+    queryFn: () => fetch("/api/hot-listings?limit=6").then((r) => r.json()),
+    staleTime: 60_000,
+  });
+
   if (status === "loading" || status === "idle") {
     return <ProductGridSkeleton count={12} />;
   }
@@ -171,7 +220,7 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
         onClearFilters={undefined}
         language={language}
         suggestions={[]}
-        fallbackListings={[]}
+        fallbackListings={hotListings}
       />
     );
   }
@@ -206,6 +255,10 @@ function SearchContent({
         <div className="flex-1 min-w-0">
           <SearchBox
             placeholder={language === "ar" ? "ابحث عن منتجات..." : language === "ku" ? "گەڕان بۆ بەرهەم..." : "Search products..."}
+            queryHook={(query, search) => {
+              clearTimeout((window as any).__searchDebounce);
+              (window as any).__searchDebounce = setTimeout(() => search(query), 300);
+            }}
             classNames={{
               root: "w-full",
               form: "relative",
@@ -232,7 +285,39 @@ function SearchContent({
   );
 }
 
+/** Read the currently selected categories from InstantSearch state */
+function useSelectedCategories(): string[] {
+  const { items } = useCurrentRefinements({ includedAttributes: ["category"] });
+  const cats: string[] = [];
+  for (const item of items) {
+    for (const ref of item.refinements) {
+      if (typeof ref.value === "string") cats.push(ref.value);
+    }
+  }
+  return cats;
+}
+
+const REFINEMENT_CLASS_NAMES = {
+  list: "space-y-2",
+  item: "flex items-center justify-between",
+  label: "cursor-pointer flex items-center gap-2",
+  checkbox: "mr-2",
+  count: "text-xs text-muted-foreground",
+};
+
 function FiltersSheet({ language, t }: { language: string; t: (k: string) => string }) {
+  const selectedCategories = useSelectedCategories();
+
+  // Collect all spec keys to show based on selected categories
+  const specKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const cat of selectedCategories) {
+      const specs = CATEGORY_SEARCH_FILTERS[cat];
+      if (specs) specs.forEach((k) => keys.add(k));
+    }
+    return Array.from(keys);
+  }, [selectedCategories]);
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -263,26 +348,14 @@ function FiltersSheet({ language, t }: { language: string; t: (k: string) => str
                 attribute="category"
                 showMore
                 limit={20}
-                classNames={{
-                  list: "space-y-2",
-                  item: "flex items-center justify-between",
-                  label: "cursor-pointer flex items-center gap-2",
-                  checkbox: "mr-2",
-                  count: "text-xs text-muted-foreground",
-                }}
+                classNames={REFINEMENT_CLASS_NAMES}
               />
             </div>
             <div>
               <h3 className="font-semibold text-sm mb-2">{t("saleTypeLabel")}</h3>
               <RefinementList
                 attribute="saleType"
-                classNames={{
-                  list: "space-y-2",
-                  item: "flex items-center justify-between",
-                  label: "cursor-pointer flex items-center gap-2",
-                  checkbox: "mr-2",
-                  count: "text-xs text-muted-foreground",
-                }}
+                classNames={REFINEMENT_CLASS_NAMES}
               />
             </div>
             <div>
@@ -290,11 +363,8 @@ function FiltersSheet({ language, t }: { language: string; t: (k: string) => str
               <RefinementList
                 attribute="condition"
                 classNames={{
-                  list: "space-y-2",
-                  item: "flex items-center justify-between",
+                  ...REFINEMENT_CLASS_NAMES,
                   label: "cursor-pointer",
-                  checkbox: "mr-2",
-                  count: "text-xs text-muted-foreground",
                 }}
               />
             </div>
@@ -314,6 +384,25 @@ function FiltersSheet({ language, t }: { language: string; t: (k: string) => str
                 }}
               />
             </div>
+
+            {/* Dynamic specification filters — shown only when a category is selected */}
+            {specKeys.map((specKey) => {
+              const labels = SPECIFICATION_LABELS[specKey];
+              const label = labels
+                ? language === "ar" ? labels.ar : labels.ku
+                : specKey;
+              return (
+                <div key={specKey}>
+                  <h3 className="font-semibold text-sm mb-2">{label}</h3>
+                  <RefinementList
+                    attribute={`specifications.${specKey}`}
+                    limit={15}
+                    showMore
+                    classNames={REFINEMENT_CLASS_NAMES}
+                  />
+                </div>
+              );
+            })}
           </div>
         </ScrollArea>
         <SheetFooter className="p-4 pb-20 border-t bg-gray-50">
@@ -402,6 +491,7 @@ export default function SearchPage() {
           </div>
         )}
 
+        <SearchErrorBoundary language={language}>
         <InstantSearch
           searchClient={searchClient}
           indexName="listings"
@@ -411,12 +501,23 @@ export default function SearchPage() {
             },
           }}
           routing={{
+            router: historyRouter({
+              writeDelay: 400,
+              createURL({ qsModule, routeState, location }) {
+                const qs = qsModule.stringify(routeState, { addQueryPrefix: true });
+                return `${location.pathname}${qs}`;
+              },
+            }),
             stateMapping: {
               stateToRoute(uiState) {
                 const indexState = uiState.listings || {};
                 const route: Record<string, string> = {};
                 if (indexState.query) route.q = indexState.query;
                 if (indexState.sortBy) route.sort = indexState.sortBy;
+                // Persist category refinement in URL for shareable filtered links
+                if (indexState.refinementList?.category?.length) {
+                  route.category = indexState.refinementList.category.join(",");
+                }
                 return route;
               },
               routeToState(routeState) {
@@ -426,6 +527,11 @@ export default function SearchPage() {
                   listings: {
                     query: (typeof safe.q === "string" ? safe.q : "") as string,
                     sortBy: (typeof safe.sort === "string" ? safe.sort : undefined) as string | undefined,
+                    refinementList: {
+                      category: typeof safe.category === "string"
+                        ? safe.category.split(",")
+                        : [],
+                    },
                   },
                 };
               },
@@ -434,6 +540,7 @@ export default function SearchPage() {
         >
           <SearchContent sellerIdParam={sellerIdParam} language={language} t={t} />
         </InstantSearch>
+        </SearchErrorBoundary>
       </div>
     </Layout>
   );
