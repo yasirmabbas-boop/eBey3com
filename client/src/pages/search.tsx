@@ -10,7 +10,6 @@ import {
   useHits,
   SortBy,
   RangeInput,
-  Panel,
   ClearRefinements,
 } from "react-instantsearch";
 import { instantMeiliSearch } from "@meilisearch/instant-meilisearch";
@@ -258,7 +257,8 @@ function FiltersSheet({ language, t }: { language: string; t: (k: string) => str
               }}
               translations={{ reset: t("clearAllFilters") }}
             />
-            <Panel header={t("categoriesLabel")}>
+            <div>
+              <h3 className="font-semibold text-sm mb-2">{t("categoriesLabel")}</h3>
               <RefinementList
                 attribute="category"
                 showMore
@@ -271,8 +271,9 @@ function FiltersSheet({ language, t }: { language: string; t: (k: string) => str
                   count: "text-xs text-muted-foreground",
                 }}
               />
-            </Panel>
-            <Panel header={t("saleTypeLabel")}>
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm mb-2">{t("saleTypeLabel")}</h3>
               <RefinementList
                 attribute="saleType"
                 classNames={{
@@ -283,8 +284,9 @@ function FiltersSheet({ language, t }: { language: string; t: (k: string) => str
                   count: "text-xs text-muted-foreground",
                 }}
               />
-            </Panel>
-            <Panel header={t("conditionLabel")}>
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm mb-2">{t("conditionLabel")}</h3>
               <RefinementList
                 attribute="condition"
                 classNames={{
@@ -295,8 +297,9 @@ function FiltersSheet({ language, t }: { language: string; t: (k: string) => str
                   count: "text-xs text-muted-foreground",
                 }}
               />
-            </Panel>
-            <Panel header={t("priceRange")}>
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm mb-2">{t("priceRange")}</h3>
               <RangeInput
                 attribute="price"
                 classNames={{
@@ -310,7 +313,7 @@ function FiltersSheet({ language, t }: { language: string; t: (k: string) => str
                   submitButtonText: t("submit"),
                 }}
               />
-            </Panel>
+            </div>
           </div>
         </ScrollArea>
         <SheetFooter className="p-4 pb-20 border-t bg-gray-50">
