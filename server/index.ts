@@ -31,6 +31,7 @@ import { startOtpCleanupCron } from "./otp-cron";
 import { startOfferExpirationCron } from "./offer-cron";
 import { startNotificationCleanupCron } from "./notification-cron";
 import { startPayoutPermissionCrons } from "./payout-permission-cron";
+import { initializeMeilisearch } from "./services/meilisearch";
 
 // Environment checks
 if (!process.env.VERIFYWAY_TOKEN) {
@@ -182,6 +183,11 @@ app.use((req, res, next) => {
     // DB connection is lazy—init only after server is up so slow Cloud SQL socket mount doesn't crash startup
     setImmediate(() => {
       initDb().catch((err) => console.error("[DB] Init failed:", err.message));
+    });
+    setImmediate(() => {
+      initializeMeilisearch().catch((err) =>
+        console.warn("[Meilisearch] Init failed:", (err as Error).message)
+      );
     });
     startAuctionProcessor();
   });
