@@ -31,7 +31,8 @@ import { startOtpCleanupCron } from "./otp-cron";
 import { startOfferExpirationCron } from "./offer-cron";
 import { startNotificationCleanupCron } from "./notification-cron";
 import { startPayoutPermissionCrons } from "./payout-permission-cron";
-import { initializeMeilisearch } from "./services/meilisearch";
+import { initializeMeilisearch, bulkSyncListingsToMeilisearch } from "./services/meilisearch";
+import { db } from "./db";
 
 // Environment checks
 if (!process.env.VERIFYWAY_TOKEN) {
@@ -181,13 +182,25 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
     console.log(`[ebey3] Server is awake and listening on 0.0.0.0:${port}`);
     // DB connection is lazy—init only after server is up so slow Cloud SQL socket mount doesn't crash startup
-    setImmediate(() => {
-      initDb().catch((err) => console.error("[DB] Init failed:", err.message));
-    });
-    setImmediate(() => {
-      initializeMeilisearch().catch((err) =>
-        console.warn("[Meilisearch] Init failed:", (err as Error).message)
-      );
+    setImmediate(async () => {
+      try {
+        await initDb();
+        console.log("[DB] Init complete");
+      } catch (err) {
+        console.error("[DB] Init failed:", (err as Error).message);
+        return; // Don't attempt Meilisearch sync if DB isn't ready
+      }
+
+      try {
+        await initializeMeilisearch();
+        console.log("[Meilisearch] Index configured, starting bulk sync...");
+        const result = await bulkSyncListingsToMeilisearch(db);
+        console.log(
+          `[Meilisearch] Bulk sync complete: ${result.totalProcessed} docs in ${result.totalBatches} batches`
+        );
+      } catch (err) {
+        console.warn("[Meilisearch] Init/sync failed:", (err as Error).message);
+      }
     });
     startAuctionProcessor();
   });
