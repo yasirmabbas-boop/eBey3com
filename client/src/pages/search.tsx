@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { useSearch, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -19,13 +19,13 @@ import { instantMeiliSearch } from "@meilisearch/instant-meilisearch";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Filter,
   SlidersHorizontal,
   AlertTriangle,
   RefreshCw,
+  X,
 } from "lucide-react";
 import { FavoriteButton } from "@/components/favorite-button";
 import { ProductGridSkeleton } from "@/components/optimized-image";
@@ -79,7 +79,7 @@ class SearchErrorBoundary extends Component<
 }
 
 const SORT_OPTIONS = [
-  { value: "listings:relevance", labelAr: "الأكثر صلة", labelKu: "پەیوەندیدارترین" },
+  { value: "listings", labelAr: "الأكثر صلة", labelKu: "پەیوەندیدارترین" },
   { value: "listings:createdAt:desc", labelAr: "الأحدث", labelKu: "نوێترین" },
   { value: "listings:views:desc", labelAr: "الأكثر مشاهدة", labelKu: "زۆرترین بینراو" },
   { value: "listings:price:asc", labelAr: "السعر: من الأقل للأعلى", labelKu: "نرخ: لە کەمەوە بۆ زۆر" },
@@ -98,7 +98,8 @@ const searchClient = (() => {
       },
     });
     return sc;
-  } catch {
+  } catch (err) {
+    console.error("[Search] Failed to create search client:", err);
     return null;
   }
 })();
@@ -293,59 +294,6 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
   );
 }
 
-function SearchContent({
-  sellerIdParam,
-  language,
-  t,
-}: {
-  sellerIdParam: string | null;
-  language: string;
-  t: (k: string) => string;
-}) {
-  const baseFilter = "isDeleted = false AND isActive = true";
-  const filter = sellerIdParam
-    ? `${baseFilter} AND sellerId = "${sellerIdParam}"`
-    : baseFilter;
-
-  return (
-    <>
-      <Configure filters={filter} hitsPerPage={24} attributesToRetrieve={["*"]} />
-      <StaleSpecCleaner />
-      <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
-        <div className="flex-1 min-w-0">
-          <SearchBox
-            placeholder={language === "ar" ? "ابحث عن منتجات..." : language === "ku" ? "گەڕان بۆ بەرهەم..." : "Search products..."}
-            queryHook={(query, search) => {
-              clearTimeout((window as any).__searchDebounce);
-              (window as any).__searchDebounce = setTimeout(() => search(query), 300);
-            }}
-            classNames={{
-              root: "w-full",
-              form: "relative",
-              input: "w-full h-11 rounded-md border border-blue-300 bg-blue-50 px-3 pr-10 text-base focus:ring-blue-500 focus:border-blue-500",
-              submit: "absolute right-3 top-1/2 -translate-y-1/2 text-gray-400",
-              reset: "absolute right-10 top-1/2 -translate-y-1/2 text-gray-400",
-            }}
-          />
-        </div>
-        <SortBy
-          items={SORT_OPTIONS.map((opt) => ({
-            value: opt.value,
-            label: language === "ar" ? opt.labelAr : opt.labelKu,
-          }))}
-          classNames={{
-            root: "min-w-[120px]",
-            select: "h-8 text-xs rounded-md border border-input bg-background px-2",
-          }}
-        />
-        <FiltersSheet language={language} t={t} />
-      </div>
-      <SearchHealthBanner language={language} />
-      <SearchResults language={language} t={t} />
-    </>
-  );
-}
-
 /** Read the currently selected categories from InstantSearch state */
 function useSelectedCategories(): string[] {
   const { items } = useCurrentRefinements({ includedAttributes: ["category"] });
@@ -404,7 +352,22 @@ const REFINEMENT_CLASS_NAMES = {
   count: "text-xs text-muted-foreground",
 };
 
-function FiltersSheet({ language, t }: { language: string; t: (k: string) => string }) {
+/**
+ * Filters panel — rendered inline (NOT in a portal) to stay inside the
+ * InstantSearch context tree.  We toggle visibility with a simple boolean
+ * state and use a fixed overlay so the UX is the same as the old Sheet.
+ */
+function FiltersPanel({
+  language,
+  t,
+  open,
+  onClose,
+}: {
+  language: string;
+  t: (k: string) => string;
+  open: boolean;
+  onClose: () => void;
+}) {
   const selectedCategories = useSelectedCategories();
 
   // Collect all spec keys to show based on selected categories
@@ -418,20 +381,36 @@ function FiltersSheet({ language, t }: { language: string; t: (k: string) => str
   }, [selectedCategories]);
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1 h-8 px-2" data-testid="open-filters">
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          {t("filters")}
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-full sm:w-96 p-0 flex flex-col" dir={language === "ar" ? "rtl" : "ltr"}>
-        <SheetHeader className="p-4 border-b border-border/60 bg-muted/60">
-          <SheetTitle className="flex items-center gap-2 text-xl">
+    <>
+      {/* Backdrop */}
+      {open && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 animate-in fade-in-0"
+          onClick={onClose}
+        />
+      )}
+      {/*
+        Slide-in panel — ALWAYS mounted so RefinementList widgets register with
+        InstantSearch on first render and honour initialUiState.
+        When closed, we use CSS to hide the panel off-screen.
+      */}
+      <div
+        className={`fixed inset-y-0 ${language === "ar" ? "left-0" : "right-0"} z-50 w-full sm:w-96 bg-background shadow-lg flex flex-col transition-transform duration-300 ${open ? "translate-x-0" : (language === "ar" ? "-translate-x-full" : "translate-x-full")}`}
+        dir={language === "ar" ? "rtl" : "ltr"}
+        aria-hidden={!open}
+      >
+        <div className="p-4 border-b border-border/60 bg-muted/60 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-xl font-semibold">
             <Filter className="h-5 w-5 text-primary" />
             {t("filters")}
-          </SheetTitle>
-        </SheetHeader>
+          </h2>
+          <button
+            onClick={onClose}
+            className="rounded-sm opacity-70 hover:opacity-100 transition-opacity"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-6">
             <ClearRefinements
@@ -504,23 +483,95 @@ function FiltersSheet({ language, t }: { language: string; t: (k: string) => str
             })}
           </div>
         </ScrollArea>
-        <SheetFooter className="p-4 pb-20 border-t bg-gray-50">
-          <SheetTrigger asChild>
-            <Button className="w-full" data-testid="close-filters">
-              {t("close")}
-            </Button>
-          </SheetTrigger>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        <div className="p-4 pb-20 border-t bg-gray-50">
+          <Button className="w-full" onClick={onClose} data-testid="close-filters">
+            {t("close")}
+          </Button>
+        </div>
+      </div>
+    </>
   );
 }
+
+function SearchContent({
+  sellerIdParam,
+  language,
+  t,
+}: {
+  sellerIdParam: string | null;
+  language: string;
+  t: (k: string) => string;
+}) {
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const baseFilter = "isDeleted = false AND isActive = true";
+  const filter = sellerIdParam
+    ? `${baseFilter} AND sellerId = "${sellerIdParam}"`
+    : baseFilter;
+
+  return (
+    <>
+      <Configure filters={filter} hitsPerPage={24} attributesToRetrieve={["*"]} />
+      <StaleSpecCleaner />
+      <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
+        <div className="flex-1 min-w-0">
+          <SearchBox
+            placeholder={language === "ar" ? "ابحث عن منتجات..." : language === "ku" ? "گەڕان بۆ بەرهەم..." : "Search products..."}
+            queryHook={(query, search) => {
+              clearTimeout((window as any).__searchDebounce);
+              (window as any).__searchDebounce = setTimeout(() => search(query), 300);
+            }}
+            classNames={{
+              root: "w-full",
+              form: "relative",
+              input: "w-full h-11 rounded-md border border-blue-300 bg-blue-50 px-3 pr-10 text-base focus:ring-blue-500 focus:border-blue-500",
+              submit: "absolute right-3 top-1/2 -translate-y-1/2 text-gray-400",
+              reset: "absolute right-10 top-1/2 -translate-y-1/2 text-gray-400",
+            }}
+          />
+        </div>
+        <SortBy
+          items={SORT_OPTIONS.map((opt) => ({
+            value: opt.value,
+            label: language === "ar" ? opt.labelAr : opt.labelKu,
+          }))}
+          classNames={{
+            root: "min-w-[120px]",
+            select: "h-8 text-xs rounded-md border border-input bg-background px-2",
+          }}
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1 h-8 px-2"
+          data-testid="open-filters"
+          onClick={() => setFiltersOpen(true)}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          {t("filters")}
+        </Button>
+      </div>
+      <SearchHealthBanner language={language} />
+      <SearchResults language={language} t={t} />
+      {/* Filters panel rendered INLINE (inside InstantSearch context, no portal) */}
+      <FiltersPanel
+        language={language}
+        t={t}
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+      />
+    </>
+  );
+}
+
 
 export default function SearchPage() {
   const { language, t } = useLanguage();
   const searchString = useSearch();
   const params = useMemo(() => new URLSearchParams(searchString), [searchString]);
   const sellerIdParam = params.get("sellerId");
+  const initialCategory = params.get("category");
+  const initialQuery = params.get("q") || "";
 
   const { data: sellerInfo } = useQuery({
     queryKey: ["/api/users", sellerIdParam],
@@ -534,6 +585,20 @@ export default function SearchPage() {
   });
 
   const dir = language === "ar" ? "rtl" : "ltr";
+
+  // Build initialUiState from URL parameters
+  const initialUiState = useMemo(() => {
+    const state: Record<string, any> = {};
+    if (initialQuery) {
+      state.query = initialQuery;
+    }
+    if (initialCategory) {
+      state.refinementList = {
+        category: [initialCategory],
+      };
+    }
+    return { listings: state };
+  }, [initialQuery, initialCategory]);
 
   if (!searchClient) {
     return (
@@ -594,41 +659,13 @@ export default function SearchPage() {
         <InstantSearch
           searchClient={searchClient}
           indexName="listings"
-          initialUiState={{
-            listings: {
-              query: params.get("q") || "",
-            },
-          }}
-          routing={{
-            stateMapping: {
-              stateToRoute(uiState) {
-                const indexState = uiState.listings || {};
-                const route: Record<string, string> = {};
-                if (indexState.query) route.q = indexState.query;
-                if (indexState.sortBy) route.sort = indexState.sortBy;
-                const cats = indexState.refinementList?.category;
-                if (cats && cats.length > 0) route.category = cats.join(",");
-                return route;
-              },
-              routeToState(routeState) {
-                // Guard against non-object values (e.g., ?q=yasir parsed as string)
-                const safe = routeState && typeof routeState === "object" ? routeState : {};
-                const categoryStr = typeof safe.category === "string" ? safe.category : "";
-                const categories = categoryStr ? categoryStr.split(",") : [];
-                return {
-                  listings: {
-                    query: (typeof safe.q === "string" ? safe.q : "") as string,
-                    sortBy: (typeof safe.sort === "string" ? safe.sort : undefined) as string | undefined,
-                    refinementList: {
-                      ...(categories.length > 0 ? { category: categories } : {}),
-                    },
-                  },
-                };
-              },
-            },
-          }}
+          initialUiState={initialUiState}
         >
-          <SearchContent sellerIdParam={sellerIdParam} language={language} t={t} />
+          <SearchContent
+            sellerIdParam={sellerIdParam}
+            language={language}
+            t={t}
+          />
         </InstantSearch>
         </SearchErrorBoundary>
       </div>
