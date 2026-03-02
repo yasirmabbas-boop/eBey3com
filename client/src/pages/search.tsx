@@ -425,7 +425,8 @@ function FiltersPanel({
               <RefinementList
                 attribute="category"
                 showMore
-                limit={20}
+                limit={10}
+                showMoreLimit={30}
                 classNames={REFINEMENT_CLASS_NAMES}
               />
             </div>
@@ -474,7 +475,8 @@ function FiltersPanel({
                   <h3 className="font-semibold text-sm mb-2">{label}</h3>
                   <RefinementList
                     attribute={`specifications.${specKey}`}
-                    limit={15}
+                    limit={10}
+                    showMoreLimit={30}
                     showMore
                     classNames={REFINEMENT_CLASS_NAMES}
                   />
