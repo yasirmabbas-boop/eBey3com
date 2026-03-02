@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState } from "react";
+import { useMemo, useRef, useEffect, useState, useCallback } from "react";
 import { useSearch, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -7,12 +7,12 @@ import {
   SearchBox,
   RefinementList,
   Configure,
-  useHits,
+  useInfiniteHits,
   useInstantSearch,
   useCurrentRefinements,
   useClearRefinements,
   SortBy,
-  RangeInput,
+  useRange,
   ClearRefinements,
 } from "react-instantsearch";
 import { instantMeiliSearch } from "@meilisearch/instant-meilisearch";
@@ -257,9 +257,10 @@ function SearchHealthBanner({ language }: { language: string }) {
 }
 
 function SearchResults({ language, t }: { language: string; t: (k: string) => string }) {
-  const { items: hits, results } = useHits<Listing & Record<string, unknown>>();
-  const { status } = useInstantSearch();
+  const { items: hits, showMore, isLastPage } = useInfiniteHits<Listing & Record<string, unknown>>();
+  const { status, results } = useInstantSearch();
   const { refine: clearAllRefinements, canRefine: hasActiveRefinements } = useClearRefinements();
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Pre-fetch hot listings so empty state renders instantly
   const { data: hotListings = [] } = useQuery<Listing[]>({
@@ -268,12 +269,29 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
     staleTime: 60_000,
   });
 
+  // Infinite scroll: auto-load more when the sentinel enters the viewport
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLastPage) {
+          showMore();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [isLastPage, showMore]);
+
   if (status === "loading" || status === "stalled") {
     return <ProductGridSkeleton count={12} />;
   }
 
   if (hits.length === 0) {
-    const query = results?.query ?? "";
+    const query = (results as any)?.query ?? "";
     return (
       <EmptySearchState
         query={query || undefined}
@@ -286,11 +304,26 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
-      {hits.map((hit) => (
-        <ListingHitCard key={hit.id} hit={hit} language={language} t={t} />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
+        {hits.map((hit) => (
+          <ListingHitCard key={hit.id} hit={hit} language={language} t={t} />
+        ))}
+      </div>
+
+      {/* Sentinel for infinite scroll + manual "Show more" fallback */}
+      {!isLastPage && (
+        <div ref={sentinelRef} className="flex justify-center py-6">
+          <Button
+            variant="outline"
+            onClick={showMore}
+            className="px-8"
+          >
+            {language === "ar" ? "عرض المزيد" : language === "ku" ? "زیاتر پیشان بدە" : "Show more"}
+          </Button>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -351,6 +384,152 @@ const REFINEMENT_CLASS_NAMES = {
   checkbox: "mr-2",
   count: "text-xs text-muted-foreground",
 };
+
+/** Translation map for saleType facet values */
+const SALE_TYPE_LABELS: Record<string, { ar: string; ku: string }> = {
+  fixed: { ar: "سعر ثابت", ku: "نرخی جێگیر" },
+  auction: { ar: "مزاد", ku: "مزایدە" },
+};
+
+/** Translation map for condition facet values */
+const CONDITION_FACET_LABELS: Record<string, { ar: string; ku: string }> = {
+  New: { ar: "جديد", ku: "نوێ" },
+  "Used - Like New": { ar: "شبه جديد", ku: "وەک نوێ" },
+  "Used - Good": { ar: "مستعمل - جيد", ku: "بەکارهاتوو - باش" },
+  "Used - Fair": { ar: "مستعمل - مقبول", ku: "بەکارهاتوو - قبوڵ" },
+  Vintage: { ar: "فينتاج", ku: "ڤینتەیج" },
+  "For Parts or Not Working": { ar: "لا يعمل / لأجزاء", ku: "نایەوە کار / بۆ پارچەکان" },
+  excellent: { ar: "ممتاز", ku: "نایاب" },
+  very_good: { ar: "جيد جداً", ku: "زۆر باش" },
+  good: { ar: "جيد", ku: "باش" },
+  fair: { ar: "مقبول", ku: "قبوڵ" },
+  for_parts: { ar: "للقطع", ku: "بۆ پارچەکان" },
+  new: { ar: "جديد", ku: "نوێ" },
+  used: { ar: "مستعمل", ku: "بەکارهاتوو" },
+};
+
+/** Helper: build a transformItems function that translates facet labels */
+function makeTranslator(
+  labelMap: Record<string, { ar: string; ku: string }>,
+  language: string,
+) {
+  return (items: Array<{ label: string; [k: string]: any }>) =>
+    items.map((item) => {
+      const entry = labelMap[item.label];
+      if (!entry) return item;
+      return {
+        ...item,
+        label: language === "ar" ? entry.ar : language === "ku" ? entry.ku : item.label,
+      };
+    });
+}
+
+/** Translate spec facet values using SPECIFICATION_OPTIONS from search-data */
+function makeSpecTranslator(specKey: string, language: string) {
+  const options = SPECIFICATION_OPTIONS[specKey as keyof typeof SPECIFICATION_OPTIONS];
+  if (!options || !Array.isArray(options)) return undefined;
+  return (items: Array<{ label: string; [k: string]: any }>) =>
+    items.map((item) => {
+      const opt = (options as Array<{ value: string; labelAr: string; labelKu: string }>).find(
+        (o) => o.value === item.label,
+      );
+      if (!opt) return item;
+      return {
+        ...item,
+        label: language === "ar" ? opt.labelAr : language === "ku" ? opt.labelKu : item.label,
+      };
+    });
+}
+
+/**
+ * Custom dual-thumb price range slider.
+ * Uses the useRange hook from react-instantsearch to read min/max from the index.
+ */
+function PriceRangeSlider({
+  language,
+  t,
+}: {
+  language: string;
+  t: (k: string) => string;
+}) {
+  const { start, range, canRefine, refine } = useRange({ attribute: "price" });
+  const min = range.min ?? 0;
+  const max = range.max ?? 10000000;
+
+  // Local state for the slider thumbs
+  const [localMin, setLocalMin] = useState(min);
+  const [localMax, setLocalMax] = useState(max);
+
+  // Sync local state when the range or start changes from InstantSearch
+  useEffect(() => {
+    setLocalMin(start[0] !== -Infinity && start[0] !== undefined ? start[0] : min);
+    setLocalMax(start[1] !== Infinity && start[1] !== undefined ? start[1] : max);
+  }, [start, min, max]);
+
+  const commitRange = useCallback(() => {
+    refine([localMin, localMax]);
+  }, [localMin, localMax, refine]);
+
+  if (!canRefine) return null;
+
+  const pct = (v: number) => ((v - min) / (max - min || 1)) * 100;
+
+  return (
+    <div className="space-y-4">
+      {/* Display current values */}
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <span>{localMin.toLocaleString()} {t("currency")}</span>
+        <span>{localMax.toLocaleString()} {t("currency")}</span>
+      </div>
+
+      {/* Dual range slider track */}
+      <div className="relative h-8 flex items-center">
+        {/* Background track */}
+        <div className="absolute w-full h-1.5 bg-gray-200 rounded-full" />
+        {/* Active range highlight */}
+        <div
+          className="absolute h-1.5 bg-primary rounded-full"
+          style={{
+            left: `${pct(localMin)}%`,
+            right: `${100 - pct(localMax)}%`,
+          }}
+        />
+        {/* Min thumb */}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={Math.max(1, Math.round((max - min) / 200))}
+          value={localMin}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            if (v <= localMax) setLocalMin(v);
+          }}
+          onMouseUp={commitRange}
+          onTouchEnd={commitRange}
+          className="absolute w-full h-8 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+          style={{ zIndex: localMin > max - (max - min) * 0.1 ? 5 : 3 }}
+        />
+        {/* Max thumb */}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={Math.max(1, Math.round((max - min) / 200))}
+          value={localMax}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            if (v >= localMin) setLocalMax(v);
+          }}
+          onMouseUp={commitRange}
+          onTouchEnd={commitRange}
+          className="absolute w-full h-8 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+          style={{ zIndex: 4 }}
+        />
+      </div>
+    </div>
+  );
+}
 
 /**
  * Filters panel — rendered inline (NOT in a portal) to stay inside the
@@ -418,7 +597,7 @@ function FiltersPanel({
                 root: "w-full",
                 button: "w-full text-red-600 border-red-200 hover:bg-red-50",
               }}
-              translations={{ reset: t("clearAllFilters") }}
+              translations={{ resetButtonText: t("clearAllFilters") }}
             />
             <div>
               <h3 className="font-semibold text-sm mb-2">{t("categoriesLabel")}</h3>
@@ -428,6 +607,13 @@ function FiltersPanel({
                 limit={10}
                 showMoreLimit={30}
                 classNames={REFINEMENT_CLASS_NAMES}
+                translations={{
+                  showMoreButtonText({ isShowingMore }: { isShowingMore: boolean }) {
+                    return isShowingMore
+                      ? (language === "ar" ? "عرض أقل" : language === "ku" ? "کەمتر پیشان بدە" : "Show less")
+                      : (language === "ar" ? "عرض المزيد" : language === "ku" ? "زیاتر پیشان بدە" : "Show more");
+                  },
+                }}
               />
             </div>
             <div>
@@ -435,6 +621,7 @@ function FiltersPanel({
               <RefinementList
                 attribute="saleType"
                 classNames={REFINEMENT_CLASS_NAMES}
+                transformItems={makeTranslator(SALE_TYPE_LABELS, language)}
               />
             </div>
             <div>
@@ -445,23 +632,12 @@ function FiltersPanel({
                   ...REFINEMENT_CLASS_NAMES,
                   label: "cursor-pointer",
                 }}
+                transformItems={makeTranslator(CONDITION_FACET_LABELS, language)}
               />
             </div>
             <div>
               <h3 className="font-semibold text-sm mb-2">{t("priceRange")}</h3>
-              <RangeInput
-                attribute="price"
-                classNames={{
-                  form: "space-y-4",
-                  input: "h-9 rounded-md border border-input bg-background px-3 text-sm",
-                  separator: "text-muted-foreground",
-                  submit: "mt-2 h-9 px-4 rounded-md bg-primary text-primary-foreground",
-                }}
-                translations={{
-                  separatorElementText: "-",
-                  submitButtonText: t("submit"),
-                }}
-              />
+              <PriceRangeSlider language={language} t={t} />
             </div>
 
             {/* Dynamic specification filters — shown only when a category is selected */}
@@ -470,6 +646,7 @@ function FiltersPanel({
               const label = labels
                 ? language === "ar" ? labels.ar : labels.ku
                 : specKey;
+              const specTransform = makeSpecTranslator(specKey, language);
               return (
                 <div key={specKey}>
                   <h3 className="font-semibold text-sm mb-2">{label}</h3>
@@ -479,6 +656,14 @@ function FiltersPanel({
                     showMoreLimit={30}
                     showMore
                     classNames={REFINEMENT_CLASS_NAMES}
+                    {...(specTransform ? { transformItems: specTransform } : {})}
+                    translations={{
+                      showMoreButtonText({ isShowingMore }: { isShowingMore: boolean }) {
+                        return isShowingMore
+                          ? (language === "ar" ? "عرض أقل" : language === "ku" ? "کەمتر پیشان بدە" : "Show less")
+                          : (language === "ar" ? "عرض المزيد" : language === "ku" ? "زیاتر پیشان بدە" : "Show more");
+                      },
+                    }}
                   />
                 </div>
               );
