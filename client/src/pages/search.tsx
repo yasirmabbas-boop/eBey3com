@@ -90,7 +90,13 @@ const MEILISEARCH_PROXY = `${window.location.origin}/api/meilisearch`;
 
 const searchClient = (() => {
   try {
-    const { searchClient: sc } = instantMeiliSearch(MEILISEARCH_PROXY, "");
+    const { searchClient: sc } = instantMeiliSearch(MEILISEARCH_PROXY, "", {
+      placeholderSearch: true,
+      keepZeroFacets: true,
+      meiliSearchParams: {
+        facets: ["*"],
+      },
+    });
     return sc;
   } catch {
     return null;
@@ -303,34 +309,7 @@ function SearchContent({
 
   return (
     <>
-      <Configure
-        filters={filter}
-        hitsPerPage={24}
-        attributesToRetrieve={["*"]}
-        facets={[
-          "category",
-          "saleType",
-          "condition",
-          "price",
-          "specifications.size",
-          "specifications.color",
-          "specifications.gender",
-          "specifications.shoeSize",
-          "specifications.clothingType",
-          "specifications.clothingBrand",
-          "specifications.material",
-          "specifications.shoeBrand",
-          "specifications.shoeStyle",
-          "specifications.storage",
-          "specifications.ram",
-          "specifications.movement",
-          "specifications.caseSize",
-          "specifications.platform",
-          "specifications.jewelryMaterial",
-          "specifications.gemstone",
-          "specifications.era",
-        ]}
-      />
+      <Configure filters={filter} hitsPerPage={24} attributesToRetrieve={["*"]} />
       <StaleSpecCleaner />
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
         <div className="flex-1 min-w-0">
@@ -618,9 +597,6 @@ export default function SearchPage() {
           initialUiState={{
             listings: {
               query: params.get("q") || "",
-              refinementList: {
-                ...(params.get("category") ? { category: [params.get("category")!] } : {}),
-              },
             },
           }}
           routing={{
