@@ -31,8 +31,34 @@ export function registerMeilisearchRoutes(app: Express): void {
         init.body = JSON.stringify(req.body);
       }
 
+      // Temporary debug logging — remove after diagnosing facet issue
+      if (req.method === "POST" && path.includes("multi-search")) {
+        const bodyStr = init.body as string;
+        const parsed = JSON.parse(bodyStr);
+        const facetsSummary = (parsed.queries || []).map((q: any) => ({
+          indexUid: q.indexUid,
+          facets: q.facets,
+          filter: q.filter,
+          limit: q.limit,
+        }));
+        console.log("[Meilisearch proxy] multi-search request:", JSON.stringify(facetsSummary));
+      }
+
       const response = await fetch(url, init);
       const text = await response.text();
+
+      // Temporary debug logging
+      if (req.method === "POST" && path.includes("multi-search")) {
+        const parsed = JSON.parse(text);
+        const resultsSummary = (parsed.results || []).map((r: any) => ({
+          indexUid: r.indexUid,
+          hits: r.hits?.length ?? 0,
+          facetKeys: r.facetDistribution ? Object.keys(r.facetDistribution) : [],
+          estimatedTotalHits: r.estimatedTotalHits,
+        }));
+        console.log("[Meilisearch proxy] multi-search response:", JSON.stringify(resultsSummary));
+      }
+
       res.status(response.status);
       res.set("Content-Type", response.headers.get("Content-Type") || "application/json");
       res.send(text);

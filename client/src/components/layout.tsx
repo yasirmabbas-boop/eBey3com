@@ -14,9 +14,10 @@ import { isNative } from "@/lib/capacitor";
 interface LayoutProps {
   children: React.ReactNode;
   hideHeader?: boolean;
+  hideSearch?: boolean;
 }
 
-export function Layout({ children, hideHeader = false }: LayoutProps) {
+export function Layout({ children, hideHeader = false, hideSearch = false }: LayoutProps) {
   const { isLoading } = useAuth();
   const { totalItems } = useCart();
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
@@ -70,7 +71,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
       )}
 
       {/* Main Header - Search Only */}
-      {!hideHeader && (
+      {!hideHeader && !hideSearch && (
       <header className="sticky top-0 z-50 glass-surface border-b border-border/60 shadow-[var(--shadow-1)]">
         <div className="container mx-auto px-3 py-1">
           {/* Full Width Search Bar */}
@@ -80,7 +81,7 @@ export function Layout({ children, hideHeader = false }: LayoutProps) {
 
             {/* Search Bar - Full width */}
             <div className="flex-1">
-              <SmartSearch 
+              <SmartSearch
                 onImageSearchClick={() => setImageSearchOpen(true)}
                 className="flex w-full gap-2 items-center"
               />

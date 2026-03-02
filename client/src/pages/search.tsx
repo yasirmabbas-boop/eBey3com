@@ -476,7 +476,7 @@ export default function SearchPage() {
 
   if (!searchClient) {
     return (
-      <Layout>
+      <Layout hideSearch>
         <div className="container mx-auto px-4 py-6" dir={dir}>
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">
@@ -498,7 +498,7 @@ export default function SearchPage() {
   }
 
   return (
-    <Layout>
+    <Layout hideSearch>
       <div className="container mx-auto px-4 py-6" dir={dir}>
         {sellerIdParam && sellerInfo && (
           <div className="bg-gradient-to-l from-primary via-[#1b2b5a] to-[#0f172a] text-white rounded-xl p-6 mb-6 shadow-[var(--shadow-2)]">
