@@ -8,7 +8,9 @@ import {
   RefinementList,
   Configure,
   useHits,
+  useInstantSearch,
   useCurrentRefinements,
+  useClearRefinements,
   SortBy,
   RangeInput,
   ClearRefinements,
@@ -22,6 +24,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Filter,
   SlidersHorizontal,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { FavoriteButton } from "@/components/favorite-button";
 import { ProductGridSkeleton } from "@/components/optimized-image";
@@ -197,8 +201,58 @@ function ListingHitCard({
   );
 }
 
+/** Banner that checks Meilisearch health and shows a warning if the engine is down or empty */
+function SearchHealthBanner({ language }: { language: string }) {
+  const { data: health, isLoading } = useQuery<{
+    status: "ok" | "degraded" | "down";
+    documentCount: number;
+    error?: string;
+  }>({
+    queryKey: ["/api/meilisearch/health"],
+    queryFn: () => fetch("/api/meilisearch/health").then((r) => r.json()),
+    staleTime: 30_000,
+    retry: 1,
+  });
+
+  if (isLoading || !health || health.status === "ok") return null;
+
+  const messages: Record<string, { down: string; degraded: string }> = {
+    ar: {
+      down: "محرك البحث غير متصل حالياً. يرجى المحاولة لاحقاً.",
+      degraded: "محرك البحث متصل لكن الفهرس فارغ. قد تظهر النتائج قريباً بعد المزامنة.",
+    },
+    ku: {
+      down: "مۆتۆری گەڕان لە ئێستادا نەبەستراوە. تکایە دواتر هەوڵ بدەرەوە.",
+      degraded: "مۆتۆری گەڕان بەستراوە بەڵام ئیندێکسەکە بەتاڵە. ئەنجامەکان دوای هاوکاتکردن دەردەکەون.",
+    },
+    en: {
+      down: "Search engine is currently offline. Please try again later.",
+      degraded: "Search engine is connected but the index is empty. Results may appear after sync.",
+    },
+  };
+
+  const lang = messages[language] || messages.ar;
+  const msg = health.status === "down" ? lang.down : lang.degraded;
+
+  return (
+    <div className="flex items-center gap-2 p-3 mb-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+      <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+      <span className="flex-1">{msg}</span>
+      <button
+        onClick={() => window.location.reload()}
+        className="flex items-center gap-1 text-xs font-medium hover:underline"
+      >
+        <RefreshCw className="h-3 w-3" />
+        {language === "ar" ? "إعادة" : language === "ku" ? "دووبارە" : "Retry"}
+      </button>
+    </div>
+  );
+}
+
 function SearchResults({ language, t }: { language: string; t: (k: string) => string }) {
-  const { hits, results, status } = useHits<Listing & Record<string, unknown>>();
+  const { items: hits, results } = useHits<Listing & Record<string, unknown>>();
+  const { status } = useInstantSearch();
+  const { refine: clearAllRefinements, canRefine: hasActiveRefinements } = useClearRefinements();
 
   // Pre-fetch hot listings so empty state renders instantly
   const { data: hotListings = [] } = useQuery<Listing[]>({
@@ -207,7 +261,7 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
     staleTime: 60_000,
   });
 
-  if (status === "loading" || status === "idle") {
+  if (status === "loading" || status === "stalled") {
     return <ProductGridSkeleton count={12} />;
   }
 
@@ -216,7 +270,7 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
     return (
       <EmptySearchState
         query={query || undefined}
-        onClearFilters={undefined}
+        onClearFilters={hasActiveRefinements ? clearAllRefinements : undefined}
         language={language}
         suggestions={[]}
         fallbackListings={hotListings}
@@ -249,7 +303,7 @@ function SearchContent({
 
   return (
     <>
-      <Configure filter={filter} hitsPerPage={24} attributesToRetrieve={["*"]} />
+      <Configure filters={filter} hitsPerPage={24} attributesToRetrieve={["*"]} />
       <StaleSpecCleaner />
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
         <div className="flex-1 min-w-0">
@@ -280,6 +334,7 @@ function SearchContent({
         />
         <FiltersSheet language={language} t={t} />
       </div>
+      <SearchHealthBanner language={language} />
       <SearchResults language={language} t={t} />
     </>
   );

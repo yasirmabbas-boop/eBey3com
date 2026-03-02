@@ -202,11 +202,15 @@ export function EmptySearchState({
             {t.clearFilters}
           </Button>
         )}
-        <Link href="/search">
-          <Button variant="default">
-            {t.browseAll}
-          </Button>
-        </Link>
+        <Button
+          variant="default"
+          onClick={() => {
+            // Force a full page reload to reset all InstantSearch state
+            window.location.href = "/search";
+          }}
+        >
+          {t.browseAll}
+        </Button>
       </div>
 
       {fallbackListings.length > 0 && (

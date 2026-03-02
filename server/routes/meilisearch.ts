@@ -4,11 +4,23 @@
  */
 
 import type { Express } from "express";
+import { checkMeilisearchHealth } from "../services/meilisearch";
 
 const MEILISEARCH_HOST = (process.env.MEILISEARCH_HOST || "http://localhost:7700").replace(/\/$/, "");
 const MEILISEARCH_MASTER_KEY = process.env.MEILISEARCH_MASTER_KEY || "";
 
 export function registerMeilisearchRoutes(app: Express): void {
+  // Health check is always registered (even without master key — that IS useful diagnostic info)
+  app.get("/api/meilisearch/health", async (_req, res) => {
+    try {
+      const health = await checkMeilisearchHealth();
+      const httpStatus = health.status === "ok" ? 200 : health.status === "degraded" ? 200 : 503;
+      res.status(httpStatus).json(health);
+    } catch (err) {
+      res.status(500).json({ status: "down", error: (err as Error).message });
+    }
+  });
+
   if (!MEILISEARCH_MASTER_KEY) {
     return;
   }

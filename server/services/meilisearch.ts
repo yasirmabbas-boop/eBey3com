@@ -163,6 +163,54 @@ export async function syncListingToMeilisearch(listing: Listing): Promise<void> 
   }
 }
 
+/**
+ * Health check: verify Meilisearch is reachable, index exists, and report document count.
+ * Returns a diagnostic object for the /api/meilisearch/health endpoint.
+ */
+export async function checkMeilisearchHealth(): Promise<{
+  status: "ok" | "degraded" | "down";
+  host: string;
+  keyConfigured: boolean;
+  indexExists: boolean;
+  documentCount: number;
+  error?: string;
+}> {
+  const keyConfigured = !!MEILISEARCH_MASTER_KEY;
+  const base = { host: MEILISEARCH_HOST, keyConfigured, indexExists: false, documentCount: 0 };
+
+  if (!keyConfigured) {
+    return { ...base, status: "down", error: "MEILISEARCH_MASTER_KEY not set" };
+  }
+
+  const c = getClient();
+  if (!c) {
+    return { ...base, status: "down", error: "Client could not be created" };
+  }
+
+  try {
+    const health = await c.health();
+    if (health.status !== "available") {
+      return { ...base, status: "down", error: `Meilisearch status: ${health.status}` };
+    }
+
+    try {
+      const stats = await c.index(INDEX_NAME).getStats();
+      const docCount = stats.numberOfDocuments;
+      return {
+        ...base,
+        status: docCount > 0 ? "ok" : "degraded",
+        indexExists: true,
+        documentCount: docCount,
+        error: docCount === 0 ? "Index exists but contains 0 documents — bulk sync may have failed" : undefined,
+      };
+    } catch {
+      return { ...base, status: "degraded", error: `Index '${INDEX_NAME}' not found or inaccessible` };
+    }
+  } catch (err) {
+    return { ...base, status: "down", error: `Connection failed: ${(err as Error).message}` };
+  }
+}
+
 const BULK_BATCH_SIZE = 500;
 
 /**
