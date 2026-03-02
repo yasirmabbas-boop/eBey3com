@@ -260,7 +260,7 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
   const { items: hits, showMore, isLastPage } = useInfiniteHits<Listing & Record<string, unknown>>();
   const { status, results } = useInstantSearch();
   const { refine: clearAllRefinements, canRefine: hasActiveRefinements } = useClearRefinements();
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Pre-fetch hot listings so empty state renders instantly
   const { data: hotListings = [] } = useQuery<Listing[]>({
@@ -269,24 +269,18 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
     staleTime: 60_000,
   });
 
-  // Infinite scroll: auto-load more when the sentinel enters the viewport
+  // Reset loadingMore when status changes back from loading
   useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    if (status === "idle") setLoadingMore(false);
+  }, [status]);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !isLastPage) {
-          showMore();
-        }
-      },
-      { rootMargin: "200px" },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [isLastPage, showMore]);
+  const handleShowMore = useCallback(() => {
+    if (loadingMore || isLastPage) return;
+    setLoadingMore(true);
+    showMore();
+  }, [loadingMore, isLastPage, showMore]);
 
-  if (status === "loading" || status === "stalled") {
+  if (status === "loading" && hits.length === 0) {
     return <ProductGridSkeleton count={12} />;
   }
 
@@ -311,15 +305,18 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
         ))}
       </div>
 
-      {/* Sentinel for infinite scroll + manual "Show more" fallback */}
+      {/* Manual "Show more" button — no auto-scroll to avoid rapid-fire on mobile */}
       {!isLastPage && (
-        <div ref={sentinelRef} className="flex justify-center py-6">
+        <div className="flex justify-center py-6">
           <Button
             variant="outline"
-            onClick={showMore}
+            onClick={handleShowMore}
+            disabled={loadingMore}
             className="px-8"
           >
-            {language === "ar" ? "عرض المزيد" : language === "ku" ? "زیاتر پیشان بدە" : "Show more"}
+            {loadingMore
+              ? (language === "ar" ? "جاري التحميل..." : language === "ku" ? "بارکردن..." : "Loading...")
+              : (language === "ar" ? "عرض المزيد" : language === "ku" ? "زیاتر پیشان بدە" : "Show more")}
           </Button>
         </div>
       )}
