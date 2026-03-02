@@ -303,7 +303,34 @@ function SearchContent({
 
   return (
     <>
-      <Configure filters={filter} hitsPerPage={24} attributesToRetrieve={["*"]} />
+      <Configure
+        filters={filter}
+        hitsPerPage={24}
+        attributesToRetrieve={["*"]}
+        facets={[
+          "category",
+          "saleType",
+          "condition",
+          "price",
+          "specifications.size",
+          "specifications.color",
+          "specifications.gender",
+          "specifications.shoeSize",
+          "specifications.clothingType",
+          "specifications.clothingBrand",
+          "specifications.material",
+          "specifications.shoeBrand",
+          "specifications.shoeStyle",
+          "specifications.storage",
+          "specifications.ram",
+          "specifications.movement",
+          "specifications.caseSize",
+          "specifications.platform",
+          "specifications.jewelryMaterial",
+          "specifications.gemstone",
+          "specifications.era",
+        ]}
+      />
       <StaleSpecCleaner />
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
         <div className="flex-1 min-w-0">
@@ -316,9 +343,9 @@ function SearchContent({
             classNames={{
               root: "w-full",
               form: "relative",
-              input: "w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm",
-              submit: "absolute right-2 top-1/2 -translate-y-1/2",
-              reset: "absolute right-10 top-1/2 -translate-y-1/2",
+              input: "w-full h-11 rounded-md border border-blue-300 bg-blue-50 px-3 pr-10 text-base focus:ring-blue-500 focus:border-blue-500",
+              submit: "absolute right-3 top-1/2 -translate-y-1/2 text-gray-400",
+              reset: "absolute right-10 top-1/2 -translate-y-1/2 text-gray-400",
             }}
           />
         </div>
@@ -591,6 +618,9 @@ export default function SearchPage() {
           initialUiState={{
             listings: {
               query: params.get("q") || "",
+              refinementList: {
+                ...(params.get("category") ? { category: [params.get("category")!] } : {}),
+              },
             },
           }}
           routing={{
@@ -600,15 +630,22 @@ export default function SearchPage() {
                 const route: Record<string, string> = {};
                 if (indexState.query) route.q = indexState.query;
                 if (indexState.sortBy) route.sort = indexState.sortBy;
+                const cats = indexState.refinementList?.category;
+                if (cats && cats.length > 0) route.category = cats.join(",");
                 return route;
               },
               routeToState(routeState) {
                 // Guard against non-object values (e.g., ?q=yasir parsed as string)
                 const safe = routeState && typeof routeState === "object" ? routeState : {};
+                const categoryStr = typeof safe.category === "string" ? safe.category : "";
+                const categories = categoryStr ? categoryStr.split(",") : [];
                 return {
                   listings: {
                     query: (typeof safe.q === "string" ? safe.q : "") as string,
                     sortBy: (typeof safe.sort === "string" ? safe.sort : undefined) as string | undefined,
+                    refinementList: {
+                      ...(categories.length > 0 ? { category: categories } : {}),
+                    },
                   },
                 };
               },
