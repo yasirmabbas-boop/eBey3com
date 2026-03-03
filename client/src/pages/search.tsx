@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState } from "react";
+import { useMemo, useRef, useEffect, useLayoutEffect, useState } from "react";
 import { useSearch, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -40,6 +40,13 @@ import {
 } from "@/lib/search-data";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import type { Listing } from "@shared/schema";
+import {
+  getScrollY,
+  getScrollContainer,
+  invalidateScrollContainer,
+} from "@/lib/scroll-storage";
+
+const SEARCH_STATE_KEY = "search_ui_state";
 
 /** Local error boundary so a Meilisearch proxy failure doesn't crash the whole page */
 class SearchErrorBoundary extends Component<
@@ -594,6 +601,31 @@ function FiltersPanel({
   );
 }
 
+/**
+ * Syncs InstantSearch UI state (query, refinements, sort) to sessionStorage
+ * so it survives back/forward navigation.
+ */
+function SearchStatePersist() {
+  const { uiState } = useInstantSearch();
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    // Skip saving the initial state (which comes from initialUiState)
+    // to avoid overwriting sessionStorage with stale URL-derived state
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    try {
+      sessionStorage.setItem(SEARCH_STATE_KEY, JSON.stringify(uiState));
+    } catch {
+      // Quota exceeded or private browsing — degrade silently
+    }
+  }, [uiState]);
+
+  return null;
+}
+
 function SearchContent({
   sellerIdParam,
   language,
@@ -613,6 +645,7 @@ function SearchContent({
   return (
     <>
       <Configure filters={filter} hitsPerPage={48} attributesToRetrieve={["*"]} />
+      <SearchStatePersist />
       <StaleSpecCleaner />
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
         <div className="flex-1 min-w-0">
@@ -687,19 +720,104 @@ export default function SearchPage() {
 
   const dir = language === "ar" ? "rtl" : "ltr";
 
-  // Build initialUiState from URL parameters
+  // Build initialUiState — restore from sessionStorage on back navigation,
+  // or from URL parameters on fresh navigation.
   const initialUiState = useMemo(() => {
-    const state: Record<string, any> = {};
-    if (initialQuery) {
-      state.query = initialQuery;
+    // If URL has explicit search params, use those (fresh navigation from link/redirect)
+    if (initialQuery || initialCategory) {
+      // Clear saved state — this is a new search, not a restore
+      sessionStorage.removeItem(SEARCH_STATE_KEY);
+      const state: Record<string, any> = {};
+      if (initialQuery) state.query = initialQuery;
+      if (initialCategory) {
+        state.refinementList = { category: [initialCategory] };
+      }
+      return { listings: state };
     }
-    if (initialCategory) {
-      state.refinementList = {
-        category: [initialCategory],
-      };
+
+    // No URL params — try restoring from sessionStorage (back navigation)
+    try {
+      const saved = sessionStorage.getItem(SEARCH_STATE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object" && parsed.listings) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Corrupt data — fall through to empty state
     }
-    return { listings: state };
+
+    return { listings: {} };
   }, [initialQuery, initialCategory]);
+
+  // Search-page-specific scroll restoration.
+  // Search results load asynchronously from Meilisearch, so the global
+  // ScrollToTop restore may fire before content is available. We handle
+  // it here with a longer timeout and set __scrollRestoreHandled so
+  // the global handler doesn't interfere.
+  useLayoutEffect(() => {
+    const key = history.state?._scrollKey;
+    if (!key) return;
+
+    const savedY = getScrollY(key);
+    if (savedY == null || savedY <= 0) return;
+
+    // Only restore if we have saved search state (i.e. this is a back navigation)
+    const hasSavedSearch = !!sessionStorage.getItem(SEARCH_STATE_KEY);
+    if (!hasSavedSearch && !initialQuery && !initialCategory) return;
+
+    // Signal to global ScrollToTop that we're handling scroll restore
+    (window as any).__scrollRestoreHandled = true;
+
+    let restored = false;
+    const restore = () => {
+      if (restored) return;
+      invalidateScrollContainer();
+      const container = getScrollContainer();
+      if (container.scrollHeight > savedY) {
+        container.scrollTo(0, savedY);
+        restored = true;
+      }
+    };
+
+    // Observe DOM changes — search results arrive asynchronously
+    let settled: ReturnType<typeof setTimeout>;
+    const deadline = setTimeout(() => observer.disconnect(), 5000);
+    const observer = new MutationObserver(() => {
+      clearTimeout(settled);
+      restore();
+      if (restored) {
+        observer.disconnect();
+        clearTimeout(deadline);
+        return;
+      }
+      settled = setTimeout(() => {
+        observer.disconnect();
+        clearTimeout(deadline);
+      }, 800);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Initial attempts
+    requestAnimationFrame(restore);
+    setTimeout(restore, 100);
+    setTimeout(restore, 300);
+    setTimeout(restore, 600);
+    setTimeout(restore, 1200);
+
+    settled = setTimeout(() => {
+      observer.disconnect();
+      clearTimeout(deadline);
+    }, 800);
+
+    return () => {
+      (window as any).__scrollRestoreHandled = false;
+      observer.disconnect();
+      clearTimeout(deadline);
+      clearTimeout(settled);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!searchClient) {
     return (
