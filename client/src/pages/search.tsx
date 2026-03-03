@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState, useCallback } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { useSearch, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -8,7 +8,6 @@ import {
   RefinementList,
   Configure,
   useHits,
-  usePagination,
   useInstantSearch,
   useCurrentRefinements,
   useClearRefinements,
@@ -259,93 +258,8 @@ function SearchHealthBanner({ language }: { language: string }) {
 
 function SearchResults({ language, t }: { language: string; t: (k: string) => string }) {
   const { hits } = useHits<Listing & Record<string, unknown>>();
-  const { currentRefinement: currentPage, nbPages, refine: goToPage } = usePagination();
   const { status, results } = useInstantSearch();
   const { refine: clearAllRefinements, canRefine: hasActiveRefinements } = useClearRefinements();
-
-  // --- Accumulated hits across pages ---
-  // Use refs to avoid array-reference instability that caused CPU spikes
-  const accumulatedRef = useRef<(Listing & Record<string, unknown>)[]>([]);
-  const lastPageRef = useRef(-1);
-  const searchKeyRef = useRef("");
-  const isLoadingMoreRef = useRef(false);
-  const lastLoadTimeRef = useRef(0);
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
-  // Counter state to force re-render when accumulated ref changes
-  const [, setRenderTick] = useState(0);
-
-  // Build a "search key" from query + active refinements to detect resets
-  const { items: currentRefinements } = useCurrentRefinements();
-  const searchKey = useMemo(() => {
-    const query = (results as any)?.query ?? "";
-    const refinementKey = currentRefinements
-      .map((r) => `${r.attribute}:${r.refinements.map((v) => v.value).join(",")}`)
-      .sort()
-      .join("|");
-    return `${query}::${refinementKey}`;
-  }, [(results as any)?.query, currentRefinements]);
-
-  // Detect search/filter changes → reset accumulated hits
-  useEffect(() => {
-    if (searchKey !== searchKeyRef.current) {
-      searchKeyRef.current = searchKey;
-      accumulatedRef.current = [];
-      lastPageRef.current = -1;
-      isLoadingMoreRef.current = false;
-    }
-  }, [searchKey]);
-
-  // Accumulate hits when a new page arrives
-  useEffect(() => {
-    if (hits.length === 0) return;
-
-    if (currentPage === 0 && lastPageRef.current !== 0) {
-      // First page (fresh search or reset) — replace entirely
-      accumulatedRef.current = [...hits];
-      lastPageRef.current = 0;
-      isLoadingMoreRef.current = false;
-      setRenderTick((n) => n + 1);
-    } else if (currentPage > lastPageRef.current) {
-      // New page loaded — append
-      accumulatedRef.current = [...accumulatedRef.current, ...hits];
-      lastPageRef.current = currentPage;
-      isLoadingMoreRef.current = false;
-      setRenderTick((n) => n + 1);
-    }
-  }, [hits, currentPage]);
-
-  // Load next page (called by IntersectionObserver)
-  const loadNextPage = useCallback(() => {
-    const now = Date.now();
-    // Guards: not already loading, debounce 500ms, more pages exist
-    if (isLoadingMoreRef.current) return;
-    if (now - lastLoadTimeRef.current < 500) return;
-    if (currentPage >= nbPages - 1) return;
-
-    isLoadingMoreRef.current = true;
-    lastLoadTimeRef.current = now;
-    goToPage(currentPage + 1);
-  }, [currentPage, nbPages, goToPage]);
-
-  // IntersectionObserver on sentinel — auto-load when scrolled near bottom
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    if (currentPage >= nbPages - 1) return; // no more pages
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          loadNextPage();
-        }
-      },
-      { rootMargin: "200px", threshold: 0 },
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [loadNextPage, currentPage, nbPages]);
 
   // Pre-fetch hot listings so empty state renders instantly
   const { data: hotListings = [] } = useQuery<Listing[]>({
@@ -354,14 +268,11 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
     staleTime: 60_000,
   });
 
-  const allHits = accumulatedRef.current;
-  const hasMore = currentPage < nbPages - 1;
-
-  if (status === "loading" && allHits.length === 0) {
+  if (status === "loading" && hits.length === 0) {
     return <ProductGridSkeleton count={12} />;
   }
 
-  if (allHits.length === 0 && hits.length === 0) {
+  if (hits.length === 0) {
     const query = (results as any)?.query ?? "";
     return (
       <EmptySearchState
@@ -375,24 +286,11 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
   }
 
   return (
-    <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
-        {allHits.map((hit) => (
-          <ListingHitCard key={hit.id} hit={hit} language={language} t={t} />
-        ))}
-      </div>
-
-      {/* Sentinel for auto-loading next page */}
-      {hasMore && (
-        <div ref={sentinelRef} className="flex justify-center py-6">
-          {isLoadingMoreRef.current && (
-            <span className="text-sm text-muted-foreground">
-              {language === "ar" ? "جاري التحميل..." : language === "ku" ? "بارکردن..." : "Loading..."}
-            </span>
-          )}
-        </div>
-      )}
-    </>
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
+      {hits.map((hit) => (
+        <ListingHitCard key={hit.id} hit={hit} language={language} t={t} />
+      ))}
+    </div>
   );
 }
 
@@ -714,7 +612,7 @@ function SearchContent({
 
   return (
     <>
-      <Configure filters={filter} hitsPerPage={24} attributesToRetrieve={["*"]} />
+      <Configure filters={filter} hitsPerPage={48} attributesToRetrieve={["*"]} />
       <StaleSpecCleaner />
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
         <div className="flex-1 min-w-0">
