@@ -12,7 +12,7 @@ import {
   useCurrentRefinements,
   useClearRefinements,
   SortBy,
-  useRange,
+  RangeInput,
   ClearRefinements,
 } from "react-instantsearch";
 import { instantMeiliSearch } from "@meilisearch/instant-meilisearch";
@@ -438,92 +438,43 @@ function makeSpecTranslator(specKey: string, language: string) {
     });
 }
 
-/**
- * Custom dual-thumb price range slider.
- * Uses the useRange hook from react-instantsearch to read min/max from the index.
- */
-function PriceRangeSlider({
+/** Price range filter class names for styling the built-in RangeInput */
+const RANGE_INPUT_CLASS_NAMES = {
+  root: "space-y-2",
+  form: "flex items-center gap-2",
+  input: "w-full h-9 rounded-md border border-input bg-background px-3 text-sm",
+  separator: "text-muted-foreground text-sm",
+  submit: "h-9 px-3 rounded-md bg-primary text-white text-sm hover:bg-primary/90",
+};
+
+/** Memoized spec filter to avoid recreating transformItems on every parent render */
+function MemoizedSpecFilter({
+  specKey,
   language,
-  t,
+  showMoreText,
 }: {
+  specKey: string;
   language: string;
-  t: (k: string) => string;
+  showMoreText: Record<string, any>;
 }) {
-  const { start, range, canRefine, refine } = useRange({ attribute: "price" });
-  const min = range.min ?? 0;
-  const max = range.max ?? 10000000;
-
-  // Local state for the slider thumbs
-  const [localMin, setLocalMin] = useState(min);
-  const [localMax, setLocalMax] = useState(max);
-
-  // Sync local state when the range or start changes from InstantSearch
-  useEffect(() => {
-    setLocalMin(start[0] !== -Infinity && start[0] !== undefined ? start[0] : min);
-    setLocalMax(start[1] !== Infinity && start[1] !== undefined ? start[1] : max);
-  }, [start, min, max]);
-
-  const commitRange = useCallback(() => {
-    refine([localMin, localMax]);
-  }, [localMin, localMax, refine]);
-
-  if (!canRefine) return null;
-
-  const pct = (v: number) => ((v - min) / (max - min || 1)) * 100;
+  const labels = SPECIFICATION_LABELS[specKey];
+  const label = labels
+    ? language === "ar" ? labels.ar : labels.ku
+    : specKey;
+  const specTransform = useMemo(() => makeSpecTranslator(specKey, language), [specKey, language]);
 
   return (
-    <div className="space-y-4">
-      {/* Display current values */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>{localMin.toLocaleString()} {t("currency")}</span>
-        <span>{localMax.toLocaleString()} {t("currency")}</span>
-      </div>
-
-      {/* Dual range slider track */}
-      <div className="relative h-8 flex items-center">
-        {/* Background track */}
-        <div className="absolute w-full h-1.5 bg-gray-200 rounded-full" />
-        {/* Active range highlight */}
-        <div
-          className="absolute h-1.5 bg-primary rounded-full"
-          style={{
-            left: `${pct(localMin)}%`,
-            right: `${100 - pct(localMax)}%`,
-          }}
-        />
-        {/* Min thumb */}
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={Math.max(1, Math.round((max - min) / 200))}
-          value={localMin}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            if (v <= localMax) setLocalMin(v);
-          }}
-          onMouseUp={commitRange}
-          onTouchEnd={commitRange}
-          className="absolute w-full h-8 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
-          style={{ zIndex: localMin > max - (max - min) * 0.1 ? 5 : 3 }}
-        />
-        {/* Max thumb */}
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={Math.max(1, Math.round((max - min) / 200))}
-          value={localMax}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            if (v >= localMin) setLocalMax(v);
-          }}
-          onMouseUp={commitRange}
-          onTouchEnd={commitRange}
-          className="absolute w-full h-8 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
-          style={{ zIndex: 4 }}
-        />
-      </div>
+    <div>
+      <h3 className="font-semibold text-sm mb-2">{label}</h3>
+      <RefinementList
+        attribute={`specifications.${specKey}`}
+        limit={10}
+        showMoreLimit={30}
+        showMore
+        classNames={REFINEMENT_CLASS_NAMES}
+        {...(specTransform ? { transformItems: specTransform } : {})}
+        translations={showMoreText}
+      />
     </div>
   );
 }
@@ -555,6 +506,20 @@ function FiltersPanel({
     }
     return Array.from(keys);
   }, [selectedCategories]);
+
+  // Memoize transform functions so RefinementList doesn't re-render every cycle
+  const saleTypeTransform = useMemo(() => makeTranslator(SALE_TYPE_LABELS, language), [language]);
+  const conditionTransform = useMemo(() => makeTranslator(CONDITION_FACET_LABELS, language), [language]);
+  const showMoreText = useMemo(
+    () => ({
+      showMoreButtonText({ isShowingMore }: { isShowingMore: boolean }) {
+        return isShowingMore
+          ? (language === "ar" ? "عرض أقل" : language === "ku" ? "کەمتر پیشان بدە" : "Show less")
+          : (language === "ar" ? "عرض المزيد" : language === "ku" ? "زیاتر پیشان بدە" : "Show more");
+      },
+    }),
+    [language],
+  );
 
   return (
     <>
@@ -604,13 +569,7 @@ function FiltersPanel({
                 limit={10}
                 showMoreLimit={30}
                 classNames={REFINEMENT_CLASS_NAMES}
-                translations={{
-                  showMoreButtonText({ isShowingMore }: { isShowingMore: boolean }) {
-                    return isShowingMore
-                      ? (language === "ar" ? "عرض أقل" : language === "ku" ? "کەمتر پیشان بدە" : "Show less")
-                      : (language === "ar" ? "عرض المزيد" : language === "ku" ? "زیاتر پیشان بدە" : "Show more");
-                  },
-                }}
+                translations={showMoreText}
               />
             </div>
             <div>
@@ -618,7 +577,7 @@ function FiltersPanel({
               <RefinementList
                 attribute="saleType"
                 classNames={REFINEMENT_CLASS_NAMES}
-                transformItems={makeTranslator(SALE_TYPE_LABELS, language)}
+                transformItems={saleTypeTransform}
               />
             </div>
             <div>
@@ -629,42 +588,30 @@ function FiltersPanel({
                   ...REFINEMENT_CLASS_NAMES,
                   label: "cursor-pointer",
                 }}
-                transformItems={makeTranslator(CONDITION_FACET_LABELS, language)}
+                transformItems={conditionTransform}
               />
             </div>
             <div>
               <h3 className="font-semibold text-sm mb-2">{t("priceRange")}</h3>
-              <PriceRangeSlider language={language} t={t} />
+              <RangeInput
+                attribute="price"
+                classNames={RANGE_INPUT_CLASS_NAMES}
+                translations={{
+                  separatorElementText: "–",
+                  submitButtonText: language === "ar" ? "تطبيق" : language === "ku" ? "جێبەجێکردن" : "Go",
+                }}
+              />
             </div>
 
             {/* Dynamic specification filters — shown only when a category is selected */}
-            {specKeys.map((specKey) => {
-              const labels = SPECIFICATION_LABELS[specKey];
-              const label = labels
-                ? language === "ar" ? labels.ar : labels.ku
-                : specKey;
-              const specTransform = makeSpecTranslator(specKey, language);
-              return (
-                <div key={specKey}>
-                  <h3 className="font-semibold text-sm mb-2">{label}</h3>
-                  <RefinementList
-                    attribute={`specifications.${specKey}`}
-                    limit={10}
-                    showMoreLimit={30}
-                    showMore
-                    classNames={REFINEMENT_CLASS_NAMES}
-                    {...(specTransform ? { transformItems: specTransform } : {})}
-                    translations={{
-                      showMoreButtonText({ isShowingMore }: { isShowingMore: boolean }) {
-                        return isShowingMore
-                          ? (language === "ar" ? "عرض أقل" : language === "ku" ? "کەمتر پیشان بدە" : "Show less")
-                          : (language === "ar" ? "عرض المزيد" : language === "ku" ? "زیاتر پیشان بدە" : "Show more");
-                      },
-                    }}
-                  />
-                </div>
-              );
-            })}
+            {specKeys.map((specKey) => (
+              <MemoizedSpecFilter
+                key={specKey}
+                specKey={specKey}
+                language={language}
+                showMoreText={showMoreText}
+              />
+            ))}
           </div>
         </ScrollArea>
         <div className="p-4 pb-20 border-t bg-gray-50">
