@@ -19,7 +19,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { isIOS, isNative } from "@/lib/capacitor";
 import { initAppLifecycle } from "@/lib/appLifecycle";
-import { saveScrollY, getScrollY } from "@/lib/scroll-storage";
+import { saveScrollY, getScrollY, readScrollY, writeScrollTo, getScrollContainer } from "@/lib/scroll-storage";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { useSocketNotifications } from "@/hooks/use-socket-notifications";
@@ -116,7 +116,7 @@ function ScrollToTop() {
     // On forward navigation (pushState): save current scroll, scroll new page to top
     history.pushState = function(...args) {
       // Save scroll position for the page we're leaving
-      saveScrollY(currentHistoryKey, window.scrollY);
+      saveScrollY(currentHistoryKey, readScrollY());
 
       // Generate a new key for the destination page
       const newKey = Math.random().toString(36).slice(2, 8);
@@ -125,7 +125,7 @@ function ScrollToTop() {
       currentHistoryKey = newKey;
 
       originalPushState.apply(history, args);
-      setTimeout(() => window.scrollTo(0, 0), 0);
+      setTimeout(() => writeScrollTo(0), 0);
     };
 
     // replaceState: keep current key, don't scroll
@@ -138,7 +138,7 @@ function ScrollToTop() {
     // On back/forward (popstate): restore saved scroll position
     const handlePopState = (e: PopStateEvent) => {
       // Save scroll position for the page we're leaving
-      saveScrollY(currentHistoryKey, window.scrollY);
+      saveScrollY(currentHistoryKey, readScrollY());
 
       // Get the key for the page we're going to
       const targetKey = e.state?._scrollKey;
@@ -150,7 +150,7 @@ function ScrollToTop() {
           // __scrollRestoreHandled flag prevents us from interfering.
           const restore = () => {
             if ((window as any).__scrollRestoreHandled) return;
-            window.scrollTo(0, savedY);
+            writeScrollTo(savedY);
           };
 
           // Initial attempt after microtask flush
@@ -170,7 +170,7 @@ function ScrollToTop() {
               clearTimeout(deadline);
             }, 500);
           });
-          observer.observe(document.body, { childList: true, subtree: true });
+          observer.observe(getScrollContainer(), { childList: true, subtree: true });
 
           // Disconnect fallback after settled period
           settled = setTimeout(() => {
@@ -184,7 +184,7 @@ function ScrollToTop() {
     window.addEventListener('popstate', handlePopState);
 
     // Scroll to top on initial load
-    window.scrollTo(0, 0);
+    writeScrollTo(0);
 
     return () => {
       window.removeEventListener('popstate', handlePopState);

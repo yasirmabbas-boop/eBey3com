@@ -80,24 +80,15 @@ export function FullscreenImageViewer({
   }, [initialIndex, resetZoom]);
 
   useEffect(() => {
+    // Lock/unlock the actual scroll container (main.despia-content)
+    const scrollContainer = document.querySelector('main.despia-content') as HTMLElement | null;
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.top = `-${window.scrollY}px`;
+      if (scrollContainer) scrollContainer.style.overflow = 'hidden';
     } else {
-      const scrollY = document.body.style.top;
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      }
+      if (scrollContainer) scrollContainer.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = '';
-      document.body.style.position = '';
+      if (scrollContainer) scrollContainer.style.overflow = '';
       document.body.style.width = '';
       document.body.style.top = '';
     };

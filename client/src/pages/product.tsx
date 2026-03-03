@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { writeScrollTo } from "@/lib/scroll-storage";
 import { FullscreenImageViewer } from "@/components/fullscreen-image-viewer";
 import { useRoute, useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -99,7 +100,7 @@ export default function ProductPage() {
 
   // Scroll to top on page load
   useEffect(() => {
-    window.scrollTo(0, 0);
+    writeScrollTo(0);
   }, [params?.id]);
 
   // Sync carousel with selected image index

@@ -73,6 +73,31 @@ function evict(map: ScrollMap): ScrollMap {
   return live;
 }
 
+/**
+ * Returns the actual scroll container used by the app.
+ *
+ * The ebey3 layout uses `<main class="despia-content">` with `overflow-y: auto`
+ * as the scroll container, while `html`/`body` have `overflow: hidden`.
+ * `window.scrollY` is always 0 — use this helper instead.
+ */
+let _cachedContainer: Element | null = null;
+export function getScrollContainer(): Element {
+  // Cache the container reference — it doesn't change after first render
+  if (_cachedContainer && _cachedContainer.isConnected) return _cachedContainer;
+  _cachedContainer = document.querySelector("main.despia-content") || document.documentElement;
+  return _cachedContainer;
+}
+
+/** Read scrollTop from the app's scroll container */
+export function readScrollY(): number {
+  return getScrollContainer().scrollTop;
+}
+
+/** Scroll the app's scroll container to a given Y position */
+export function writeScrollTo(y: number): void {
+  getScrollContainer().scrollTo(0, y);
+}
+
 export function saveScrollY(key: string, y: number): void {
   const map = evict(loadMap());
   map[key] = { y, ts: Date.now() };
