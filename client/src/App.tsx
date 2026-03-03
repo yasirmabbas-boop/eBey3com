@@ -19,7 +19,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { isIOS, isNative } from "@/lib/capacitor";
 import { initAppLifecycle } from "@/lib/appLifecycle";
-import { saveScrollY, getScrollY, readScrollY, writeScrollTo, getScrollContainer } from "@/lib/scroll-storage";
+import { saveScrollY, getScrollY, readScrollY, writeScrollTo, getScrollContainer, invalidateScrollContainer } from "@/lib/scroll-storage";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { useSocketNotifications } from "@/hooks/use-socket-notifications";
@@ -148,35 +148,50 @@ function ScrollToTop() {
         if (savedY != null && savedY > 0) {
           // Page-level useLayoutEffect (e.g., search.tsx) may handle restore first;
           // __scrollRestoreHandled flag prevents us from interfering.
+          let restored = false;
           const restore = () => {
-            if ((window as any).__scrollRestoreHandled) return;
-            writeScrollTo(savedY);
+            if (restored || (window as any).__scrollRestoreHandled) return;
+            // Force re-query — React may have replaced the <main> element.
+            invalidateScrollContainer();
+            const container = getScrollContainer();
+            // Only count as restored if the container has enough content
+            if (container.scrollHeight > savedY) {
+              container.scrollTo(0, savedY);
+              restored = true;
+            }
           };
 
-          // Initial attempt after microtask flush
-          requestAnimationFrame(restore);
-
-          // Observe DOM mutations — lazy-loaded content may change layout.
-          // Keep restoring until 500ms of DOM stability or 2s max.
+          // Observe document.body for mutations (not the scroll container,
+          // which React may replace during route changes).
           let settled: ReturnType<typeof setTimeout>;
           const deadline = setTimeout(() => {
             observer.disconnect();
-          }, 2000);
+          }, 3000);
           const observer = new MutationObserver(() => {
             clearTimeout(settled);
             restore();
+            if (restored) {
+              observer.disconnect();
+              clearTimeout(deadline);
+              return;
+            }
             settled = setTimeout(() => {
               observer.disconnect();
               clearTimeout(deadline);
-            }, 500);
+            }, 600);
           });
-          observer.observe(getScrollContainer(), { childList: true, subtree: true });
+          observer.observe(document.body, { childList: true, subtree: true });
+
+          // Initial attempts — content may already be available or arrive soon
+          requestAnimationFrame(restore);
+          setTimeout(restore, 50);
+          setTimeout(restore, 150);
 
           // Disconnect fallback after settled period
           settled = setTimeout(() => {
             observer.disconnect();
             clearTimeout(deadline);
-          }, 500);
+          }, 600);
         }
       }
     };

@@ -82,10 +82,16 @@ function evict(map: ScrollMap): ScrollMap {
  */
 let _cachedContainer: Element | null = null;
 export function getScrollContainer(): Element {
-  // Cache the container reference — it doesn't change after first render
+  // Re-query if the cached element was disconnected (React may replace
+  // the <main> element during route transitions).
   if (_cachedContainer && _cachedContainer.isConnected) return _cachedContainer;
   _cachedContainer = document.querySelector("main.despia-content") || document.documentElement;
   return _cachedContainer;
+}
+
+/** Force-clear the cached container so the next call re-queries the DOM. */
+export function invalidateScrollContainer(): void {
+  _cachedContainer = null;
 }
 
 /** Read scrollTop from the app's scroll container */

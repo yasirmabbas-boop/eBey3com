@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { writeScrollTo } from "@/lib/scroll-storage";
+
 import { FullscreenImageViewer } from "@/components/fullscreen-image-viewer";
 import { useRoute, useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -98,10 +98,8 @@ export default function ProductPage() {
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
 
-  // Scroll to top on page load
-  useEffect(() => {
-    writeScrollTo(0);
-  }, [params?.id]);
+  // Scroll to top is handled globally by ScrollToTop (App.tsx) via the
+  // pushState override — no need to duplicate it here.
 
   // Sync carousel with selected image index
   useEffect(() => {
