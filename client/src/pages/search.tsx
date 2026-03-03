@@ -666,6 +666,8 @@ function SearchContent({
           "quantitySold",
           "specifications",
         ]}
+        attributesToHighlight={[]}
+        attributesToSnippet={[]}
       />
       <SearchStatePersist />
       <StaleSpecCleaner />
