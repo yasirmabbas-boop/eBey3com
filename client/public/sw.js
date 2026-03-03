@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ebay-iraq-v3';
+const CACHE_NAME = 'ebay-iraq-v4';
 const STATIC_ASSETS = [
   '/favicon.png',
   '/icon-192.png',
@@ -7,7 +7,7 @@ const STATIC_ASSETS = [
 
 // Debug logging helper
 const log = (message, data) => {
-  console.log(`[SW v3] ${message}`, data || '');
+  console.log(`[SW v4] ${message}`, data || '');
 };
 
 self.addEventListener('install', (event) => {
