@@ -17,6 +17,7 @@ interface SwipeReelFiltersProps {
   filters: SwipeFilters;
   onFiltersChange: (filters: SwipeFilters) => void;
   hidden?: boolean;
+  onClose?: () => void;
 }
 
 const CATEGORIES = [
@@ -42,7 +43,7 @@ const CONDITIONS = [
   { id: "For Parts or Not Working", labelAr: "لا يعمل / لأجزاء", labelKu: "نایەوە کار / بۆ پارچەکان" },
 ];
 
-export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: SwipeReelFiltersProps) {
+export function SwipeReelFilters({ filters, onFiltersChange, hidden = false, onClose }: SwipeReelFiltersProps) {
   const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -152,18 +153,30 @@ export function SwipeReelFilters({ filters, onFiltersChange, hidden = false }: S
             </div>
           </div>
 
+          {/* Close / Exit button */}
+          {onClose && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-black/30 backdrop-blur-sm border-0 text-white hover:bg-black/40 flex-shrink-0"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+
           {/* Filter Sheet Trigger */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="relative bg-black/30 backdrop-blur-sm border-0 text-white hover:bg-black/40"
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 {activeFilterCount > 0 && (
-                  <Badge 
-                    variant="destructive" 
+                  <Badge
+                    variant="destructive"
                     className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs"
                   >
                     {activeFilterCount}

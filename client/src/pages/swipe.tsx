@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, AlertCircle, RotateCw } from "lucide-react";
@@ -76,6 +76,7 @@ export default function SwipePage() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [shareListing, setShareListing] = useState<Listing | null>(null);
   const [clearMode, setClearMode] = useState(false);
+  const [isImageZoomed, setIsImageZoomed] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isAnySheetOpen = detailsOpen || biddingOpen || offerOpen;
@@ -151,14 +152,22 @@ export default function SwipePage() {
 
   // Track filter changes to trigger refetch
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
-  
+
+  // Skip the first render of the filter-reset effect (it fires on mount
+  // and would wipe the restored currentIndex from sessionStorage).
+  const isInitialMount = useRef(true);
+
   // Reset when filters change - but don't clear items immediately to avoid flash
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     setCurrentIndex(0);
     setPage(1);
     setAllItems([]);
     setIsFiltersChanged(true);
-    
+
     // Clear saved state when filters change
     sessionStorage.removeItem(SWIPE_STATE_KEY);
   }, [filters]);
@@ -206,7 +215,7 @@ export default function SwipePage() {
   useSwipeGesture(containerRef, {
     onSwipeUp: nextItem,
     onSwipeDown: previousItem,
-    disabled: isAnySheetOpen,
+    disabled: isAnySheetOpen || isImageZoomed,
   });
 
   // Keyboard navigation
@@ -338,7 +347,7 @@ export default function SwipePage() {
   if (processedItems.length === 0) {
     return (
       <div className="fixed inset-0 bg-black" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
-        <SwipeReelFilters filters={filters} onFiltersChange={setFilters} />
+        <SwipeReelFilters filters={filters} onFiltersChange={setFilters} onClose={() => navigate("/")} />
         <div className="flex items-center justify-center h-full px-4">
           <div className="text-center">
             <p className="text-xl font-bold mb-2 text-white">
@@ -381,10 +390,11 @@ export default function SwipePage() {
         }}
       >
         {/* Filters Overlay */}
-        <SwipeReelFilters 
-          filters={filters} 
+        <SwipeReelFilters
+          filters={filters}
           onFiltersChange={setFilters}
           hidden={clearMode}
+          onClose={() => navigate("/")}
         />
         {/* Pre-render adjacent items for instant transitions */}
         {visibleItems.map(({ item, actualIndex }) => {
@@ -422,6 +432,7 @@ export default function SwipePage() {
                 onMakeOffer={() => handleMakeOffer(item)}
                 onShare={() => handleShare(item)}
                 onNavigateToListing={() => navigate(`/product/${item.id}`)}
+                onZoomChange={setIsImageZoomed}
               />
             </motion.div>
           );

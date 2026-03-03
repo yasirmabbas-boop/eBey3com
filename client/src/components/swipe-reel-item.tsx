@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Share2, Star, BadgeCheck, ShoppingCart } from "lucide-react";
 import { FavoriteButton } from "@/components/favorite-button";
 import { AuctionCountdown } from "@/components/auction-countdown";
+import { PinchZoomImage } from "@/components/pinch-zoom-image";
 import { useLanguage } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
@@ -21,6 +22,8 @@ interface SwipeReelItemProps {
   onMakeOffer: () => void;
   onShare: () => void;
   onNavigateToListing: () => void;
+  /** Called when pinch-zoom state changes (true = zoomed in) */
+  onZoomChange?: (zoomed: boolean) => void;
 }
 
 export function SwipeReelItem({
@@ -34,6 +37,7 @@ export function SwipeReelItem({
   onMakeOffer,
   onShare,
   onNavigateToListing,
+  onZoomChange,
 }: SwipeReelItemProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -124,14 +128,14 @@ export function SwipeReelItem({
                 style={{ filter: "blur(22px)", transform: "scale(1.15)", opacity: 0.6 }}
                 loading={idx === 0 ? "eager" : "lazy"}
               />
-              {/* Foreground — contained, centered */}
-              <img
+              {/* Foreground — contained, centered, pinch-to-zoom */}
+              <PinchZoomImage
                 src={img}
                 alt={`${listing.title} ${idx + 1}`}
                 className="absolute inset-0 w-full h-full object-contain"
-                style={{ zIndex: 2 }}
                 loading={idx === 0 && (isActive || shouldPreload) ? "eager" : "lazy"}
                 decoding="async"
+                onZoomChange={onZoomChange}
               />
             </div>
           ))}
