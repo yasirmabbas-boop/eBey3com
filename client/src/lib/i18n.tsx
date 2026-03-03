@@ -12,6 +12,7 @@ interface Translations {
 
 export const translations: Translations = {
   // Navigation
+  previousPage: { ar: "الصفحة السابقة", ku: "پەڕەی پێشوو", en: "Previous page" },
   home: { ar: "الرئيسية", ku: "سەرەکی", en: "Home" },
   auctions: { ar: "المزادات", ku: "مزایدەکان", en: "Auctions" },
   buyNow: { ar: "شراء الآن", ku: "ئێستا بیکڕە", en: "Buy Now" },

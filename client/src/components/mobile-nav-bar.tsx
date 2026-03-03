@@ -10,9 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getAuthHeaders } from "@/lib/queryClient";
 import { useNavBarSwipe } from "@/hooks/use-nav-bar-swipe";
 import { useEffect, useRef } from "react";
-
-// TikTok-style: Hide nav bar completely on immersive swipe/reels experience
-const HIDDEN_NAV_PATHS: string[] = ["/swipe"];
+import { isPathInSection, HIDDEN_NAV_PATHS, type NavSection } from "@/lib/nav-sections";
 
 export function MobileNavBar() {
   const [location] = useLocation();
@@ -50,12 +48,7 @@ export function MobileNavBar() {
   ];
 
   const isActiveSection = (section: string) => {
-    if (section === "home") return location === "/" || location.startsWith("/product/") || location.startsWith("/category/");
-    if (section === "favorites") return location.startsWith("/favorites");
-    if (section === "swipe") return location.startsWith("/swipe");
-    if (section === "notifications") return location.startsWith("/notifications");
-    if (section === "account") return (location.startsWith("/my-account") && !location.includes("tab=notifications")) || location.startsWith("/signin") || location.startsWith("/seller") || location.startsWith("/cart") || location.startsWith("/orders") || location.startsWith("/checkout") || location.startsWith("/my-") || location.startsWith("/security") || location.startsWith("/settings");
-    return false;
+    return isPathInSection(location, section as NavSection);
   };
 
   // Find current tab index
@@ -128,13 +121,14 @@ export function MobileNavBar() {
   const indicatorPosition = getIndicatorPosition();
 
   return (
-    <nav 
+    <nav
       ref={navBarRef}
+      data-swipe-ignore
       className={`fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] md:hidden transition-transform duration-300 ease-out ${
         shouldShowNav ? 'translate-y-0' : 'translate-y-full'
       }`}
       dir={isRTL ? "rtl" : "ltr"}
-      style={{ 
+      style={{
         zIndex: 99999,
         paddingBottom: 'env(safe-area-inset-bottom, 8px)',
         position: "fixed",

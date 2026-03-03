@@ -1,27 +1,11 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { getNavSection, NavSection } from "@/lib/nav-sections";
 
 const NAV_STATE_KEY = "nav_section_state";
 
-type NavSection = "home" | "favorites" | "swipe" | "search" | "account" | "notifications";
-
-interface SectionState {
-  path: string;
-  scrollY: number;
-}
-
 interface NavState {
-  [key: string]: SectionState;
-}
-
-function getSectionFromPath(path: string): NavSection | null {
-  if (path === "/" || path.startsWith("/product/") || path.startsWith("/category/")) return "home";
-  if (path.startsWith("/favorites")) return "favorites";
-  if (path.startsWith("/swipe")) return "swipe";
-  if (path.startsWith("/search")) return "search";
-  if (path.startsWith("/notifications")) return "notifications";
-  if (path.startsWith("/my-account") || path.startsWith("/signin") || path.startsWith("/signup") || path.startsWith("/register") || path.startsWith("/seller") || path.startsWith("/cart") || path.startsWith("/orders") || path.startsWith("/checkout") || path.startsWith("/my-") || path.startsWith("/security") || path.startsWith("/settings")) return "account";
-  return null;
+  [key: string]: string; // section → last visited path (scroll is handled by ScrollToTop)
 }
 
 function loadNavState(): NavState {
@@ -37,98 +21,66 @@ function saveNavState(state: NavState): void {
   try {
     sessionStorage.setItem(NAV_STATE_KEY, JSON.stringify(state));
   } catch {
+    // quota exceeded or private browsing — degrade silently
   }
 }
 
+/**
+ * Manages tab section path persistence.
+ *
+ * Scroll position is NOT managed here — ScrollToTop (App.tsx) is the single
+ * owner of scroll save/restore via history.state._scrollKey. This hook only
+ * tracks which path was last visited in each nav section so that switching
+ * tabs can restore the user's previous route.
+ */
 export function useNavState() {
   const [location, setLocation] = useLocation();
   const currentSectionRef = useRef<NavSection | null>(null);
-  const isRestoringRef = useRef(false);
 
+  // Track which path belongs to which section as the user navigates
   useEffect(() => {
-    const section = getSectionFromPath(location);
-    
-    if (isRestoringRef.current) {
-      isRestoringRef.current = false;
-      const state = loadNavState();
-      const sectionState = state[section || ""];
-      if (sectionState?.scrollY) {
-        setTimeout(() => {
-          window.scrollTo(0, sectionState.scrollY);
-        }, 100);
-      }
-      currentSectionRef.current = section;
-      return;
-    }
+    const section = getNavSection(location);
 
+    // Save the current path for this section
     if (section && currentSectionRef.current === section) {
       const state = loadNavState();
-      state[section] = {
-        path: location,
-        scrollY: window.scrollY
-      };
+      state[section] = location;
       saveNavState(state);
     }
-    
+
     currentSectionRef.current = section;
   }, [location]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const section = getSectionFromPath(location);
-      if (section) {
+  /**
+   * Navigate to a tab section, restoring the last visited path if available.
+   */
+  const navigateToSection = useCallback(
+    (section: string, defaultPath: string) => {
+      // Save current section's path before leaving
+      const currentSection = getNavSection(location);
+      if (currentSection) {
         const state = loadNavState();
-        state[section] = {
-          path: location,
-          scrollY: window.scrollY
-        };
+        state[currentSection] = location;
         saveNavState(state);
       }
-    };
 
-    let timeout: NodeJS.Timeout;
-    const debouncedScroll = () => {
-      clearTimeout(timeout);
-      timeout = setTimeout(handleScroll, 200);
-    };
-
-    window.addEventListener("scroll", debouncedScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", debouncedScroll);
-      clearTimeout(timeout);
-    };
-  }, [location]);
-
-  const navigateToSection = useCallback((section: string, defaultPath: string) => {
-    const currentSection = getSectionFromPath(location);
-    
-    if (currentSection) {
+      // Restore the target section's last path, or use default
       const state = loadNavState();
-      state[currentSection] = {
-        path: location,
-        scrollY: window.scrollY
-      };
-      saveNavState(state);
-    }
+      const savedPath = state[section];
 
-    const state = loadNavState();
-    const sectionState = state[section];
-    
-    if (sectionState?.path && sectionState.path !== location) {
-      isRestoringRef.current = true;
-      setLocation(sectionState.path);
-    } else {
-      setLocation(defaultPath);
-    }
-  }, [location, setLocation]);
+      if (savedPath && savedPath !== location) {
+        setLocation(savedPath);
+      } else {
+        setLocation(defaultPath);
+      }
+    },
+    [location, setLocation]
+  );
 
   const getLastPath = useCallback((section: string): string | null => {
     const state = loadNavState();
-    return state[section]?.path || null;
+    return state[section] || null;
   }, []);
 
-  const saveCurrentPath = useCallback(() => {
-  }, []);
-
-  return { getLastPath, saveCurrentPath, navigateToSection };
+  return { getLastPath, navigateToSection };
 }

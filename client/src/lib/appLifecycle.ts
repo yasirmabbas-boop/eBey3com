@@ -3,8 +3,11 @@ import { isNative } from './capacitor';
 
 export type DeepLinkHandler = (url: string) => void;
 
+/** Root-level paths where Android back button should exit the app */
+const ROOT_PATHS = ['/', '/favorites', '/swipe', '/notifications', '/my-account'];
+
 /**
- * Initialize app lifecycle listeners (deep links, state changes)
+ * Initialize app lifecycle listeners (deep links, state changes, back button)
  */
 export const initAppLifecycle = (options: {
   onDeepLink?: DeepLinkHandler;
@@ -14,19 +17,20 @@ export const initAppLifecycle = (options: {
 
   const { onDeepLink, onAppStateChange } = options;
 
-  // Handle deep links (e.g., ebay3://product/123)
+  // Handle deep links (e.g., ebey3://product/123)
   if (onDeepLink) {
     App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
       const url = event.url;
-      console.log('Deep link opened:', url);
-      
+      console.log('[AppLifecycle] Deep link opened:', url);
+
       try {
-        // Parse the URL and extract the path
         const urlObj = new URL(url);
         const path = urlObj.pathname + urlObj.search;
         onDeepLink(path);
       } catch (error) {
-        console.error('Error parsing deep link:', error);
+        console.error('[AppLifecycle] Error parsing deep link:', error);
+        // Fall back to home on unparseable URLs
+        onDeepLink('/');
       }
     });
   }
@@ -34,17 +38,30 @@ export const initAppLifecycle = (options: {
   // Handle app state changes (foreground/background)
   if (onAppStateChange) {
     App.addListener('appStateChange', ({ isActive }) => {
-      console.log('App state changed:', isActive ? 'active' : 'background');
+      console.log('[AppLifecycle] State changed:', isActive ? 'active' : 'background');
       onAppStateChange(isActive);
     });
   }
 
   // Handle back button on Android
+  // Only exit app when on a root tab — otherwise go back in history or navigate home
   App.addListener('backButton', ({ canGoBack }) => {
-    if (!canGoBack) {
-      App.exitApp();
-    } else {
-      window.history.back();
+    try {
+      if (canGoBack) {
+        window.history.back();
+      } else {
+        const currentPath = window.location.pathname;
+        if (ROOT_PATHS.includes(currentPath)) {
+          App.exitApp();
+        } else {
+          // Not on a root screen and no history — go home instead of exiting
+          window.location.href = '/';
+        }
+      }
+    } catch (error) {
+      console.error('[AppLifecycle] Back button handler error:', error);
+      // Last resort: navigate home
+      window.location.href = '/';
     }
   });
 };

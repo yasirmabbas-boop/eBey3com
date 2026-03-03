@@ -1,8 +1,8 @@
 import { useLocation } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const MAIN_NAV_PAGES = ["/", "/favorites", "/swipe", "/notifications", "/my-account", "/signin", "/cart"];
+import { MAIN_NAV_PAGES } from "@/lib/nav-sections";
+import { canGoBack } from "@/hooks/use-nav-stack";
 
 interface BackButtonProps {
   fallbackPath?: string;
@@ -13,7 +13,7 @@ export function BackButton({ fallbackPath = "/", className = "" }: BackButtonPro
   const [location, navigate] = useLocation();
 
   const handleBack = () => {
-    if (window.history.length > 2) {
+    if (canGoBack()) {
       window.history.back();
     } else {
       navigate(fallbackPath);

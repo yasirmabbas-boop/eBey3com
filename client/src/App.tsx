@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { useEffect, Suspense, lazy } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -146,18 +146,38 @@ function ScrollToTop() {
         currentHistoryKey = targetKey;
         const savedY = getScrollY(targetKey);
         if (savedY != null && savedY > 0) {
-          // Delay to allow lazy-loaded page content to render before restoring scroll.
           // Page-level useLayoutEffect (e.g., search.tsx) may handle restore first;
-          // __scrollRestoreHandled flag prevents these timeouts from interfering.
+          // __scrollRestoreHandled flag prevents us from interfering.
           const restore = () => {
             if ((window as any).__scrollRestoreHandled) return;
             window.scrollTo(0, savedY);
           };
-          setTimeout(restore, 50);
-          setTimeout(restore, 150);
-          setTimeout(restore, 400);
+
+          // Initial attempt after microtask flush
+          requestAnimationFrame(restore);
+
+          // Observe DOM mutations — lazy-loaded content may change layout.
+          // Keep restoring until 500ms of DOM stability or 2s max.
+          let settled: ReturnType<typeof setTimeout>;
+          const deadline = setTimeout(() => {
+            observer.disconnect();
+          }, 2000);
+          const observer = new MutationObserver(() => {
+            clearTimeout(settled);
+            restore();
+            settled = setTimeout(() => {
+              observer.disconnect();
+              clearTimeout(deadline);
+            }, 500);
+          });
+          observer.observe(document.body, { childList: true, subtree: true });
+
+          // Disconnect fallback after settled period
+          settled = setTimeout(() => {
+            observer.disconnect();
+            clearTimeout(deadline);
+          }, 500);
         }
-        // If no saved position, don't scroll — page will be at wherever it was
       }
     };
 
@@ -221,41 +241,50 @@ function Router() {
   );
 }
 
-// Main App component with proper provider nesting
-function App() {
-  useEffect(() => {
-    // Initialize native app features
-    if (isNative) {
-      document.body.classList.add("capacitor-native");
+// Mounts inside LanguageProvider so Wouter's setLocation is available
+function NativeAppInit() {
+  const [, setLocation] = useLocation();
 
-      // Configure status bar
-      // Prevent WebView from rendering under status bar on both iOS and Android
-      StatusBar.setOverlaysWebView({ overlay: false }).catch(console.error);
-      StatusBar.setStyle({ style: Style.Light }).catch(console.error);
-      // Platform-specific status bar colors: iOS transparent, Android black for separation
-      StatusBar.setBackgroundColor({ color: isIOS ? '#2563eb' : '#000000' }).catch(console.error);
-      
-      // Hide splash screen after app loads
-      setTimeout(() => {
-        SplashScreen.hide().catch(console.error);
-      }, 1000);
-      
-      // Initialize app lifecycle (deep links, back button, etc.)
-      initAppLifecycle({
-        onDeepLink: (path) => {
-          console.log('Deep link:', path);
-          window.location.href = path;
-        },
-        onAppStateChange: (isActive) => {
-          console.log('App state changed:', isActive ? 'active' : 'background');
+  useEffect(() => {
+    if (!isNative) return;
+    document.body.classList.add("capacitor-native");
+
+    // Configure status bar
+    StatusBar.setOverlaysWebView({ overlay: false }).catch(console.error);
+    StatusBar.setStyle({ style: Style.Light }).catch(console.error);
+    StatusBar.setBackgroundColor({ color: isIOS ? '#2563eb' : '#000000' }).catch(console.error);
+
+    // Hide splash screen after app loads
+    setTimeout(() => {
+      SplashScreen.hide().catch(console.error);
+    }, 1000);
+
+    // Initialize app lifecycle — use Wouter's setLocation for deep links (no page reload)
+    initAppLifecycle({
+      onDeepLink: (path) => {
+        try {
+          console.log('[App] Deep link navigating to:', path);
+          setLocation(path);
+        } catch (error) {
+          console.error('[App] Deep link navigation failed:', error);
+          setLocation('/');
         }
-      });
-    }
+      },
+      onAppStateChange: (isActive) => {
+        console.log('[App] State changed:', isActive ? 'active' : 'background');
+      }
+    });
 
     return () => {
       document.body.classList.remove("capacitor-native");
     };
-  }, []);
+  }, [setLocation]);
+
+  return null;
+}
+
+// Main App component with proper provider nesting
+function App() {
 
   return (
     <ErrorBoundary>
@@ -264,6 +293,7 @@ function App() {
           <TooltipProvider>
             <SafeAreaProvider>
               <NavVisibilityProvider>
+              <NativeAppInit />
               <ScrollToTop />
               <NotificationDeeplinkHandler />
               <SocketNotificationsWrapper />

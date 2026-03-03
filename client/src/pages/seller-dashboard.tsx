@@ -403,8 +403,22 @@ export default function SellerDashboard() {
     }
     if (listingId) setDeepLinkListingId(listingId);
     
-    // Clear query params from URL without reloading
+    // Rewrite URL: if a legacy tab name was used, replace it with the new name
+    // so that bookmarks and shared links stay current. Then clear query params.
     if (urlTab || section || orderId || offerId || returnId || listingId) {
+      if (resolved.isLegacy && urlTab) {
+        // Build a clean URL with the new tab name for any external watchers
+        const newParams = new URLSearchParams();
+        newParams.set("tab", resolved.tab);
+        if (resolved.section) newParams.set("section", resolved.section);
+        if (orderId) newParams.set("orderId", orderId);
+        if (offerId) newParams.set("offerId", offerId);
+        if (returnId) newParams.set("returnId", returnId);
+        if (listingId) newParams.set("listingId", listingId);
+        // Replace with new-name URL first (gives browser history a clean entry)
+        window.history.replaceState({}, "", `/seller-dashboard?${newParams.toString()}`);
+      }
+      // Then clear all query params
       window.history.replaceState({}, "", "/seller-dashboard");
     }
   }, [location]);

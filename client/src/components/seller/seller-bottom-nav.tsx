@@ -119,10 +119,13 @@ export function SellerBottomNav({
     }
   };
 
+  const isRTL = language === "ar" || language === "ku";
+
   return (
     <nav
+      data-swipe-ignore
       className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] md:hidden"
-      dir="rtl"
+      dir={isRTL ? "rtl" : "ltr"}
       style={{
         zIndex: 'var(--seller-nav-z-index, 100000)', // Above main nav and chat widgets
         paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))',
