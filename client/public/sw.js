@@ -22,7 +22,7 @@ self.addEventListener('install', (event) => {
         log('Installation complete');
       })
       .catch((err) => {
-        console.error('[SW v3] Installation failed:', err);
+        console.error('[SW v5] Installation failed:', err);
       })
   );
   self.skipWaiting();
