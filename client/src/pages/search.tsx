@@ -275,7 +275,11 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
     staleTime: 60_000,
   });
 
-  if (status === "loading" && hits.length === 0) {
+  // Show skeleton while initial search is in progress.
+  // On first render, status may be "idle" or "stalled" before the request fires,
+  // so also check if results have no nbHits yet (meaning no response received).
+  const nbHits = (results as any)?.nbHits;
+  if (hits.length === 0 && (status === "loading" || status === "stalled" || nbHits == null)) {
     return <ProductGridSkeleton count={12} />;
   }
 
