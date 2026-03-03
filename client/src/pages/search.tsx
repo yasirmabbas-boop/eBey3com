@@ -648,7 +648,25 @@ function SearchContent({
 
   return (
     <>
-      <Configure filters={filter} hitsPerPage={48} attributesToRetrieve={["*"]} />
+      <Configure
+        filters={filter}
+        hitsPerPage={48}
+        attributesToRetrieve={[
+          "id",
+          "title",
+          "images",
+          "price",
+          "currentBid",
+          "saleType",
+          "condition",
+          "isActive",
+          "shippingCost",
+          "shippingType",
+          "quantityAvailable",
+          "quantitySold",
+          "specifications",
+        ]}
+      />
       <SearchStatePersist />
       <StaleSpecCleaner />
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
