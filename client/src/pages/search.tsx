@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState, useCallback } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { useSearch, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -7,7 +7,7 @@ import {
   SearchBox,
   RefinementList,
   Configure,
-  useInfiniteHits,
+  useHits,
   useInstantSearch,
   useCurrentRefinements,
   useClearRefinements,
@@ -257,10 +257,9 @@ function SearchHealthBanner({ language }: { language: string }) {
 }
 
 function SearchResults({ language, t }: { language: string; t: (k: string) => string }) {
-  const { items: hits, showMore, isLastPage } = useInfiniteHits<Listing & Record<string, unknown>>();
+  const { hits } = useHits<Listing & Record<string, unknown>>();
   const { status, results } = useInstantSearch();
   const { refine: clearAllRefinements, canRefine: hasActiveRefinements } = useClearRefinements();
-  const [loadingMore, setLoadingMore] = useState(false);
 
   // Pre-fetch hot listings so empty state renders instantly
   const { data: hotListings = [] } = useQuery<Listing[]>({
@@ -268,17 +267,6 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
     queryFn: () => fetch("/api/hot-listings?limit=6").then((r) => r.json()),
     staleTime: 60_000,
   });
-
-  // Reset loadingMore when status changes back from loading
-  useEffect(() => {
-    if (status === "idle") setLoadingMore(false);
-  }, [status]);
-
-  const handleShowMore = useCallback(() => {
-    if (loadingMore || isLastPage) return;
-    setLoadingMore(true);
-    showMore();
-  }, [loadingMore, isLastPage, showMore]);
 
   if (status === "loading" && hits.length === 0) {
     return <ProductGridSkeleton count={12} />;
@@ -298,29 +286,11 @@ function SearchResults({ language, t }: { language: string; t: (k: string) => st
   }
 
   return (
-    <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
-        {hits.map((hit) => (
-          <ListingHitCard key={hit.id} hit={hit} language={language} t={t} />
-        ))}
-      </div>
-
-      {/* Manual "Show more" button — no auto-scroll to avoid rapid-fire on mobile */}
-      {!isLastPage && (
-        <div className="flex justify-center py-6">
-          <Button
-            variant="outline"
-            onClick={handleShowMore}
-            disabled={loadingMore}
-            className="px-8"
-          >
-            {loadingMore
-              ? (language === "ar" ? "جاري التحميل..." : language === "ku" ? "بارکردن..." : "Loading...")
-              : (language === "ar" ? "عرض المزيد" : language === "ku" ? "زیاتر پیشان بدە" : "Show more")}
-          </Button>
-        </div>
-      )}
-    </>
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
+      {hits.map((hit) => (
+        <ListingHitCard key={hit.id} hit={hit} language={language} t={t} />
+      ))}
+    </div>
   );
 }
 
@@ -642,7 +612,7 @@ function SearchContent({
 
   return (
     <>
-      <Configure filters={filter} hitsPerPage={24} attributesToRetrieve={["*"]} />
+      <Configure filters={filter} hitsPerPage={48} attributesToRetrieve={["*"]} />
       <StaleSpecCleaner />
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/40">
         <div className="flex-1 min-w-0">
