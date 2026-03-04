@@ -28,7 +28,6 @@ import { AuctionCountdown } from "@/components/auction-countdown";
 import { InstagramShareCard } from "@/components/instagram-share-card";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { MandatoryPhoneVerificationModal } from "@/components/mandatory-phone-verification-modal";
-import { ProductComments } from "@/components/product-comments";
 import { shareToFacebook, shareToWhatsApp, shareToTelegram, shareToTwitter } from "@/lib/share-utils";
 import { SPECIFICATION_LABELS, SPECIFICATION_OPTIONS } from "@/lib/search-data";
 import { hapticSuccess, hapticError, hapticLight, saveToPhotos, isDespia } from "@/lib/despia";
@@ -828,14 +827,9 @@ export default function ProductPage() {
               {product.condition}
             </span>
           )}
-          {product.brand && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-              {product.brand}
-            </span>
-          )}
           {listing?.specifications && (() => {
             const specs = listing.specifications as Record<string, string>;
-            const chipKeys = ["size", "shoeSize", "color", "material"] as const;
+            const chipKeys = ["brand", "size", "shoeSize", "color", "material"] as const;
             return chipKeys.map((key) => {
               const val = specs[key];
               if (!val) return null;
@@ -843,8 +837,8 @@ export default function ProductPage() {
               const opts = SPECIFICATION_OPTIONS[key as keyof typeof SPECIFICATION_OPTIONS] as Array<{ value: string; labelAr: string; labelKu: string }> | undefined;
               const displayVal = opts ? (opts.find((o) => o.value === val)?.[language === "ar" ? "labelAr" : "labelKu"] ?? val) : val;
               return (
-                <span key={key} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                  {label}: {displayVal}
+                <span key={key} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${key === "brand" ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-gray-600"}`}>
+                  {key === "brand" ? displayVal : `${label}: ${displayVal}`}
                 </span>
               );
             });
@@ -887,10 +881,7 @@ export default function ProductPage() {
           ) : (
             <>
               <p className="text-3xl font-bold">{product.price.toLocaleString()} د.ع</p>
-              {product.isNegotiable && (
-                <p className="text-sm text-gray-500 mt-1">{language === "ar" ? "أو أفضل عرض" : language === "ku" ? "یان باشترین پێشنیار" : "أو أفضل عرض"}</p>
-              )}
-              {/* Shipping line */}
+              {/* Shipping line — directly under price, before "or best offer" */}
               <p className="text-xs text-gray-500 mt-1">
                 {product?.shippingType === "buyer_pays"
                   ? `+ ${(product?.shippingCost || 0).toLocaleString()} ${language === "ar" ? "د.ع شحن" : language === "ku" ? "د.ع گواستنەوە" : "د.ع شحن"}`
@@ -898,6 +889,9 @@ export default function ProductPage() {
                     ? (language === "ar" ? "استلام شخصي" : language === "ku" ? "وەرگرتنی کەسی" : "استلام شخصي")
                     : (language === "ar" ? "🚚 شحن مجاني" : language === "ku" ? "🚚 گواستنەوەی بەخۆڕایی" : "🚚 شحن مجاني")}
               </p>
+              {product.isNegotiable && (
+                <p className="text-sm text-gray-500 mt-1">{language === "ar" ? "أو أفضل عرض" : language === "ku" ? "یان باشترین پێشنیار" : "أو أفضل عرض"}</p>
+              )}
               {/* Quantity selector — inside price block for full cost picture */}
               {remainingQty > 1 && (
                 <div className="flex items-center justify-between mt-3 py-2 px-3 bg-muted/50 rounded-lg">
@@ -1325,72 +1319,53 @@ export default function ProductPage() {
           return null;
         })()}
 
-        
-{/* Delivery & Details */}
-        <div className="py-4 border-b space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-500 text-sm">{t("delivery")}</span>
-            <span className="text-sm font-medium">{product.deliveryWindow || (language === "ar" ? "3-5 أيام" : language === "ku" ? "٣-٥ ڕۆژ" : "3-5 أيام")}</span>
-          </div>
-          {product?.internationalShipping && (
-            <div className="flex items-center justify-between">
-              <span className="text-gray-500 text-sm flex items-center gap-1">
-                <Globe className="h-4 w-4" />
-                {language === "ar" ? "شحن دولي" : language === "ku" ? "گواستنەوەی نێودەوڵەتی" : "شحن دولي"}
-              </span>
-              <span className="text-sm font-medium text-green-600">
-                {language === "ar" ? "متاح" : language === "ku" ? "بەردەستە" : "available"}
-              </span>
-            </div>
-          )}
-          {product.city && (
-            <div className="flex items-center justify-between">
-              <span className="text-gray-500 text-sm">{t("location")}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">{product.city}</span>
-                {product.locationLat && product.locationLng && (
-                  <a
-                    href={product.mapUrl || `https://www.google.com/maps?q=${product.locationLat},${product.locationLng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary text-sm hover:underline flex items-center gap-1"
-                    data-testid="link-google-maps"
-                  >
-                    <MapPin className="h-3 w-3" />
-                    {language === "ar" ? "الموقع" : language === "ku" ? "شوێن" : "الموقع"}
-                  </a>
-                )}
-              </div>
-            </div>
-          )}          <div className="flex items-center justify-between">
-            <span className="text-gray-500 text-sm">{t("returnPolicy")}</span>
-            <span className="text-sm font-medium">{product.returnPolicy || (language === "ar" ? "اتصل بالبائع" : language === "ku" ? "پەیوەندی بکە بە فرۆشیار" : "اتصل بالبائع")}</span>
-          </div>
 
-          {/* Views - Hidden */}
-          {/* <div className="flex items-center justify-between">
-            <span className="text-gray-500 text-sm">{t("views")}</span>
-            <span className="text-sm font-medium flex items-center gap-1">
-              <Eye className="h-4 w-4" />
-              {(listing as any)?.views || 0}
-            </span>
-          </div> */}
-        </div>
-
-        
-{/* Description Section */}
+{/* Description + Delivery & Location */}
         <div className="py-4 border-t">
           <h2 className="font-bold text-lg mb-3">{t("description")}</h2>
-          <p className="text-gray-600 leading-relaxed text-sm">
+          <p className="text-gray-600 leading-relaxed text-sm mb-4">
             {product.description || (language === "ar" ? "لا يوجد وصف متوفر لهذا المنتج." : language === "ku" ? "هیچ وەسفێک بۆ ئەم بەرهەمە بەردەست نییە." : "لا يوجد وصف متوفر لهذا المنتج.")}
           </p>
+          {/* Delivery & Location details */}
+          <div className="space-y-2 text-sm border-t pt-3">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500">{t("delivery")}</span>
+              <span className="font-medium">{product.deliveryWindow || (language === "ar" ? "3-5 أيام" : language === "ku" ? "٣-٥ ڕۆژ" : "3-5 أيام")}</span>
+            </div>
+            {product?.internationalShipping && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 flex items-center gap-1">
+                  <Globe className="h-4 w-4" />
+                  {language === "ar" ? "شحن دولي" : language === "ku" ? "گواستنەوەی نێودەوڵەتی" : "شحن دولي"}
+                </span>
+                <span className="font-medium text-green-600">
+                  {language === "ar" ? "متاح" : language === "ku" ? "بەردەستە" : "available"}
+                </span>
+              </div>
+            )}
+            {product.city && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">{t("location")}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{product.city}</span>
+                  {product.locationLat && product.locationLng && (
+                    <a
+                      href={product.mapUrl || `https://www.google.com/maps?q=${product.locationLat},${product.locationLng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-1"
+                      data-testid="link-google-maps"
+                    >
+                      <MapPin className="h-3 w-3" />
+                      {language === "ar" ? "الموقع" : language === "ku" ? "شوێن" : "الموقع"}
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        
-{/* Comments (public) */}
-        <ProductComments listingId={product.id} />
-
-        
         {/* Share - Compact row */}
         <div className="py-4 border-t">
           <div className="flex items-center gap-2">
@@ -1462,12 +1437,6 @@ export default function ProductPage() {
         <div className="py-4 border-t">
           <h2 className="font-bold text-lg mb-3">{language === "ar" ? "المواصفات" : language === "ku" ? "تایبەتمەندییەکان" : "المواصفات"}</h2>
           <div className="space-y-2 text-sm">
-            {product.brand && (
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-500">{language === "ar" ? "الماركة" : language === "ku" ? "مارکە" : "الماركة"}</span>
-                <span className="font-medium">{product.brand}</span>
-              </div>
-            )}
             <div className="flex justify-between py-2 border-b border-gray-100">
               <span className="text-gray-500">{t("category")}</span>
               <span className="font-medium">{product.category}</span>
