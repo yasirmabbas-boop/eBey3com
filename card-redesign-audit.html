@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eBey3 Card Redesign — UX Audit & Recommendations</title>
+<style>
+  :root {
+    --primary: #6366f1;
+    --primary-light: #e0e7ff;
+    --success: #16a34a;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: white; padding: 64px 24px 48px; text-align: center;
+  }
+  .hero h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 12px; }
+  .hero p { font-size: 1.1rem; opacity: 0.85; max-width: 640px; margin: 0 auto; }
+
+  /* Section */
+  .section { padding: 48px 0; }
+  .section-title {
+    font-size: 1.5rem; font-weight: 700; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-subtitle { color: var(--text-muted); margin-bottom: 32px; font-size: 0.95rem; }
+
+  /* Severity badges */
+  .severity {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .severity.critical { background: #fef2f2; color: #dc2626; }
+  .severity.high { background: #fff7ed; color: #ea580c; }
+  .severity.medium { background: #fefce8; color: #ca8a04; }
+  .severity.low { background: #f0fdf4; color: #16a34a; }
+
+  /* Issue cards */
+  .issue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+  .issue-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; transition: box-shadow 0.2s;
+  }
+  .issue-card:hover { box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+  .issue-card h3 { font-size: 1rem; font-weight: 700; margin: 10px 0 8px; }
+  .issue-card .current { color: var(--danger); font-size: 0.88rem; margin-bottom: 6px; }
+  .issue-card .current::before { content: "✗ "; font-weight: 700; }
+  .issue-card .proposed { color: var(--success); font-size: 0.88rem; }
+  .issue-card .proposed::before { content: "✓ "; font-weight: 700; }
+  .issue-card .rationale {
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+    font-size: 0.82rem; color: var(--text-muted);
+  }
+
+  /* Comparison */
+  .compare-wrapper {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin: 32px 0;
+  }
+  @media (max-width: 768px) { .compare-wrapper { grid-template-columns: 1fr; } }
+
+  .compare-column h3 {
+    text-align: center; margin-bottom: 16px; font-size: 0.9rem; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--text-muted);
+  }
+
+  /* Mock Cards */
+  .mock-card {
+    border-radius: var(--radius); overflow: hidden; background: #fff;
+    border: 1px solid var(--border); max-width: 220px; margin: 0 auto;
+    transition: transform 0.2s;
+  }
+  .mock-card:hover { transform: translateY(-2px); }
+  .mock-card .img-area {
+    aspect-ratio: 1; background: #f1f5f9; position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mock-card .img-area img { width: 100%; height: 100%; object-fit: cover; }
+  .mock-card .img-area .placeholder { color: #94a3b8; font-size: 2.5rem; }
+  .mock-card .badge-auction {
+    position: absolute; top: 8px; right: 8px;
+    background: #6366f1; color: #fff; font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 4px;
+  }
+  .mock-card .badge-fav {
+    position: absolute; top: 8px; left: 8px; width: 28px; height: 28px;
+    background: rgba(255,255,255,0.85); border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 14px;
+    backdrop-filter: blur(4px);
+  }
+  .mock-card .content { padding: 10px; }
+  .mock-card .content .title {
+    font-size: 12px; font-weight: 500; color: #374151; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .mock-card .content .specs { font-size: 10px; color: #9ca3af; margin-bottom: 4px; }
+  .mock-card .content .price { font-size: 15px; font-weight: 800; color: #111827; }
+  .mock-card .content .price .currency { font-size: 10px; font-weight: 500; }
+  .mock-card .content .shipping { font-size: 10px; color: #16a34a; }
+
+  /* NEW card enhancements */
+  .mock-card.new .content .seller-row {
+    display: flex; align-items: center; gap: 4px; margin-top: 6px;
+    padding-top: 6px; border-top: 1px solid #f1f5f9;
+  }
+  .mock-card.new .content .seller-row .avatar {
+    width: 16px; height: 16px; border-radius: 50%; background: #e0e7ff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700; color: #6366f1;
+  }
+  .mock-card.new .content .seller-row .seller-name { font-size: 10px; color: #64748b; }
+  .mock-card.new .content .seller-row .verified { font-size: 10px; color: #3b82f6; }
+  .mock-card.new .content .seller-row .rating { font-size: 10px; color: #f59e0b; margin-left: auto; }
+  .mock-card.new .content .auction-timer {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 10px; color: #dc2626; font-weight: 600; margin-top: 4px;
+  }
+  .mock-card.new .content .auction-timer .dot { width: 5px; height: 5px; border-radius: 50%; background: #dc2626; animation: pulse 1.5s infinite; }
+  .mock-card.new .content .bid-count { font-size: 10px; color: #64748b; }
+  .mock-card.new .content .location { font-size: 10px; color: #94a3b8; display: flex; align-items: center; gap: 3px; margin-top: 2px; }
+  .mock-card.new .img-area .img-count {
+    position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.55);
+    color: #fff; font-size: 9px; padding: 1px 6px; border-radius: 8px;
+    backdrop-filter: blur(4px);
+  }
+  .mock-card.new .img-area .condition-tag {
+    position: absolute; bottom: 6px; left: 6px; background: rgba(255,255,255,0.9);
+    color: #374151; font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 4px;
+    backdrop-filter: blur(4px);
+  }
+
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* Priority table */
+  .priority-table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+  .priority-table th { background: #f8fafc; padding: 12px 16px; text-align: left; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+  .priority-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  .priority-table tr:last-child td { border-bottom: none; }
+  .priority-table tr:hover td { background: #fafbfc; }
+
+  /* Flow diagram */
+  .flow-diagram {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    flex-wrap: wrap; margin: 32px 0; padding: 32px; background: #fff;
+    border: 1px solid var(--border); border-radius: var(--radius);
+  }
+  .flow-step {
+    padding: 12px 20px; border-radius: 8px; font-weight: 600; font-size: 0.85rem;
+    text-align: center; min-width: 120px;
+  }
+  .flow-step.see { background: #dbeafe; color: #1e40af; }
+  .flow-step.evaluate { background: #fef3c7; color: #92400e; }
+  .flow-step.decide { background: #d1fae5; color: #065f46; }
+  .flow-step.act { background: #ede9fe; color: #5b21b6; }
+  .flow-arrow { font-size: 1.5rem; color: #cbd5e1; }
+
+  /* Tabs */
+  .tab-container { margin: 32px 0; }
+  .tab-buttons { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 24px; }
+  .tab-btn {
+    padding: 10px 20px; background: none; border: none; cursor: pointer;
+    font-size: 0.9rem; font-weight: 600; color: var(--text-muted);
+    border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s;
+  }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Score meter */
+  .score-row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; }
+  .score-card {
+    flex: 1; min-width: 200px; background: #fff; border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; text-align: center;
+  }
+  .score-card .label { font-size: 0.82rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .score-card .score { font-size: 2rem; font-weight: 800; }
+  .score-card .score.low { color: var(--danger); }
+  .score-card .score.mid { color: var(--warning); }
+  .score-card .score.good { color: var(--success); }
+  .score-card .bar { height: 6px; border-radius: 3px; background: #f1f5f9; margin-top: 8px; overflow: hidden; }
+  .score-card .bar .fill { height: 100%; border-radius: 3px; transition: width 0.6s; }
+
+  .callout {
+    padding: 16px 20px; border-radius: 8px; margin: 16px 0; font-size: 0.9rem;
+  }
+  .callout.info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+  .callout.success { background: #f0fdf4; border-left: 4px solid #16a34a; }
+  .callout.warning { background: #fffbeb; border-left: 4px solid #f59e0b; }
+
+  .badge-list { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+  .badge-item { padding: 4px 12px; background: var(--primary-light); color: var(--primary); border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ===== HERO ===== -->
+<div class="hero">
+  <h1>eBey3 Card Redesign</h1>
+  <p>UX Audit & Recommendations — Optimizing the See → Evaluate → Decide → Act funnel for listing cards</p>
+</div>
+
+<div class="container">
+
+<!-- ===== EXECUTIVE SUMMARY ===== -->
+<div class="section">
+  <div class="section-title">📊 Current Card Health Scores</div>
+  <div class="section-subtitle">Scored against eBay's card patterns and e-commerce UX best practices</div>
+
+  <div class="score-row">
+    <div class="score-card">
+      <div class="label">Information Density</div>
+      <div class="score low">4/10</div>
+      <div class="bar"><div class="fill" style="width:40%;background:#ef4444"></div></div>
+    </div>
+    <div class="score-card">
+      <div class="label">Visual Hierarchy</div>
+      <div class="score mid">6/10</div>
+      <div class="bar"><div class="fill" style="width:60%;background:#f59e0b"></div></div>
+    </div>
+    <div class="score-card">
+      <div class="label">Trust Signals</div>
+      <div class="score low">3/10</div>
+      <div class="bar"><div class="fill" style="width:30%;background:#ef4444"></div></div>
+    </div>
+    <div class="score-card">
+      <div class="label">Urgency & FOMO</div>
+      <div class="score low">4/10</div>
+      <div class="bar"><div class="fill" style="width:40%;background:#ef4444"></div></div>
+    </div>
+    <div class="score-card">
+      <div class="label">Action Clarity</div>
+      <div class="score mid">5/10</div>
+      <div class="bar"><div class="fill" style="width:50%;background:#f59e0b"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== USER FLOW ===== -->
+<div class="section">
+  <div class="section-title">🔄 The Card Conversion Funnel</div>
+  <div class="section-subtitle">Every card must guide the user through four mental stages</div>
+
+  <div class="flow-diagram">
+    <div class="flow-step see">👁 SEE<br><small>Image catches eye</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step evaluate">🧠 EVALUATE<br><small>Price, condition, trust</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step decide">⚡ DECIDE<br><small>Urgency, scarcity, value</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step act">🛒 ACT<br><small>Tap to buy / bid</small></div>
+  </div>
+
+  <div class="callout info">
+    <strong>Key insight:</strong> Your current cards handle the SEE stage well (good images, clean layout), but are weak at EVALUATE (missing seller trust, no bid count) and DECIDE (no countdown on cards, limited scarcity signals). The ACT stage relies entirely on navigating to the product page — there's no way to act directly from the card.
+  </div>
+</div>
+
+<!-- ===== ISSUES ===== -->
+<div class="section">
+  <div class="section-title">🔍 Detailed Issues</div>
+  <div class="section-subtitle">Ordered by impact on conversion</div>
+
+  <div class="tab-container">
+    <div class="tab-buttons">
+      <button class="tab-btn active" onclick="switchTab('critical')">Critical (3)</button>
+      <button class="tab-btn" onclick="switchTab('high')">High (4)</button>
+      <button class="tab-btn" onclick="switchTab('medium')">Medium (3)</button>
+    </div>
+
+    <!-- CRITICAL -->
+    <div id="tab-critical" class="tab-content active">
+      <div class="issue-grid">
+        <div class="issue-card">
+          <span class="severity critical">Critical</span>
+          <h3>1. No Seller Identity on Cards</h3>
+          <div class="current">Cards show zero seller information — no name, no avatar, no rating.</div>
+          <div class="proposed">Add a compact seller row: avatar initial + name + star rating + verified badge. eBay always shows seller name and feedback score.</div>
+          <div class="rationale"><strong>Why it matters:</strong> In a multi-seller marketplace, trust is the #1 purchase barrier. Users in Iraq/Kurdistan need to know WHO they're buying from before they'll even tap the card. Without seller info, every listing feels anonymous and risky.</div>
+        </div>
+
+        <div class="issue-card">
+          <span class="severity critical">Critical</span>
+          <h3>2. No Auction Countdown on Cards</h3>
+          <div class="current">Auction cards only show a static "مزاد" badge. The countdown exists in the component library (<code>AuctionCountdown</code>) but isn't used on any card surface — only on the detail page and swipe reel.</div>
+          <div class="proposed">Show a live countdown (or "ends in Xh") on every auction card. Use red for under 1 hour, amber for under 24h, muted for longer. This is eBay's most powerful conversion lever.</div>
+          <div class="rationale"><strong>Why it matters:</strong> Auctions without visible time pressure have no urgency. Users have no reason to tap NOW vs. later (and forget). The <code>AuctionCountdown</code> component already supports a <code>simple</code> mode — it just needs to be wired into the card.</div>
+        </div>
+
+        <div class="issue-card">
+          <span class="severity critical">Critical</span>
+          <h3>3. No Bid Count on Auction Cards</h3>
+          <div class="current">The <code>totalBids</code> field exists in the schema but is never displayed on any card variant.</div>
+          <div class="proposed">Show "X مزايدة" (X bids) below the current bid price. eBay shows bid count on every auction card — it's social proof that creates FOMO.</div>
+          <div class="rationale"><strong>Why it matters:</strong> A listing with "23 bids" tells the user: this item is desirable, you might miss out, and the price is validated by demand. Zero social proof = zero urgency to act.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HIGH -->
+    <div id="tab-high" class="tab-content">
+      <div class="issue-grid">
+        <div class="issue-card">
+          <span class="severity high">High</span>
+          <h3>4. Image Count Not Visible</h3>
+          <div class="current">No indication of how many photos a listing has. Users can't gauge listing quality from the grid.</div>
+          <div class="proposed">Add a subtle "1/6" or camera icon + count overlay at bottom-right of the image. eBay shows photo count to signal listing quality.</div>
+          <div class="rationale">Listings with more photos convert better. Showing the count encourages taps and signals a thorough, trustworthy listing.</div>
+        </div>
+
+        <div class="issue-card">
+          <span class="severity high">High</span>
+          <h3>5. Condition Buried in Specs Text</h3>
+          <div class="current">Condition is concatenated into a tiny dot-separated specs line (9-10px) mixed with size, color, and material. It has no visual distinction.</div>
+          <div class="proposed">Elevate condition to a small tag/chip on the image (bottom-left overlay) like eBay's "New", "Pre-Owned", "Refurbished" tags. Keep remaining specs as a secondary line.</div>
+          <div class="rationale">Condition is the #2 purchase factor (after price) in secondhand marketplaces. It needs to be scannable at a glance, not buried in a 9px text string.</div>
+        </div>
+
+        <div class="issue-card">
+          <span class="severity high">High</span>
+          <h3>6. Price Not Differentiated by Sale Type</h3>
+          <div class="current">Both fixed-price and auction listings show price the same way. No "current bid" vs "buy it now" labeling.</div>
+          <div class="proposed">Add a small label: "السعر" (Price) for fixed, "المزايدة الحالية" (Current bid) for auctions, styled in muted text above the price. eBay always labels the price type.</div>
+          <div class="rationale">Users scanning a mixed grid of fixed and auction listings need instant context for what the number means. "25,000 د.ع" means very different things as a fixed price vs a current bid.</div>
+        </div>
+
+        <div class="issue-card">
+          <span class="severity high">High</span>
+          <h3>7. Inconsistent Card Templates Across Surfaces</h3>
+          <div class="current">4+ different card implementations: <code>ListingHitCard</code> (search), <code>ProductCard</code> (home), <code>SellerProductCard</code>, and inline cards in favorites/recently-viewed. Each shows slightly different data.</div>
+          <div class="proposed">Extract a single <code>&lt;ListingCard&gt;</code> component used everywhere with consistent props. Variants handled via a <code>size</code> prop ("compact" | "standard").</div>
+          <div class="rationale">Inconsistency breaks user mental models. If a card shows shipping info on search but not on home, users can't build reliable scanning patterns. One component = one source of truth.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEDIUM -->
+    <div id="tab-medium" class="tab-content">
+      <div class="issue-grid">
+        <div class="issue-card">
+          <span class="severity medium">Medium</span>
+          <h3>8. Location Not Shown</h3>
+          <div class="current">City exists in the schema but isn't displayed on cards. For a regional marketplace, location is critical.</div>
+          <div class="proposed">Add city as a subtle line with a map pin icon, below the seller row. "📍 بغداد" or "📍 أربيل".</div>
+          <div class="rationale">In Iraq's marketplace, pickup-based transactions and local trust are major factors. Users want to know if a seller is in their city before tapping through.</div>
+        </div>
+
+        <div class="issue-card">
+          <span class="severity medium">Medium</span>
+          <h3>9. "Negotiable" / "Exchangeable" Flags Hidden</h3>
+          <div class="current"><code>isNegotiable</code> and <code>isExchangeable</code> exist in data but only surface deep in the product detail page.</div>
+          <div class="proposed">Show a small "قابل للتفاوض" chip near the price when the listing is negotiable. This is a significant purchase motivator.</div>
+          <div class="rationale">Seeing "negotiable" on a card lowers the mental barrier to tap — users know there's flexibility even if the listed price feels high.</div>
+        </div>
+
+        <div class="issue-card">
+          <span class="severity medium">Medium</span>
+          <h3>10. Free Shipping Not Prominent Enough</h3>
+          <div class="current">Free shipping appears as 10px green text below the price — easily missed during fast scanning.</div>
+          <div class="proposed">When shipping is free, show a small green "شحن مجاني" badge with a truck icon, matching eBay's prominent free shipping callout.</div>
+          <div class="rationale">Free shipping is one of the highest-converting badges in e-commerce. It should be a visible green badge, not whisper-quiet text.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SIDE-BY-SIDE COMPARISON ===== -->
+<div class="section">
+  <div class="section-title">🎨 Visual Comparison</div>
+  <div class="section-subtitle">Current card vs. proposed redesign (standard grid card)</div>
+
+  <div class="compare-wrapper">
+    <!-- CURRENT -->
+    <div class="compare-column">
+      <h3>❌ Current Card</h3>
+      <div class="mock-card">
+        <div class="img-area">
+          <div class="placeholder">📷</div>
+          <div class="badge-auction">مزاد</div>
+          <div class="badge-fav">♡</div>
+        </div>
+        <div class="content">
+          <div class="title">ساعة كاسيو G-Shock أصلية مع علبة كاملة</div>
+          <div class="specs">جديد • كبير • أسود</div>
+          <div class="price">25,000 <span class="currency">د.ع</span></div>
+          <div class="shipping">شحن مجاني</div>
+        </div>
+      </div>
+      <div style="margin-top:16px; font-size:0.82rem; color:#94a3b8; text-align:center;">
+        Missing: seller, countdown, bids,<br>condition tag, image count, location,<br>price-type label, negotiable flag
+      </div>
+    </div>
+
+    <!-- PROPOSED -->
+    <div class="compare-column">
+      <h3>✅ Proposed Card</h3>
+      <div class="mock-card new">
+        <div class="img-area">
+          <div class="placeholder">📷</div>
+          <div class="badge-auction">مزاد</div>
+          <div class="badge-fav">♡</div>
+          <div class="img-count">📷 1/6</div>
+          <div class="condition-tag">جديد</div>
+        </div>
+        <div class="content">
+          <div class="title">ساعة كاسيو G-Shock أصلية مع علبة كاملة</div>
+          <div class="specs">كبير • أسود • ستيل</div>
+          <div style="font-size:10px; color:#6366f1; font-weight:600; margin-bottom:2px;">المزايدة الحالية</div>
+          <div class="price">25,000 <span class="currency">د.ع</span></div>
+          <div class="bid-count">23 مزايدة</div>
+          <div class="auction-timer"><div class="dot"></div> ينتهي خلال 2 ساعة</div>
+          <div style="display:inline-flex;align-items:center;gap:3px;background:#f0fdf4;color:#16a34a;font-size:9px;font-weight:600;padding:1px 6px;border-radius:10px;margin-top:3px;">🚚 شحن مجاني</div>
+          <div class="seller-row">
+            <div class="avatar">م</div>
+            <span class="seller-name">متجر الأصالة</span>
+            <span class="verified">✓</span>
+            <span class="rating">⭐ 4.8</span>
+          </div>
+          <div class="location">📍 أربيل</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DATA MAPPING ===== -->
+<div class="section">
+  <div class="section-title">📋 What the New Card Shows (and Where It Comes From)</div>
+  <div class="section-subtitle">Every element mapped to your existing schema — no new backend work needed</div>
+
+  <table class="priority-table">
+    <thead>
+      <tr>
+        <th>Card Element</th>
+        <th>Data Source</th>
+        <th>Currently Shown?</th>
+        <th>Stage</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Product Image</strong></td>
+        <td><code>images[0]</code></td>
+        <td>✅ Yes</td>
+        <td><span class="severity" style="background:#dbeafe;color:#1e40af">SEE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Image Count</strong></td>
+        <td><code>images.length</code></td>
+        <td>❌ No</td>
+        <td><span class="severity" style="background:#dbeafe;color:#1e40af">SEE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Condition Tag</strong></td>
+        <td><code>condition</code> + <code>CONDITION_LABELS</code></td>
+        <td>⚠️ Buried in specs line</td>
+        <td><span class="severity" style="background:#fef3c7;color:#92400e">EVALUATE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Title</strong></td>
+        <td><code>title</code></td>
+        <td>✅ Yes</td>
+        <td><span class="severity" style="background:#fef3c7;color:#92400e">EVALUATE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Price-Type Label</strong></td>
+        <td><code>saleType</code> (derive label)</td>
+        <td>❌ No</td>
+        <td><span class="severity" style="background:#fef3c7;color:#92400e">EVALUATE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Price</strong></td>
+        <td><code>currentBid || price</code></td>
+        <td>✅ Yes</td>
+        <td><span class="severity" style="background:#fef3c7;color:#92400e">EVALUATE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Bid Count</strong></td>
+        <td><code>totalBids</code></td>
+        <td>❌ No</td>
+        <td><span class="severity" style="background:#d1fae5;color:#065f46">DECIDE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Auction Countdown</strong></td>
+        <td><code>auctionEndTime</code></td>
+        <td>❌ Not on cards</td>
+        <td><span class="severity" style="background:#d1fae5;color:#065f46">DECIDE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Shipping Badge</strong></td>
+        <td><code>shippingType</code> / <code>shippingCost</code></td>
+        <td>⚠️ Tiny text only</td>
+        <td><span class="severity" style="background:#d1fae5;color:#065f46">DECIDE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Low Stock Warning</strong></td>
+        <td><code>quantityAvailable - quantitySold</code></td>
+        <td>✅ Yes (search only)</td>
+        <td><span class="severity" style="background:#d1fae5;color:#065f46">DECIDE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Negotiable Flag</strong></td>
+        <td><code>isNegotiable</code></td>
+        <td>❌ No</td>
+        <td><span class="severity" style="background:#d1fae5;color:#065f46">DECIDE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Seller Row</strong></td>
+        <td><code>sellerName</code> + user's <code>rating</code> + <code>isVerified</code></td>
+        <td>❌ No</td>
+        <td><span class="severity" style="background:#ede9fe;color:#5b21b6">ACT (trust)</span></td>
+      </tr>
+      <tr>
+        <td><strong>City / Location</strong></td>
+        <td><code>city</code></td>
+        <td>❌ No</td>
+        <td><span class="severity" style="background:#ede9fe;color:#5b21b6">ACT (trust)</span></td>
+      </tr>
+      <tr>
+        <td><strong>Favorite Button</strong></td>
+        <td><code>FavoriteButton</code> component</td>
+        <td>✅ Yes</td>
+        <td><span class="severity" style="background:#ede9fe;color:#5b21b6">ACT</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== IMPLEMENTATION ROADMAP ===== -->
+<div class="section">
+  <div class="section-title">🚀 Implementation Roadmap</div>
+  <div class="section-subtitle">Phased approach — each phase delivers standalone value</div>
+
+  <div class="callout success">
+    <strong>Great news:</strong> All data needed for the redesign already exists in your schema. This is purely a frontend effort — no backend or migration work required.
+  </div>
+
+  <table class="priority-table">
+    <thead>
+      <tr>
+        <th>Phase</th>
+        <th>Changes</th>
+        <th>Effort</th>
+        <th>Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Phase 1: Unified Component</strong></td>
+        <td>Extract a single <code>&lt;ListingCard&gt;</code> component replacing all 4 variants. Same data, cleaner codebase.</td>
+        <td>~4 hours</td>
+        <td>Foundation for all changes</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 2: Trust & Identity</strong></td>
+        <td>Add seller row (name, avatar, rating, verified badge) + city/location to the unified card.</td>
+        <td>~2 hours</td>
+        <td>🔥 Highest conversion impact</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 3: Auction Intelligence</strong></td>
+        <td>Wire <code>AuctionCountdown</code> (simple mode) into cards. Show <code>totalBids</code>. Add price-type label.</td>
+        <td>~2 hours</td>
+        <td>🔥 Highest urgency impact</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 4: Visual Polish</strong></td>
+        <td>Condition as image overlay tag. Image count badge. Prominent shipping badge. Negotiable chip.</td>
+        <td>~2 hours</td>
+        <td>Completes the card</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warning" style="margin-top:24px;">
+    <strong>Architecture note:</strong> Phase 1 (unified component) should come first because it eliminates the need to make the same change in 4+ places for every subsequent phase. The props interface should accept the full <code>Listing</code> type plus an optional <code>variant</code> prop.
+  </div>
+</div>
+
+<!-- ===== EBAY PATTERNS ===== -->
+<div class="section">
+  <div class="section-title">🏷 Key eBay Patterns to Adopt</div>
+  <div class="section-subtitle">Proven conversion patterns from the world's largest marketplace</div>
+
+  <div class="issue-grid">
+    <div class="issue-card" style="border-left: 3px solid #6366f1;">
+      <h3>🔢 Bid Count as Social Proof</h3>
+      <p style="font-size:0.88rem; color:var(--text-muted);">eBay always shows "X bids" on auction cards. High bid counts create FOMO and validate the item's desirability. Your <code>totalBids</code> field is sitting unused.</p>
+    </div>
+    <div class="issue-card" style="border-left: 3px solid #6366f1;">
+      <h3>⏰ Time-Left Urgency</h3>
+      <p style="font-size:0.88rem; color:var(--text-muted);">eBay's countdown is the most powerful conversion tool on the card. Color-coded urgency (red when ending soon) drives immediate clicks. You already have the <code>AuctionCountdown</code> component — just wire it in.</p>
+    </div>
+    <div class="issue-card" style="border-left: 3px solid #6366f1;">
+      <h3>👤 Seller Feedback Score</h3>
+      <p style="font-size:0.88rem; color:var(--text-muted);">eBay shows seller name + feedback percentage on every card. In a regional marketplace like eBey3, this trust signal is even more critical than on eBay.</p>
+    </div>
+    <div class="issue-card" style="border-left: 3px solid #6366f1;">
+      <h3>🏷 Condition as a Top-Level Label</h3>
+      <p style="font-size:0.88rem; color:var(--text-muted);">eBay makes "New", "Pre-Owned", "Refurbished" highly visible as colored tags — not buried in metadata. This is the first thing secondhand buyers scan for.</p>
+    </div>
+    <div class="issue-card" style="border-left: 3px solid #6366f1;">
+      <h3>🚚 Free Shipping Badge</h3>
+      <p style="font-size:0.88rem; color:var(--text-muted);">eBay's "Free shipping" is bold, green, and prominent. Research shows it's one of the top 3 conversion drivers in e-commerce. Your current 10px text is too subtle.</p>
+    </div>
+    <div class="issue-card" style="border-left: 3px solid #6366f1;">
+      <h3>📊 "X sold" / Watchers Count</h3>
+      <p style="font-size:0.88rem; color:var(--text-muted);">eBay shows "X sold" and watcher counts for extra social proof. Your <code>quantitySold</code> and <code>views</code> fields could power similar badges for high-engagement listings.</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<div style="padding:48px 24px; text-align:center; color:#94a3b8; font-size:0.82rem; border-top:1px solid #e2e8f0; margin-top:32px;">
+  eBey3 Card Redesign Audit — Generated March 2026
+</div>
+
+<script>
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

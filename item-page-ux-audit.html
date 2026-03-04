@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eBey3 Item Page — UX Audit & Redesign Recommendations</title>
+<style>
+  :root {
+    --primary: #6366f1; --primary-light: #e0e7ff;
+    --success: #16a34a; --warning: #f59e0b; --danger: #ef4444;
+    --bg: #f8fafc; --card-bg: #fff; --text: #1e293b; --muted: #64748b; --border: #e2e8f0;
+    --radius: 12px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  .hero { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 56px 24px 44px; text-align: center; }
+  .hero h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 10px; }
+  .hero p { font-size: 1rem; opacity: 0.7; max-width: 600px; margin: 0 auto; }
+
+  .section { padding: 44px 0; }
+  .section-title { font-size: 1.35rem; font-weight: 700; margin-bottom: 6px; display:flex; align-items:center; gap:10px; }
+  .section-sub { color: var(--muted); margin-bottom: 28px; font-size: 0.92rem; }
+
+  /* Severity */
+  .sev { display:inline-flex; align-items:center; gap:4px; padding:2px 10px; border-radius:16px; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+  .sev.crit { background:#fef2f2; color:#dc2626; }
+  .sev.high { background:#fff7ed; color:#ea580c; }
+  .sev.med  { background:#fefce8; color:#ca8a04; }
+  .sev.low  { background:#f0fdf4; color:#16a34a; }
+  .sev.info { background:#eff6ff; color:#2563eb; }
+
+  /* Issue cards */
+  .issue-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px,1fr)); gap:18px; }
+  .issue { background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:22px; transition:box-shadow .2s; }
+  .issue:hover { box-shadow:0 4px 20px rgba(0,0,0,.07); }
+  .issue h3 { font-size:.95rem; font-weight:700; margin:8px 0 6px; }
+  .issue .now { color:var(--danger); font-size:.86rem; margin-bottom:4px; }
+  .issue .now::before { content:"✗ Current: "; font-weight:700; }
+  .issue .fix { color:var(--success); font-size:.86rem; }
+  .issue .fix::before { content:"✓ Proposed: "; font-weight:700; }
+  .issue .why { margin-top:10px; padding-top:10px; border-top:1px solid var(--border); font-size:.8rem; color:var(--muted); }
+  .issue .ref { margin-top:8px; font-size:.75rem; color:var(--primary); font-weight:600; }
+
+  /* Flow */
+  .flow { display:flex; align-items:stretch; gap:0; margin:28px 0; overflow-x:auto; }
+  .flow-step { flex:1; min-width:160px; padding:16px; text-align:center; position:relative; }
+  .flow-step .num { font-size:2rem; font-weight:800; opacity:.15; }
+  .flow-step .label { font-size:.85rem; font-weight:700; margin:4px 0; }
+  .flow-step .desc { font-size:.78rem; color:var(--muted); }
+  .flow-step.active { background:#fff; border-radius:var(--radius); box-shadow:0 2px 12px rgba(0,0,0,.06); }
+  .flow-step::after { content:"→"; position:absolute; right:-8px; top:50%; transform:translateY(-50%); font-size:1.2rem; color:#cbd5e1; z-index:1; }
+  .flow-step:last-child::after { display:none; }
+
+  /* Current layout mock */
+  .page-mock { background:#fff; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; max-width:420px; margin:0 auto; font-size:13px; }
+  .page-mock .img-area { background:#f1f5f9; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:1.5rem; position:relative; }
+  .page-mock .dots { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); display:flex; gap:4px; }
+  .page-mock .dots .dot { width:6px; height:6px; border-radius:50%; background:rgba(0,0,0,.2); }
+  .page-mock .dots .dot.active { background:rgba(0,0,0,.6); width:14px; border-radius:3px; }
+  .page-mock .body { padding:16px; }
+  .page-mock .body h2 { font-size:15px; font-weight:700; margin-bottom:10px; }
+  .page-mock .seller-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f1f5f9; }
+  .page-mock .seller-row .av { width:36px; height:36px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; font-weight:700; color:#64748b; font-size:14px; }
+  .page-mock .seller-row .info { flex:1; }
+  .page-mock .seller-row .info .name { font-weight:600; font-size:13px; }
+  .page-mock .seller-row .info .rating { font-size:11px; color:#16a34a; }
+  .page-mock .price-sec { padding:14px 0; border-bottom:1px solid #f1f5f9; }
+  .page-mock .price-sec .price { font-size:24px; font-weight:800; }
+  .page-mock .price-sec .sub { font-size:11px; color:#64748b; margin-top:2px; }
+  .page-mock .meta-rows { padding:14px 0; border-bottom:1px solid #f1f5f9; }
+  .page-mock .meta-row { display:flex; justify-content:space-between; padding:6px 0; font-size:12px; }
+  .page-mock .meta-row .k { color:#64748b; }
+  .page-mock .meta-row .v { font-weight:600; }
+  .page-mock .actions { padding:14px 0; display:flex; flex-direction:column; gap:8px; }
+  .page-mock .btn { padding:12px; border-radius:8px; text-align:center; font-weight:700; font-size:14px; cursor:pointer; border:none; }
+  .page-mock .btn.primary { background:#6366f1; color:#fff; }
+  .page-mock .btn.outline { background:#fff; color:#374151; border:1px solid #e2e8f0; }
+  .page-mock .callout { padding:10px 12px; border-radius:8px; font-size:11px; display:flex; align-items:flex-start; gap:8px; margin-top:8px; }
+  .page-mock .callout.green { background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; }
+  .page-mock .callout.blue { background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; }
+  .page-mock .callout.amber { background:#fffbeb; border:1px solid #fde68a; color:#92400e; }
+
+  .page-mock .desc-sec { padding:14px 0; border-bottom:1px solid #f1f5f9; }
+  .page-mock .desc-sec h3 { font-size:14px; font-weight:700; margin-bottom:6px; }
+  .page-mock .desc-sec p { font-size:12px; color:#64748b; line-height:1.5; }
+  .page-mock .share-row { display:flex; gap:6px; padding:10px 0; }
+  .page-mock .share-btn { flex:1; padding:10px; border-radius:8px; text-align:center; font-size:16px; cursor:pointer; border:1px solid #e2e8f0; }
+
+  .annotation { position:relative; }
+  .annotation::before { position:absolute; font-size:10px; font-weight:700; padding:1px 6px; border-radius:4px; }
+
+  /* Compare columns */
+  .compare { display:grid; grid-template-columns:1fr 1fr; gap:32px; margin:32px 0; }
+  @media (max-width:768px) { .compare { grid-template-columns:1fr; } .issue-grid { grid-template-columns:1fr; } }
+  .compare h3 { text-align:center; margin-bottom:14px; font-size:.85rem; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); }
+
+  /* Numbered sections on mock */
+  .callout-box { background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 16px; margin:12px 0; font-size:.88rem; }
+  .callout-box.warn { background:#fffbeb; border-color:#fde68a; }
+  .callout-box.good { background:#f0fdf4; border-color:#bbf7d0; }
+
+  .roadmap { width:100%; border-collapse:separate; border-spacing:0; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .roadmap th { background:#f8fafc; padding:10px 14px; text-align:left; font-size:.78rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); border-bottom:1px solid var(--border); }
+  .roadmap td { padding:12px 14px; border-bottom:1px solid var(--border); font-size:.88rem; }
+  .roadmap tr:last-child td { border-bottom:none; }
+  .roadmap tr:hover td { background:#fafbfc; }
+
+  .highlight { background:linear-gradient(120deg, #fef08a 0%, #fef08a 100%); padding:0 4px; border-radius:3px; }
+
+  footer { padding:40px 24px; text-align:center; color:#94a3b8; font-size:.8rem; border-top:1px solid var(--border); margin-top:32px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Item Page UX Audit</h1>
+  <p>Analyzing the product detail page through the lens of the See → Evaluate → Decide → Act funnel, benchmarked against eBay</p>
+</div>
+
+<div class="container">
+
+<!-- ===== CURRENT PAGE STRUCTURE ===== -->
+<div class="section">
+  <div class="section-title">📐 Current Page Layout (Top-to-Bottom)</div>
+  <div class="section-sub">Here's the exact order of sections as they appear in product.tsx today</div>
+
+  <div class="flow">
+    <div class="flow-step"><div class="num">1</div><div class="label">Image Gallery</div><div class="desc">Carousel + thumbnails + dots</div></div>
+    <div class="flow-step"><div class="num">2</div><div class="label">Title</div><div class="desc">Product name</div></div>
+    <div class="flow-step"><div class="num">3</div><div class="label">Seller Row</div><div class="desc">Avatar, name, rating, link to store</div></div>
+    <div class="flow-step"><div class="num">4</div><div class="label">Price</div><div class="desc">Price or current bid + bid count + countdown</div></div>
+    <div class="flow-step"><div class="num">5</div><div class="label">Shipping / Meta</div><div class="desc">Delivery, shipping, condition, city</div></div>
+    <div class="flow-step"><div class="num">6</div><div class="label">Return Policy</div><div class="desc">Amber callout box</div></div>
+    <div class="flow-step"><div class="num">7</div><div class="label">Action Buttons</div><div class="desc">Buy / Bid / Offer / Cart</div></div>
+    <div class="flow-step"><div class="num">8</div><div class="label">Shares + Trust</div><div class="desc">Social share, COD, buyer protection</div></div>
+    <div class="flow-step"><div class="num">9</div><div class="label">Description</div><div class="desc">Text block</div></div>
+    <div class="flow-step"><div class="num">10</div><div class="label">Comments</div><div class="desc">Public Q&A</div></div>
+    <div class="flow-step"><div class="num">11</div><div class="label">Tags + Specs</div><div class="desc">Keywords + specifications table</div></div>
+  </div>
+</div>
+
+<!-- ===== KEY PROBLEMS ===== -->
+<div class="section">
+  <div class="section-title">🔍 Issues by Severity</div>
+  <div class="section-sub">10 issues identified — all are layout/information-architecture problems, not missing data</div>
+
+  <div class="issue-grid">
+
+    <!-- CRITICAL 1 -->
+    <div class="issue">
+      <span class="sev crit">Critical</span>
+      <h3>1. Action Buttons Buried Below 5 Sections</h3>
+      <div class="now">Buy Now / Add to Cart / Bid / Make Offer buttons are at position #7 — below images, title, seller, price, shipping meta, AND return policy. On mobile that's 2-3 full scrolls down.</div>
+      <div class="fix">Move action buttons directly below the price section (position #5). eBay places "Buy It Now" and "Add to Cart" immediately under the price, before any metadata.</div>
+      <div class="why"><strong>eBay pattern:</strong> Image → Title → Price → [Buy Now / Add to Cart] → everything else. The action is always within the first viewport. Your current layout forces users to scroll past information they don't need yet before they can act.</div>
+      <div class="ref">Lines 968-1293 in product.tsx — entire action block</div>
+    </div>
+
+    <!-- CRITICAL 2 -->
+    <div class="issue">
+      <span class="sev crit">Critical</span>
+      <h3>2. Price Separated from Its Context</h3>
+      <div class="now">Price sits at position #4 but shipping cost is at position #5 in a separate meta section. Users can't calculate total cost at a glance. For auctions, the bid count is small gray text under the price, and the countdown is in its own orange box below.</div>
+      <div class="fix">Group price + shipping + (for auctions: bid count + countdown) into a single unified price block. Show the total cost or "Price + X shipping" in one visual unit. eBay shows "Price + Free Shipping" or "Price + $X.XX shipping" as a single reading unit.</div>
+      <div class="why"><strong>eBay pattern:</strong> The price, shipping, and any time urgency form one cognitive unit. Splitting them across different sections forces the user to mentally reassemble the cost, which adds friction to the EVALUATE stage.</div>
+      <div class="ref">Lines 842-878 (price) vs 882-940 (shipping meta)</div>
+    </div>
+
+    <!-- CRITICAL 3 -->
+    <div class="issue">
+      <span class="sev crit">Critical</span>
+      <h3>3. No Sticky Action Bar on Mobile</h3>
+      <div class="now">When scrolling through description, specs, or comments, the Buy/Bid buttons are completely off-screen. There's no way to act without scrolling back up.</div>
+      <div class="fix">Add a sticky bottom bar on mobile with the price + primary CTA button (Buy Now or Place Bid). eBay, Amazon, and every major marketplace has this. The bar should appear once the user scrolls past the main action buttons.</div>
+      <div class="why"><strong>eBay pattern:</strong> A persistent bottom bar with "[Price] — Buy It Now" ensures the user can act at ANY point during their evaluation. Without this, users who read the description or comments hit a dead-end — they need to scroll back up, and some won't.</div>
+    </div>
+
+    <!-- HIGH 1 -->
+    <div class="issue">
+      <span class="sev high">High</span>
+      <h3>4. Trust Signals After the Point of Action</h3>
+      <div class="now">"Cash on Delivery" and "Buyer Protection" callout boxes appear at position #8 — AFTER the Buy button. Users must already decide to buy before they see the trust reassurances.</div>
+      <div class="fix">Move COD and Buyer Protection badges ABOVE the action buttons, as compact trust icons (not full callout boxes). They should reassure the user BEFORE the decision point. eBay places "Money Back Guarantee" above the action buttons.</div>
+      <div class="why">Trust signals are decision enablers. Placing them after the action buttons means they're only seen by users who already scrolled past the buy option — the exact users who might have hesitated and need reassurance.</div>
+      <div class="ref">Lines 1383-1398 — COD and buyer protection callouts</div>
+    </div>
+
+    <!-- HIGH 2 -->
+    <div class="issue">
+      <span class="sev high">High</span>
+      <h3>5. Share Buttons Take Prime Real Estate</h3>
+      <div class="now">5 large social share buttons (WhatsApp, Facebook, Twitter, Telegram, Copy Link) sit right after the action buttons, each taking full-width flex space. Plus the Instagram Share Card component above them.</div>
+      <div class="fix">Collapse shares into a single "Share" icon/button in the top toolbar (near the favorite button), or a small row of compact icons AFTER description — not in the action zone. eBay uses a single share icon at the top of the page.</div>
+      <div class="why">Social sharing is a secondary action used by &lt;5% of users. Giving it the same visual weight as Buy/Cart pushes everything below it further down and dilutes the primary conversion funnel.</div>
+      <div class="ref">Lines 1296-1366 — share buttons block + Instagram share card</div>
+    </div>
+
+    <!-- HIGH 3 -->
+    <div class="issue">
+      <span class="sev high">High</span>
+      <h3>6. Return Policy Interrupts the Buying Flow</h3>
+      <div class="now">A full amber callout box for return policy sits between shipping meta and action buttons (position #6). It's a prominent visual block that breaks the user's momentum from evaluating price to acting.</div>
+      <div class="fix">Move return policy to a compact one-line row inside the shipping/meta section (e.g., "Returns: 14 days"). The detailed policy can expand on tap or live below description. eBay shows returns as a single line: "Returns: 30 day returns. Buyer pays return shipping."</div>
+      <div class="why">Return policy is important but it's a reassurance detail, not evaluation data. Giving it its own prominent callout block right before the buy button creates visual weight that slows momentum.</div>
+      <div class="ref">Lines 942-958 — return policy section</div>
+    </div>
+
+    <!-- HIGH 4 -->
+    <div class="issue">
+      <span class="sev high">High</span>
+      <h3>7. Quantity Selector Placement (Fixed-Price)</h3>
+      <div class="now">The quantity selector appears inside the action buttons area, with ± buttons and counter. But it only shows when remaining quantity > 1, which means the layout shifts depending on stock — inconsistent experience.</div>
+      <div class="fix">Move quantity selector into the price section as a row: "Quantity: [−] 1 [+]  •  X available". This gives users the full cost picture (price × quantity + shipping) in one place before they hit Buy.</div>
+      <div class="ref">Lines 1199-1208</div>
+    </div>
+
+    <!-- MEDIUM 1 -->
+    <div class="issue">
+      <span class="sev med">Medium</span>
+      <h3>8. Specs Section at the Very Bottom</h3>
+      <div class="now">Brand, category, and detailed specifications are at position #11 — the very last thing on the page. Users looking for specific details (shoe size, material, color) have to scroll past everything.</div>
+      <div class="fix">Move key specs (brand, condition, size, color — the purchase-critical ones) into a compact row right below the title, similar to how eBay shows "Condition: New with tags" prominently near the top. Full specs table stays at the bottom for completeness.</div>
+      <div class="why">eBay surfaces "Item specifics" (condition, brand, size, model) in a highlighted box near the top. These are evaluation data — they should be easy to scan without scrolling to the bottom.</div>
+      <div class="ref">Lines 1434-1470</div>
+    </div>
+
+    <!-- MEDIUM 2 -->
+    <div class="issue">
+      <span class="sev med">Medium</span>
+      <h3>9. Auction Countdown Visually Disconnected</h3>
+      <div class="now">For auctions, the countdown timer is inside an orange box with its own border and background, separate from the bid price above it. The WS connection status and "last update" text add clutter.</div>
+      <div class="fix">Merge the countdown into the price block: "25,000 د.ع (current bid) · 23 bids · ends in 2h 15m". The urgency should be felt AS the user reads the price, not as a separate callout. Hide WS debug info from users.</div>
+      <div class="ref">Lines 851-869</div>
+    </div>
+
+    <!-- MEDIUM 3 -->
+    <div class="issue">
+      <span class="sev med">Medium</span>
+      <h3>10. No "Similar Items" or "More from Seller"</h3>
+      <div class="now">The page has a <code>SIMILAR_PRODUCTS</code> mock array defined (line 54-62) but it's never rendered. There's no cross-sell or "keep browsing" section at the bottom. Once users finish reading, it's a dead-end.</div>
+      <div class="fix">Add a "More from this seller" horizontal scroll + "Similar items" grid below comments/specs. This keeps users engaged with the platform even if they don't buy this specific item. eBay has both.</div>
+      <div class="ref">Lines 54-62 — unused SIMILAR_PRODUCTS constant</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== PROPOSED LAYOUT ===== -->
+<div class="section">
+  <div class="section-title">🏗 Proposed Page Layout</div>
+  <div class="section-sub">Reordered to match the eBay-proven See → Evaluate → Decide → Act flow</div>
+
+  <div class="compare">
+    <!-- CURRENT ORDER -->
+    <div>
+      <h3>❌ Current Order</h3>
+      <div style="background:#fff; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;">
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
+          <span>1. Image Gallery</span>
+          <span class="sev info">see</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
+          <span>2. Title</span>
+          <span class="sev info">see</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
+          <span>3. Seller Row</span>
+          <span style="color:#64748b;font-size:11px">evaluate</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
+          <span>4. Price (alone)</span>
+          <span style="color:#64748b;font-size:11px">evaluate</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
+          <span>5. Shipping / Condition / City</span>
+          <span style="color:#64748b;font-size:11px">evaluate</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between; background:#fffbeb;">
+          <span>6. Return Policy (big callout)</span>
+          <span style="color:#ca8a04;font-size:11px">⚠ blocks flow</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between; background:#fef2f2;">
+          <span><strong>7. ACTION BUTTONS</strong></span>
+          <span style="color:#dc2626;font-size:11px">⚠ too far down</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between; background:#fef2f2;">
+          <span>8. Share Buttons (5 big buttons)</span>
+          <span style="color:#dc2626;font-size:11px">⚠ prime real estate</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between; background:#fef2f2;">
+          <span>9. COD + Buyer Protection</span>
+          <span style="color:#dc2626;font-size:11px">⚠ after action</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px;">10. Description</div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px;">11. Comments</div>
+        <div style="padding:10px 14px; font-size:13px;">12. Tags + Specs</div>
+      </div>
+    </div>
+
+    <!-- PROPOSED ORDER -->
+    <div>
+      <h3>✅ Proposed Order</h3>
+      <div style="background:#fff; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;">
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
+          <span>1. Image Gallery</span>
+          <span class="sev info">see</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
+          <span>2. Title + <span class="highlight">Key Specs Chips</span></span>
+          <span style="color:#64748b;font-size:11px">see + evaluate</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
+          <span>3. <span class="highlight">Price + Shipping + Countdown</span> (unified)</span>
+          <span style="color:#64748b;font-size:11px">evaluate</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
+          <span>4. Seller Row</span>
+          <span style="color:#64748b;font-size:11px">evaluate (trust)</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between; background:#f0fdf4;">
+          <span>5. <span class="highlight">Trust strip</span> (COD + Protection + Returns — compact icons)</span>
+          <span style="color:#16a34a;font-size:11px">✓ before action</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between; background:#f0fdf4;">
+          <span><strong>6. ACTION BUTTONS</strong></span>
+          <span style="color:#16a34a;font-size:11px">✓ within 1st viewport</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
+          <span>7. Delivery / Condition / City (details)</span>
+          <span style="color:#64748b;font-size:11px">details</span>
+        </div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px;">8. Description</div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px;">9. Comments</div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px;">10. Full Specs + Tags</div>
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
+          <span>11. <span class="highlight">More from this seller</span></span>
+          <span style="color:#16a34a;font-size:11px">✓ new</span>
+        </div>
+        <div style="padding:10px 14px; font-size:13px; display:flex; justify-content:space-between;">
+          <span>12. <span class="highlight">Similar items</span></span>
+          <span style="color:#16a34a;font-size:11px">✓ new</span>
+        </div>
+      </div>
+      <div style="margin-top:12px; padding:10px 14px; background:#ede9fe; border-radius:8px; font-size:12px; color:#5b21b6; font-weight:600; text-align:center;">
+        + Sticky bottom bar on mobile: [Price] — [Buy Now / Place Bid]
+      </div>
+    </div>
+  </div>
+
+  <div class="callout-box">
+    <strong>Key changes summarized:</strong> (a) Price, shipping, and countdown merged into one block. (b) Action buttons move up 2 positions — from #7 to #6, now within first mobile viewport. (c) Trust signals (COD, protection, returns) compressed into icon strip above actions. (d) Share buttons collapsed to icon in header. (e) Sticky mobile bottom bar added. (f) Key specs surfaced as chips near title. (g) Similar items and more-from-seller added at bottom.
+  </div>
+</div>
+
+<!-- ===== SHARE BUTTONS DETAIL ===== -->
+<div class="section">
+  <div class="section-title">📤 Share Buttons — Detailed Recommendation</div>
+  <div class="section-sub">Currently consuming ~200px of vertical space in the primary action zone</div>
+
+  <div class="compare">
+    <div>
+      <h3>Current: 6 Share Elements</h3>
+      <div style="background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:16px;">
+        <div style="background:#f1f5f9; border-radius:8px; padding:12px; margin-bottom:8px; text-align:center; font-size:12px; color:#64748b;">Instagram Share Card Component</div>
+        <div style="display:flex; gap:6px;">
+          <div style="flex:1; padding:10px; border:1px solid #e2e8f0; border-radius:8px; text-align:center; font-size:18px; background:#f0fdf4;">💬</div>
+          <div style="flex:1; padding:10px; border:1px solid #e2e8f0; border-radius:8px; text-align:center; font-size:18px; background:#eff6ff;">f</div>
+          <div style="flex:1; padding:10px; border:1px solid #e2e8f0; border-radius:8px; text-align:center; font-size:18px; background:#f0f9ff;">𝕏</div>
+          <div style="flex:1; padding:10px; border:1px solid #e2e8f0; border-radius:8px; text-align:center; font-size:18px; background:#eff6ff;">✈</div>
+          <div style="flex:1; padding:10px; border:1px solid #e2e8f0; border-radius:8px; text-align:center; font-size:18px;">🔗</div>
+        </div>
+        <div style="margin-top:10px; font-size:11px; color:#dc2626; text-align:center;">~200px of vertical space in the buy zone</div>
+      </div>
+    </div>
+    <div>
+      <h3>Proposed: 1 Share Icon</h3>
+      <div style="background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:16px;">
+        <div style="display:flex; align-items:center; gap:12px; padding:8px 0;">
+          <div style="width:36px; height:36px; border-radius:50%; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; font-size:16px;">♡</div>
+          <div style="width:36px; height:36px; border-radius:50%; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; font-size:16px;">↗</div>
+          <div style="flex:1; font-size:11px; color:#64748b;">← Share icon in header toolbar. Opens bottom sheet with all options.</div>
+        </div>
+        <div style="margin-top:14px; background:#f8fafc; border-radius:8px; padding:10px;">
+          <div style="font-size:11px; font-weight:600; margin-bottom:6px;">On tap, shows bottom sheet:</div>
+          <div style="display:flex; gap:14px; font-size:12px; color:#64748b;">
+            <span>WhatsApp</span><span>Facebook</span><span>Twitter</span><span>Telegram</span><span>Copy Link</span><span>Instagram</span>
+          </div>
+        </div>
+        <div style="margin-top:10px; font-size:11px; color:#16a34a; text-align:center;">0px of vertical space in the buy zone</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TRUST STRIP ===== -->
+<div class="section">
+  <div class="section-title">🛡 Trust Strip — Compact Reassurance Before Action</div>
+  <div class="section-sub">Replaces the two separate callout boxes and the amber return policy block</div>
+
+  <div style="background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:20px; max-width:420px; margin:0 auto;">
+    <div style="display:flex; justify-content:space-around; text-align:center;">
+      <div>
+        <div style="font-size:20px; margin-bottom:4px;">💰</div>
+        <div style="font-size:11px; font-weight:600; color:#166534;">الدفع عند الاستلام</div>
+      </div>
+      <div style="width:1px; background:#e2e8f0;"></div>
+      <div>
+        <div style="font-size:20px; margin-bottom:4px;">🛡</div>
+        <div style="font-size:11px; font-weight:600; color:#1e40af;">حماية المشتري</div>
+      </div>
+      <div style="width:1px; background:#e2e8f0;"></div>
+      <div>
+        <div style="font-size:20px; margin-bottom:4px;">↩️</div>
+        <div style="font-size:11px; font-weight:600; color:#92400e;">إرجاع 14 يوم</div>
+      </div>
+    </div>
+    <div style="margin-top:12px; font-size:11px; color:#64748b; text-align:center;">
+      Replaces 3 separate blocks (~250px) with 1 compact strip (~60px)
+    </div>
+  </div>
+</div>
+
+<!-- ===== STICKY BAR ===== -->
+<div class="section">
+  <div class="section-title">📱 Sticky Bottom Bar (Mobile)</div>
+  <div class="section-sub">Ensures the CTA is always reachable regardless of scroll position</div>
+
+  <div style="max-width:420px; margin:0 auto; position:relative;">
+    <div style="background:#f1f5f9; border-radius:var(--radius) var(--radius) 0 0; padding:20px; text-align:center; color:#94a3b8; font-size:13px;">
+      [Page content scrolling above...]
+    </div>
+    <div style="background:#fff; border-top:1px solid #e2e8f0; padding:12px 16px; display:flex; align-items:center; gap:12px; box-shadow:0 -4px 12px rgba(0,0,0,.08); border-radius:0 0 var(--radius) var(--radius);">
+      <div style="flex:1;">
+        <div style="font-size:18px; font-weight:800;">25,000 <span style="font-size:12px; font-weight:500;">د.ع</span></div>
+        <div style="font-size:10px; color:#16a34a;">شحن مجاني</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button style="padding:10px 14px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; font-weight:600; font-size:13px; cursor:pointer;">🛒</button>
+        <button style="padding:10px 24px; border-radius:8px; border:none; background:#6366f1; color:#fff; font-weight:700; font-size:13px; cursor:pointer;">إتمام الطلب</button>
+      </div>
+    </div>
+    <div style="font-size:11px; color:#64748b; text-align:center; margin-top:8px;">
+      Appears when main action buttons scroll out of view. For auctions, shows "Place Bid" with current bid price.
+    </div>
+  </div>
+</div>
+
+<!-- ===== IMPLEMENTATION ROADMAP ===== -->
+<div class="section">
+  <div class="section-title">🚀 Implementation Roadmap</div>
+  <div class="section-sub">Three phases — each delivers measurable UX improvement independently</div>
+
+  <div class="callout-box good">
+    <strong>All changes are in a single file:</strong> <code>client/src/pages/product.tsx</code>. No backend work, no schema changes, no new components needed (except the sticky bar).
+  </div>
+
+  <table class="roadmap">
+    <thead>
+      <tr><th>Phase</th><th>Changes</th><th>Effort</th><th>Impact</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Phase 1: Reorder</strong></td>
+        <td>
+          Move action buttons up (below price).<br>
+          Move COD + Protection above actions as compact trust strip.<br>
+          Collapse return policy into a single meta row.<br>
+          Move share buttons to a single icon (bottom sheet).
+        </td>
+        <td>~3 hours</td>
+        <td>🔥 Biggest single improvement — actions within first viewport on mobile</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 2: Consolidate</strong></td>
+        <td>
+          Merge price + shipping + countdown into unified block.<br>
+          Surface key specs as chips below title.<br>
+          Move quantity selector into price area.<br>
+          Clean up auction countdown (remove WS debug info).
+        </td>
+        <td>~2 hours</td>
+        <td>Reduces cognitive load — all evaluation data in one scan</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 3: Engage</strong></td>
+        <td>
+          Add sticky bottom bar for mobile.<br>
+          Wire up "Similar items" section (data exists).<br>
+          Add "More from this seller" horizontal scroll.
+        </td>
+        <td>~3 hours</td>
+        <td>Always-available CTA + keeps users on platform</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</div>
+
+<footer>
+  eBey3 Item Page UX Audit — March 2026
+</footer>
+
+</body>
+</html>
