@@ -51,16 +51,6 @@ function getAuthHeaders(): HeadersInit {
   return headers;
 }
 
-const SIMILAR_PRODUCTS = Array.from({ length: 20 }).map((_, i) => ({
-  id: `sim-${i}`,
-  title: `منتج مشابه مميز ${i + 1}`,
-  price: 50000 + (i * 25000),
-  rating: (3 + Math.random() * 2).toFixed(1),
-  bids: Math.floor(Math.random() * 50) + 5,
-  timeLeft: `${Math.floor(Math.random() * 24) + 1} ساعة`,
-  image: `https://images.unsplash.com/photo-${1500000000000 + (i * 1000)}?w=400&h=400&fit=crop`
-}));
-
 export default function ProductPage() {
   const [match, params] = useRoute("/product/:id");
   const [, navigate] = useLocation();
@@ -92,6 +82,10 @@ export default function ProductPage() {
 
   // Quantity selector for fixed-price add to cart / buy now
   const [addToCartQuantity, setAddToCartQuantity] = useState(1);
+
+  // Sticky bottom bar — shows when main action buttons scroll off-screen
+  const actionButtonsRef = useRef<HTMLDivElement>(null);
+  const [showStickyBar, setShowStickyBar] = useState(false);
 
   // Image gallery state with carousel API for swipe support
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -267,6 +261,30 @@ export default function ProductPage() {
       return result;
     },
     enabled: !!params?.id && !!user?.id,
+  });
+
+  // Similar items query
+  const { data: similarData } = useQuery<{ similar: Array<{ id: string; title: string; price: number; currentBid?: number; image: string; saleType: string }> }>({
+    queryKey: ["/api/listings", params?.id, "similar"],
+    queryFn: async () => {
+      const res = await fetch(`/api/listings/${params?.id}/similar?limit=8`);
+      if (!res.ok) return { similar: [] };
+      return res.json();
+    },
+    enabled: !!params?.id,
+    staleTime: 60000,
+  });
+
+  // More from seller query
+  const { data: sellerListingsData } = useQuery<{ listings: Array<{ id: string; title: string; price: number; currentBid?: number | null; images: string[]; saleType: string }> }>({
+    queryKey: ["/api/listings", "seller", listing?.sellerId],
+    queryFn: async () => {
+      const res = await fetch(`/api/listings?sellerId=${listing?.sellerId}&limit=8`);
+      if (!res.ok) return { listings: [] };
+      return res.json();
+    },
+    enabled: !!listing?.sellerId,
+    staleTime: 60000,
   });
 
   // Set outbid status on page load if user has bid but is not highest
@@ -525,6 +543,18 @@ export default function ProductPage() {
       });
     }
   }, [listing, auctionEnded, isOwnProduct, user?.id, isAuthLoading, isAuthenticated]);
+
+  // IntersectionObserver for sticky bottom bar
+  useEffect(() => {
+    const el = actionButtonsRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickyBar(!entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const requireAuth = (action: string) => {
     // If auth is still loading, don't show error - just return false to prevent action
@@ -963,7 +993,7 @@ export default function ProductPage() {
 
         
 {/* Action Buttons */}
-        <div className="py-4 space-y-3">
+        <div ref={actionButtonsRef} className="py-4 space-y-3">
           {(() => {
             const remainingQuantity = product.quantityAvailable - product.quantitySold;
             const isSoldOut = remainingQuantity <= 0;
@@ -1465,7 +1495,86 @@ export default function ProductPage() {
             })}
           </div>
         </div>
+
+        {/* More from this Seller — horizontal scroll */}
+        {(() => {
+          const sellerItems = (sellerListingsData?.listings || []).filter((l) => l.id !== params?.id);
+          if (sellerItems.length === 0) return null;
+          return (
+            <div className="py-6 border-t">
+              <h2 className="font-bold text-lg mb-3">{language === "ar" ? "المزيد من هذا البائع" : language === "ku" ? "زیاتر لە ئەم فرۆشیارە" : "المزيد من هذا البائع"}</h2>
+              <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                {sellerItems.slice(0, 8).map((item) => (
+                  <Link key={item.id} href={`/product/${item.id}`} className="flex-shrink-0 w-36 group">
+                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 mb-2">
+                      <img src={item.images?.[0] || ""} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+                    </div>
+                    <p className="text-xs font-medium text-gray-800 line-clamp-2 leading-tight">{item.title}</p>
+                    <p className="text-xs font-bold mt-0.5">{(item.currentBid || item.price).toLocaleString()} د.ع</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Similar Items — grid */}
+        {(() => {
+          const items = similarData?.similar || [];
+          if (items.length === 0) return null;
+          return (
+            <div className="py-6 border-t">
+              <h2 className="font-bold text-lg mb-3">{language === "ar" ? "منتجات مشابهة" : language === "ku" ? "بەرهەمی هاوشێوە" : "منتجات مشابهة"}</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {items.slice(0, 8).map((item) => (
+                  <Link key={item.id} href={`/product/${item.id}`} className="group">
+                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 mb-2">
+                      <img src={item.image || ""} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+                    </div>
+                    <p className="text-xs font-medium text-gray-800 line-clamp-2 leading-tight">{item.title}</p>
+                    <p className="text-xs font-bold mt-0.5">{(item.currentBid || item.price).toLocaleString()} د.ع</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
       </div>
+
+      {/* Sticky Bottom CTA Bar — appears when main action buttons scroll off-screen */}
+      {showStickyBar && !isOwnProduct && listing?.isActive && (() => {
+        const remainingQuantity = product.quantityAvailable - product.quantitySold;
+        if (remainingQuantity <= 0) return null;
+        return (
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-lg px-4 py-3 flex items-center gap-3 safe-area-bottom">
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-bold truncate">
+                {product.saleType === "auction"
+                  ? `${(liveBidData?.currentBid || product.currentBid || product.price).toLocaleString()} د.ع`
+                  : `${product.price.toLocaleString()} د.ع`}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {product?.shippingType === "buyer_pays"
+                  ? `+ ${(product?.shippingCost || 0).toLocaleString()} ${language === "ar" ? "شحن" : "گواستنەوە"}`
+                  : product?.shippingType === "pickup"
+                    ? (language === "ar" ? "استلام" : "وەرگرتن")
+                    : (language === "ar" ? "شحن مجاني" : "گواستنەوەی بەخۆڕایی")}
+              </p>
+            </div>
+            <Button
+              size="lg"
+              className="h-12 px-6 text-base font-bold bg-primary hover:bg-primary/90 whitespace-nowrap"
+              onClick={product.saleType === "auction" ? () => actionButtonsRef.current?.scrollIntoView({ behavior: "smooth" }) : handleBuyNowDirect}
+              disabled={!!isPurchaseDisabled || isBuyingNow}
+            >
+              {product.saleType === "auction"
+                ? (language === "ar" ? "المزايدة" : language === "ku" ? "مزایدە" : "المزايدة")
+                : (language === "ar" ? "اشتر الآن" : language === "ku" ? "ئێستا بیکڕە" : "اشتر الآن")}
+            </Button>
+          </div>
+        );
+      })()}
 
       {/* Make an Offer Dialog */}
       <Dialog open={offerDialogOpen} onOpenChange={setOfferDialogOpen}>
