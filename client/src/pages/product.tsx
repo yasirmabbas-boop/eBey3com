@@ -1434,14 +1434,14 @@ export default function ProductPage() {
 
         
 {/* Specs Section */}
-        <div className="py-4 border-t">
-          <h2 className="font-bold text-lg mb-3">{language === "ar" ? "المواصفات" : language === "ku" ? "تایبەتمەندییەکان" : "المواصفات"}</h2>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between py-2 border-b border-gray-100">
+        <div className="py-3 border-t">
+          <h2 className="font-bold text-lg mb-2">{language === "ar" ? "المواصفات" : language === "ku" ? "تایبەتمەندییەکان" : "المواصفات"}</h2>
+          <div className="divide-y divide-gray-100 text-sm">
+            <div className="flex justify-between py-1.5">
               <span className="text-gray-500">{t("category")}</span>
               <span className="font-medium">{product.category}</span>
             </div>
-            <div className="flex justify-between py-2 border-b border-gray-100">
+            <div className="flex justify-between py-1.5">
               <span className="text-gray-500">{t("productCode")}</span>
               <span className="font-medium text-xs">{product.productCode}</span>
             </div>
@@ -1449,7 +1449,7 @@ export default function ProductPage() {
               if (value == null || value === "") return null;
               const label = SPECIFICATION_LABELS[key as keyof typeof SPECIFICATION_LABELS]?.[language === "ar" ? "ar" : "ku"] ?? key;
               return (
-                <div key={key} className="flex justify-between py-2 border-b border-gray-100">
+                <div key={key} className="flex justify-between py-1.5">
                   <span className="text-gray-500">{label}</span>
                   <span className="font-medium">{(() => {
                     const opts = SPECIFICATION_OPTIONS[key as keyof typeof SPECIFICATION_OPTIONS] as Array<{ value: string; labelAr: string; labelKu: string }> | undefined;
