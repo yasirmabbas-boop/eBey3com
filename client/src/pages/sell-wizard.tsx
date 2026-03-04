@@ -758,8 +758,9 @@ export default function SellWizardPage() {
         internationalShipping: false,
         internationalCountries: [],
         returnPolicy: formData.returnPolicy,
-        returnShippingPayer: formData.returnPolicy !== "لا يوجد إرجاع" ? (formData.returnShippingPayer || null) : null,
-        returnShippingCost: formData.returnPolicy !== "لا يوجد إرجاع" && formData.returnShippingCost ? parseInt(formData.returnShippingCost) : null,
+        // TODO: Re-enable after DB migration (drizzle-kit push) for return_shipping_payer / return_shipping_cost columns
+        // returnShippingPayer: formData.returnPolicy !== "لا يوجد إرجاع" ? (formData.returnShippingPayer || null) : null,
+        // returnShippingCost: formData.returnPolicy !== "لا يوجد إرجاع" && formData.returnShippingCost ? parseInt(formData.returnShippingCost) : null,
         sku: formData.sku?.trim() || null,
         tags,
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
@@ -1553,6 +1554,7 @@ export default function SellWizardPage() {
               </Select>
             </div>
 
+            {/* TODO: Re-enable return shipping options after DB migration (drizzle-kit push)
             {formData.returnPolicy && formData.returnPolicy !== "لا يوجد إرجاع" && (
               <div className="space-y-4 p-4 border border-blue-200 bg-blue-50/50 rounded-lg">
                 <Label className="font-medium">
@@ -1607,6 +1609,7 @@ export default function SellWizardPage() {
                 </div>
               </div>
             )}
+            */}
 
           </div>
 

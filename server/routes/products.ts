@@ -502,8 +502,9 @@ export function registerProductRoutes(app: Express): void {
           : parseInt(req.body.shippingCost, 10) || 0,
         returnPolicy: req.body.returnPolicy,
         returnDetails: req.body.returnDetails || null,
-        returnShippingPayer: req.body.returnShippingPayer || null,
-        returnShippingCost: req.body.returnShippingCost ? (typeof req.body.returnShippingCost === "number" ? req.body.returnShippingCost : parseInt(req.body.returnShippingCost, 10)) : null,
+        // TODO: Re-enable after DB migration (drizzle-kit push) for return_shipping_payer / return_shipping_cost columns
+        // returnShippingPayer: req.body.returnShippingPayer || null,
+        // returnShippingCost: req.body.returnShippingCost ? (typeof req.body.returnShippingCost === "number" ? req.body.returnShippingCost : parseInt(req.body.returnShippingCost, 10)) : null,
         sellerName: req.body.sellerName,
         sellerId: sessionUserId || req.body.sellerId || null,
         sellerPhone: req.body.sellerPhone || null,
@@ -518,6 +519,7 @@ export function registerProductRoutes(app: Express): void {
         locationLat: req.body.locationLat ?? user.locationLat ?? null,
         locationLng: req.body.locationLng ?? user.locationLng ?? null,
         mapUrl: req.body.mapUrl ?? user.mapUrl ?? null,
+        sku: req.body.sku?.trim() || null,
         specifications: req.body.specifications || null,
       };
 
@@ -982,12 +984,15 @@ export function registerProductRoutes(app: Express): void {
         }
       }
       
+      // TODO: Re-enable after DB migration (drizzle-kit push)
       // Convert returnShippingCost to number
-      if (req.body.returnShippingCost !== undefined) {
-        req.body.returnShippingCost = req.body.returnShippingCost
-          ? (typeof req.body.returnShippingCost === "number" ? req.body.returnShippingCost : parseInt(req.body.returnShippingCost, 10))
-          : null;
-      }
+      // if (req.body.returnShippingCost !== undefined) {
+      //   req.body.returnShippingCost = req.body.returnShippingCost
+      //     ? (typeof req.body.returnShippingCost === "number" ? req.body.returnShippingCost : parseInt(req.body.returnShippingCost, 10))
+      //     : null;
+      // }
+      delete req.body.returnShippingPayer;
+      delete req.body.returnShippingCost;
 
       // Ensure area and sku are strings or null
       if (req.body.area === "") req.body.area = null;
@@ -1078,8 +1083,9 @@ export function registerProductRoutes(app: Express): void {
         deliveryWindow: originalListing.deliveryWindow,
         returnPolicy: originalListing.returnPolicy,
         returnDetails: originalListing.returnDetails,
-        returnShippingPayer: originalListing.returnShippingPayer,
-        returnShippingCost: originalListing.returnShippingCost,
+        // TODO: Re-enable after DB migration (drizzle-kit push)
+        // returnShippingPayer: originalListing.returnShippingPayer,
+        // returnShippingCost: originalListing.returnShippingCost,
         sellerName: originalListing.sellerName,
         sellerId: sessionUserId,
         city: originalListing.city,

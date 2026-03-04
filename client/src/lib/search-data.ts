@@ -307,6 +307,7 @@ export const SPECIFICATION_OPTIONS = {
     { value: "xbox_one", labelAr: "اكس بوكس ون", labelKu: "ئێکس بۆکس وەن" },
     { value: "nintendo_switch", labelAr: "نينتندو سويتش", labelKu: "نینتێندۆ سویتچ" },
     { value: "pc", labelAr: "كمبيوتر", labelKu: "کۆمپیوتەر" },
+    { value: "other", labelAr: "أخرى (ألعاب تقليدية، لوحية...)", labelKu: "هیتر (یاری تەقلیدی، تەختە...)" },
   ],
 
   // Common color options
