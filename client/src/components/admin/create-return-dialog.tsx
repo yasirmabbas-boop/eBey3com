@@ -193,8 +193,8 @@ export function CreateReturnDialog({ open, onOpenChange }: CreateReturnDialogPro
   const selectedTransactionId = transactionId || searchResults?.id;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} dir="rtl">
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />

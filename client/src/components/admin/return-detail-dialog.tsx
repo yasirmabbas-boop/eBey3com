@@ -161,8 +161,8 @@ export function ReturnDetailDialog({
   if (!returnRequest) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} dir="rtl">
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <RotateCcw className="h-5 w-5" />

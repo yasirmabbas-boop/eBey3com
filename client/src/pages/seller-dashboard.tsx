@@ -118,6 +118,7 @@ interface SellerProduct {
   productCode: string;
   quantityAvailable: number;
   quantitySold: number;
+  remainingStock?: number;
   saleType?: string;
   auctionEndTime?: string;
   buyer?: {
@@ -154,6 +155,7 @@ interface SellerOrder {
   buyer?: {
     id: string;
     name: string;
+    displayName?: string;
     phone?: string;
     city?: string;
     district?: string;
@@ -1045,7 +1047,7 @@ export default function SellerDashboard() {
       quickFilter === "none" ||
       (quickFilter === "pending_shipment" && product.status === "pending_shipment") ||
       (quickFilter === "ending_soon" && !!product.auctionEndTime) ||
-      (quickFilter === "low_stock" && product.remainingStock > 0 && product.remainingStock <= 5);
+      (quickFilter === "low_stock" && (product.remainingStock ?? 0) > 0 && (product.remainingStock ?? 0) <= 5);
     return matchesSearch && matchesStatus && matchesQuick;
   });
   const filteredMessages = quickFilter === "needs_reply"
@@ -1663,7 +1665,7 @@ export default function SellerDashboard() {
                           <Package className="h-4 w-4" />
                           {product.quantityAvailable} {language === "ar" ? "متاح" : language === "ku" ? "بەردەست" : "available"}
                         </span>
-                        {product.remainingStock > 0 && product.remainingStock <= 5 && (
+                        {(product.remainingStock ?? 0) > 0 && (product.remainingStock ?? 0) <= 5 && (
                           <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 text-xs">
                             {language === "ar" ? "مخزون منخفض" : language === "ku" ? "ئەنبارە کەم" : "Low stock"}
                           </Badge>

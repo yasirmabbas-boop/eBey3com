@@ -30,7 +30,7 @@ import {
 import { FavoriteButton } from "@/components/favorite-button";
 import { ProductGridSkeleton } from "@/components/optimized-image";
 import { EmptySearchState } from "@/components/empty-state";
-import { useLanguage } from "@/lib/i18n";
+import { useLanguage, type Language } from "@/lib/i18n";
 import {
   SPECIFICATION_OPTIONS,
   CONDITION_LABELS,
@@ -50,7 +50,7 @@ const SEARCH_STATE_KEY = "search_ui_state";
 
 /** Local error boundary so a Meilisearch proxy failure doesn't crash the whole page */
 class SearchErrorBoundary extends Component<
-  { children: ReactNode; language: string },
+  { children: ReactNode; language: Language },
   { hasError: boolean }
 > {
   state = { hasError: false };
@@ -117,7 +117,7 @@ function ListingHitCard({
   t,
 }: {
   hit: Listing & Record<string, unknown>;
-  language: string;
+  language: Language;
   t: (k: string) => string;
 }) {
   const remaining = (hit.quantityAvailable || 1) - (hit.quantitySold || 0);
@@ -216,7 +216,7 @@ function ListingHitCard({
 }
 
 /** Banner that checks Meilisearch health and shows a warning if the engine is down or empty */
-function SearchHealthBanner({ language }: { language: string }) {
+function SearchHealthBanner({ language }: { language: Language }) {
   const { data: health, isLoading } = useQuery<{
     status: "ok" | "degraded" | "down";
     documentCount: number;
@@ -263,7 +263,7 @@ function SearchHealthBanner({ language }: { language: string }) {
   );
 }
 
-function SearchResults({ language, t }: { language: string; t: (k: string) => string }) {
+function SearchResults({ language, t }: { language: Language; t: (k: string) => string }) {
   const { hits } = useHits<Listing & Record<string, unknown>>();
   const { status, results } = useInstantSearch();
   const { refine: clearAllRefinements, canRefine: hasActiveRefinements } = useClearRefinements();
@@ -389,9 +389,9 @@ const CONDITION_FACET_LABELS: Record<string, { ar: string; ku: string }> = {
 /** Helper: build a transformItems function that translates facet labels */
 function makeTranslator(
   labelMap: Record<string, { ar: string; ku: string }>,
-  language: string,
+  language: Language,
 ) {
-  return (items: Array<{ label: string; [k: string]: any }>) =>
+  return <T extends { label: string }>(items: T[]): T[] =>
     items.map((item) => {
       const entry = labelMap[item.label];
       if (!entry) return item;
@@ -403,10 +403,10 @@ function makeTranslator(
 }
 
 /** Translate spec facet values using SPECIFICATION_OPTIONS from search-data */
-function makeSpecTranslator(specKey: string, language: string) {
+function makeSpecTranslator(specKey: string, language: Language) {
   const options = SPECIFICATION_OPTIONS[specKey as keyof typeof SPECIFICATION_OPTIONS];
   if (!options || !Array.isArray(options)) return undefined;
-  return (items: Array<{ label: string; [k: string]: any }>) =>
+  return <T extends { label: string }>(items: T[]): T[] =>
     items.map((item) => {
       const opt = (options as Array<{ value: string; labelAr: string; labelKu: string }>).find(
         (o) => o.value === item.label,
@@ -435,7 +435,7 @@ function MemoizedSpecFilter({
   showMoreText,
 }: {
   specKey: string;
-  language: string;
+  language: Language;
   showMoreText: Record<string, any>;
 }) {
   const labels = SPECIFICATION_LABELS[specKey];
@@ -471,7 +471,7 @@ function FiltersPanel({
   open,
   onClose,
 }: {
-  language: string;
+  language: Language;
   t: (k: string) => string;
   open: boolean;
   onClose: () => void;
@@ -636,7 +636,7 @@ function SearchContent({
   t,
 }: {
   sellerIdParam: string | null;
-  language: string;
+  language: Language;
   t: (k: string) => string;
 }) {
   const [filtersOpen, setFiltersOpen] = useState(false);

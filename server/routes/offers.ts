@@ -109,7 +109,7 @@ export function registerOffersRoutes(app: Express): void {
       try {
         const buyerName = user.displayName || user.username || "مشتري";
         const seller = await storage.getUser((listing as any).sellerId);
-        const sellerLang = seller?.language || 'ar';
+        const sellerLang = (seller?.language || 'ar') as import("@shared/notification-messages").Language;
         const msg = getNotificationMessage('offer_received', sellerLang, {
           buyerName,
           amount: parsed.offerAmount,

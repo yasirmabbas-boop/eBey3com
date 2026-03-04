@@ -49,6 +49,7 @@ export interface DeliveryWebhookPayload {
   driverPhone?: string;
   driverNotes?: string;
   photoUrl?: string;
+  signatureUrl?: string;
   cashCollected?: boolean;
   returnReason?: string;
   timestamp: string;

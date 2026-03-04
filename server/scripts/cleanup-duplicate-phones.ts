@@ -85,7 +85,7 @@ async function analyzeDuplicates(): Promise<DuplicateGroup[]> {
           facebookId: account.facebookId,
           authProvider: account.authProvider,
           createdAt: account.createdAt,
-          lastActive: account.lastActive,
+          lastLoginAt: account.lastLoginAt,
           transactionCount: txCount?.count || 0,
           listingCount: listCount?.count || 0,
           bidCount: bidCount?.count || 0,

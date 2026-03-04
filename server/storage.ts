@@ -213,7 +213,7 @@ export interface IStorage {
   setDefaultAddress(userId: string, addressId: string): Promise<boolean>;
   
   // Seller summary
-  getSellerSummary(sellerId: string): Promise<{
+  getSellerSummary(sellerId: string, includeTrends?: boolean): Promise<{
     totalListings: number;
     activeListings: number;
     totalSales: number;
@@ -678,6 +678,7 @@ export class DatabaseStorage implements IStorage {
     cities?: string[];
     specs?: Record<string, string[]>;
     userId?: string;
+    excludeListingId?: string;
     sortBy?: string;
   }): Promise<{ listings: Listing[]; total: number }> {
     const { limit, offset, userId } = options;
@@ -1874,7 +1875,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Seller summary
-  async getSellerSummary(sellerId: string): Promise<{
+  async getSellerSummary(sellerId: string, _includeTrends?: boolean): Promise<{
     totalListings: number;
     activeListings: number;
     totalSales: number;

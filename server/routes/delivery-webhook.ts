@@ -102,6 +102,7 @@ export function registerDeliveryWebhookRoutes(app: Express): void {
         driverNotes: payload.driverNotes,
         photoUrl: payload.photoUrl,
         signatureUrl: payload.signatureUrl,
+        timestamp: payload.timestamp || new Date().toISOString(),
       });
 
       if (!success) {

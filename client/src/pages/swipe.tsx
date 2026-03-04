@@ -202,13 +202,13 @@ export default function SwipePage() {
   // Gesture handling
   const nextItem = () => {
     if (currentIndex < processedItems.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+      setCurrentIndex((prev: number) => prev + 1);
     }
   };
 
   const previousItem = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
+      setCurrentIndex((prev: number) => prev - 1);
     }
   };
 

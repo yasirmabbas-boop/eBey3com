@@ -10,9 +10,10 @@ interface FavoriteButtonProps {
   listingId: string;
   className?: string;
   size?: "sm" | "md" | "lg";
+  style?: React.CSSProperties;
 }
 
-export function FavoriteButton({ listingId, className, size = "md" }: FavoriteButtonProps) {
+export function FavoriteButton({ listingId, className, size = "md", style }: FavoriteButtonProps) {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -97,7 +98,7 @@ export function FavoriteButton({ listingId, className, size = "md" }: FavoriteBu
         "hover:scale-110 active:scale-95",
         className
       )}
-      style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))" }}
+      style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))", ...style }}
       data-testid={`favorite-button-${listingId}`}
       aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
     >

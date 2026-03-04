@@ -233,7 +233,7 @@ export function SwipeReelItem({
             listingId={listing.id}
             size="lg"
             className="!rounded-full !shadow-lg"
-            style={{ background: "rgba(0,0,0,0.38)", backdropFilter: "blur(8px)" } as any}
+            style={{ background: "rgba(0,0,0,0.38)", backdropFilter: "blur(8px)" }}
           />
 
           {/* Share */}
