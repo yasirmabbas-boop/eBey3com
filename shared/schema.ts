@@ -357,8 +357,9 @@ export const listings = pgTable("listings", {
   returnPolicy: text("return_policy").notNull(),
   returnPolicyDays: integer("return_policy_days").default(0), // Integer for automation
   returnDetails: text("return_details"),
-  returnShippingPayer: text("return_shipping_payer"), // "seller" | "buyer"
-  returnShippingCost: integer("return_shipping_cost"),
+  // TODO: Re-enable after running drizzle-kit push to add these columns to the DB
+  // returnShippingPayer: text("return_shipping_payer"), // "seller" | "buyer"
+  // returnShippingCost: integer("return_shipping_cost"),
   sellerName: text("seller_name").notNull(),
   sellerId: varchar("seller_id"),
   city: text("city").notNull(),
