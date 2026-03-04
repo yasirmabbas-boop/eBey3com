@@ -122,6 +122,7 @@ export default function SellWizardPage() {
     returnPolicy: "",
     returnShippingPayer: "",
     returnShippingCost: "",
+    sku: "",
     startDate: "",
     startHour: "00",
     quantityAvailable: "1",
@@ -372,6 +373,7 @@ export default function SellWizardPage() {
         returnPolicy: sourceListing.returnPolicy ?? "",
         returnShippingPayer: (sourceListing as any).returnShippingPayer ?? "",
         returnShippingCost: (sourceListing as any).returnShippingCost?.toString() ?? "",
+        sku: (sourceListing as any).sku ?? "",
         startDate,
         startHour,
         quantityAvailable: isRelistMode ? "1" : sourceListing.quantityAvailable?.toString() ?? "1",
@@ -758,6 +760,7 @@ export default function SellWizardPage() {
         returnPolicy: formData.returnPolicy,
         returnShippingPayer: formData.returnPolicy !== "لا يوجد إرجاع" ? (formData.returnShippingPayer || null) : null,
         returnShippingCost: formData.returnPolicy !== "لا يوجد إرجاع" && formData.returnShippingCost ? parseInt(formData.returnShippingCost) : null,
+        sku: formData.sku?.trim() || null,
         tags,
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
         isNegotiable,
@@ -983,6 +986,7 @@ export default function SellWizardPage() {
                     <SelectItem value="مكياج">{t("makeup")}</SelectItem>
                     <SelectItem value="تحف وأثاث">{t("furniture")}</SelectItem>
                     <SelectItem value="مقتنيات">{t("collectibles")}</SelectItem>
+                    <SelectItem value="ألعاب">{t("games")}</SelectItem>
                     <SelectItem value="أخرى">{t("other")}</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1476,10 +1480,28 @@ export default function SellWizardPage() {
               </Select>
             </div>
             
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                {language === "ar" ? "رمز المنتج (SKU)" : language === "ku" ? "کۆدی بەرهەم (SKU)" : "رمز المنتج (SKU)"}
+                <span className="inline-flex items-center gap-1 text-xs font-normal text-muted-foreground bg-gray-100 px-2 py-0.5 rounded-full">
+                  🔒 {language === "ar" ? "للبائع فقط" : language === "ku" ? "تەنها بۆ فرۆشیار" : "للبائع فقط"}
+                </span>
+              </Label>
+              <Input
+                value={formData.sku}
+                onChange={(e) => handleInputChange("sku", e.target.value)}
+                placeholder={language === "ar" ? "رمز فريد للمنتج (اختياري)" : language === "ku" ? "کۆدێکی تایبەت بۆ بەرهەم (ئارەزوومەندانە)" : "رمز فريد للمنتج (اختياري)"}
+                data-testid="input-sku"
+              />
+              <p className="text-xs text-muted-foreground">
+                {language === "ar" ? "هذا الرمز لن يظهر للمشترين - لتتبعك الداخلي فقط" : language === "ku" ? "ئەم کۆدە بۆ کڕیاران نیشان نادرێت - تەنها بۆ شوێنکەوتنی ناوخۆیی تۆ" : "هذا الرمز لن يظهر للمشترين - لتتبعك الداخلي فقط"}
+              </p>
+            </div>
+
             <div className="space-y-3">
               <Label>{language === "ar" ? "تكلفة الشحن" : language === "ku" ? "تێچووی گواستنەوە" : "تكلفة الشحن"}</Label>
-              <RadioGroup 
-                value={formData.shippingType} 
+              <RadioGroup
+                value={formData.shippingType}
                 onValueChange={(v) => handleInputChange("shippingType", v)}
                 className="space-y-2"
               >
