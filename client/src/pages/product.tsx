@@ -787,46 +787,100 @@ export default function ProductPage() {
         })()}
 
         {/* Product Title */}
-        <h1 className="text-xl md:text-2xl font-bold text-foreground leading-tight mb-4" data-testid="text-product-title">
+        <h1 className="text-xl md:text-2xl font-bold text-foreground leading-tight mb-2" data-testid="text-product-title">
           {product.title}
         </h1>
 
+        {/* Key Specs Chips — quick evaluation data near the top */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {product.condition && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+              {product.condition}
+            </span>
+          )}
+          {product.brand && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+              {product.brand}
+            </span>
+          )}
+          {listing?.specifications && (() => {
+            const specs = listing.specifications as Record<string, string>;
+            const chipKeys = ["size", "shoeSize", "color", "material"] as const;
+            return chipKeys.map((key) => {
+              const val = specs[key];
+              if (!val) return null;
+              const label = SPECIFICATION_LABELS[key as keyof typeof SPECIFICATION_LABELS]?.[language === "ar" ? "ar" : "ku"] ?? key;
+              const opts = SPECIFICATION_OPTIONS[key as keyof typeof SPECIFICATION_OPTIONS] as Array<{ value: string; labelAr: string; labelKu: string }> | undefined;
+              const displayVal = opts ? (opts.find((o) => o.value === val)?.[language === "ar" ? "labelAr" : "labelKu"] ?? val) : val;
+              return (
+                <span key={key} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                  {label}: {displayVal}
+                </span>
+              );
+            });
+          })()}
+          {product.saleType === "auction" && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-700">
+              {language === "ar" ? "مزاد" : language === "ku" ? "مزایدە" : "مزاد"}
+            </span>
+          )}
+        </div>
+
         
-{/* Price Section */}
+{/* Unified Price Block — price + shipping + (auction: bids + countdown) */}
         <div className="py-4 border-b">
           {product.saleType === "auction" ? (
             <>
               <p className="text-3xl font-bold">{(liveBidData?.currentBid || product.currentBid || product.price).toLocaleString()} د.ع</p>
-              <p className="text-sm text-gray-500 mt-1">
-                {(liveBidData?.totalBids || product.totalBids) && (liveBidData?.totalBids || product.totalBids) > 0 
-                  ? `${liveBidData?.totalBids || product.totalBids} ${language === "ar" ? "مزايدة" : language === "ku" ? "مزایدە" : "مزايدة"}` 
-                  : language === "ar" ? "سعر المزايدة الابتدائي" : language === "ku" ? "نرخی دەستپێکردنی مزایدە" : "سعر المزايدة الابتدائي"}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-gray-500">
+                <span>
+                  {(liveBidData?.totalBids || product.totalBids) && (liveBidData?.totalBids || product.totalBids) > 0
+                    ? `${liveBidData?.totalBids || product.totalBids} ${language === "ar" ? "مزايدة" : language === "ku" ? "مزایدە" : "مزايدة"}`
+                    : language === "ar" ? "سعر المزايدة الابتدائي" : language === "ku" ? "نرخی دەستپێکردنی مزایدە" : "سعر المزايدة الابتدائي"}
+                </span>
+                {(liveBidData?.auctionEndTime || product.auctionEndTime) && (
+                  <>
+                    <span className="text-gray-300">·</span>
+                    <AuctionCountdown endTime={liveBidData?.auctionEndTime || product.auctionEndTime} />
+                  </>
+                )}
+              </div>
+              {/* Shipping line */}
+              <p className="text-xs text-gray-500 mt-2">
+                {product?.shippingType === "buyer_pays"
+                  ? `+ ${(product?.shippingCost || 0).toLocaleString()} ${language === "ar" ? "د.ع شحن" : language === "ku" ? "د.ع گواستنەوە" : "د.ع شحن"}`
+                  : product?.shippingType === "pickup"
+                    ? (language === "ar" ? "استلام شخصي" : language === "ku" ? "وەرگرتنی کەسی" : "استلام شخصي")
+                    : (language === "ar" ? "🚚 شحن مجاني" : language === "ku" ? "🚚 گواستنەوەی بەخۆڕایی" : "🚚 شحن مجاني")}
               </p>
-              {/* Auction Countdown Timer */}
-              {(liveBidData?.auctionEndTime || product.auctionEndTime) && (
-                <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                  <p className="text-xs text-orange-700 mb-1 font-medium">{language === "ar" ? "ينتهي المزاد خلال:" : language === "ku" ? "مزایدە تەواو دەبێت لە:" : "ينتهي المزاد خلال:"}</p>
-                  <AuctionCountdown 
-                    endTime={liveBidData?.auctionEndTime || product.auctionEndTime} 
-                  />
-                  {wsConnected && lastUpdateTime && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      {language === "ar" ? "آخر تحديث:" : language === "ku" ? "دوایین نوێکردنەوە:" : "آخر تحديث:"} {lastUpdateTime.toLocaleTimeString('ar-IQ')}
-                    </p>
-                  )}
-                  {!wsConnected && (
-                    <p className="text-xs text-orange-600 mt-2 font-medium">
-                      ⚠️ {language === "ar" ? "قد يكون المؤقت قديماً. حدّث الصفحة." : language === "ku" ? "دەکرێت کاتژمێر کۆن بێت. پەڕەکە نوێ بکەوە." : "قد يكون المؤقت قديماً. حدّث الصفحة."}
-                    </p>
-                  )}
-                </div>
-              )}
             </>
           ) : (
             <>
               <p className="text-3xl font-bold">{product.price.toLocaleString()} د.ع</p>
               {product.isNegotiable && (
                 <p className="text-sm text-gray-500 mt-1">{language === "ar" ? "أو أفضل عرض" : language === "ku" ? "یان باشترین پێشنیار" : "أو أفضل عرض"}</p>
+              )}
+              {/* Shipping line */}
+              <p className="text-xs text-gray-500 mt-1">
+                {product?.shippingType === "buyer_pays"
+                  ? `+ ${(product?.shippingCost || 0).toLocaleString()} ${language === "ar" ? "د.ع شحن" : language === "ku" ? "د.ع گواستنەوە" : "د.ع شحن"}`
+                  : product?.shippingType === "pickup"
+                    ? (language === "ar" ? "استلام شخصي" : language === "ku" ? "وەرگرتنی کەسی" : "استلام شخصي")
+                    : (language === "ar" ? "🚚 شحن مجاني" : language === "ku" ? "🚚 گواستنەوەی بەخۆڕایی" : "🚚 شحن مجاني")}
+              </p>
+              {/* Quantity selector — inside price block for full cost picture */}
+              {remainingQty > 1 && (
+                <div className="flex items-center justify-between mt-3 py-2 px-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium">{language === "ar" ? "الكمية" : language === "ku" ? "بڕ" : "الكمية"}</span>
+                    <span className="text-xs text-gray-400">({remainingQty} {language === "ar" ? "متوفر" : language === "ku" ? "بەردەستە" : "متوفر"})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => setAddToCartQuantity(Math.max(1, addToCartQuantity - 1))} disabled={addToCartQuantity <= 1}>−</Button>
+                    <span className="w-8 text-center font-medium text-sm" data-testid="product-quantity">{addToCartQuantity}</span>
+                    <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => setAddToCartQuantity(Math.min(remainingQty, addToCartQuantity + 1))} disabled={addToCartQuantity >= remainingQty}>+</Button>
+                  </div>
+                </div>
               )}
             </>
           )}
@@ -1139,16 +1193,6 @@ export default function ProductPage() {
                         </div>
                       ) : (
                         <>
-                        {remainingQty > 1 && (
-                          <div className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-lg mb-3">
-                            <span className="text-sm font-medium">{language === "ar" ? "الكمية" : language === "ku" ? "بڕ" : "الكمية"}</span>
-                            <div className="flex items-center gap-2">
-                              <Button type="button" variant="outline" size="sm" className="h-9 w-9 p-0" onClick={() => setAddToCartQuantity(Math.max(1, addToCartQuantity - 1))} disabled={addToCartQuantity <= 1}>−</Button>
-                              <span className="w-10 text-center font-medium" data-testid="product-quantity">{addToCartQuantity}</span>
-                              <Button type="button" variant="outline" size="sm" className="h-9 w-9 p-0" onClick={() => setAddToCartQuantity(Math.min(remainingQty, addToCartQuantity + 1))} disabled={addToCartQuantity >= remainingQty}>+</Button>
-                            </div>
-                          </div>
-                        )}
                         <Button 
                           size="lg" 
                           className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90"
@@ -1252,21 +1296,11 @@ export default function ProductPage() {
         })()}
 
         
-{/* Shipping & Condition Info */}
+{/* Delivery & Details */}
         <div className="py-4 border-b space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-gray-500 text-sm">{t("delivery")}</span>
             <span className="text-sm font-medium">{product.deliveryWindow || (language === "ar" ? "3-5 أيام" : language === "ku" ? "٣-٥ ڕۆژ" : "3-5 أيام")}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-500 text-sm">{language === "ar" ? "الشحن" : language === "ku" ? "گواستنەوە" : "الشحن"}</span>
-            <span className="text-sm font-medium">
-              {product?.shippingType === "buyer_pays" 
-                ? `${(product?.shippingCost || 0).toLocaleString()} ${t("iqd")}` 
-                : product?.shippingType === "pickup" 
-                  ? (language === "ar" ? "استلام شخصي" : language === "ku" ? "وەرگرتنی کەسی" : "استلام شخصي") 
-                  : (language === "ar" ? "مجاني (على حساب البائع)" : language === "ku" ? "بەخۆڕایی (بە تێچووی فرۆشیار)" : "مجاني (على حساب البائع)")}
-            </span>
           </div>
           {product?.internationalShipping && (
             <div className="flex items-center justify-between">
@@ -1279,10 +1313,6 @@ export default function ProductPage() {
               </span>
             </div>
           )}
-          <div className="flex items-center justify-between">
-            <span className="text-gray-500 text-sm">{t("condition")}</span>
-            <span className="text-sm font-medium">{product.condition}</span>
-          </div>
           {product.city && (
             <div className="flex items-center justify-between">
               <span className="text-gray-500 text-sm">{t("location")}</span>
