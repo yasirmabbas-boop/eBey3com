@@ -120,6 +120,8 @@ export default function SellWizardPage() {
     shippingType: "seller_pays",
     shippingCost: "",
     returnPolicy: "",
+    returnShippingPayer: "",
+    returnShippingCost: "",
     startDate: "",
     startHour: "00",
     quantityAvailable: "1",
@@ -368,6 +370,8 @@ export default function SellWizardPage() {
         shippingType: sourceListing.shippingType ?? "seller_pays",
         shippingCost: sourceListing.shippingCost?.toString() ?? "",
         returnPolicy: sourceListing.returnPolicy ?? "",
+        returnShippingPayer: (sourceListing as any).returnShippingPayer ?? "",
+        returnShippingCost: (sourceListing as any).returnShippingCost?.toString() ?? "",
         startDate,
         startHour,
         quantityAvailable: isRelistMode ? "1" : sourceListing.quantityAvailable?.toString() ?? "1",
@@ -752,6 +756,8 @@ export default function SellWizardPage() {
         internationalShipping: false,
         internationalCountries: [],
         returnPolicy: formData.returnPolicy,
+        returnShippingPayer: formData.returnPolicy !== "لا يوجد إرجاع" ? (formData.returnShippingPayer || null) : null,
+        returnShippingCost: formData.returnPolicy !== "لا يوجد إرجاع" && formData.returnShippingCost ? parseInt(formData.returnShippingCost) : null,
         tags,
         quantityAvailable: parseInt(formData.quantityAvailable) || 1,
         isNegotiable,
@@ -1524,6 +1530,61 @@ export default function SellWizardPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {formData.returnPolicy && formData.returnPolicy !== "لا يوجد إرجاع" && (
+              <div className="space-y-4 p-4 border border-blue-200 bg-blue-50/50 rounded-lg">
+                <Label className="font-medium">
+                  {language === "ar" ? "شحن الإرجاع" : language === "ku" ? "گواستنەوەی گەڕاندنەوە" : "شحن الإرجاع"}
+                </Label>
+
+                <div className="space-y-2">
+                  <Label>{language === "ar" ? "من يدفع تكلفة شحن الإرجاع؟" : language === "ku" ? "کێ تێچووی گواستنەوەی گەڕاندنەوە دەدات؟" : "من يدفع تكلفة شحن الإرجاع؟"}</Label>
+                  <RadioGroup
+                    value={formData.returnShippingPayer}
+                    onValueChange={(v) => handleInputChange("returnShippingPayer", v)}
+                    className="space-y-2"
+                  >
+                    <div className="flex items-center gap-3 p-3 border rounded-lg hover:bg-white">
+                      <RadioGroupItem value="seller" id="return-ship-seller" data-testid="radio-return-ship-seller" />
+                      <Label htmlFor="return-ship-seller" className="flex-1 cursor-pointer">
+                        <span className="font-medium">{language === "ar" ? "البائع يدفع" : language === "ku" ? "فرۆشیار دەیدات" : "البائع يدفع"}</span>
+                        <p className="text-xs text-gray-500">
+                          {language === "ar" ? "تتحمل أنت تكلفة شحن الإرجاع" : language === "ku" ? "تۆ تێچووی گواستنەوەی گەڕاندنەوە دەدەیت" : "تتحمل أنت تكلفة شحن الإرجاع"}
+                        </p>
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 border rounded-lg hover:bg-white">
+                      <RadioGroupItem value="buyer" id="return-ship-buyer" data-testid="radio-return-ship-buyer" />
+                      <Label htmlFor="return-ship-buyer" className="flex-1 cursor-pointer">
+                        <span className="font-medium">{language === "ar" ? "المشتري يدفع" : language === "ku" ? "کڕیار دەیدات" : "المشتري يدفع"}</span>
+                        <p className="text-xs text-gray-500">
+                          {language === "ar" ? "المشتري يتحمل تكلفة شحن الإرجاع" : language === "ku" ? "کڕیار تێچووی گواستنەوەی گەڕاندنەوە دەدات" : "المشتري يتحمل تكلفة شحن الإرجاع"}
+                        </p>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="returnShippingCost">
+                    {language === "ar" ? "تكلفة شحن الإرجاع (دينار عراقي)" : language === "ku" ? "تێچووی گواستنەوەی گەڕاندنەوە (دینار)" : "تكلفة شحن الإرجاع (دينار عراقي)"}
+                  </Label>
+                  <Input
+                    id="returnShippingCost"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9٠-٩]*"
+                    placeholder={language === "ar" ? "مثال: 5000" : language === "ku" ? "نموونە: 5000" : "مثال: 5000"}
+                    value={formData.returnShippingCost}
+                    onChange={(e) => handleInputChange("returnShippingCost", e.target.value)}
+                    data-testid="input-return-shipping-cost"
+                  />
+                  <p className="text-xs text-gray-500">
+                    {language === "ar" ? "المبلغ المتوقع لشحن المنتج عند الإرجاع" : language === "ku" ? "بڕی چاوەڕوانکراو بۆ گواستنەوەی بەرهەم لە کاتی گەڕاندنەوە" : "المبلغ المتوقع لشحن المنتج عند الإرجاع"}
+                  </p>
+                </div>
+              </div>
+            )}
 
           </div>
 

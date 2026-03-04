@@ -131,6 +131,7 @@ export const translations: Translations = {
   makeup: { ar: "مكياج", ku: "مەیکئەپ", en: "Makeup" },
   collectibles: { ar: "مقتنيات", ku: "کۆکراوەکان", en: "Collectibles" },
   music: { ar: "آلات موسيقية", ku: "ئامێری موسیقا", en: "Musical Instruments" },
+  games: { ar: "ألعاب", ku: "یارییەکان", en: "Games" },
   
   // Swipe page
   swipeUp: { ar: "اسحب للأعلى", ku: "بۆ سەرەوە ڕابکێشە", en: "Swipe up" },

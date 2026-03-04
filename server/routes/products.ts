@@ -229,11 +229,14 @@ export function registerProductRoutes(app: Express): void {
       const listingIds = filteredListings.map(l => l.id);
       const favoritesCounts = await storage.getWatchlistCountsForListings(listingIds);
       
-      // Add favorites count to each listing
-      const listingsWithFavorites = filteredListings.map(listing => ({
-        ...listing,
-        favoritesCount: favoritesCounts.get(listing.id) || 0
-      }));
+      // Add favorites count and strip SKU (seller-only field) from each listing
+      const listingsWithFavorites = filteredListings.map(listing => {
+        const { sku: _sku, ...rest } = listing as any;
+        return {
+          ...rest,
+          favoritesCount: favoritesCounts.get(listing.id) || 0
+        };
+      });
       
       // Cache listing responses for 30 seconds to reduce repeat requests
       res.set("Cache-Control", setCacheHeaders(30));
@@ -323,9 +326,15 @@ export function registerProductRoutes(app: Express): void {
       if (!listing || listing.isDeleted) {
         return res.status(404).json({ error: "Listing not found" });
       }
+
+      // Strip SKU for non-sellers (SKU is seller-only for internal tracking)
+      const userId = await getUserIdFromRequest(req);
+      const isSeller = !!(userId && listing.sellerId && userId === listing.sellerId);
+      const responseData = isSeller ? listing : { ...listing, sku: undefined };
+
       // Cache individual listing for 60 seconds
       res.set("Cache-Control", setCacheHeaders(60));
-      res.json(listing);
+      res.json(responseData);
     } catch (error) {
       console.error("Error fetching listing:", error);
       res.status(500).json({ error: "Failed to fetch listing" });
@@ -337,8 +346,10 @@ export function registerProductRoutes(app: Express): void {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
       const heroListings = await storage.getHeroListings(limit);
+      // Strip SKU (seller-only) from public listings
+      const sanitized = heroListings.map(({ sku: _sku, ...rest }) => rest);
       res.set("Cache-Control", setCacheHeaders(60));
-      res.json(heroListings);
+      res.json(sanitized);
     } catch (error) {
       console.error("Error fetching hero listings:", error);
       res.status(500).json({ error: "Failed to fetch hero listings" });
@@ -350,8 +361,10 @@ export function registerProductRoutes(app: Express): void {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
       const hotListings = await storage.getHotListings(limit);
+      // Strip SKU (seller-only) from public listings
+      const sanitized = hotListings.map(({ sku: _sku, ...rest }) => rest);
       res.set("Cache-Control", setCacheHeaders(60));
-      res.json(hotListings);
+      res.json(sanitized);
     } catch (error) {
       console.error("Error fetching hot listings:", error);
       res.status(500).json({ error: "Failed to fetch hot listings" });
@@ -489,6 +502,8 @@ export function registerProductRoutes(app: Express): void {
           : parseInt(req.body.shippingCost, 10) || 0,
         returnPolicy: req.body.returnPolicy,
         returnDetails: req.body.returnDetails || null,
+        returnShippingPayer: req.body.returnShippingPayer || null,
+        returnShippingCost: req.body.returnShippingCost ? (typeof req.body.returnShippingCost === "number" ? req.body.returnShippingCost : parseInt(req.body.returnShippingCost, 10)) : null,
         sellerName: req.body.sellerName,
         sellerId: sessionUserId || req.body.sellerId || null,
         sellerPhone: req.body.sellerPhone || null,
@@ -967,6 +982,13 @@ export function registerProductRoutes(app: Express): void {
         }
       }
       
+      // Convert returnShippingCost to number
+      if (req.body.returnShippingCost !== undefined) {
+        req.body.returnShippingCost = req.body.returnShippingCost
+          ? (typeof req.body.returnShippingCost === "number" ? req.body.returnShippingCost : parseInt(req.body.returnShippingCost, 10))
+          : null;
+      }
+
       // Ensure area and sku are strings or null
       if (req.body.area === "") req.body.area = null;
       if (req.body.sku === "") req.body.sku = null;
@@ -1056,6 +1078,8 @@ export function registerProductRoutes(app: Express): void {
         deliveryWindow: originalListing.deliveryWindow,
         returnPolicy: originalListing.returnPolicy,
         returnDetails: originalListing.returnDetails,
+        returnShippingPayer: originalListing.returnShippingPayer,
+        returnShippingCost: originalListing.returnShippingCost,
         sellerName: originalListing.sellerName,
         sellerId: sessionUserId,
         city: originalListing.city,
