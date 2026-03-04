@@ -430,7 +430,7 @@ export default function SellerDashboard() {
     queryKey: ["/api/listings", user?.id],
     queryFn: async () => {
       if (!user?.id) return { listings: [], pagination: null };
-      const res = await fetch(`/api/listings?sellerId=${encodeURIComponent(user.id)}&limit=100`);
+      const res = await secureRequest(`/api/listings?sellerId=${encodeURIComponent(user.id)}&limit=100`);
       if (!res.ok) throw new Error("Failed to fetch listings");
       return res.json();
     },
