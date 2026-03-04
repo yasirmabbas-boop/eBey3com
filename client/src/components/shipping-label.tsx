@@ -31,6 +31,7 @@ interface ShippingLabelProps {
     sellerAddress?: string;
     productTitle: string;
     productCode: string;
+    sku?: string;
     price: number;
     paymentMethod: string;
     saleDate: Date;
@@ -318,6 +319,7 @@ export function ShippingLabel({ open, onOpenChange, orderDetails, isReturn = fal
                   <div className="product-info flex-1">
                     <div className={`label-text text-gray-400 ${isCompact ? 'text-[7px]' : 'text-[8px]'}`}>المحتويات:</div>
                     <div className={`title font-medium ${isCompact ? 'text-[8px]' : 'text-[10px]'}`}>{orderDetails.productTitle}</div>
+                    {orderDetails.sku && <div className={`sku font-bold ${isCompact ? 'text-[7px]' : 'text-[9px]'}`}>SKU: {orderDetails.sku}</div>}
                     {orderDetails.weight && <div className={`weight text-gray-500 ${isCompact ? 'text-[7px]' : 'text-[8px]'}`}>الوزن: {orderDetails.weight}</div>}
                   </div>
                   <div className={`qr-code ${isCompact ? 'mr-1' : 'mr-2'}`}>

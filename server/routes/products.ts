@@ -230,7 +230,12 @@ export function registerProductRoutes(app: Express): void {
       const favoritesCounts = await storage.getWatchlistCountsForListings(listingIds);
       
       // Add favorites count and strip SKU (seller-only field) from each listing
+      // Keep SKU when the seller is viewing their own listings
       const listingsWithFavorites = filteredListings.map(listing => {
+        const isSeller = viewerId && listing.sellerId === viewerId;
+        if (isSeller) {
+          return { ...listing, favoritesCount: favoritesCounts.get(listing.id) || 0 };
+        }
         const { sku: _sku, ...rest } = listing as any;
         return {
           ...rest,

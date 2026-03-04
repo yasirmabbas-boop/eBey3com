@@ -1445,6 +1445,14 @@ export default function ProductPage() {
               <span className="text-gray-500">{t("productCode")}</span>
               <span className="font-medium text-xs">{product.productCode}</span>
             </div>
+            {isOwnProduct && (listing as any)?.sku && (
+              <div className="flex justify-between py-1.5 bg-amber-50 px-2 rounded">
+                <span className="text-amber-700 flex items-center gap-1">
+                  <span>🔒</span> {t("sku")}
+                </span>
+                <span className="font-medium text-xs text-amber-900">{(listing as any).sku}</span>
+              </div>
+            )}
             {listing?.specifications && Object.entries(listing.specifications).map(([key, value]) => {
               if (value == null || value === "") return null;
               const label = SPECIFICATION_LABELS[key as keyof typeof SPECIFICATION_LABELS]?.[language === "ar" ? "ar" : "ku"] ?? key;

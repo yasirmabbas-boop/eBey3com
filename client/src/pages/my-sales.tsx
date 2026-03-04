@@ -585,6 +585,11 @@ export default function MySales() {
                                 </Link>
                                 <p className="text-gray-600 mt-1">
                                   رقم الطلب: {selectedSale.id.slice(0, 8).toUpperCase()}
+                                  {(selectedSale.listing as any)?.sku && (
+                                    <span className="inline-flex items-center gap-1 mr-3 px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-medium">
+                                      🔒 SKU: {(selectedSale.listing as any).sku}
+                                    </span>
+                                  )}
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
@@ -913,6 +918,7 @@ export default function MySales() {
             orderId: selectedSale.id.slice(0, 8).toUpperCase(),
             productTitle: selectedSale.listing?.title || "منتج",
             productCode: (selectedSale.listing as any)?.productCode || "",
+            sku: (selectedSale.listing as any)?.sku || undefined,
             sellerName: user?.displayName || (user as any)?.username || "",
             sellerPhone: user?.phone || "",
             sellerCity: user?.city || "",

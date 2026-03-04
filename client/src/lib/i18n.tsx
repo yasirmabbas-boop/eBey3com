@@ -45,6 +45,7 @@ export const translations: Translations = {
   sold: { ar: "تم البيع", ku: "فرۆشرا", en: "Sold" },
   productDetails: { ar: "تفاصيل المنتج", ku: "وردەکاری بەرهەم", en: "Product Details" },
   productCode: { ar: "رمز المنتج", ku: "کۆدی بەرهەم", en: "Product Code" },
+  sku: { ar: "رمز التتبع (SKU)", ku: "کۆدی شوێنکەوتنەوە (SKU)", en: "SKU" },
   views: { ar: "مشاهدات", ku: "بینینەکان", en: "Views" },
   quantity: { ar: "الكمية", ku: "بڕ", en: "Quantity" },
   available: { ar: "متوفر", ku: "بەردەستە", en: "Available" },

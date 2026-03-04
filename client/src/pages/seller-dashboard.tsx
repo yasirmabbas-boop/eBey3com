@@ -116,6 +116,7 @@ interface SellerProduct {
   finalPrice?: number;
   category: string;
   productCode: string;
+  sku?: string;
   quantityAvailable: number;
   quantitySold: number;
   remainingStock?: number;
@@ -767,6 +768,7 @@ export default function SellerDashboard() {
       endDate: l.auctionEndTime ? new Date(l.auctionEndTime).toLocaleDateString("ar-IQ") : undefined,
       category: l.category,
       productCode: l.productCode || `P-${l.id.slice(0, 6)}`,
+      sku: (l as any).sku || undefined,
       quantityAvailable,
       quantitySold,
       saleType: l.saleType || "fixed",
@@ -1040,8 +1042,9 @@ export default function SellerDashboard() {
   }, [authLoading, isAuthenticated, navigate, toast]);
 
   const filteredProducts = sellerProducts.filter(product => {
-    const matchesSearch = product.title.includes(searchQuery) || 
-                          product.productCode.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = product.title.includes(searchQuery) ||
+                          product.productCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (product.sku && product.sku.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus = statusFilter === "all" || product.status === statusFilter;
     const matchesQuick =
       quickFilter === "none" ||
@@ -1638,7 +1641,7 @@ export default function SellerDashboard() {
                           <Link href={`/product/${product.id}`} className="cursor-pointer hover:text-primary transition-colors">
                             <h3 className="font-bold text-lg">{product.title}</h3>
                           </Link>
-                          <p className="text-sm text-gray-500">{language === "ar" ? "كود" : language === "ku" ? "کۆد" : "Code"}: {product.productCode} • {product.category}</p>
+                          <p className="text-sm text-gray-500">{language === "ar" ? "كود" : language === "ku" ? "کۆد" : "Code"}: {product.productCode} • {product.category}{product.sku ? ` • SKU: ${product.sku}` : ""}</p>
                         </div>
                         {getStatusBadge(product.status, language)}
                       </div>
@@ -2833,6 +2836,7 @@ export default function SellerDashboard() {
             orderId: selectedOrderForPrint.id.slice(0, 8).toUpperCase(),
             productTitle: selectedOrderForPrint.listing?.title || "منتج",
             productCode: selectedOrderForPrint.listing?.productCode || "",
+            sku: (selectedOrderForPrint.listing as any)?.sku || undefined,
             sellerName: user?.displayName || "البائع",
             sellerPhone: user?.phone || "",
             sellerCity: user?.city || "العراق",
@@ -2852,6 +2856,7 @@ export default function SellerDashboard() {
               orderId: `ORD-${selectedProduct!.id}`,
               productTitle: selectedProduct!.title,
               productCode: selectedProduct!.productCode,
+              sku: selectedProduct!.sku || undefined,
               sellerName: user?.displayName || "البائع",
               sellerPhone: user?.phone || "",
               sellerCity: user?.city || "العراق",
