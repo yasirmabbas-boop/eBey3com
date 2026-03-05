@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ebey3 — Brand Guidelines</title>
+  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Cairo:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #1E3A5F;
+      --navy-light: #2A4F7A;
+      --navy-dark: #142842;
+      --orange: #F15925;
+      --orange-light: #FF7A4D;
+      --orange-dark: #D94A1A;
+      --gold: #D4982A;
+      --gold-light: #F0B84D;
+      --cream: #FAF7F2;
+      --warm-bg: #FDF8F4;
+      --white: #FFFFFF;
+      --gray-50: #F8FAFC;
+      --gray-100: #F1F5F9;
+      --gray-200: #E2E8F0;
+      --gray-300: #CBD5E1;
+      --gray-400: #94A3B8;
+      --gray-500: #64748B;
+      --gray-600: #475569;
+      --gray-700: #334155;
+      --gray-800: #1E293B;
+      --gray-900: #0F172A;
+      --success: #16A34A;
+      --error: #DC2626;
+      --warning: #F59E0B;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--white);
+      color: var(--gray-800);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    /* ===== COVER ===== */
+    .cover {
+      min-height: 100vh;
+      background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 40%, var(--navy-light) 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -30%;
+      width: 80%;
+      height: 200%;
+      background: radial-gradient(ellipse, rgba(241,89,37,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cover-logo {
+      width: 160px;
+      height: 160px;
+      background: var(--orange);
+      border-radius: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 48px;
+      box-shadow: 0 24px 64px rgba(241,89,37,0.3);
+    }
+
+    .cover-logo svg { width: 100px; height: 100px; }
+
+    .cover h1 {
+      font-family: 'Cairo', sans-serif;
+      font-size: 56px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+
+    .cover h1 .ar-name {
+      font-family: 'Almarai', sans-serif;
+      display: block;
+      font-size: 40px;
+      font-weight: 700;
+      opacity: 0.7;
+      margin-top: 8px;
+      direction: rtl;
+    }
+
+    .cover .tagline-hero {
+      font-family: 'Almarai', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      direction: rtl;
+      margin-top: 32px;
+      color: var(--orange-light);
+      letter-spacing: 2px;
+    }
+
+    .cover .subtitle {
+      font-size: 16px;
+      font-weight: 300;
+      opacity: 0.5;
+      margin-top: 32px;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+    }
+
+    .cover .version {
+      position: absolute;
+      bottom: 40px;
+      font-size: 13px;
+      opacity: 0.4;
+    }
+
+    /* ===== TOC ===== */
+    .toc {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 80px 40px;
+    }
+
+    .toc h2 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: var(--gray-400);
+      margin-bottom: 40px;
+    }
+
+    .toc-list { list-style: none; }
+
+    .toc-list li { border-bottom: 1px solid var(--gray-100); }
+
+    .toc-list a {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      text-decoration: none;
+      color: var(--gray-800);
+      font-size: 18px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .toc-list a:hover { color: var(--orange); }
+
+    .toc-list .num {
+      font-size: 14px;
+      color: var(--gray-400);
+      font-weight: 400;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ===== SECTIONS ===== */
+    .section {
+      padding: 80px 40px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .section-header { margin-bottom: 56px; }
+
+    .section-num {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: var(--orange);
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .section h2 {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.2;
+    }
+
+    .section h2 .ar-inline {
+      font-family: 'Almarai', sans-serif;
+      color: var(--orange);
+    }
+
+    .section h3 {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--navy);
+      margin: 48px 0 20px;
+    }
+
+    .section p {
+      font-size: 17px;
+      color: var(--gray-600);
+      max-width: 680px;
+      margin-bottom: 24px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--gray-200);
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* ===== HERO QUOTE ===== */
+    .hero-quote {
+      background: var(--warm-bg);
+      padding: 80px 40px;
+      text-align: center;
+    }
+
+    .hero-quote blockquote {
+      max-width: 800px;
+      margin: 0 auto;
+      font-family: 'Almarai', sans-serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--navy);
+      direction: rtl;
+      line-height: 1.6;
+    }
+
+    .hero-quote .translation {
+      max-width: 600px;
+      margin: 24px auto 0;
+      font-size: 18px;
+      color: var(--gray-500);
+      font-style: italic;
+    }
+
+    /* ===== STRATEGY CARDS ===== */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      margin-top: 40px;
+    }
+
+    .strategy-card {
+      background: var(--gray-50);
+      border-radius: 16px;
+      padding: 36px;
+      border: 1px solid var(--gray-100);
+    }
+
+    .strategy-card.full { grid-column: 1 / -1; }
+
+    .strategy-card .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--orange);
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .strategy-card h4 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 12px;
+    }
+
+    .strategy-card p {
+      font-size: 15px;
+      color: var(--gray-600);
+      line-height: 1.7;
+      max-width: none;
+      margin-bottom: 0;
+    }
+
+    .strategy-card .ar {
+      font-family: 'Almarai', sans-serif;
+      direction: rtl;
+      text-align: right;
+      font-size: 18px;
+      color: var(--navy);
+      margin-top: 12px;
+      font-weight: 700;
+    }
+
+    .strategy-card .ku {
+      font-family: 'Noto Sans Arabic', sans-serif;
+      direction: rtl;
+      text-align: right;
+      font-size: 17px;
+      color: var(--navy-light);
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    /* ===== VALUES ===== */
+    .values-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .value-card {
+      text-align: center;
+      padding: 40px 24px;
+      border-radius: 16px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .value-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+    }
+
+    .value-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--orange), var(--orange-light));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 24px;
+      color: white;
+    }
+
+    .value-card h4 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 4px;
+    }
+
+    .value-card .ar-label {
+      font-family: 'Almarai', sans-serif;
+      font-size: 16px;
+      color: var(--orange);
+      font-weight: 700;
+      direction: rtl;
+      margin-bottom: 12px;
+    }
+
+    .value-card p {
+      font-size: 14px;
+      color: var(--gray-500);
+      max-width: none;
+      margin-bottom: 0;
+      line-height: 1.6;
+    }
+
+    /* ===== COLOR PALETTE ===== */
+    .color-group-label {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--gray-400);
+      font-weight: 600;
+      margin-bottom: 20px;
+      margin-top: 48px;
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .color-card {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--gray-200);
+      background: var(--white);
+    }
+
+    .color-swatch { height: 120px; }
+    .color-swatch.large { height: 180px; }
+
+    .color-info { padding: 16px 20px; }
+
+    .color-name {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--gray-800);
+      margin-bottom: 6px;
+    }
+
+    .color-values {
+      font-size: 13px;
+      color: var(--gray-500);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      line-height: 1.8;
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    .type-specimen {
+      margin: 40px 0;
+      padding: 48px;
+      background: var(--gray-50);
+      border-radius: 16px;
+      border: 1px solid var(--gray-100);
+    }
+
+    .type-specimen .font-name {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--orange);
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .type-sample { margin-bottom: 32px; }
+
+    .type-sample .weight-label {
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-bottom: 8px;
+    }
+
+    .type-sample .sample-text { color: var(--navy); }
+
+    .type-scale { margin-top: 40px; }
+
+    .type-row {
+      display: flex;
+      align-items: baseline;
+      gap: 24px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .type-row .size-label {
+      width: 100px;
+      flex-shrink: 0;
+      font-size: 12px;
+      color: var(--gray-400);
+      font-family: 'SF Mono', monospace;
+    }
+
+    .type-row .size-sample {
+      color: var(--navy);
+      font-weight: 600;
+    }
+
+    /* ===== LOGO ===== */
+    .logo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .logo-example {
+      border-radius: 16px;
+      padding: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      position: relative;
+    }
+
+    .logo-example .label {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      opacity: 0.5;
+    }
+
+    .logo-example.navy-bg { background: var(--navy); }
+    .logo-example.orange-bg { background: var(--orange); }
+    .logo-example.white-bg { background: var(--white); border: 1px solid var(--gray-200); }
+    .logo-example.cream-bg { background: var(--cream); border: 1px solid var(--gray-200); }
+
+    .logo-text {
+      font-family: 'Cairo', sans-serif;
+      font-weight: 800;
+      font-size: 48px;
+      letter-spacing: -1px;
+    }
+
+    .logo-text .ar {
+      font-family: 'Almarai', sans-serif;
+      font-weight: 800;
+      font-size: 40px;
+      display: block;
+      direction: rtl;
+    }
+
+    /* ===== TAGLINES ===== */
+    .tagline-card {
+      padding: 40px 48px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+
+    .tagline-card.primary {
+      background: linear-gradient(135deg, var(--navy-dark), var(--navy));
+      color: var(--white);
+    }
+
+    .tagline-card.orange-hero {
+      background: linear-gradient(135deg, var(--orange-dark), var(--orange));
+      color: var(--white);
+    }
+
+    .tagline-card.secondary {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-100);
+      color: var(--navy);
+    }
+
+    .tagline-card.warm {
+      background: var(--warm-bg);
+      border: 1px solid #F0E0D0;
+      color: var(--navy);
+    }
+
+    .tagline-lang {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      opacity: 0.5;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .tagline-text {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .tagline-text.ar {
+      font-family: 'Almarai', sans-serif;
+      direction: rtl;
+      text-align: right;
+      font-size: 34px;
+    }
+
+    .tagline-text.ku {
+      font-family: 'Noto Sans Arabic', sans-serif;
+      direction: rtl;
+      text-align: right;
+      font-size: 30px;
+    }
+
+    .tagline-sub {
+      font-size: 15px;
+      opacity: 0.6;
+      margin-top: 12px;
+      font-weight: 400;
+    }
+
+    /* ===== VOICE ===== */
+    .voice-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .voice-card {
+      padding: 32px;
+      border-radius: 16px;
+      border: 1px solid var(--gray-200);
+      background: var(--white);
+    }
+
+    .voice-card h4 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 12px;
+    }
+
+    .voice-card p {
+      font-size: 14px;
+      max-width: none;
+      margin-bottom: 0;
+    }
+
+    .do-dont {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .do-card, .dont-card {
+      padding: 32px;
+      border-radius: 16px;
+    }
+
+    .do-card {
+      background: #F0FDF4;
+      border: 1px solid #BBF7D0;
+    }
+
+    .dont-card {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+    }
+
+    .do-card h4 { color: var(--success); margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; }
+    .dont-card h4 { color: var(--error); margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; }
+
+    .do-card ul, .dont-card ul {
+      list-style: none;
+      font-size: 14px;
+      color: var(--gray-600);
+    }
+
+    .do-card li, .dont-card li {
+      padding: 8px 0;
+      padding-left: 24px;
+      position: relative;
+    }
+
+    .do-card li::before { content: '\2713'; position: absolute; left: 0; color: var(--success); font-weight: 700; }
+    .dont-card li::before { content: '\2717'; position: absolute; left: 0; color: var(--error); font-weight: 700; }
+
+    /* ===== PILLARS ===== */
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .pillar-card {
+      padding: 36px;
+      border-radius: 16px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      text-align: center;
+    }
+
+    .pillar-num {
+      width: 40px;
+      height: 40px;
+      background: var(--orange);
+      color: var(--white);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      margin: 0 auto 20px;
+    }
+
+    .pillar-card h4 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 8px;
+    }
+
+    .pillar-card p {
+      font-size: 14px;
+      color: var(--gray-500);
+      max-width: none;
+      margin-bottom: 0;
+    }
+
+    /* ===== VOCABULARY TABLE ===== */
+    .vocab-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+      font-size: 15px;
+    }
+
+    .vocab-table th {
+      text-align: left;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gray-400);
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 2px solid var(--gray-200);
+    }
+
+    .vocab-table th:nth-child(2),
+    .vocab-table td:nth-child(2) {
+      text-align: right;
+      direction: rtl;
+      font-family: 'Almarai', sans-serif;
+    }
+
+    .vocab-table th:nth-child(3),
+    .vocab-table td:nth-child(3) {
+      text-align: right;
+      direction: rtl;
+      font-family: 'Noto Sans Arabic', sans-serif;
+    }
+
+    .vocab-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--gray-100);
+      color: var(--gray-700);
+    }
+
+    .vocab-table tr:hover { background: var(--gray-50); }
+
+    .vocab-table .context {
+      font-size: 12px;
+      color: var(--gray-400);
+      display: block;
+      margin-top: 4px;
+    }
+
+    /* ===== BALE MANIFESTO ===== */
+    .manifesto {
+      background: linear-gradient(135deg, var(--navy-dark), var(--navy));
+      color: var(--white);
+      padding: 80px 40px;
+      text-align: center;
+    }
+
+    .manifesto-inner {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .manifesto h3 {
+      font-family: 'Almarai', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      direction: rtl;
+      margin-bottom: 32px;
+      color: var(--orange-light);
+    }
+
+    .manifesto p {
+      font-family: 'Almarai', sans-serif;
+      font-size: 20px;
+      direction: rtl;
+      line-height: 2;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 24px;
+    }
+
+    .manifesto .en-translation {
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      color: rgba(255,255,255,0.4);
+      direction: ltr;
+      font-style: italic;
+      margin-top: 40px;
+      line-height: 1.8;
+    }
+
+    /* ===== CODE ===== */
+    .code-block {
+      background: var(--gray-900);
+      border-radius: 12px;
+      padding: 24px 28px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      color: #E2E8F0;
+      overflow-x: auto;
+      margin: 20px 0;
+      line-height: 1.8;
+    }
+
+    .code-block .comment { color: #64748B; }
+    .code-block .key { color: #7DD3FC; }
+    .code-block .value { color: #FDE68A; }
+    .code-block .string { color: #86EFAC; }
+
+    /* ===== CLEARSPACE ===== */
+    .clearspace-demo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+      background: var(--gray-50);
+      border-radius: 16px;
+      margin-top: 40px;
+      border: 1px solid var(--gray-100);
+    }
+
+    .clearspace-box {
+      border: 2px dashed var(--orange);
+      padding: 40px 60px;
+      position: relative;
+    }
+
+    .clearspace-label {
+      position: absolute;
+      font-size: 11px;
+      color: var(--orange);
+      font-weight: 600;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .strategy-grid, .voice-grid, .do-dont, .logo-grid { grid-template-columns: 1fr; }
+      .values-grid { grid-template-columns: 1fr 1fr; }
+      .pillar-grid { grid-template-columns: 1fr; }
+      .cover h1 { font-size: 40px; }
+      .section h2 { font-size: 28px; }
+      .hero-quote blockquote { font-size: 26px; }
+      .manifesto p { font-size: 18px; }
+    }
+
+    @media print {
+      .cover { min-height: auto; padding: 80px 40px; page-break-after: always; }
+      .section { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== COVER ===== -->
+  <div class="cover">
+    <div class="cover-logo">
+      <svg viewBox="0 0 100 100" fill="none">
+        <path d="M78 25L68 60H45L35 25H22L35 70C37 76 42 80 48 80H72L80 50H62L58 65H52L42 30H65L68 20H85L78 25Z" fill="white"/>
+        <circle cx="42" cy="88" r="6" fill="white"/>
+        <circle cx="58" cy="88" r="6" fill="white"/>
+        <circle cx="74" cy="88" r="6" fill="white"/>
+      </svg>
+    </div>
+    <h1>
+      ebey3
+      <span class="ar-name">اي بيع</span>
+    </h1>
+    <div class="tagline-hero">دوّر. لاگي. اشتري.</div>
+    <div class="subtitle">Brand Guidelines</div>
+    <div class="version">Version 2.0 — March 2026</div>
+  </div>
+
+  <!-- ===== MANIFESTO ===== -->
+  <div class="manifesto">
+    <div class="manifesto-inner">
+      <h3>البالة مو بس بضاعة مستعملة</h3>
+      <p>
+        البالة كنوز تنتظر تنلگاها.
+        <br>ماركات أصلية، قطع فينتاج، أشياء ما تلگاها بأي مكان ثاني.
+        <br>سوق الجمعة علّمنا نحب التدوير — نحب نلاگي الشي الأصلي بين الألف.
+        <br>اي بيع يجيبلك هالتجربة لتلفونك. كل يوم جمعة.
+      </p>
+      <div class="en-translation">
+        Bale isn't just secondhand goods. Bale is treasure waiting to be found.
+        Original brands, vintage pieces, things you won't find anywhere else.
+        The Friday market taught us to love the hunt — to find the one original piece among thousands.
+        ebey3 brings that experience to your phone. Every day is Friday.
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TABLE OF CONTENTS ===== -->
+  <div class="toc">
+    <h2>Contents</h2>
+    <ol class="toc-list">
+      <li><a href="#strategy"><span>Brand Strategy — The Digital Bale</span><span class="num">01</span></a></li>
+      <li><a href="#values"><span>Core Values</span><span class="num">02</span></a></li>
+      <li><a href="#taglines"><span>Taglines & Messaging</span><span class="num">03</span></a></li>
+      <li><a href="#vocabulary"><span>Brand Vocabulary</span><span class="num">04</span></a></li>
+      <li><a href="#colors"><span>Color Palette</span><span class="num">05</span></a></li>
+      <li><a href="#typography"><span>Typography</span><span class="num">06</span></a></li>
+      <li><a href="#logo"><span>Logo Usage</span><span class="num">07</span></a></li>
+      <li><a href="#voice"><span>Brand Voice</span><span class="num">08</span></a></li>
+      <li><a href="#pillars"><span>Messaging Pillars</span><span class="num">09</span></a></li>
+      <li><a href="#implementation"><span>Implementation Guide</span><span class="num">10</span></a></li>
+    </ol>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ===== 01: BRAND STRATEGY ===== -->
+  <div class="section" id="strategy">
+    <div class="section-header">
+      <div class="section-num">01 — Brand Strategy</div>
+      <h2>The Digital <span class="ar-inline">بالة</span></h2>
+      <p>ebey3 is the online mirror of Iraq's beloved bale and langa markets — the Friday markets, the Sunday markets, the treasure hunts where you dig through piles to find something original and extraordinary. We take that experience and make it organized, trustworthy, and always open.</p>
+    </div>
+
+    <div class="strategy-grid">
+      <div class="strategy-card full">
+        <div class="label">The Problem We Solve</div>
+        <h4>The bale market is a beloved experience trapped in chaos</h4>
+        <p>Millions of Iraqis love the bale — the thrill of finding original brands, vintage pieces, and unique items at incredible prices. But the physical market is disorganized, inconsistent, and only available on certain days. There's no dedicated platform for this massive market. ebey3 changes that — we bring the bale online with proper categories, verified sellers, and the same thrill of discovery.</p>
+      </div>
+
+      <div class="strategy-card">
+        <div class="label">Mission</div>
+        <h4>Organize the Bale</h4>
+        <p>To be the first and only platform dedicated to the bale market — giving buyers the thrill of treasure hunting with the confidence of verified sellers and authentic items, all from their phone.</p>
+        <div class="ar">ننظّم البالة ونجيب تجربة سوق الجمعة لتلفونك</div>
+      </div>
+
+      <div class="strategy-card">
+        <div class="label">Vision</div>
+        <h4>The Country's Bale Market</h4>
+        <p>To become the definitive online destination for bale, langa, vintage, and pre-owned original goods — the platform people think of first when they want quality secondhand finds.</p>
+        <div class="ar">نصير سوق البالة الأول والوحيد أونلاين</div>
+      </div>
+
+      <div class="strategy-card full">
+        <div class="label">Positioning Statement</div>
+        <p style="font-size: 18px; color: var(--navy); font-weight: 500; line-height: 1.8;">
+          For <strong>people who love the bale experience</strong> — the hunt for original brands, vintage finds, and unique items at great prices —
+          <strong>ebey3</strong> is the <strong>only online platform dedicated to the bale market</strong>,
+          bringing the excitement and discovery of the Friday market to your phone,
+          with <strong>organized categories, genuine sellers, and authentic items</strong>.
+        </p>
+      </div>
+
+      <div class="strategy-card">
+        <div class="label">Brand Personality</div>
+        <p>
+          <strong style="color: var(--navy);">Authentic</strong> — Real items, real sellers, real bale culture. No pretense.<br><br>
+          <strong style="color: var(--navy);">Exciting</strong> — Every scroll is a dig through the bale. The next find could be incredible.<br><br>
+          <strong style="color: var(--navy);">Organized</strong> — The chaos of the physical market, made clean and searchable.<br><br>
+          <strong style="color: var(--navy);">Trustworthy</strong> — Genuine sellers, verified items, honest descriptions.
+        </p>
+      </div>
+
+      <div class="strategy-card">
+        <div class="label">Who Uses ebey3</div>
+        <p>
+          <strong style="color: var(--navy);">Treasure Hunters:</strong> People who love digging through the bale for original finds. They enjoy the hunt as much as the purchase.<br><br>
+          <strong style="color: var(--navy);">Smart Shoppers:</strong> People who want original brands (Nike, Adidas, Casio, Levi's) at a fraction of retail — lightly used, excellent condition.<br><br>
+          <strong style="color: var(--navy);">Bale Traders:</strong> Professional merchants who sort bales and sell the best pieces. ebey3 gives them a digital storefront.<br><br>
+          <strong style="color: var(--navy);">Individual Sellers:</strong> People selling personal items they no longer need — their original, quality goods find a new home.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ===== 02: CORE VALUES ===== -->
+  <div class="section" id="values">
+    <div class="section-header">
+      <div class="section-num">02 — Core Values</div>
+      <h2>What We Stand For</h2>
+      <p>Four principles rooted in what makes the bale experience special — and what ebey3 adds to it.</p>
+    </div>
+
+    <div class="values-grid">
+      <div class="value-card">
+        <div class="value-icon">🔍</div>
+        <h4>The Hunt</h4>
+        <div class="ar-label">التدوير</div>
+        <p>The joy is in the search. Every scroll, every browse is a dig through the bale. We preserve the thrill of discovery that makes this experience addictive.</p>
+      </div>
+
+      <div class="value-card">
+        <div class="value-icon">✦</div>
+        <h4>Authenticity</h4>
+        <div class="ar-label">الأصلي</div>
+        <p>Original brands, genuine items, honest sellers. No fakes, no knockoffs. When we say أصلي, we mean it. The bale is about finding the real thing.</p>
+      </div>
+
+      <div class="value-card">
+        <div class="value-icon">📋</div>
+        <h4>Organization</h4>
+        <div class="ar-label">ترتيب</div>
+        <p>The bale's biggest problem is chaos. We solve it — proper categories, filters, search. The same treasure, but you can actually find what you're looking for.</p>
+      </div>
+
+      <div class="value-card">
+        <div class="value-icon">🤝</div>
+        <h4>Trust</h4>
+        <div class="ar-label">ثقة</div>
+        <p>Verified sellers, honest item descriptions, clear photos. In the physical bale, you inspect by hand. On ebey3, we give you the confidence to buy with trust.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ===== 03: TAGLINES ===== -->
+  <div class="section" id="taglines">
+    <div class="section-header">
+      <div class="section-num">03 — Taglines & Messaging</div>
+      <h2>دوّر. لاگي. اشتري.</h2>
+      <p>Our taglines use natural Iraqi dialect — the way people actually talk. The primary tagline captures the three-step bale experience: you search, you find, you buy.</p>
+    </div>
+
+    <div class="tagline-showcase">
+      <div class="tagline-card orange-hero">
+        <div class="tagline-lang">Primary Tagline — Iraqi Arabic</div>
+        <div class="tagline-text ar" style="font-size: 42px;">دوّر. لاگي. اشتري.</div>
+        <div class="tagline-sub" style="text-align: right; direction: rtl;">Search. Find. Buy. — The three-step bale experience</div>
+      </div>
+
+      <div class="tagline-card primary">
+        <div class="tagline-lang">Primary Tagline — Kurdish (Sorani)</div>
+        <div class="tagline-text ku">بگەڕێ. بدۆزەرەوە. بکڕە.</div>
+        <div class="tagline-sub" style="text-align: right; direction: rtl;">Search. Find. Buy.</div>
+      </div>
+
+      <div class="tagline-card primary">
+        <div class="tagline-lang">Primary Tagline — English</div>
+        <div class="tagline-text">Dig. Find. Buy.</div>
+        <div class="tagline-sub">The bale experience, three words</div>
+      </div>
+
+      <h3>Campaign Taglines</h3>
+
+      <div class="tagline-card warm">
+        <div class="tagline-lang">The Bale, Elevated</div>
+        <div class="tagline-text ar">البالة بس أحلى</div>
+        <div class="tagline-sub" style="text-align: right; direction: rtl;">The bale, but better</div>
+      </div>
+
+      <div class="tagline-card warm">
+        <div class="tagline-lang">Always Open</div>
+        <div class="tagline-text ar">كل يوم جمعة</div>
+        <div class="tagline-sub" style="text-align: right; direction: rtl;">Every day is Friday — the market never closes</div>
+      </div>
+
+      <div class="tagline-card warm">
+        <div class="tagline-lang">Authenticity</div>
+        <div class="tagline-text ar">أصلي ١٠٠٪</div>
+        <div class="tagline-sub" style="text-align: right; direction: rtl;">100% Original — used for trust-focused campaigns</div>
+      </div>
+
+      <div class="tagline-card warm">
+        <div class="tagline-lang">The Experience</div>
+        <div class="tagline-text ar">سوق البالة بإيدك</div>
+        <div class="tagline-sub" style="text-align: right; direction: rtl;">The bale market in your hand</div>
+      </div>
+
+      <div class="tagline-card warm">
+        <div class="tagline-lang">Vintage / Unique Focus</div>
+        <div class="tagline-text ar">القطعة اللي ما تتكرر</div>
+        <div class="tagline-sub" style="text-align: right; direction: rtl;">The piece that doesn't repeat — for vintage and one-of-a-kind items</div>
+      </div>
+
+      <div class="tagline-card secondary">
+        <div class="tagline-lang">Descriptive — For App Stores & SEO</div>
+        <div class="tagline-text ar" style="font-size: 24px;">سوق البالة الأول أونلاين — بضاعة أصلية، فينتاج، وماركات بسعر حلو</div>
+        <div class="tagline-sub" style="text-align: right; direction: rtl;">The first online bale market — original goods, vintage, and brands at great prices</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ===== 04: BRAND VOCABULARY ===== -->
+  <div class="section" id="vocabulary">
+    <div class="section-header">
+      <div class="section-num">04 — Brand Vocabulary</div>
+      <h2>The Words We Use</h2>
+      <p>Language shapes perception. We use specific terms to elevate the bale experience while staying honest. Marketing language celebrates; item descriptions stay practical and transparent.</p>
+    </div>
+
+    <h3>Core Brand Terms</h3>
+    <table class="vocab-table">
+      <thead>
+        <tr>
+          <th>English</th>
+          <th>عربي (عراقي)</th>
+          <th>کوردی</th>
+          <th>When to Use</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Bale<span class="context">The market concept itself</span></td>
+          <td style="font-size: 18px; font-weight: 700;">بالة</td>
+          <td style="font-size: 17px; font-weight: 600;">باڵە</td>
+          <td>Everywhere. This is our identity.</td>
+        </tr>
+        <tr>
+          <td>Original<span class="context">Authentic branded items</span></td>
+          <td style="font-size: 18px; font-weight: 700;">أصلي</td>
+          <td style="font-size: 17px; font-weight: 600;">ئەسڵی</td>
+          <td>Marketing, item badges, search filters</td>
+        </tr>
+        <tr>
+          <td>Vintage<span class="context">Older, collectible items</span></td>
+          <td style="font-size: 18px; font-weight: 700;">فينتاج</td>
+          <td style="font-size: 17px; font-weight: 600;">ڤینتاج</td>
+          <td>Category labels, marketing, item tags</td>
+        </tr>
+        <tr>
+          <td>The Hunt / Dig<span class="context">The search experience</span></td>
+          <td style="font-size: 18px; font-weight: 700;">دوّر / تدوير</td>
+          <td style="font-size: 17px; font-weight: 600;">بگەڕێ</td>
+          <td>Marketing, onboarding, CTA buttons</td>
+        </tr>
+        <tr>
+          <td>Find / Discovery<span class="context">The moment you spot it</span></td>
+          <td style="font-size: 18px; font-weight: 700;">لاگي / لگيتها</td>
+          <td style="font-size: 17px; font-weight: 600;">بدۆزەرەوە</td>
+          <td>Marketing, notifications, social media</td>
+        </tr>
+        <tr>
+          <td>Unique Piece<span class="context">One-of-a-kind item</span></td>
+          <td style="font-size: 18px; font-weight: 700;">قطعة فريدة</td>
+          <td style="font-size: 17px; font-weight: 600;">پارچەی تایبەت</td>
+          <td>Item badges, featured listings</td>
+        </tr>
+        <tr>
+          <td>Friday Market<span class="context">The physical market reference</span></td>
+          <td style="font-size: 18px; font-weight: 700;">سوق الجمعة</td>
+          <td style="font-size: 17px; font-weight: 600;">بازاڕی ھەینی</td>
+          <td>Cultural references, marketing stories</td>
+        </tr>
+        <tr>
+          <td>Genuine Seller<span class="context">Verified, trustworthy seller</span></td>
+          <td style="font-size: 18px; font-weight: 700;">بائع موثوق</td>
+          <td style="font-size: 17px; font-weight: 600;">فرۆشیاری متمانەپێکراو</td>
+          <td>Seller profiles, trust badges</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Language Strategy: Marketing vs. Descriptions</h3>
+    <div class="do-dont">
+      <div class="do-card">
+        <h4>Marketing & Brand</h4>
+        <ul>
+          <li><strong>أصلي</strong> (Original) — leads every conversation</li>
+          <li><strong>فينتاج</strong> (Vintage) — for older, collectible items</li>
+          <li><strong>ماركة</strong> (Branded) — emphasize the brand value</li>
+          <li><strong>قطعة فريدة</strong> — unique, one-of-a-kind piece</li>
+          <li><strong>بحالة ممتازة</strong> — excellent condition</li>
+          <li><strong>بسعر حلو</strong> — at a great price</li>
+        </ul>
+      </div>
+      <div class="do-card" style="background: #EFF6FF; border-color: #BFDBFE;">
+        <h4 style="color: #2563EB;">Item Descriptions</h4>
+        <ul>
+          <li><strong>مستعمل</strong> (Used) — honest, transparent, no shame</li>
+          <li><strong>مستعمل بحالة ممتازة</strong> — used, excellent condition</li>
+          <li><strong>مستعمل بحالة جيدة</strong> — used, good condition</li>
+          <li>Clear condition descriptions with real photos</li>
+          <li>Honest wear-and-tear notes</li>
+          <li>Original brand name clearly stated</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ===== 05: COLOR PALETTE ===== -->
+  <div class="section" id="colors">
+    <div class="section-header">
+      <div class="section-num">05 — Color Palette</div>
+      <h2>Our Colors</h2>
+      <p>Orange leads — it carries the energy and warmth of the bale market. Navy grounds it with trust and organization. Gold highlights the premium finds and vintage treasures.</p>
+    </div>
+
+    <div class="color-group-label">Primary Colors</div>
+    <div class="color-grid">
+      <div class="color-card">
+        <div class="color-swatch large" style="background: #F15925;"></div>
+        <div class="color-info">
+          <div class="color-name">Bale Orange — Primary</div>
+          <div class="color-values">
+            HEX #F15925<br>
+            RGB 241, 89, 37<br>
+            HSL 15, 88%, 55%
+          </div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch large" style="background: #1E3A5F;"></div>
+        <div class="color-info">
+          <div class="color-name">Trust Navy — Secondary</div>
+          <div class="color-values">
+            HEX #1E3A5F<br>
+            RGB 30, 58, 95<br>
+            HSL 214, 52%, 25%
+          </div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch large" style="background: #D4982A;"></div>
+        <div class="color-info">
+          <div class="color-name">Vintage Gold — Accent</div>
+          <div class="color-values">
+            HEX #D4982A<br>
+            RGB 212, 152, 42<br>
+            HSL 39, 67%, 50%
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-group-label">Orange Variants</div>
+    <div class="color-grid">
+      <div class="color-card">
+        <div class="color-swatch" style="background: #D94A1A;"></div>
+        <div class="color-info">
+          <div class="color-name">Orange Dark</div>
+          <div class="color-values">HEX #D94A1A</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background: #F15925;"></div>
+        <div class="color-info">
+          <div class="color-name">Bale Orange</div>
+          <div class="color-values">HEX #F15925</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background: #FF7A4D;"></div>
+        <div class="color-info">
+          <div class="color-name">Orange Light</div>
+          <div class="color-values">HEX #FF7A4D</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background: #FFF0EB;"></div>
+        <div class="color-info">
+          <div class="color-name">Orange Tint</div>
+          <div class="color-values">HEX #FFF0EB</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-group-label">Navy Variants</div>
+    <div class="color-grid">
+      <div class="color-card">
+        <div class="color-swatch" style="background: #142842;"></div>
+        <div class="color-info">
+          <div class="color-name">Navy Dark</div>
+          <div class="color-values">HEX #142842</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background: #1E3A5F;"></div>
+        <div class="color-info">
+          <div class="color-name">Trust Navy</div>
+          <div class="color-values">HEX #1E3A5F</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background: #2A4F7A;"></div>
+        <div class="color-info">
+          <div class="color-name">Navy Light</div>
+          <div class="color-values">HEX #2A4F7A</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background: #3B6BA0;"></div>
+        <div class="color-info">
+          <div class="color-name">Navy Bright</div>
+          <div class="color-values">HEX #3B6BA0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-group-label">Warm Neutrals</div>
+    <div class="color-grid">
+      <div class="color-card">
+        <div class="color-swatch" style="background: #FFFFFF; border-bottom: 1px solid #E2E8F0;"></div>
+        <div class="color-info">
+          <div class="color-name">White</div>
+          <div class="color-values">HEX #FFFFFF</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background: #FDF8F4;"></div>
+        <div class="color-info">
+          <div class="color-name">Warm White</div>
+          <div class="color-values">HEX #FDF8F4</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background: #FAF7F2;"></div>
+        <div class="color-info">
+          <div class="color-name">Cream</div>
+          <div class="color-values">HEX #FAF7F2</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background: #64748B;"></div>
+        <div class="color-info">
+          <div class="color-name">Gray 500</div>
+          <div class="color-values">HEX #64748B</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-group-label">Semantic Colors</div>
+    <div class="color-grid">
+      <div class="color-card">
+        <div class="color-swatch" style="background: #16A34A;"></div>
+        <div class="color-info">
+          <div class="color-name">Success / Sold</div>
+          <div class="color-values">HEX #16A34A</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background: #DC2626;"></div>
+        <div class="color-info">
+          <div class="color-name">Error / Auction Ending</div>
+          <div class="color-values">HEX #DC2626</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background: #F59E0B;"></div>
+        <div class="color-info">
+          <div class="color-name">Warning / Bid Alert</div>
+          <div class="color-values">HEX #F59E0B</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background: #3B82F6;"></div>
+        <div class="color-info">
+          <div class="color-name">Info / New Listing</div>
+          <div class="color-values">HEX #3B82F6</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Color Hierarchy</h3>
+    <p><strong>Bale Orange (30%)</strong> — The hero color. CTAs, logo, key interaction points, sale badges, category headers. This is the energy and excitement of the market.</p>
+    <p><strong>Trust Navy (30%)</strong> — Navigation, headers, body text, trust elements. This is the organization and reliability ebey3 brings to the bale.</p>
+    <p><strong>Vintage Gold (10%)</strong> — Featured items, "verified original" badges, auction highlights, vintage category accents. Sparingly used for premium moments.</p>
+    <p><strong>Warm Neutrals (30%)</strong> — Backgrounds use warm whites and creams, not cold grays. The bale feels warm and human, not sterile and corporate.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ===== 06: TYPOGRAPHY ===== -->
+  <div class="section" id="typography">
+    <div class="section-header">
+      <div class="section-num">06 — Typography</div>
+      <h2>Type System</h2>
+      <p>Our type system prioritizes readability across Arabic, Kurdish, and Latin scripts. Iraqi dialect is our primary language — the fonts must handle it beautifully.</p>
+    </div>
+
+    <div class="type-specimen">
+      <div class="font-name">Almarai — Primary (Arabic / Iraqi Dialect)</div>
+      <div class="type-sample">
+        <div class="weight-label">Regular 400</div>
+        <div class="sample-text" style="font-family: 'Almarai'; font-weight: 400; font-size: 32px; direction: rtl;">دوّر على الأصلي بسوق البالة</div>
+      </div>
+      <div class="type-sample">
+        <div class="weight-label">Bold 700</div>
+        <div class="sample-text" style="font-family: 'Almarai'; font-weight: 700; font-size: 32px; direction: rtl;">فينتاج، ماركات أصلية، قطع فريدة</div>
+      </div>
+      <div class="type-sample" style="margin-bottom: 0;">
+        <div class="weight-label">Extra Bold 800 — Headlines & Hero Text</div>
+        <div class="sample-text" style="font-family: 'Almarai'; font-weight: 800; font-size: 40px; direction: rtl;">دوّر. لاگي. اشتري.</div>
+      </div>
+    </div>
+
+    <div class="type-specimen">
+      <div class="font-name">Noto Sans Arabic — Kurdish (Sorani) Script</div>
+      <div class="type-sample">
+        <div class="weight-label">Regular 400</div>
+        <div class="sample-text" style="font-family: 'Noto Sans Arabic'; font-weight: 400; font-size: 28px; direction: rtl;">بگەڕێ. بدۆزەرەوە. بکڕە.</div>
+      </div>
+      <div class="type-sample" style="margin-bottom: 0;">
+        <div class="weight-label">Bold 700</div>
+        <div class="sample-text" style="font-family: 'Noto Sans Arabic'; font-weight: 700; font-size: 28px; direction: rtl;">بازاڕی باڵەی یەکەمی ئۆنلاین</div>
+      </div>
+    </div>
+
+    <div class="type-specimen">
+      <div class="font-name">Inter — English / Latin</div>
+      <div class="type-sample">
+        <div class="weight-label">Regular 400</div>
+        <div class="sample-text" style="font-family: 'Inter'; font-weight: 400; font-size: 28px;">Dig. Find. Buy.</div>
+      </div>
+      <div class="type-sample" style="margin-bottom: 0;">
+        <div class="weight-label">Bold 700</div>
+        <div class="sample-text" style="font-family: 'Inter'; font-weight: 700; font-size: 28px;">The Digital Bale Market</div>
+      </div>
+    </div>
+
+    <div class="type-specimen">
+      <div class="font-name">Cairo — Display / Logo Wordmark</div>
+      <div class="type-sample" style="margin-bottom: 0;">
+        <div class="weight-label">Extra Bold 800</div>
+        <div class="sample-text" style="font-family: 'Cairo'; font-weight: 800; font-size: 48px;">ebey3</div>
+      </div>
+    </div>
+
+    <h3>Type Scale</h3>
+    <div class="type-scale">
+      <div class="type-row">
+        <span class="size-label">Display — 48px</span>
+        <span class="size-sample" style="font-size: 48px; font-family: 'Cairo'; font-weight: 800;">ebey3</span>
+      </div>
+      <div class="type-row">
+        <span class="size-label">H1 — 36px</span>
+        <span class="size-sample" style="font-size: 36px;">Page Titles</span>
+      </div>
+      <div class="type-row">
+        <span class="size-label">H2 — 28px</span>
+        <span class="size-sample" style="font-size: 28px;">Section Headers</span>
+      </div>
+      <div class="type-row">
+        <span class="size-label">H3 — 22px</span>
+        <span class="size-sample" style="font-size: 22px;">Subsections</span>
+      </div>
+      <div class="type-row">
+        <span class="size-label">Body — 16px</span>
+        <span class="size-sample" style="font-size: 16px; font-weight: 400;">Default body text for descriptions and content</span>
+      </div>
+      <div class="type-row">
+        <span class="size-label">Small — 14px</span>
+        <span class="size-sample" style="font-size: 14px; font-weight: 400;">Captions, labels, metadata, prices</span>
+      </div>
+      <div class="type-row">
+        <span class="size-label">Micro — 12px</span>
+        <span class="size-sample" style="font-size: 12px; font-weight: 400;">Badges, timestamps, condition tags</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ===== 07: LOGO USAGE ===== -->
+  <div class="section" id="logo">
+    <div class="section-header">
+      <div class="section-num">07 — Logo Usage</div>
+      <h2>The ebey3 Mark</h2>
+      <p>The ebey3 logo features a stylized Arabic shopping cart — a nod to the physical market experience. The icon mark (app icon) uses orange, the color of the bale. The wordmark pairs "ebey3" with "اي بيع" in Arabic.</p>
+    </div>
+
+    <h3>Logo on Backgrounds</h3>
+    <div class="logo-grid">
+      <div class="logo-example orange-bg">
+        <span class="label" style="color: rgba(255,255,255,0.4);">On Bale Orange (Primary)</span>
+        <span class="logo-text" style="color: var(--white);">ebey3 <span class="ar">اي بيع</span></span>
+      </div>
+      <div class="logo-example navy-bg">
+        <span class="label" style="color: rgba(255,255,255,0.4);">On Navy</span>
+        <span class="logo-text" style="color: var(--white);">ebey3 <span class="ar">اي بيع</span></span>
+      </div>
+      <div class="logo-example white-bg">
+        <span class="label" style="color: var(--gray-400);">On White</span>
+        <span class="logo-text" style="color: var(--orange);">e<span style="color: var(--navy);">bey3</span> <span class="ar" style="color: var(--navy);">اي بيع</span></span>
+      </div>
+      <div class="logo-example cream-bg">
+        <span class="label" style="color: var(--gray-400);">On Cream</span>
+        <span class="logo-text" style="color: var(--orange);">e<span style="color: var(--navy);">bey3</span> <span class="ar" style="color: var(--navy);">اي بيع</span></span>
+      </div>
+    </div>
+
+    <h3>Clear Space</h3>
+    <p>Maintain minimum clear space equal to the height of the "e" in "ebey3" around all sides of the logo. No other visual elements should enter this zone.</p>
+
+    <div class="clearspace-demo">
+      <div class="clearspace-box">
+        <span class="logo-text" style="color: var(--navy); font-size: 36px;">ebey3</span>
+        <span class="clearspace-label" style="top: -20px; left: 50%; transform: translateX(-50%);">min "e" height</span>
+        <span class="clearspace-label" style="bottom: -20px; left: 50%; transform: translateX(-50%);">min "e" height</span>
+      </div>
+    </div>
+
+    <h3>App Icon</h3>
+    <p>The app icon uses the shopping cart mark on solid Bale Orange (#F15925) with 32px corner radius. This is the most recognizable element of the brand and must remain consistent across iOS, Android, and PWA.</p>
+
+    <h3>Logo Rules</h3>
+    <div class="do-dont">
+      <div class="do-card">
+        <h4>Do</h4>
+        <ul>
+          <li>Use the orange icon on navy or white backgrounds</li>
+          <li>Keep the Arabic name (اي بيع) alongside the Latin name</li>
+          <li>Maintain clear space and minimum size (24px)</li>
+          <li>Use the full wordmark in headers, the icon alone in compact spaces</li>
+        </ul>
+      </div>
+      <div class="dont-card">
+        <h4>Don't</h4>
+        <ul>
+          <li>Stretch, rotate, or distort the logo</li>
+          <li>Place on busy or low-contrast backgrounds</li>
+          <li>Add shadows, glows, or effects</li>
+          <li>Change the logo colors arbitrarily</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ===== 08: BRAND VOICE ===== -->
+  <div class="section" id="voice">
+    <div class="section-header">
+      <div class="section-num">08 — Brand Voice</div>
+      <h2>How We Talk</h2>
+      <p>ebey3 speaks like a trusted friend who knows the bale inside out. Natural Iraqi dialect, warm but not sloppy, knowledgeable but not condescending. We talk about the bale with pride — it's not cheap, it's smart.</p>
+    </div>
+
+    <div class="voice-grid">
+      <div class="voice-card">
+        <h4>Proud of the Bale</h4>
+        <p>We never apologize for being a bale platform. The bale is quality — original brands, vintage treasures, smart shopping. We elevate it, not explain it away. "مستعمل" is honest; "أصلي" is the lead story.</p>
+      </div>
+      <div class="voice-card">
+        <h4>Iraqi, Not فصحى</h4>
+        <p>We use natural Iraqi Arabic — "لاگي" not "أجد", "حلو" not "جميل", "شلون" not "كيف". Our language sounds like the way people actually speak in the market. Kurdish content uses natural Sorani.</p>
+      </div>
+      <div class="voice-card">
+        <h4>Exciting, Not Desperate</h4>
+        <p>The bale is inherently exciting — we don't need fake urgency. "شوف شنو لگينا اليوم" (Look what we found today) beats "LAST CHANCE!! BUY NOW!!" every time. Let the items create the excitement.</p>
+      </div>
+      <div class="voice-card">
+        <h4>Honest, Always</h4>
+        <p>Items are used — we say so clearly. Condition is described accurately. Photos are real. Sellers are verified. Trust is built through transparency, not marketing tricks.</p>
+      </div>
+    </div>
+
+    <h3>Tone by Context</h3>
+    <div class="voice-grid">
+      <div class="voice-card" style="border-left: 3px solid var(--orange);">
+        <h4>Marketing & Social Media</h4>
+        <p>Exciting, discovery-focused, bale culture. Share finds, celebrate the hunt, show the thrill. "اليوم لگينا ساعة Casio فينتاج بالبالة — أصلية ١٠٠٪"</p>
+      </div>
+      <div class="voice-card" style="border-left: 3px solid var(--navy);">
+        <h4>In-App & Transactions</h4>
+        <p>Clear, reassuring, efficient. "تم الطلب — البائع راح يتواصل وياك" (Order confirmed — the seller will contact you). Keep it short and confident.</p>
+      </div>
+      <div class="voice-card" style="border-left: 3px solid var(--success);">
+        <h4>Seller Communication</h4>
+        <p>Supportive, empowering. Help them present items well. "صور القطعة من كل الزوايا — المشتري يريد يشوف الحالة الحقيقية" (Photograph from all angles — buyers want to see the real condition).</p>
+      </div>
+      <div class="voice-card" style="border-left: 3px solid var(--gold);">
+        <h4>Auction / Bidding</h4>
+        <p>Dynamic and naturally urgent. "المزاد يخلص بعد ساعتين — القطعة هسه بـ ٢٥ ألف" (Auction ends in 2 hours — currently at 25K). Let the countdown do the work.</p>
+      </div>
+    </div>
+
+    <h3>Do's & Don'ts</h3>
+    <div class="do-dont">
+      <div class="do-card">
+        <h4>Do This</h4>
+        <ul>
+          <li>Use Iraqi dialect: "دوّر"، "لاگي"، "حلو"، "شلون"</li>
+          <li>Lead with "أصلي" and "فينتاج" in marketing</li>
+          <li>Say "مستعمل" honestly in item descriptions — no shame</li>
+          <li>Celebrate finds: "شوف شنو لگوا اليوم بالبالة"</li>
+          <li>Reference the Friday market experience naturally</li>
+          <li>Treat bale as quality, not budget shopping</li>
+        </ul>
+      </div>
+      <div class="dont-card">
+        <h4>Don't Do This</h4>
+        <ul>
+          <li>Use stiff فصحى that doesn't match the bale vibe</li>
+          <li>Call items "رخيص" (cheap) — say "بسعر حلو" instead</li>
+          <li>Create fake urgency: "آخر فرصة!!! اشتري هسه!!!"</li>
+          <li>Apologize for selling used items or position bale as "lesser"</li>
+          <li>Use English when an Iraqi Arabic term exists and feels natural</li>
+          <li>Oversell condition — if it's worn, say it's worn</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ===== 09: MESSAGING PILLARS ===== -->
+  <div class="section" id="pillars">
+    <div class="section-header">
+      <div class="section-num">09 — Messaging Pillars</div>
+      <h2>What We Always Communicate</h2>
+      <p>Every piece of content — push notification, social post, or billboard — should reinforce at least one of these three pillars.</p>
+    </div>
+
+    <div class="pillar-grid">
+      <div class="pillar-card">
+        <div class="pillar-num">1</div>
+        <h4>The Thrill of the Hunt</h4>
+        <p>Every scroll is a dig through the bale. The next item could be an original Nike from the 90s, a vintage Casio, or a one-of-a-kind find. ebey3 preserves the excitement of discovery.</p>
+        <div style="margin-top: 16px; font-family: 'Almarai'; direction: rtl; color: var(--orange); font-weight: 700; font-size: 17px;">دوّر وراح تلاگي</div>
+        <div style="font-size: 13px; color: var(--gray-400); margin-top: 4px;">Search and you'll find</div>
+      </div>
+
+      <div class="pillar-card">
+        <div class="pillar-num">2</div>
+        <h4>Original & Authentic</h4>
+        <p>The bale is about finding real brands and genuine quality. Not cheap knockoffs — the actual originals. Vintage, lightly used, authenticated. Quality that speaks for itself.</p>
+        <div style="margin-top: 16px; font-family: 'Almarai'; direction: rtl; color: var(--orange); font-weight: 700; font-size: 17px;">أصلي ما يحتاج يثبت نفسه</div>
+        <div style="font-size: 13px; color: var(--gray-400); margin-top: 4px;">The original doesn't need to prove itself</div>
+      </div>
+
+      <div class="pillar-card">
+        <div class="pillar-num">3</div>
+        <h4>The Bale, Organized</h4>
+        <p>Same treasure, no chaos. Categories, filters, search, verified sellers. The experience you love from the Friday market, but organized and available 24/7 from your phone.</p>
+        <div style="margin-top: 16px; font-family: 'Almarai'; direction: rtl; color: var(--orange); font-weight: 700; font-size: 17px;">البالة بس أحلى</div>
+        <div style="font-size: 13px; color: var(--gray-400); margin-top: 4px;">The bale, but better</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ===== 10: IMPLEMENTATION ===== -->
+  <div class="section" id="implementation">
+    <div class="section-header">
+      <div class="section-num">10 — Implementation Guide</div>
+      <h2>Technical Reference</h2>
+      <p>CSS variables and implementation details for developers.</p>
+    </div>
+
+    <h3>CSS Custom Properties</h3>
+    <div class="code-block">
+      <span class="comment">/* ebey3 Brand Colors — v2.0 Bale Market Identity */</span><br>
+      <span class="key">--brand-orange:</span> <span class="value">#F15925</span>; <span class="comment">/* Bale Orange — Primary */</span><br>
+      <span class="key">--brand-orange-dark:</span> <span class="value">#D94A1A</span>;<br>
+      <span class="key">--brand-orange-light:</span> <span class="value">#FF7A4D</span>;<br>
+      <span class="key">--brand-orange-tint:</span> <span class="value">#FFF0EB</span>;<br>
+      <span class="key">--brand-navy:</span> <span class="value">#1E3A5F</span>; <span class="comment">/* Trust Navy — Secondary */</span><br>
+      <span class="key">--brand-navy-dark:</span> <span class="value">#142842</span>;<br>
+      <span class="key">--brand-navy-light:</span> <span class="value">#2A4F7A</span>;<br>
+      <span class="key">--brand-gold:</span> <span class="value">#D4982A</span>; <span class="comment">/* Vintage Gold — Accent */</span><br>
+      <span class="key">--brand-warm-white:</span> <span class="value">#FDF8F4</span>;<br>
+      <span class="key">--brand-cream:</span> <span class="value">#FAF7F2</span>;<br><br>
+      <span class="comment">/* Semantic mapping */</span><br>
+      <span class="key">--color-cta:</span> <span class="string">var(--brand-orange)</span>; <span class="comment">/* Primary actions */</span><br>
+      <span class="key">--color-trust:</span> <span class="string">var(--brand-navy)</span>; <span class="comment">/* Headers, nav, text */</span><br>
+      <span class="key">--color-premium:</span> <span class="string">var(--brand-gold)</span>; <span class="comment">/* Verified, featured */</span><br>
+      <span class="key">--color-background:</span> <span class="string">var(--brand-warm-white)</span>; <span class="comment">/* Warm, not cold */</span><br>
+    </div>
+
+    <h3>Font Stack</h3>
+    <div class="code-block">
+      <span class="comment">/* Arabic / Iraqi dialect (default) */</span><br>
+      <span class="key">font-family:</span> <span class="string">'Almarai', sans-serif</span>;<br><br>
+      <span class="comment">/* Kurdish (Sorani) override */</span><br>
+      <span class="key">[lang="ku"]</span> { <span class="key">font-family:</span> <span class="string">'Noto Sans Arabic', 'Almarai', sans-serif</span>; }<br><br>
+      <span class="comment">/* English override */</span><br>
+      <span class="key">[lang="en"]</span> { <span class="key">font-family:</span> <span class="string">'Inter', sans-serif</span>; }<br><br>
+      <span class="comment">/* Logo wordmark */</span><br>
+      <span class="key">.logo</span> { <span class="key">font-family:</span> <span class="string">'Cairo', sans-serif</span>; <span class="key">font-weight:</span> <span class="value">800</span>; }<br>
+    </div>
+
+    <h3>RTL Checklist</h3>
+    <div class="do-dont">
+      <div class="do-card">
+        <h4>Always</h4>
+        <ul>
+          <li>Set <code>dir="rtl"</code> for Arabic and Kurdish content</li>
+          <li>Use logical CSS properties (margin-inline-start, not margin-left)</li>
+          <li>Mirror directional icons (arrows, chevrons, navigation)</li>
+          <li>Test all UI states in both RTL and LTR</li>
+        </ul>
+      </div>
+      <div class="dont-card">
+        <h4>Never</h4>
+        <ul>
+          <li>Hardcode left/right values for layout</li>
+          <li>Forget to flip directional icons in RTL</li>
+          <li>Mix RTL and LTR text without proper Unicode isolation</li>
+          <li>Assume Latin font metrics work for Arabic script</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CLOSING QUOTE ===== -->
+  <div class="hero-quote">
+    <blockquote>دوّر. لاگي. اشتري.</blockquote>
+    <div class="translation">The bale experience. Organized. Trusted. Always open.</div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <div style="background: var(--navy); color: var(--white); text-align: center; padding: 60px 40px;">
+    <div style="font-family: 'Cairo'; font-weight: 800; font-size: 36px; margin-bottom: 4px;">ebey3</div>
+    <div style="font-family: 'Almarai'; font-size: 24px; opacity: 0.6; direction: rtl;">اي بيع — سوق البالة الأول أونلاين</div>
+    <div style="margin-top: 24px; font-size: 14px; opacity: 0.4;">Brand Guidelines v2.0 — March 2026</div>
+    <div style="margin-top: 8px; font-size: 13px; opacity: 0.3;">www.ebey3.com</div>
+  </div>
+
+</body>
+</html>

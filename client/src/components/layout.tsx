@@ -35,7 +35,7 @@ export function Layout({ children, hideHeader = false, hideSearch = false }: Lay
       <div
         className="despia-topbar bg-primary text-white px-3 text-[13px] font-semibold shadow-[var(--shadow-1)]"
         style={{
-          paddingTop: 'max(var(--safe-area-top, env(safe-area-inset-top, 0px)), 0.5rem)',
+          paddingTop: 'max(var(--safe-area-top, env(safe-area-inset-top, 0px)), 1.75rem)',
           paddingBottom: '0.5rem',
         }}
       >

@@ -78,6 +78,11 @@ Technical Conventions
 
     Firebase Hosting serves dist/public and rewrites /api/* to Cloud Run.
 
+4. Deploy Command
+
+    To deploy, push to main — Cloud Build triggers automatically:
+    git add -A && git commit -m "description" && git push origin main
+
 Common Pitfalls to Avoid
 
     Dependency Management: If adding/removing dependencies, run npm install and commit the updated package-lock.json.
