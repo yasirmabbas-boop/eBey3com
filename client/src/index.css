@@ -14,11 +14,21 @@
   --bottom-nav-height: calc(4rem + var(--safe-area-bottom)); /* 4rem = 64px (h-16) */
   --bottom-nav-padding: var(--bottom-nav-height);
 
+  /* Top-bar minimum padding (phones vs tablets) */
+  --min-top-padding: 0.5rem;
+
   /* Z-Index Stack for Navigation & Overlays */
   /* Ensures proper layering above chat widgets (z-index: 999999) and main nav (99999) */
   --seller-nav-z-index: 100000;
   --main-nav-z-index: 99999;
   --toast-z-index: 999999;
+}
+
+/* Tablet+ top padding for status bar clearance */
+@media (min-width: 768px) {
+  :root {
+    --min-top-padding: 1.75rem;
+  }
 }
 
 /* Overflow control */
